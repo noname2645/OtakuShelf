@@ -1,44 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, Play, Star, Calendar, Users } from 'lucide-react';
 import "../Stylesheets/home.css";
-import sample from "../assets/images/sample.png"
+import axios from "axios";
 
 const AnimeHomepage = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    // Sample data for top airing anime
-    const topAiringAnime = [
-        { id: 1, title: "Attack on Titan", image: "https://via.placeholder.com/1200x400/FF6B6B/white?text=Attack+on+Titan", rating: 9.0, episode: "Episode 24" },
-        { id: 2, title: "Demon Slayer", image: "https://via.placeholder.com/1200x400/4ECDC4/white?text=Demon+Slayer", rating: 8.7, episode: "Episode 18" },
-        { id: 3, title: "One Piece", image: "https://via.placeholder.com/1200x400/45B7D1/white?text=One+Piece", rating: 9.2, episode: "Episode 1087" },
-        { id: 4, title: "Jujutsu Kaisen", image: "https://via.placeholder.com/1200x400/F7B731/white?text=Jujutsu+Kaisen", rating: 8.9, episode: "Episode 12" }
-    ];
+    const [topAiring, setTopAiring] = useState([]);
+    const [mostWatched, setMostWatched] = useState([]);
+    const [mostHated, setMostHated] = useState([]);
 
-    // Sample data for anime cards
-    const animeCards = [
-        { id: 1, title: "Naruto", image: { sample }, rating: 8.3, year: 2002 },
-        { id: 2, title: "Death Note", image: "https://via.placeholder.com/300x400/54A0FF/white?text=Death+Note", rating: 9.0, year: 2006 },
-        { id: 3, title: "My Hero Academia", image: "https://via.placeholder.com/300x400/5F27CD/white?text=My+Hero+Academia", rating: 8.5, year: 2016 },
-        { id: 4, title: "Tokyo Ghoul", image: "https://via.placeholder.com/300x400/00D2D3/white?text=Tokyo+Ghoul", rating: 8.1, year: 2014 },
-        { id: 5, title: "Fullmetal Alchemist", image: "https://via.placeholder.com/300x400/FF6348/white?text=Fullmetal+Alchemist", rating: 9.1, year: 2003 },
-        { id: 6, title: "Dragon Ball Z", image: "https://via.placeholder.com/300x400/FF9F43/white?text=Dragon+Ball+Z", rating: 8.7, year: 1989 }
-    ];
+    //UseEffect to fetch from backend:
+    useEffect(() => {
+        const fetchAnimeSections = async () => {
+            try {
+                const [airingRes, watchedRes, hatedRes] = await Promise.all([
+                    axios.get("http://localhost:5000/api/anime/top-airing"),
+                    axios.get("http://localhost:5000/api/anime/most-watched"),
+                    axios.get("http://localhost:5000/api/anime/most-hated")
+                ]);
+                setTopAiring(airingRes.data);
+                setMostWatched(watchedRes.data);
+                setMostHated(hatedRes.data);
+            } catch (error) {
+                console.error("Error fetching anime sections:", error);
+            }
+        };
+
+        fetchAnimeSections();
+    }, []);
 
     // Auto-slide effect for top airing anime
     useEffect(() => {
         const interval = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % topAiringAnime.length);
+            setCurrentSlide((prev) =>
+                (prev + 1) % Math.min(removeDuplicates(topAiring).length, 4)
+            );
         }, 3000);
         return () => clearInterval(interval);
-    }, [topAiringAnime.length]);
+    }, [topAiring]);
 
     // Loading effect
     useEffect(() => {
         const timer = setTimeout(() => setLoading(false), 1500);
         return () => clearTimeout(timer);
     }, []);
+
+    const removeDuplicates = (animeArray) => {
+        const seen = new Set();
+        return animeArray.filter((anime) => {
+            if (seen.has(anime.mal_id)) return false;
+            seen.add(anime.mal_id);
+            return true;
+        });
+    };
+
+    const renderAnimeGrid = (title, data) => (
+        <div className="anime-section-container">
+            <h2 className="section-title">{title}</h2>
+            <div className="anime-grid">
+                {data.map((anime) => (
+                    <div key={anime.mal_id} className={`anime-card ${loading ? 'loading' : ''}`}>
+                        {loading ? (
+                            <div className="card-skeleton">
+                                <div className="skeleton-image"></div>
+                                <div className="skeleton-content">
+                                    <div className="skeleton-title"></div>
+                                    <div className="skeleton-info"></div>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="card-image">
+                                    <img
+                                        src={anime.images.webp?.large_image_url || anime.images.jpg.large_image_url}
+                                        alt={anime.title}
+                                        loading="lazy"
+                                    />
+                                    <div className="card-overlay">
+                                        
+                                    </div>
+                                    <div className="card-title-bottom">
+                                        <h3>{anime.title}</h3>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     return (
         <div className="homepage">
@@ -72,35 +126,47 @@ const AnimeHomepage = () => {
                             <h1>OtakuShelf</h1>
                             <p>Discover Amazing Anime</p>
                         </div>
-                        <div className="auth-buttons">
-                            <button className="btn btn-outline">Login</button>
-                            <button className="btn btn-primary">Register</button>
-                        </div>
+                    </div>
+                    <div className="auth-buttons">
+                        <button className="btn btn-outline">Login</button>
+                        <button className="btn btn-primary">Register</button>
                     </div>
                 </header>
 
-                {/* Top Airing Anime Slider */}
+                {/* Today's Highlights */}
                 <section className="hero-slider">
                     <div className="slider-container">
-                        {topAiringAnime.map((anime, index) => (
+                        {removeDuplicates(topAiring).slice(0, 4).map((anime, index) => (
                             <div
-                                key={anime.id}
+                                key={anime.mal_id}
                                 className={`slide ${index === currentSlide ? 'active' : ''}`}
-                                style={{ backgroundImage: `url(${anime.image})` }}
                             >
+                                <div className="slide-image-container">
+                                    <img
+                                        src={anime.images.webp?.large_image_url || anime.images.jpg.large_image_url}
+                                        alt={anime.title}
+                                        className="slide-image"
+                                    />
+                                    <div className="slide-overlay"></div>
+                                </div>
                                 <div className="slide-content">
                                     <h2>{anime.title}</h2>
                                     <div className="slide-info">
-                                        <span className="rating"><Star size={16} fill="gold" color="gold" /> {anime.rating}</span>
-                                        <span className="episode">{anime.episode}</span>
+                                        <span className="rating">
+                                            <Star size={16} fill="gold" color="gold" /> 
+                                            {anime.score || 'N/A'}
+                                        </span>
+                                        <span className="episode">
+                                            Episodes: {anime.episodes || '?'}
+                                        </span>
                                     </div>
-                                    <button className="btn btn-play"><Play size={16} /> Watch Now</button>
                                 </div>
                             </div>
                         ))}
                     </div>
+
                     <div className="slider-dots">
-                        {topAiringAnime.map((_, index) => (
+                        {removeDuplicates(topAiring).slice(0, 4).map((_, index) => (
                             <button
                                 key={index}
                                 className={`dot ${index === currentSlide ? 'active' : ''}`}
@@ -111,39 +177,11 @@ const AnimeHomepage = () => {
                 </section>
 
                 {/* Anime Cards Section */}
-                <section className="anime-section">
-                    <h2 className="section-title">Popular Anime</h2>
-                    <div className="anime-grid">
-                        {animeCards.map((anime) => (
-                            <div key={anime.id} className={`anime-card ${loading ? 'loading' : ''}`}>
-                                {loading ? (
-                                    <div className="card-skeleton">
-                                        <div className="skeleton-image"></div>
-                                        <div className="skeleton-content">
-                                            <div className="skeleton-title"></div>
-                                            <div className="skeleton-info"></div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="card-image">
-                                            <img src={sample} alt={anime.title} />
-                                            <div className="card-title-bottom">
-                                                <h3>{anime.title}</h3>
-                                            </div>
-                                        </div>
-
-                                        <div className="card-title-overlay">
-                                            <h3>{anime.title}</h3>
-                                        </div>
-                                    
-
-                                    </>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </section>
+                <main className="anime-sections">
+                    {renderAnimeGrid("🔥 Top Airing", removeDuplicates(topAiring))}
+                    {renderAnimeGrid("👥 Most Watched", removeDuplicates(mostWatched))}
+                    {renderAnimeGrid("💀 Most Hated", removeDuplicates(mostHated))}
+                </main>
             </div>
         </div>
     );
