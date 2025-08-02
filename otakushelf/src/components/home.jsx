@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Menu, Play, Star, Calendar, Users } from 'lucide-react';
 import "../Stylesheets/home.css";
 import axios from "axios";
+import sidebar from "../assets/images/sidebar.png"
+import logo from "../assets/images/logo2.png"
 
 const AnimeHomepage = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -100,7 +102,7 @@ const AnimeHomepage = () => {
             <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
                 <div className="sidebar-content">
                     <div className="sidebar-header">
-                        <h3>OtakuShelf</h3>
+                        {/* <img src={logo} alt="no img" /> */}
                     </div>
                     <nav className="sidebar-nav">
                         <a href="#" className="nav-item"><Play size={20} /> Home</a>
@@ -118,13 +120,10 @@ const AnimeHomepage = () => {
             <div className="main-content">
                 {/* Header */}
                 <header className="header">
-                    <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
-                        <Menu size={24} />
-                    </button>
+                    <img id="sidebar" src={sidebar} onClick={() => setSidebarOpen(true)} alt="" />
                     <div className="header-center">
                         <div className="logo">
-                            <h1>OtakuShelf</h1>
-                            <p>Discover Amazing Anime</p>
+                            <img src={logo} alt="no img" />
                         </div>
                     </div>
                     <div className="auth-buttons">
