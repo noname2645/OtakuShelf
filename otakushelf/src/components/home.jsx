@@ -9,7 +9,7 @@ const AnimeHomepage = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
-
+    const [animeNews, setAnimeNews] = useState([]);
     const [topAiring, setTopAiring] = useState([]);
     const [mostWatched, setMostWatched] = useState([]);
     const [mostHated, setMostHated] = useState([]);
@@ -34,15 +34,20 @@ const AnimeHomepage = () => {
         fetchAnimeSections();
     }, []);
 
-    // Auto-slide effect for top airing anime
+    // Add this useEffect to your home.jsx component for automatic transitions
+
     useEffect(() => {
+        if (animeNews.length === 0) return;
+
         const interval = setInterval(() => {
-            setCurrentSlide((prev) =>
-                (prev + 1) % Math.min(removeDuplicates(topAiring).length, 4)
+            setCurrentSlide(prevSlide =>
+                prevSlide === animeNews.length - 1 ? 0 : prevSlide + 1
             );
-        }, 3000);
+        }, 5000); // Change slide every 5 seconds
+
         return () => clearInterval(interval);
-    }, [topAiring]);
+    }, [animeNews.length]);
+
 
     // Loading effect
     useEffect(() => {
@@ -58,6 +63,18 @@ const AnimeHomepage = () => {
             return true;
         });
     };
+
+    useEffect(() => {
+        const fetchNews = async () => {
+            try {
+                const res = await axios.get("http://localhost:5000/api/news/anime-news");
+                setAnimeNews(res.data);
+            } catch (err) {
+                console.error("Failed to fetch anime news:", err);
+            }
+        };
+        fetchNews();
+    }, []);
 
     const renderAnimeGrid = (title, data) => (
         <div className="anime-section-container">
@@ -82,7 +99,7 @@ const AnimeHomepage = () => {
                                         loading="lazy"
                                     />
                                     <div className="card-overlay">
-                                        
+
                                     </div>
                                     <div className="card-title-bottom">
                                         <h3>{anime.title}</h3>
@@ -132,48 +149,89 @@ const AnimeHomepage = () => {
                     </div>
                 </header>
 
-                {/* Today's Highlights */}
+
+
+                {/* Today's Highlights - Updated Hero Slider */}
                 <section className="hero-slider">
                     <div className="slider-container">
-                        {removeDuplicates(topAiring).slice(0, 4).map((anime, index) => (
+                        {animeNews.map((news, index) => (
                             <div
-                                key={anime.mal_id}
-                                className={`slide ${index === currentSlide ? 'active' : ''}`}
+                                key={index}
+                                className={`slide ${index === currentSlide ? "active" : ""}`}
                             >
-                                <div className="slide-image-container">
+                                <div className="slide-background">
                                     <img
-                                        src={anime.images.webp?.large_image_url || anime.images.jpg.large_image_url}
-                                        alt={anime.title}
-                                        className="slide-image"
+                                        src={news.image}
+                                        alt={news.title}
+                                        className="slide-bg-image"
+                                        loading="lazy"
                                     />
                                     <div className="slide-overlay"></div>
                                 </div>
-                                <div className="slide-content">
-                                    <h2>{anime.title}</h2>
-                                    <div className="slide-info">
-                                        <span className="rating">
-                                            <Star size={16} fill="gold" color="gold" /> 
-                                            {anime.score || 'N/A'}
-                                        </span>
-                                        <span className="episode">
-                                            Episodes: {anime.episodes || '?'}
-                                        </span>
+
+                                <div className="slide-content-wrapper">
+                                    <div className="slide-content">
+                                        <div className="news-badge">
+                                            <span className="news-source">📰 Anime News Network</span>
+                                            <span className="news-date">
+                                                {new Date(news.pubDate).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                })}
+                                            </span>
+                                        </div>
+
+                                        <h2 className="news-title">{news.title}</h2>
+
+                                        <p className="news-snippet">{news.contentSnippet}</p>
+
+                                        <div className="news-actions">
+                                            <a
+                                                href={news.link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="btn btn-news-primary"
+                                            >
+                                                Read Full Article
+                                            </a>
+                                            <button className="btn btn-news-outline">
+                                                Share News
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="slide-thumbnail">
+                                        <img
+                                            src={news.image}
+                                            alt={news.title}
+                                            className="thumbnail-image"
+                                            loading="lazy"
+                                        />
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    <div className="slider-dots">
-                        {removeDuplicates(topAiring).slice(0, 4).map((_, index) => (
-                            <button
-                                key={index}
-                                className={`dot ${index === currentSlide ? 'active' : ''}`}
-                                onClick={() => setCurrentSlide(index)}
-                            />
-                        ))}
+                    <div className="slider-navigation">
+                        <div className="slider-dots">
+                            {animeNews.map((_, index) => (
+                                <button
+                                    key={index}
+                                    className={`dot ${index === currentSlide ? "active" : ""}`}
+                                    onClick={() => setCurrentSlide(index)}
+                                    aria-label={`Go to slide ${index + 1}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="news-counter">
+                        <span>{currentSlide + 1} / {animeNews.length}</span>
                     </div>
                 </section>
+
 
                 {/* Anime Cards Section */}
                 <main className="anime-sections">
