@@ -9,12 +9,42 @@ const AnimeHomepage = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [animeNews, setAnimeNews] = useState([]);
-    const [topAiring, setTopAiring] = useState([]);
     const [mostWatched, setMostWatched] = useState([]);
     const [mostHated, setMostHated] = useState([]);
+    const [sliderAnime, setSliderAnime] = useState([]);
+    const [topAiring, setTopAiring] = useState([]);
+    const [announcements, setAnnouncements] = useState([]);
 
-    //UseEffect to fetch from backend:
+    // Fixed slider auto-play with proper length check
+    useEffect(() => {
+        if (announcements.length === 0) return;
+        
+        const interval = setInterval(() => {
+            setCurrentSlide(prev => (prev + 1) % announcements.length);
+        }, 5000); // Increased to 5 seconds for better readability
+        return () => clearInterval(interval);
+    }, [announcements.length]);
+
+    useEffect(() => {
+        const fetchAnnouncements = async () => {
+            try {
+                const res = await axios.get("http://localhost:5000/api/anilist/latest-sequels");
+                const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                setAnnouncements(sorted.slice(0, 10));
+            } catch (err) {
+                console.error("Failed to fetch dynamic announcements:", err);
+                // Fallback to trending if sequels fail
+                try {
+                    const fallbackRes = await axios.get("http://localhost:5000/api/anilist/trending");
+                    setAnnouncements(fallbackRes.data.slice(0, 8));
+                } catch (fallbackErr) {
+                    console.error("Failed to fetch fallback announcements:", fallbackErr);
+                }
+            }
+        };
+        fetchAnnouncements();
+    }, []);
+
     useEffect(() => {
         const fetchAnimeSections = async () => {
             try {
@@ -34,22 +64,6 @@ const AnimeHomepage = () => {
         fetchAnimeSections();
     }, []);
 
-    // Add this useEffect to your home.jsx component for automatic transitions
-
-    useEffect(() => {
-        if (animeNews.length === 0) return;
-
-        const interval = setInterval(() => {
-            setCurrentSlide(prevSlide =>
-                prevSlide === animeNews.length - 1 ? 0 : prevSlide + 1
-            );
-        }, 5000); // Change slide every 5 seconds
-
-        return () => clearInterval(interval);
-    }, [animeNews.length]);
-
-
-    // Loading effect
     useEffect(() => {
         const timer = setTimeout(() => setLoading(false), 1500);
         return () => clearTimeout(timer);
@@ -64,17 +78,56 @@ const AnimeHomepage = () => {
         });
     };
 
-    useEffect(() => {
-        const fetchNews = async () => {
-            try {
-                const res = await axios.get("http://localhost:5000/api/news/anime-news");
-                setAnimeNews(res.data);
-            } catch (err) {
-                console.error("Failed to fetch anime news:", err);
-            }
-        };
-        fetchNews();
-    }, []);
+    const formatDate = (startDate) => {
+        if (!startDate || !startDate.year) return "TBA";
+        const year = startDate.year;
+        const month = startDate.month ? String(startDate.month).padStart(2, '0') : '??';
+        const day = startDate.day ? String(startDate.day).padStart(2, '0') : '??';
+        return `${year}-${month}-${day}`;
+    };
+
+    const truncateDescription = (description, maxLength = 300) => {
+        if (!description) return "No description available.";
+        const cleanText = description.replace(/<[^>]*>/g, '');
+        return cleanText.length > maxLength 
+            ? cleanText.substring(0, maxLength) + "..." 
+            : cleanText;
+    };
+
+    const formatGenres = (genres) => {
+        if (!genres || genres.length === 0) return "Unknown";
+        return genres.slice(0, 3).join(", ");
+    };
+
+    const formatScore = (score) => {
+        return score ? `${score}/100` : "N/A";
+    };
+
+    const formatPopularity = (popularity) => {
+        if (!popularity) return "N/A";
+        if (popularity >= 1000000) {
+            return `${(popularity / 1000000).toFixed(1)}M`;
+        } else if (popularity >= 1000) {
+            return `${(popularity / 1000).toFixed(1)}K`;
+        }
+        return popularity.toString();
+    };
+
+    const getStatusColor = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'releasing':
+            case 'currently_airing':
+                return 'status-releasing';
+            case 'not_yet_released':
+            case 'not_yet_aired':
+                return 'status-not_yet_released';
+            case 'finished':
+            case 'finished_airing':
+                return 'status-finished';
+            default:
+                return '';
+        }
+    };
 
     const renderAnimeGrid = (title, data) => (
         <div className="anime-section-container">
@@ -98,9 +151,7 @@ const AnimeHomepage = () => {
                                         alt={anime.title}
                                         loading="lazy"
                                     />
-                                    <div className="card-overlay">
-
-                                    </div>
+                                    <div className="card-overlay"></div>
                                     <div className="card-title-bottom">
                                         <h3>{anime.title}</h3>
                                     </div>
@@ -115,12 +166,9 @@ const AnimeHomepage = () => {
 
     return (
         <div className="homepage">
-            {/* Sidebar */}
             <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
                 <div className="sidebar-content">
-                    <div className="sidebar-header">
-                        {/* <img src={logo} alt="no img" /> */}
-                    </div>
+                    <div className="sidebar-header"></div>
                     <nav className="sidebar-nav">
                         <a href="#" className="nav-item"><Play size={20} /> Home</a>
                         <a href="#" className="nav-item"><Star size={20} /> Top Rated</a>
@@ -130,12 +178,9 @@ const AnimeHomepage = () => {
                 </div>
             </div>
 
-            {/* Sidebar Overlay */}
             {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
-            {/* Main Content */}
             <div className="main-content">
-                {/* Header */}
                 <header className="header">
                     <img id="sidebar" src={sidebar} onClick={() => setSidebarOpen(true)} alt="" />
                     <div className="header-center">
@@ -149,91 +194,115 @@ const AnimeHomepage = () => {
                     </div>
                 </header>
 
-
-
-                {/* Today's Highlights - Updated Hero Slider */}
                 <section className="hero-slider">
                     <div className="slider-container">
-                        {animeNews.map((news, index) => (
+                        {announcements.map((anime, index) => (
                             <div
-                                key={index}
+                                key={anime.id}
                                 className={`slide ${index === currentSlide ? "active" : ""}`}
                             >
-                                <div className="slide-background">
-                                    <img
-                                        src={news.image}
-                                        alt={news.title}
-                                        className="slide-bg-image"
-                                        loading="lazy"
-                                    />
-                                    <div className="slide-overlay"></div>
-                                </div>
-
                                 <div className="slide-content-wrapper">
-                                    <div className="slide-content">
-                                        <div className="news-badge">
-                                            <span className="news-source">📰 Anime News Network</span>
-                                            <span className="news-date">
-                                                {new Date(news.pubDate).toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric'
-                                                })}
-                                            </span>
+                                    <div className="slide-image-left">
+                                        <img
+                                            src={anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large}
+                                            alt={anime.title?.romaji || anime.title?.english}
+                                            loading="eager"
+                                        />
+                                    </div>
+                                    <div className="slide-info-right">
+                                     
+                                        <h2 className="anime-title">
+                                            {anime.title?.romaji || anime.title?.english}
+                                        </h2>
+                                        {anime.title?.english && anime.title.english !== anime.title.romaji && (
+                                            <h3 className="anime-title-english">
+                                                {anime.title.english}
+                                            </h3>
+                                        )}
+                                        <div className="anime-info">
+                                            <div className="info-item">
+                                                <span className="info-label">Status</span>
+                                                <span className={`info-value ${getStatusColor(anime.status)}`}>
+                                                    {anime.status?.replace(/_/g, ' ').toUpperCase() || 'Unknown'}
+                                                </span>
+                                            </div>
+                                            <div className="info-item">
+                                                <span className="info-label">Release Date</span>
+                                                <span className="info-value">
+                                                    {formatDate(anime.startDate)}
+                                                </span>
+                                            </div>
+                                            <div className="info-item">
+                                                <span className="info-label">Episodes</span>
+                                                <span className="info-value">
+                                                    {anime.episodes || 'TBA'}
+                                                </span>
+                                            </div>
+                                            <div className="info-item">
+                                                <span className="info-label">Score</span>
+                                                <span className="info-value">
+                                                    {formatScore(anime.averageScore)}
+                                                </span>
+                                            </div>
+                                            <div className="info-item">
+                                                <span className="info-label">Genres</span>
+                                                <span className="info-value">
+                                                    {formatGenres(anime.genres)}
+                                                </span>
+                                            </div>
+                                            <div className="info-item">
+                                                <span className="info-label">Popularity</span>
+                                                <span className="info-value">
+                                                    {formatPopularity(anime.popularity)}
+                                                </span>
+                                            </div>
+                                            {anime.mainStudio && (
+                                                <div className="info-item">
+                                                    <span className="info-label">Studio</span>
+                                                    <span className="info-value">
+                                                        {anime.mainStudio}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {anime.nextAiringEpisode && (
+                                                <div className="info-item">
+                                                    <span className="info-label">Next Episode</span>
+                                                    <span className="info-value">
+                                                        Episode {anime.nextAiringEpisode.episode}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
-
-                                        <h2 className="news-title">{news.title}</h2>
-
-                                        <p className="news-snippet">{news.contentSnippet}</p>
-
-                                        <div className="news-actions">
-                                            <a
-                                                href={news.link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="btn btn-news-primary"
-                                            >
-                                                Read Full Article
-                                            </a>
-                                            <button className="btn btn-news-outline">
-                                                Share News
+                                        <p className="anime-description">
+                                            {truncateDescription(anime.description)}
+                                        </p>
+                                        <div className="slide-actions">
+                                            <button className="btn-slide-secondary">
+                                                Add to Watchlist
                                             </button>
                                         </div>
-                                    </div>
-
-                                    <div className="slide-thumbnail">
-                                        <img
-                                            src={news.image}
-                                            alt={news.title}
-                                            className="thumbnail-image"
-                                            loading="lazy"
-                                        />
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    <div className="slider-navigation">
-                        <div className="slider-dots">
-                            {animeNews.map((_, index) => (
-                                <button
-                                    key={index}
-                                    className={`dot ${index === currentSlide ? "active" : ""}`}
-                                    onClick={() => setCurrentSlide(index)}
-                                    aria-label={`Go to slide ${index + 1}`}
-                                />
-                            ))}
+                    {announcements.length > 1 && (
+                        <div className="slider-navigation">
+                            <div className="slider-dots">
+                                {announcements.map((_, index) => (
+                                    <button
+                                        key={index}
+                                        className={`dot ${index === currentSlide ? "active" : ""}`}
+                                        onClick={() => setCurrentSlide(index)}
+                                        aria-label={`Go to slide ${index + 1}`}
+                                    ></button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-
-                    <div className="news-counter">
-                        <span>{currentSlide + 1} / {animeNews.length}</span>
-                    </div>
+                    )}
                 </section>
 
-
-                {/* Anime Cards Section */}
                 <main className="anime-sections">
                     {renderAnimeGrid("🔥 Top Airing", removeDuplicates(topAiring))}
                     {renderAnimeGrid("👥 Most Watched", removeDuplicates(mostWatched))}
