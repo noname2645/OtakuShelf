@@ -18,7 +18,7 @@ const AnimeHomepage = () => {
     // Fixed slider auto-play with proper length check
     useEffect(() => {
         if (announcements.length === 0) return;
-        
+
         const interval = setInterval(() => {
             setCurrentSlide(prev => (prev + 1) % announcements.length);
         }, 5000); // Increased to 5 seconds for better readability
@@ -89,8 +89,8 @@ const AnimeHomepage = () => {
     const truncateDescription = (description, maxLength = 300) => {
         if (!description) return "No description available.";
         const cleanText = description.replace(/<[^>]*>/g, '');
-        return cleanText.length > maxLength 
-            ? cleanText.substring(0, maxLength) + "..." 
+        return cleanText.length > maxLength
+            ? cleanText.substring(0, maxLength) + "..."
             : cleanText;
     };
 
@@ -189,8 +189,16 @@ const AnimeHomepage = () => {
                         </div>
                     </div>
                     <div className="auth-buttons">
-                        <button className="btn btn-outline">Login</button>
-                        <button className="btn btn-primary">Register</button>
+
+                        <button>
+                            <span class="button_login"> Login </span>
+                        </button>
+
+                     
+                        <button>
+                            <span class="button_register"> Register </span>
+                        </button>
+
                     </div>
                 </header>
 
@@ -210,13 +218,13 @@ const AnimeHomepage = () => {
                                         />
                                     </div>
                                     <div className="slide-info-right">
-                                     
+
                                         <h2 className="anime-title">
                                             {anime.title?.romaji || anime.title?.english}
                                         </h2>
-                                        {anime.title?.english && anime.title.english !== anime.title.romaji && (
+                                        {anime.title?.english == anime.title.romaji && (
                                             <h3 className="anime-title-english">
-                                                {anime.title.english}
+                                                {anime.title.romaji}
                                             </h3>
                                         )}
                                         <div className="anime-info">
@@ -276,12 +284,12 @@ const AnimeHomepage = () => {
                                         <p className="anime-description">
                                             {truncateDescription(anime.description)}
                                         </p>
+                                    </div>
                                         <div className="slide-actions">
                                             <button className="btn-slide-secondary">
                                                 Add to Watchlist
                                             </button>
                                         </div>
-                                    </div>
                                 </div>
                             </div>
                         ))}

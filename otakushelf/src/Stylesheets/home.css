@@ -120,36 +120,62 @@ body {
   align-items: center;
 }
 
-.btn {
-  padding: 0.75rem 1.75rem;
+
+button {
+  /* Variables */
+  --button_radius: 0.75em;
+  --button_color: #04d42a;
+  --button_outline_color: #000000;
+  font-size: 17px;
+  font-weight: bold;
   border: none;
-  border-radius: 2rem;
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  font-size: 0.9rem;
+  border-radius: var(--button_radius);
+  background: var(--button_outline_color);
 }
 
-.btn-outline {
-  background: transparent;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+.button_login {
+  display: block;
+  box-sizing: border-box;
+  border: 2px solid var(--button_outline_color);
+  border-radius: var(--button_radius);
+  padding: 0.75em 1.5em;
+  background: var(--button_color);
+  color: var(--button_outline_color);
+  transform: translateY(-0.2em);
+  transition: transform 0.1s ease;
 }
 
-.btn-outline:hover {
-  border-color: #ff6b6b;
-  color: #ff6b6b;
-  transform: translateY(-2px);
+button:hover .button_login {
+  /* Pull the button upwards when hovered */
+  transform: translateY(-0.33em);
 }
 
-.btn-primary {
-  background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
-  color: white;
+button:active .button_login {
+  /* Push the button downwards when pressed */
+  transform: translateY(0);
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+.button_register {
+  display: block;
+  box-sizing: border-box;
+  border: 1px solid var(--button_color);
+  border-radius: var(--button_radius);
+  padding: 0.75em 1.5em;
+  background: var(--button_outline_color);
+  color: var(--button_color);
+  transform: translateY(-0.2em);
+  transition: transform 0.1s ease;
+}
+
+button:hover .button_register {
+  /* Pull the button upwards when hovered */
+  transform: translateY(-0.33em);
+}
+
+button:active .button_register {
+  /* Push the button downwards when pressed */
+  transform: translateY(0);
 }
 
 /* Hero Slider - Fixed and Improved */
@@ -193,7 +219,7 @@ body {
   position: relative;
   z-index: 3;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 3rem;
   padding: 3rem;
@@ -268,6 +294,7 @@ body {
   padding: 1.5rem;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
 }
 
 .info-item {
@@ -315,8 +342,8 @@ body {
 
 .slide-actions {
   position: absolute;
-  bottom: -40px;
-  left: 50%;
+  bottom: 60px;
+  left: 65%;
   transform: translateX(-50%);
   display: flex;
   gap: 1rem;

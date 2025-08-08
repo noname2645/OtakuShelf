@@ -4,6 +4,18 @@ import axios from 'axios';
 
 const router = express.Router();
 
+// ✅ Declare headers only once and reuse
+const axiosConfig = {
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Origin': 'https://anilist.co',
+    'Referer': 'https://anilist.co',
+    'User-Agent': 'Mozilla/5.0'
+  }
+};
+
+// 🧩 Latest Sequels Route
 router.get("/latest-sequels", async (req, res) => {
   try {
     const query = `
@@ -78,51 +90,37 @@ router.get("/latest-sequels", async (req, res) => {
       }
     `;
 
-    const response = await axios.post('https://graphql.anilist.co', { query });
-    
-    if (!response.data || !response.data.data || !response.data.data.Page) {
-      throw new Error('Invalid response from AniList API');
-    }
+    const response = await axios.post('https://graphql.anilist.co', { query }, axiosConfig);
 
     const allMedia = response.data.data.Page.media;
 
-    // Filter for sequels, prequels, or related anime
     const relatedAnime = allMedia.filter((anime) => {
-      // Check if it has any anime relations (sequels, prequels, etc.)
-      const hasAnimeRelations = anime.relations?.edges?.some((rel) => 
-        rel.node.type === "ANIME" && 
-        (rel.relationType === "SEQUEL" || 
-         rel.relationType === "PREQUEL" || 
+      const hasAnimeRelations = anime.relations?.edges?.some((rel) =>
+        rel.node.type === "ANIME" &&
+        (rel.relationType === "SEQUEL" ||
+         rel.relationType === "PREQUEL" ||
          rel.relationType === "SIDE_STORY" ||
          rel.relationType === "ALTERNATIVE")
       );
 
-      // Also include highly anticipated new anime (high popularity/favorites)
       const isHighlyAnticipated = anime.popularity > 10000 || anime.favourites > 5000;
-
       return hasAnimeRelations || isHighlyAnticipated;
     });
 
-    // Sort by a combination of factors for better variety
     const sortedAnime = relatedAnime.sort((a, b) => {
-      // Prioritize by update time, then by popularity
-      const timeScore = new Date(b.updatedAt) - new Date(a.updatedAt);
+      const timeScore = b.updatedAt - a.updatedAt;
       const popularityScore = (b.popularity || 0) - (a.popularity || 0);
-      
-      // Weight recent updates more heavily
       return timeScore * 0.7 + popularityScore * 0.3;
     });
 
-    // Ensure we have good data and limit to 10
     const finalResults = sortedAnime
-      .filter(anime => 
-        anime.title?.romaji && 
+      .filter(anime =>
+        anime.title?.romaji &&
         (anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large) &&
         anime.description
       )
       .slice(0, 10);
 
-    // Add some additional processed data for frontend use
     const enhancedResults = finalResults.map(anime => ({
       ...anime,
       displayTitle: anime.title.english || anime.title.romaji,
@@ -135,14 +133,14 @@ router.get("/latest-sequels", async (req, res) => {
     res.json(enhancedResults);
   } catch (err) {
     console.error("Error fetching sequels from AniList:", err.message);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to fetch latest sequels.",
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
 
-// Additional endpoint for fallback data if main endpoint fails
+// 🔥 Trending Anime Route
 router.get("/trending", async (req, res) => {
   try {
     const query = `
@@ -179,12 +177,11 @@ router.get("/trending", async (req, res) => {
       }
     `;
 
-    const response = await axios.post('https://graphql.anilist.co', { query });
+    const response = await axios.post('https://graphql.anilist.co', { query }, axiosConfig);
     const trendingAnime = response.data.data.Page.media.slice(0, 10);
-
     res.json(trendingAnime);
   } catch (err) {
-    console.error("Error fetching trending anime:", err);
+    console.error("Error fetching trending anime:", err.message);
     res.status(500).json({ error: "Failed to fetch trending anime." });
   }
 });
