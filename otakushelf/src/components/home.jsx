@@ -10,8 +10,7 @@ const AnimeHomepage = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
     const [mostWatched, setMostWatched] = useState([]);
-    const [mostHated, setMostHated] = useState([]);
-    const [sliderAnime, setSliderAnime] = useState([]);
+    const [topmovies, settopMovies] = useState([]);
     const [topAiring, setTopAiring] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
 
@@ -21,7 +20,7 @@ const AnimeHomepage = () => {
 
         const interval = setInterval(() => {
             setCurrentSlide(prev => (prev + 1) % announcements.length);
-        }, 5000); // Increased to 5 seconds for better readability
+        }, 7000);
         return () => clearInterval(interval);
     }, [announcements.length]);
 
@@ -48,14 +47,15 @@ const AnimeHomepage = () => {
     useEffect(() => {
         const fetchAnimeSections = async () => {
             try {
-                const [airingRes, watchedRes, hatedRes] = await Promise.all([
+                const [airingRes, watchedRes, moviesRes] = await Promise.all([
                     axios.get("http://localhost:5000/api/anime/top-airing"),
                     axios.get("http://localhost:5000/api/anime/most-watched"),
-                    axios.get("http://localhost:5000/api/anime/most-hated")
+                    axios.get("http://localhost:5000/api/anime/top-movies")   // ✅ updated
                 ]);
                 setTopAiring(airingRes.data);
                 setMostWatched(watchedRes.data);
-                setMostHated(hatedRes.data);
+                settopMovies(moviesRes.data);  // You can rename `mostHated` to something like `topMovies` if you want
+
             } catch (error) {
                 console.error("Error fetching anime sections:", error);
             }
@@ -151,7 +151,7 @@ const AnimeHomepage = () => {
                                         alt={anime.title}
                                         loading="lazy"
                                     />
-                                    <div className="card-overlay"></div>
+
                                     <div className="card-title-bottom">
                                         <h3>{anime.title}</h3>
                                     </div>
@@ -194,7 +194,7 @@ const AnimeHomepage = () => {
                             <span class="button_login"> Login </span>
                         </button>
 
-                     
+
                         <button>
                             <span class="button_register"> Register </span>
                         </button>
@@ -285,11 +285,7 @@ const AnimeHomepage = () => {
                                             {truncateDescription(anime.description)}
                                         </p>
                                     </div>
-                                        <div className="slide-actions">
-                                            <button className="btn-slide-secondary">
-                                                Add to Watchlist
-                                            </button>
-                                        </div>
+
                                 </div>
                             </div>
                         ))}
@@ -312,9 +308,9 @@ const AnimeHomepage = () => {
                 </section>
 
                 <main className="anime-sections">
-                    {renderAnimeGrid("🔥 Top Airing", removeDuplicates(topAiring))}
-                    {renderAnimeGrid("👥 Most Watched", removeDuplicates(mostWatched))}
-                    {renderAnimeGrid("💀 Most Hated", removeDuplicates(mostHated))}
+                    {renderAnimeGrid("Top Airing", removeDuplicates(topAiring))}
+                    {renderAnimeGrid("Most Watched", removeDuplicates(mostWatched))}
+                    {renderAnimeGrid("Top Movies", removeDuplicates(topmovies))}
                 </main>
             </div>
         </div>

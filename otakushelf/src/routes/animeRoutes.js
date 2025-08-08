@@ -1,43 +1,64 @@
+// animeRoutes.js
 import express from 'express';
 import axios from 'axios';
 
 const router = express.Router();
 
-//Top airing
+// === Helper function for logging errors ===
+const handleAxiosError = (err, label) => {
+  console.error(`\n❌ ${label} - Error fetching from Jikan:\n`, {
+    message: err?.message,
+    status: err?.response?.status,
+    data: err?.response?.data
+  });
+};
+
+// === TOP AIRING ===
 router.get('/top-airing', async (req, res) => {
-    try {
-        const response = await axios.get(`https://api.jikan.moe/v4/top/anime?filter=airing&limit=10`);
-        res.json(response.data.data);
-    } catch {
-        res.status(500).json({ error: 'Failed to fetch top airing anime' });
-    }
+  try {
+    const response = await axios.get(`https://api.jikan.moe/v4/top/anime`, {
+      params: {
+        filter: 'airing',
+        limit: 25
+      }
+    });
+    res.json(response.data.data);
+  } catch (err) {
+    handleAxiosError(err, 'Top Airing');
+    res.status(500).json({ error: 'Failed to fetch top airing anime' });
+  }
 });
 
-//Most-watched
+// === MOST WATCHED ===
 router.get('/most-watched', async (req, res) => {
-    try {
-        const response = await axios.get(`https://api.jikan.moe/v4/top/anime?filter=bypopularity&limit=10`);
-        res.json(response.data.data);
-    } catch {
-        res.status(500).json({ error: 'Failed to fetch top airing anime' });
-    }
+  try {
+    const response = await axios.get(`https://api.jikan.moe/v4/top/anime`, {
+      params: {
+        filter: 'bypopularity',
+        limit: 25
+      }
+    });
+    res.json(response.data.data);
+  } catch (err) {
+    handleAxiosError(err, 'Most Watched');
+    res.status(500).json({ error: 'Failed to fetch most watched anime' });
+  }
 });
 
-//Most hated
-router.get('/most-hated', async (req, res) => {
-    try {
-        const response = await axios.get(`https://api.jikan.moe/v4/anime`, {
-            params: {
-                order_by: "score",
-                sort: "asc", // lowest score first
-                limit: 10
-            }
-        });
-        res.json(response.data.data);
-
-    } catch {
-        res.status(500).json({ error: 'Failed to fetch most hated anime' });
-    }
+// === TOP MOVIES ===
+router.get('/top-movies', async (req, res) => {
+  try {
+    const response = await axios.get(`https://api.jikan.moe/v4/top/anime`, {
+      params: {
+        type: 'movie',
+        limit: 25
+      }
+    });
+    res.json(response.data.data);
+  } catch (err) {
+    handleAxiosError(err, 'Top Movies');
+    res.status(500).json({ error: 'Failed to fetch top movies' });
+  }
 });
 
 export default router;
