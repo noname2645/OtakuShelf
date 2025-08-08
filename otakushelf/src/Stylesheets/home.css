@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Mulish:ital,wght@0,200..1000;1,200..1000&family=Playwrite+AU+QLD:wght@100..400&family=Roboto:ital,wght@0,100..900;1,100..900&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Mulish:ital,wght@0,200..1000;1,200..1000&family=Playwrite+AU+QLD:wght@100..400&family=Roboto:ital,wght@0,100..900;1,100..900&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 
 * {
   margin: 0;
@@ -10,7 +10,6 @@ html,
 body {
   margin: 0;
   padding: 0;
-  scroll-behavior: smooth;
 }
 
 .homepage {
@@ -430,11 +429,12 @@ button:active .button_register {
 }
 
 .section-title {
-  font-size: 2.2rem;
+  font-family: "Arimo", sans-serif;
+  font-size: 2.5rem;
   margin: 0 auto 2.5rem auto;
   text-align: center;
-  color: #ff6b6b;
-  font-weight: 700;
+  color: #b70404;
+  font-weight: 500;
   width: fit-content;
   min-width: 300px;
   display: flex;
@@ -455,58 +455,18 @@ button:active .button_register {
 
 .anime-card {
   aspect-ratio: 2.3/3;
-  width: 100%;
-  max-width: 280px;
+  width: 280px;
   position: relative;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(15px) saturate(180%);
-  -webkit-backdrop-filter: blur(15px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 20px;
   overflow: hidden;
   transition: all 0.3s ease;
-
-  box-shadow:
-    inset 0 0.3rem 0.9rem rgba(255, 255, 255, 0.3),
-    inset 0 -0.1rem 0.3rem rgba(0, 0, 0, 0.7),
-    inset 0 -0.4rem 0.9rem rgba(255, 255, 255, 0.4),
-    0 1rem 2rem rgba(0, 0, 0, 0.4);
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .anime-card:hover {
   transform: translateY(-12px) scale(1.02);
   border-color: rgba(255, 107, 107, 0.3);
-  box-shadow:
-    inset 0 0.4rem 0.5rem rgba(255, 255, 255, 0.4),
-    inset 0 -0.2rem 0.3rem rgba(0, 0, 0, 0.7),
-    inset 0 -0.4rem 1rem rgba(255, 255, 255, 0.7),
-    0 3rem 3rem rgba(0, 0, 0, 0.3),
-    0 1rem 1rem -0.6rem rgba(0, 0, 0, 0.8);
-}
-
-.anime-card::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), transparent 70%);
-  animation: shineMove 8s linear infinite;
-  z-index: 0;
-}
-
-.anime-card::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 60px;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), transparent);
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  z-index: 1;
 }
 
 .anime-card .card-content {
@@ -537,29 +497,11 @@ button:active .button_register {
   object-fit: cover;
   object-position: center;
   transition: transform 0.4s ease;
-  aspect-ratio: 2.3/3;
-  position: relative;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(15px) saturate(180%);
-  -webkit-backdrop-filter: blur(15px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  overflow: hidden;
-  transition: all 0.3s ease;
-
-  box-shadow:
-    inset 0 0.3rem 0.9rem rgba(255, 255, 255, 0.3),
-    inset 0 -0.1rem 0.3rem rgba(0, 0, 0, 0.7),
-    inset 0 -0.4rem 0.9rem rgba(255, 255, 255, 0.4),
-    0 1rem 2rem rgba(0, 0, 0, 0.4);
-
 }
 
 .anime-card:hover .card-image img {
   transform: scale(1.1);
 }
-
-
 
 .anime-card:hover .card-overlay {
   opacity: 1;

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Play, Star, Calendar, Users } from 'lucide-react';
 import "../Stylesheets/home.css";
 import axios from "axios";
 import sidebar from "../assets/images/sidebar.png"
 import logo from "../assets/images/logo2.png"
+import Lenis from '@studio-freight/lenis'
+
 
 const AnimeHomepage = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -13,6 +15,31 @@ const AnimeHomepage = () => {
     const [topmovies, settopMovies] = useState([]);
     const [topAiring, setTopAiring] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
+    const lenisRef = useRef(null);
+
+    useEffect(() => {
+        const lenis = new Lenis({
+            lerp: 0.09,
+            smooth: true,
+            infinite: false,
+        });
+
+        lenisRef.current = lenis;
+
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+
+        requestAnimationFrame(raf);
+
+        return () => {
+            lenis.destroy();
+            lenisRef.current = null;
+        };
+    }, []);
+
+
 
     // Fixed slider auto-play with proper length check
     useEffect(() => {
