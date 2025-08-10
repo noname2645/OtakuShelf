@@ -267,45 +267,45 @@ const AnimeHomepage = () => {
                                                 {anime.title.english || anime.title.romaji}
                                             </h3>
                                         )}
-                                        <div className="anime-info">
-                                            <div className="info-item">
+                                        <div className="anime-info2">
+                                            <div className="info-item2">
                                                 <span className="info-label">Status</span>
                                                 <span className={`info-value ${getStatusColor(anime.status)}`}>
                                                     {anime.status?.replace(/_/g, ' ').toUpperCase() || 'Unknown'}
                                                 </span>
                                             </div>
-                                            <div className="info-item">
+                                            <div className="info-item2">
                                                 <span className="info-label">Release Date</span>
                                                 <span className="info-value">
                                                     {formatDate(anime.startDate)}
                                                 </span>
                                             </div>
-                                            <div className="info-item">
+                                            <div className="info-item2">
                                                 <span className="info-label">Episodes</span>
                                                 <span className="info-value">
                                                     {anime.episodes || 'TBA'}
                                                 </span>
                                             </div>
-                                            <div className="info-item">
+                                            <div className="info-item2">
                                                 <span className="info-label">Score</span>
                                                 <span className="info-value">
                                                     {formatScore(anime.averageScore)}
                                                 </span>
                                             </div>
-                                            <div className="info-item">
+                                            <div className="info-item2">
                                                 <span className="info-label">Genres</span>
                                                 <span className="info-value">
                                                     {formatGenres(anime.genres)}
                                                 </span>
                                             </div>
-                                            <div className="info-item">
+                                            <div className="info-item2">
                                                 <span className="info-label">Popularity</span>
                                                 <span className="info-value">
                                                     {formatPopularity(anime.popularity)}
                                                 </span>
                                             </div>
                                             {anime.mainStudio && (
-                                                <div className="info-item">
+                                                <div className="info-item2">
                                                     <span className="info-label">Studio</span>
                                                     <span className="info-value">
                                                         {anime.mainStudio}
@@ -313,7 +313,7 @@ const AnimeHomepage = () => {
                                                 </div>
                                             )}
                                             {anime.nextAiringEpisode && (
-                                                <div className="info-item">
+                                                <div className="info-item2">
                                                     <span className="info-label">Next Episode</span>
                                                     <span className="info-value">
                                                         Episode {anime.nextAiringEpisode.episode}

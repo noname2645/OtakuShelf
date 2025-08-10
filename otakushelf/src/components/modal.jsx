@@ -145,13 +145,13 @@ const Modal = ({ isOpen, onClose, anime }) => {
 
                         <div className="stats-grid">
                             <div className="stat-item">
-                                <span className="stat-label">Episodes</span>
+                                <span className="stat-label">Episodes :</span>
                                 <span className="stat-value">
                                     {anime.episodes || anime.episodeCount || "?"}
                                 </span>
                             </div>
                             <div className="stat-item">
-                                <span className="stat-label">Score</span>
+                                <span className="stat-label">Score :</span>
                                 <span 
                                     className="stat-value score"
                                     style={{ color: getScoreColor(anime.score || anime.averageScore) }}
@@ -160,7 +160,7 @@ const Modal = ({ isOpen, onClose, anime }) => {
                                 </span>
                             </div>
                             <div className="stat-item">
-                                <span className="stat-label">Age Rating</span>
+                                <span className="stat-label">Age Rating :</span>
                                 <span className="stat-value age-rating">
                                     {anime.ageRating || anime.rating || (anime.isAdult ? "18+" : "N/A")}
                                 </span>

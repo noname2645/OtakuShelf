@@ -225,7 +225,7 @@ button:active .button_register {
   align-items: flex-start;
   justify-content: center;
   gap: 3rem;
-  padding: 3rem;
+  padding: 2rem;
   height: 100%;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.7) 100%);
   border-radius: 20px;
@@ -284,17 +284,17 @@ button:active .button_register {
   font-size: 1.5rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.85);
-  /* margin-bottom: 1rem; */
+  margin-bottom: 1rem;
   font-style: italic;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
-.anime-info {
+.anime-info2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
-  margin-bottom: 1rem;
+  /* margin-bottom: 1rem; */
   background: rgba(0, 0, 0, 0.3);
   padding: 1.5rem;
   border-radius: 12px;
@@ -302,10 +302,10 @@ button:active .button_register {
   backdrop-filter: blur(10px);
 }
 
-.info-item {
+.info-item2 {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  /* gap: 0.3rem; */
 }
 
 .info-label {
@@ -617,7 +617,7 @@ button:active .button_register {
 
   .slide-content-wrapper {
     gap: 2rem;
-    padding: 2.5rem;
+    /* padding: 2.5rem; */
   }
 
   .slide-image-left {
@@ -635,7 +635,7 @@ button:active .button_register {
     flex-direction: column;
     text-align: center;
     gap: 2rem;
-    padding: 2rem;
+    /* padding: 2rem; */
   }
 
   .slide-image-left {
