@@ -3,61 +3,35 @@ import express from 'express';
 import axios from 'axios';
 
 const router = express.Router();
+let cache = { data: null, timestamp: 0 };
 
-// === Helper function for logging errors ===
-const handleAxiosError = (err, label) => {
-  console.error(`\n❌ ${label} - Error fetching from Jikan:\n`, {
-    message: err?.message,
-    status: err?.response?.status,
-    data: err?.response?.data
-  });
-};
+router.get('/anime-sections', async (req, res) => {
+  const now = Date.now();
 
-// === TOP AIRING ===
-router.get('/top-airing', async (req, res) => {
-  try {
-    const response = await axios.get(`https://api.jikan.moe/v4/top/anime`, {
-      params: {
-        filter: 'airing',
-        limit: 25
-      }
-    });
-    res.json(response.data.data);
-  } catch (err) {
-    handleAxiosError(err, 'Top Airing');
-    res.status(500).json({ error: 'Failed to fetch top airing anime' });
+  if (cache.data && now - cache.timestamp < 1000 * 60 * 5) {
+    return res.json(cache.data); // Serve from cache for 5 min
   }
-});
 
-// === MOST WATCHED ===
-router.get('/most-watched', async (req, res) => {
   try {
-    const response = await axios.get(`https://api.jikan.moe/v4/top/anime`, {
-      params: {
-        filter: 'bypopularity',
-        limit: 25
-      }
-    });
-    res.json(response.data.data);
-  } catch (err) {
-    handleAxiosError(err, 'Most Watched');
-    res.status(500).json({ error: 'Failed to fetch most watched anime' });
-  }
-});
+    const [airing, watched, movies] = await Promise.all([
+      axios.get(`https://api.jikan.moe/v4/top/anime?filter=airing&limit=25`),
+      axios.get(`https://api.jikan.moe/v4/top/anime?filter=bypopularity&limit=25`),
+      axios.get(`https://api.jikan.moe/v4/top/anime?type=movie&limit=25`)
+    ]);
 
-// === TOP MOVIES ===
-router.get('/top-movies', async (req, res) => {
-  try {
-    const response = await axios.get(`https://api.jikan.moe/v4/top/anime`, {
-      params: {
-        type: 'movie',
-        limit: 25
-      }
-    });
-    res.json(response.data.data);
-  } catch (err) {
-    handleAxiosError(err, 'Top Movies');
-    res.status(500).json({ error: 'Failed to fetch top movies' });
+    cache = {
+      data: {
+        topAiring: airing.data.data,
+        mostWatched: watched.data.data,
+        topMovies: movies.data.data
+      },
+      timestamp: now
+    };
+
+    res.json(cache.data);
+  } catch (error) {
+    console.error("Jikan error:", error?.response?.data || error.message);
+    res.status(500).json({ error: "Failed to fetch anime sections" });
   }
 });
 

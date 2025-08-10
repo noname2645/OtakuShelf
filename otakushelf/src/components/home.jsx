@@ -5,6 +5,7 @@ import axios from "axios";
 import sidebar from "../assets/images/sidebar.png"
 import logo from "../assets/images/logo2.png"
 import Lenis from '@studio-freight/lenis'
+import Modal from "../components/modal.jsx"; // adjust path if needed
 
 
 const AnimeHomepage = () => {
@@ -16,6 +17,10 @@ const AnimeHomepage = () => {
     const [topAiring, setTopAiring] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
     const lenisRef = useRef(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedAnime, setSelectedAnime] = useState(null);
+
+
 
     useEffect(() => {
         const lenis = new Lenis({
@@ -74,22 +79,17 @@ const AnimeHomepage = () => {
     useEffect(() => {
         const fetchAnimeSections = async () => {
             try {
-                const [airingRes, watchedRes, moviesRes] = await Promise.all([
-                    axios.get("http://localhost:5000/api/anime/top-airing"),
-                    axios.get("http://localhost:5000/api/anime/most-watched"),
-                    axios.get("http://localhost:5000/api/anime/top-movies")   // ✅ updated
-                ]);
-                setTopAiring(airingRes.data);
-                setMostWatched(watchedRes.data);
-                settopMovies(moviesRes.data);  // You can rename `mostHated` to something like `topMovies` if you want
-
+                const res = await axios.get("http://localhost:5000/api/anime/anime-sections");
+                setTopAiring(res.data.topAiring);
+                setMostWatched(res.data.mostWatched);
+                settopMovies(res.data.topMovies);
             } catch (error) {
                 console.error("Error fetching anime sections:", error);
             }
         };
-
         fetchAnimeSections();
     }, []);
+
 
     useEffect(() => {
         const timer = setTimeout(() => setLoading(false), 1500);
@@ -156,12 +156,25 @@ const AnimeHomepage = () => {
         }
     };
 
+    const openModal = (anime) => {
+        setSelectedAnime(anime);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setSelectedAnime(null);
+        setIsModalOpen(false);
+    };
+
+
     const renderAnimeGrid = (title, data) => (
         <div className="anime-section-container">
             <h2 className="section-title">{title}</h2>
             <div className="anime-grid">
                 {data.map((anime) => (
-                    <div key={anime.mal_id} className={`anime-card ${loading ? 'loading' : ''}`}>
+                    <div key={anime.mal_id} className={`anime-card ${loading ? 'loading' : ''}`}
+                        onClick={() => openModal(anime)}
+                        style={{ cursor: "pointer" }}>
                         {loading ? (
                             <div className="card-skeleton">
                                 <div className="skeleton-image"></div>
@@ -178,7 +191,6 @@ const AnimeHomepage = () => {
                                         alt={anime.title}
                                         loading="lazy"
                                     />
-
                                     <div className="card-title-bottom">
                                         <h3>{anime.title}</h3>
                                     </div>
@@ -218,12 +230,12 @@ const AnimeHomepage = () => {
                     <div className="auth-buttons">
 
                         <button>
-                            <span class="button_login"> Login </span>
+                            <span className="button_login"> Login </span>
                         </button>
 
 
                         <button>
-                            <span class="button_register"> Register </span>
+                            <span className="button_register"> Register </span>
                         </button>
 
                     </div>
@@ -235,6 +247,8 @@ const AnimeHomepage = () => {
                             <div
                                 key={anime.id}
                                 className={`slide ${index === currentSlide ? "active" : ""}`}
+                                onClick={() => openModal(anime)}
+                                style={{ cursor: "pointer" }}
                             >
                                 <div className="slide-content-wrapper">
                                     <div className="slide-image-left">
@@ -245,13 +259,12 @@ const AnimeHomepage = () => {
                                         />
                                     </div>
                                     <div className="slide-info-right">
-
                                         <h2 className="anime-title">
                                             {anime.title?.romaji || anime.title?.english}
                                         </h2>
-                                        {anime.title?.english == anime.title.romaji && (
+                                        {anime.title?.english !== anime.title?.romaji && (
                                             <h3 className="anime-title-english">
-                                                {anime.title.romaji}
+                                                {anime.title.english || anime.title.romaji}
                                             </h3>
                                         )}
                                         <div className="anime-info">
@@ -312,7 +325,6 @@ const AnimeHomepage = () => {
                                             {truncateDescription(anime.description)}
                                         </p>
                                     </div>
-
                                 </div>
                             </div>
                         ))}
@@ -340,6 +352,11 @@ const AnimeHomepage = () => {
                     {renderAnimeGrid("Top Movies", removeDuplicates(topmovies))}
                 </main>
             </div>
+            <Modal
+                isOpen={isModalOpen}
+                onClose={closeModal}
+                anime={selectedAnime}
+            />
         </div>
     );
 };
