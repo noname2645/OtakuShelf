@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Play, Star, Calendar, Users } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Play, Star, Calendar, Users } from 'lucide-react';
 import "../Stylesheets/home.css";
 import axios from "axios";
 import sidebar from "../assets/images/sidebar.png"
@@ -55,7 +55,6 @@ const AnimeHomepage = () => {
 
 
 
-    // Fixed slider auto-play with proper length check
     useEffect(() => {
         if (announcements.length === 0) return;
 
@@ -64,6 +63,8 @@ const AnimeHomepage = () => {
         }, 7000);
         return () => clearInterval(interval);
     }, [announcements.length]);
+
+
 
     useEffect(() => {
         const fetchAnnouncements = async () => {
@@ -85,6 +86,8 @@ const AnimeHomepage = () => {
         fetchAnnouncements();
     }, []);
 
+
+
     useEffect(() => {
         const fetchAnimeSections = async () => {
             try {
@@ -98,6 +101,7 @@ const AnimeHomepage = () => {
         };
         fetchAnimeSections();
     }, []);
+
 
 
     useEffect(() => {
@@ -114,6 +118,8 @@ const AnimeHomepage = () => {
         });
     };
 
+
+
     const formatDate = (startDate) => {
         if (!startDate || !startDate.year) return "TBA";
         const year = startDate.year;
@@ -121,6 +127,8 @@ const AnimeHomepage = () => {
         const day = startDate.day ? String(startDate.day).padStart(2, '0') : '??';
         return `${year}-${month}-${day}`;
     };
+
+
 
     const truncateDescription = (description, maxLength = 250) => {
         if (!description) return "No description available.";
@@ -130,14 +138,20 @@ const AnimeHomepage = () => {
             : cleanText;
     };
 
+
+
     const formatGenres = (genres) => {
         if (!genres || genres.length === 0) return "Unknown";
         return genres.slice(0, 3).join(", ");
     };
 
+
+
     const formatScore = (score) => {
         return score ? `${score}/100` : "N/A";
     };
+
+
 
     const formatPopularity = (popularity) => {
         if (!popularity) return "N/A";
@@ -148,6 +162,8 @@ const AnimeHomepage = () => {
         }
         return popularity.toString();
     };
+
+
 
     const getStatusColor = (status) => {
         switch (status?.toLowerCase()) {
@@ -165,9 +181,18 @@ const AnimeHomepage = () => {
         }
     };
 
+
+
     const openModal = (anime) => {
         setSelectedAnime(anime);
         setIsModalOpen(true);
+    };
+
+    const handleOpenRelatedAnime = (relatedAnime) => {
+        // This function will be called when a related anime is selected
+        console.log("Opening related anime:", relatedAnime);
+        setSelectedAnime(relatedAnime);
+        // Modal will automatically update with the new anime data
     };
 
     const closeModal = () => {
@@ -212,6 +237,15 @@ const AnimeHomepage = () => {
         </div>
     );
 
+
+
+    const handleAnimeSelect = (anime) => {
+        setSelectedAnime(anime);
+        setIsModalOpen(true);
+    };
+
+
+
     return (
         <div className="homepage">
             <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
@@ -253,13 +287,11 @@ const AnimeHomepage = () => {
                 <section className="hero-slider">
                     <div className="slider-container">
                         {announcements.map((anime, index) => {
-                            // Show only current slide and adjacent ones
                             const isVisible =
                                 index === currentSlide ||
                                 index === (currentSlide + 1) % announcements.length ||
                                 index === (currentSlide - 1 + announcements.length) % announcements.length;
-
-                            if (!isVisible) return null; // Skip rendering far-away slides
+                            if (!isVisible) return null;
 
                             return (
                                 <div
@@ -279,7 +311,7 @@ const AnimeHomepage = () => {
                                                 alt={anime.title?.romaji || anime.title?.english}
                                                 loading="lazy"
                                             />
-                                            
+
                                         </div>
                                         <div className="slide-info-right">
                                             <h2 className="anime-title">
@@ -369,7 +401,6 @@ const AnimeHomepage = () => {
                         </div>
                     )}
                 </section>
-
                 <main className="anime-sections">
                     {renderAnimeGrid("Top Airing", removeDuplicates(topAiring))}
                     {renderAnimeGrid("Most Watched", removeDuplicates(mostWatched))}
@@ -380,6 +411,7 @@ const AnimeHomepage = () => {
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 anime={selectedAnime}
+                onOpenAnime={handleOpenRelatedAnime}  // This was missing!
             />
         </div>
     );
