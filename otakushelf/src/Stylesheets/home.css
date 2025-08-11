@@ -86,15 +86,15 @@ body {
 }
 
 .main-content #sidebar {
-  height: 60px;
-  width: 60px;
+  height: 50px;
+  width: 50px;
   cursor: pointer;
   fill: wheat;
 }
 
 .main-content .header .logo img {
   margin-top: 10px;
-  height: 90px;
+  height: 250px;
   width: 250px;
   border-radius: 20px;
   cursor: pointer;
