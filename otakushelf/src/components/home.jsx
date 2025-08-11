@@ -19,6 +19,15 @@ const AnimeHomepage = () => {
     const lenisRef = useRef(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAnime, setSelectedAnime] = useState(null);
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
 
 
@@ -113,7 +122,7 @@ const AnimeHomepage = () => {
         return `${year}-${month}-${day}`;
     };
 
-    const truncateDescription = (description, maxLength = 300) => {
+    const truncateDescription = (description, maxLength = 250) => {
         if (!description) return "No description available.";
         const cleanText = description.replace(/<[^>]*>/g, '');
         return cleanText.length > maxLength
@@ -220,7 +229,7 @@ const AnimeHomepage = () => {
             {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
             <div className="main-content">
-                <header className="header">
+                <header className={`header ${isScrolled ? "scrolled" : ""}`}>
                     <img id="sidebar" src={sidebar} onClick={() => setSidebarOpen(true)} alt="" />
                     <div className="header-center">
                         <div className="logo">
@@ -243,91 +252,106 @@ const AnimeHomepage = () => {
 
                 <section className="hero-slider">
                     <div className="slider-container">
-                        {announcements.map((anime, index) => (
-                            <div
-                                key={anime.id}
-                                className={`slide ${index === currentSlide ? "active" : ""}`}
-                                onClick={() => openModal(anime)}
-                                style={{ cursor: "pointer" }}
-                            >
-                                <div className="slide-content-wrapper">
-                                    <div className="slide-image-left">
-                                        <img
-                                            src={anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large}
-                                            alt={anime.title?.romaji || anime.title?.english}
-                                            loading="eager"
-                                        />
-                                    </div>
-                                    <div className="slide-info-right">
-                                        <h2 className="anime-title">
-                                            {anime.title?.romaji || anime.title?.english}
-                                        </h2>
-                                        {anime.title?.english !== anime.title?.romaji && (
-                                            <h3 className="anime-title-english">
-                                                {anime.title.english || anime.title.romaji}
-                                            </h3>
-                                        )}
-                                        <div className="anime-info2">
-                                            <div className="info-item2">
-                                                <span className="info-label">Status</span>
-                                                <span className={`info-value ${getStatusColor(anime.status)}`}>
-                                                    {anime.status?.replace(/_/g, ' ').toUpperCase() || 'Unknown'}
-                                                </span>
-                                            </div>
-                                            <div className="info-item2">
-                                                <span className="info-label">Release Date</span>
-                                                <span className="info-value">
-                                                    {formatDate(anime.startDate)}
-                                                </span>
-                                            </div>
-                                            <div className="info-item2">
-                                                <span className="info-label">Episodes</span>
-                                                <span className="info-value">
-                                                    {anime.episodes || 'TBA'}
-                                                </span>
-                                            </div>
-                                            <div className="info-item2">
-                                                <span className="info-label">Score</span>
-                                                <span className="info-value">
-                                                    {formatScore(anime.averageScore)}
-                                                </span>
-                                            </div>
-                                            <div className="info-item2">
-                                                <span className="info-label">Genres</span>
-                                                <span className="info-value">
-                                                    {formatGenres(anime.genres)}
-                                                </span>
-                                            </div>
-                                            <div className="info-item2">
-                                                <span className="info-label">Popularity</span>
-                                                <span className="info-value">
-                                                    {formatPopularity(anime.popularity)}
-                                                </span>
-                                            </div>
-                                            {anime.mainStudio && (
-                                                <div className="info-item2">
-                                                    <span className="info-label">Studio</span>
-                                                    <span className="info-value">
-                                                        {anime.mainStudio}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {anime.nextAiringEpisode && (
-                                                <div className="info-item2">
-                                                    <span className="info-label">Next Episode</span>
-                                                    <span className="info-value">
-                                                        Episode {anime.nextAiringEpisode.episode}
-                                                    </span>
-                                                </div>
-                                            )}
+                        {announcements.map((anime, index) => {
+                            // Show only current slide and adjacent ones
+                            const isVisible =
+                                index === currentSlide ||
+                                index === (currentSlide + 1) % announcements.length ||
+                                index === (currentSlide - 1 + announcements.length) % announcements.length;
+
+                            if (!isVisible) return null; // Skip rendering far-away slides
+
+                            return (
+                                <div
+                                    key={anime.id}
+                                    className={`slide ${index === currentSlide ? "active" : ""}`}
+                                    onClick={() => openModal(anime)}
+                                    style={{ cursor: "pointer" }}
+                                >
+                                    <div className="slide-content-wrapper">
+                                        <div className="slide-image-left">
+                                            <img
+                                                src={
+                                                    anime.bannerImage ||
+                                                    anime.coverImage?.extraLarge ||
+                                                    anime.coverImage?.large
+                                                }
+                                                alt={anime.title?.romaji || anime.title?.english}
+                                                loading="lazy"
+                                            />
+                                            
                                         </div>
-                                        <p className="anime-description">
-                                            {truncateDescription(anime.description)}
-                                        </p>
+                                        <div className="slide-info-right">
+                                            <h2 className="anime-title">
+                                                {anime.title?.romaji || anime.title?.english}
+                                            </h2>
+                                            {anime.title?.english !== anime.title?.romaji && (
+                                                <h3 className="anime-title-english">
+                                                    {anime.title.english || anime.title.romaji}
+                                                </h3>
+                                            )}
+                                            <div className="anime-info2">
+                                                <div className="info-item2">
+                                                    <span className="info-label">Status</span>
+                                                    <span
+                                                        className={`info-value ${getStatusColor(anime.status)}`}
+                                                    >
+                                                        {anime.status?.replace(/_/g, " ").toUpperCase() || "Unknown"}
+                                                    </span>
+                                                </div>
+                                                <div className="info-item2">
+                                                    <span className="info-label">Release Date</span>
+                                                    <span className="info-value">
+                                                        {formatDate(anime.startDate)}
+                                                    </span>
+                                                </div>
+                                                <div className="info-item2">
+                                                    <span className="info-label">Episodes</span>
+                                                    <span className="info-value">
+                                                        {anime.episodes || "TBA"}
+                                                    </span>
+                                                </div>
+                                                <div className="info-item2">
+                                                    <span className="info-label">Score</span>
+                                                    <span className="info-value">
+                                                        {formatScore(anime.averageScore)}
+                                                    </span>
+                                                </div>
+                                                <div className="info-item2">
+                                                    <span className="info-label">Genres</span>
+                                                    <span className="info-value">
+                                                        {formatGenres(anime.genres)}
+                                                    </span>
+                                                </div>
+                                                <div className="info-item2">
+                                                    <span className="info-label">Popularity</span>
+                                                    <span className="info-value">
+                                                        {formatPopularity(anime.popularity)}
+                                                    </span>
+                                                </div>
+                                                {anime.mainStudio && (
+                                                    <div className="info-item2">
+                                                        <span className="info-label">Studio</span>
+                                                        <span className="info-value">{anime.mainStudio}</span>
+                                                    </div>
+                                                )}
+                                                {anime.nextAiringEpisode && (
+                                                    <div className="info-item2">
+                                                        <span className="info-label">Next Episode</span>
+                                                        <span className="info-value">
+                                                            Episode {anime.nextAiringEpisode.episode}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <p className="anime-description">
+                                                {truncateDescription(anime.description)}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {announcements.length > 1 && (

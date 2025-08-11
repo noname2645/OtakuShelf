@@ -227,7 +227,8 @@
     flex-shrink: 0;
     position: relative;
     width: 390px;
-    height: 575px; /* fixed container height */
+    height: 575px;
+    /* fixed container height */
 }
 
 .image-container {
@@ -244,9 +245,9 @@
 .image-container img {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* fill area without overflow */
+    object-fit: cover;
+    /* fill area without overflow */
 }
-
 
 .image-overlay {
     position: absolute;
@@ -485,7 +486,28 @@
     scrollbar-color: rgba(79, 172, 254, 0.7) rgba(255, 255, 255, 0.1);
 }
 
+/* Read More Button */
+.read-more-btn {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    color: white;
+    font-family: "Inter", sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+    align-self: flex-start;
+}
 
+.read-more-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+}
 
 /* Info Vertical Section */
 .anime-info-vertical {
@@ -544,8 +566,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: currentColor;
-    box-shadow: 0 0 8px currentColor;
+    animation: pulse-glow 2s ease-in-out infinite;
 }
 
 .studio-value {
@@ -577,9 +598,118 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-
 .no-genre {
     background: linear-gradient(135deg, #666, #888) !important;
+}
+
+/* Synopsis Modal Styles */
+.synopsis-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.98) 100%);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+    animation: overlayFadeIn 0.3s ease-out;
+}
+
+.synopsis-modal-content {
+    background: linear-gradient(145deg, rgba(17, 17, 27, 0.98) 0%, rgba(25, 25, 35, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.synopsis-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0;
+}
+
+.synopsis-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.synopsis-modal-header {
+    padding: 25px 30px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.synopsis-modal-header h3 {
+    font-family: "Inter", sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #4facfe;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+.synopsis-modal-body {
+    padding: 25px 30px 30px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.full-synopsis-text {
+    font-family: "Inter", sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    letter-spacing: 0.3px;
+    text-align: justify;
+}
+
+.synopsis-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.synopsis-modal-body::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.synopsis-modal-body::-webkit-scrollbar-thumb {
+    background: rgba(79, 172, 254, 0.7);
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.synopsis-modal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(79, 172, 254, 0.9);
 }
 
 /* Animations */
@@ -628,6 +758,23 @@
         opacity: 1;
     }
 }
+@keyframes pulse-glow {
+  0% {
+    opacity: 0.5; 
+    transform: scale(1);
+    box-shadow: 0 0 10px #00f; /* Initial blue glow */ 
+  }
+  50% {
+    opacity: 1.5; 
+    transform: scale(1.2); 
+    box-shadow: 0 0 20px #00f, 0 0 30px #00f; /* Intensified glow */
+  }
+  100% {
+    opacity: 0.5; 
+    transform: scale(1);
+    box-shadow: 0 0 10px #00f; /* Back to initial glow */
+  }
+}
 
 /* Responsive Design */
 @media (max-width: 1400px) {
@@ -673,7 +820,6 @@
         padding: 12px 16px;
     }
 
-
     .stats-grid {
         display: flex;
         flex-wrap: nowrap;
@@ -683,8 +829,6 @@
         /* scroll if needed */
     }
 
-
-
     .info-row {
         flex-direction: column;
         gap: 8px;
@@ -692,5 +836,27 @@
 
     .info-label {
         min-width: unset;
+    }
+
+    /* Synopsis Modal Responsive */
+    .synopsis-modal-content {
+        width: 95%;
+        max-height: 85vh;
+    }
+
+    .synopsis-modal-header {
+        padding: 20px 20px 15px;
+    }
+
+    .synopsis-modal-header h3 {
+        font-size: 1.25rem;
+    }
+
+    .synopsis-modal-body {
+        padding: 20px;
+    }
+
+    .full-synopsis-text {
+        font-size: 0.95rem;
     }
 }
