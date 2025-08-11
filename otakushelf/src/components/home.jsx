@@ -3,7 +3,7 @@ import { Menu, Play, Star, Calendar, Users } from 'lucide-react';
 import "../Stylesheets/home.css";
 import axios from "axios";
 import sidebar from "../assets/images/sidebar.png"
-import logo from "../assets/images/logo2.png"
+import logo from "../assets/images/logo.png"
 import Lenis from '@studio-freight/lenis'
 import Modal from "../components/modal.jsx"; // adjust path if needed
 

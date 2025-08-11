@@ -174,6 +174,7 @@ const Modal = ({ isOpen, onClose, anime }) => {
                                     <div className="badge-content">
                                         <div className="badge-row">
                                             <span className="badge-type">{anime.type || anime.format}</span>
+
                                             {(anime.aired?.prop || anime.startDate) && (
                                                 <span className="badge-date">
                                                     {anime.startDate
