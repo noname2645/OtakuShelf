@@ -540,7 +540,7 @@ button:active .button_register {
   right: 0;
   padding: 12px 8px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
-  color: #ff6a00; 
+  color: #ff6a00;
   z-index: 1;
   text-shadow:
     0 0 10px rgba(255, 102, 0, 0.4),
