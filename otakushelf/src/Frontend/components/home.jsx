@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { React, useState, useEffect, useRef } from 'react';
 import { Play, Star, Calendar, Users } from 'lucide-react';
 import "../Stylesheets/home.css";
 import axios from "axios";
-import sidebar from "../assets/images/sidebar.png"
-import logo from "../assets/images/logo.png"
+import sidebar from "../images/sidebar.png"
+import logo from "../images/logo.png"
 import Lenis from '@studio-freight/lenis'
 import Modal from "../components/modal.jsx"; // adjust path if needed
 
@@ -411,7 +411,7 @@ const AnimeHomepage = () => {
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 anime={selectedAnime}
-                onOpenAnime={handleOpenRelatedAnime}  // This was missing!
+                onOpenAnime={handleOpenRelatedAnime}  
             />
         </div>
     );
