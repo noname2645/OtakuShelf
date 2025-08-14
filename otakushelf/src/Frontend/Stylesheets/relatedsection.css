@@ -1,0 +1,22 @@
+.related-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scroll-snap-type: x mandatory;
+}
+
+.related-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.related-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.anime-card {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}

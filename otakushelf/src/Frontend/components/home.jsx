@@ -5,7 +5,7 @@ import axios from "axios";
 import sidebar from "../images/sidebar.png"
 import logo from "../images/logo.png"
 import Lenis from '@studio-freight/lenis'
-import Modal from "../components/modal.jsx"; // adjust path if needed
+import Modal from "../components/modal.jsx";
 
 
 const AnimeHomepage = () => {
@@ -29,8 +29,6 @@ const AnimeHomepage = () => {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-
-
     useEffect(() => {
         const lenis = new Lenis({
             lerp: 0.09,
@@ -53,8 +51,6 @@ const AnimeHomepage = () => {
         };
     }, []);
 
-
-
     useEffect(() => {
         if (announcements.length === 0) return;
 
@@ -64,20 +60,125 @@ const AnimeHomepage = () => {
         return () => clearInterval(interval);
     }, [announcements.length]);
 
+    // Normalize hero slider anime data
+    const normalizeHeroAnime = (anime) => {
+        return {
+            // IDs
+            id: anime.id,
+            animeId: anime.id, // AniList ID
+            animeMalId: anime.idMal || anime.mal_id || null, // MAL ID
+            idMal: anime.idMal || anime.mal_id,
+            mal_id: anime.idMal || anime.mal_id,
 
+            // Title
+            title: anime.title,
+            title_english: anime.title?.english,
+            title_romaji: anime.title?.romaji,
+
+            // Images
+            coverImage: anime.coverImage,
+            bannerImage: anime.bannerImage,
+            images: {
+                jpg: {
+                    large_image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
+                    image_url: anime.coverImage?.large || anime.coverImage?.medium
+                },
+                webp: {
+                    large_image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
+                    image_url: anime.coverImage?.large || anime.coverImage?.medium
+                }
+            },
+            image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
+
+            // Details
+            status: anime.status,
+            description: anime.description,
+            synopsis: anime.description,
+            episodes: anime.episodes,
+            episodeCount: anime.episodes,
+            averageScore: anime.averageScore,
+            score: anime.averageScore,
+            format: anime.format,
+            type: anime.format,
+            genres: anime.genres,
+            studios: anime.studios,
+            startDate: anime.startDate,
+            endDate: anime.endDate,
+            season: anime.season,
+            seasonYear: anime.seasonYear,
+            popularity: anime.popularity,
+            isAdult: anime.isAdult,
+            mainStudio: anime.mainStudio,
+            nextAiringEpisode: anime.nextAiringEpisode,
+
+            // Keep original data
+            ...anime
+        };
+    };
+
+    // Normalize grid anime data (from Jikan)
+    const normalizeGridAnime = (anime) => {
+        return {
+            // IDs
+            id: anime.mal_id,
+            animeId: null, // We don't have AniList ID from Jikan
+            animeMalId: anime.mal_id,
+            idMal: anime.mal_id,
+            mal_id: anime.mal_id,
+
+            // Title
+            title: anime.title || anime.title_english,
+            title_english: anime.title_english,
+            title_romaji: anime.title,
+
+            // Images
+            coverImage: {
+                large: anime.images?.jpg?.large_image_url,
+                medium: anime.images?.jpg?.image_url,
+                extraLarge: anime.images?.jpg?.large_image_url
+            },
+            images: anime.images,
+            image_url: anime.images?.jpg?.large_image_url,
+
+            // Details
+            status: anime.status,
+            description: anime.synopsis,
+            synopsis: anime.synopsis,
+            episodes: anime.episodes,
+            episodeCount: anime.episodes,
+            averageScore: anime.score ? Math.round(anime.score * 10) : null,
+            score: anime.score,
+            format: anime.type,
+            type: anime.type,
+            genres: anime.genres?.map(g => ({ name: g.name })) || [],
+            studios: anime.studios?.map(s => ({ name: s.name })) || [],
+            startDate: anime.aired?.from ? {
+                year: new Date(anime.aired.from).getFullYear(),
+                month: new Date(anime.aired.from).getMonth() + 1,
+                day: new Date(anime.aired.from).getDate()
+            } : null,
+            popularity: anime.popularity,
+            isAdult: anime.rating?.includes("R") || anime.rating?.includes("Rx"),
+
+            // Keep original data
+            ...anime
+        };
+    };
 
     useEffect(() => {
         const fetchAnnouncements = async () => {
             try {
                 const res = await axios.get("http://localhost:5000/api/anilist/latest-sequels");
                 const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                setAnnouncements(sorted.slice(0, 10));
+                const normalizedAnnouncements = sorted.slice(0, 10).map(normalizeHeroAnime);
+                setAnnouncements(normalizedAnnouncements);
             } catch (err) {
                 console.error("Failed to fetch dynamic announcements:", err);
                 // Fallback to trending if sequels fail
                 try {
                     const fallbackRes = await axios.get("http://localhost:5000/api/anilist/trending");
-                    setAnnouncements(fallbackRes.data.slice(0, 8));
+                    const normalizedFallback = fallbackRes.data.slice(0, 8).map(normalizeHeroAnime);
+                    setAnnouncements(normalizedFallback);
                 } catch (fallbackErr) {
                     console.error("Failed to fetch fallback announcements:", fallbackErr);
                 }
@@ -86,23 +187,19 @@ const AnimeHomepage = () => {
         fetchAnnouncements();
     }, []);
 
-
-
     useEffect(() => {
         const fetchAnimeSections = async () => {
             try {
                 const res = await axios.get("http://localhost:5000/api/anime/anime-sections");
-                setTopAiring(res.data.topAiring);
-                setMostWatched(res.data.mostWatched);
-                settopMovies(res.data.topMovies);
+                setTopAiring(res.data.topAiring.map(normalizeGridAnime));
+                setMostWatched(res.data.mostWatched.map(normalizeGridAnime));
+                settopMovies(res.data.topMovies.map(normalizeGridAnime));
             } catch (error) {
                 console.error("Error fetching anime sections:", error);
             }
         };
         fetchAnimeSections();
     }, []);
-
-
 
     useEffect(() => {
         const timer = setTimeout(() => setLoading(false), 1500);
@@ -118,8 +215,6 @@ const AnimeHomepage = () => {
         });
     };
 
-
-
     const formatDate = (startDate) => {
         if (!startDate || !startDate.year) return "TBA";
         const year = startDate.year;
@@ -127,8 +222,6 @@ const AnimeHomepage = () => {
         const day = startDate.day ? String(startDate.day).padStart(2, '0') : '??';
         return `${year}-${month}-${day}`;
     };
-
-
 
     const truncateDescription = (description, maxLength = 250) => {
         if (!description) return "No description available.";
@@ -138,20 +231,14 @@ const AnimeHomepage = () => {
             : cleanText;
     };
 
-
-
     const formatGenres = (genres) => {
         if (!genres || genres.length === 0) return "Unknown";
-        return genres.slice(0, 3).join(", ");
+        return genres.slice(0, 3).map(g => g.name || g).join(", ");
     };
-
-
 
     const formatScore = (score) => {
         return score ? `${score}/100` : "N/A";
     };
-
-
 
     const formatPopularity = (popularity) => {
         if (!popularity) return "N/A";
@@ -162,8 +249,6 @@ const AnimeHomepage = () => {
         }
         return popularity.toString();
     };
-
-
 
     const getStatusColor = (status) => {
         switch (status?.toLowerCase()) {
@@ -181,25 +266,21 @@ const AnimeHomepage = () => {
         }
     };
 
-
-
     const openModal = (anime) => {
-        setSelectedAnime(anime);
+        console.log("Opening anime with data:", anime);
+        setSelectedAnime(anime); // anime is already normalized
         setIsModalOpen(true);
     };
 
     const handleOpenRelatedAnime = (relatedAnime) => {
-        // This function will be called when a related anime is selected
         console.log("Opening related anime:", relatedAnime);
-        setSelectedAnime(relatedAnime);
-        // Modal will automatically update with the new anime data
+        setSelectedAnime(relatedAnime); // relatedAnime is already normalized from RelatedSection
     };
 
     const closeModal = () => {
         setSelectedAnime(null);
         setIsModalOpen(false);
     };
-
 
     const renderAnimeGrid = (title, data) => (
         <div className="anime-section-container">
@@ -237,15 +318,6 @@ const AnimeHomepage = () => {
         </div>
     );
 
-
-
-    const handleAnimeSelect = (anime) => {
-        setSelectedAnime(anime);
-        setIsModalOpen(true);
-    };
-
-
-
     return (
         <div className="homepage">
             <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
@@ -271,16 +343,12 @@ const AnimeHomepage = () => {
                         </div>
                     </div>
                     <div className="auth-buttons">
-
                         <button>
                             <span className="button_login"> Login </span>
                         </button>
-
-
                         <button>
                             <span className="button_register"> Register </span>
                         </button>
-
                     </div>
                 </header>
 
@@ -311,7 +379,6 @@ const AnimeHomepage = () => {
                                                 alt={anime.title?.romaji || anime.title?.english}
                                                 loading="lazy"
                                             />
-
                                         </div>
                                         <div className="slide-info-right">
                                             <h2 className="anime-title">
@@ -361,12 +428,6 @@ const AnimeHomepage = () => {
                                                         {formatPopularity(anime.popularity)}
                                                     </span>
                                                 </div>
-                                                {anime.mainStudio && (
-                                                    <div className="info-item2">
-                                                        <span className="info-label">Studio</span>
-                                                        <span className="info-value">{anime.mainStudio}</span>
-                                                    </div>
-                                                )}
                                                 {anime.nextAiringEpisode && (
                                                     <div className="info-item2">
                                                         <span className="info-label">Next Episode</span>
@@ -375,6 +436,7 @@ const AnimeHomepage = () => {
                                                         </span>
                                                     </div>
                                                 )}
+
                                             </div>
                                             <p className="anime-description">
                                                 {truncateDescription(anime.description)}
@@ -411,7 +473,7 @@ const AnimeHomepage = () => {
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 anime={selectedAnime}
-                onOpenAnime={handleOpenRelatedAnime}  
+                onOpenAnime={handleOpenRelatedAnime}
             />
         </div>
     );

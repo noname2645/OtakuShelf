@@ -28,6 +28,8 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
     if (!isOpen || !anime) return null;
 
+    console.log("Modal received anime data:", anime);
+
     // Universal title fetch (AniList + Jikan)
     const animeTitle =
         anime.title?.english ||
@@ -45,7 +47,19 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         anime.image_url;
 
     const formatDate = (dateObj) => {
-        if (!dateObj?.year) return "TBA";
+        if (!dateObj) return "TBA";
+        
+        // Handle string dates (from Jikan)
+        if (typeof dateObj === 'string') {
+            const date = new Date(dateObj);
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = months[date.getMonth()];
+            return `${day} ${month} ${date.getFullYear()}`;
+        }
+        
+        // Handle AniList date objects
+        if (!dateObj.year) return "TBA";
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const day = dateObj.day ? String(dateObj.day).padStart(2, "0") : "??";
         const month = dateObj.month ? months[dateObj.month - 1] : "??";
@@ -101,15 +115,20 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     };
 
     const getStudioInfo = () => {
+        // AniList studio format
         if (anime.studios?.edges && Array.isArray(anime.studios.edges)) {
             return anime.studios.edges.map(edge => edge.node.name).join(", ") || "N/A";
         }
         if (anime.studios?.nodes && Array.isArray(anime.studios.nodes)) {
             return anime.studios.nodes.map(node => node.name).join(", ") || "N/A";
         }
+        
+        // Jikan/normalized studio format
         if (Array.isArray(anime.studios)) {
             return anime.studios.map(s => s.name || s).join(", ") || "N/A";
         }
+        
+        // Single studio
         if (anime.mainStudio) {
             return anime.mainStudio;
         }
@@ -119,9 +138,67 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         return "N/A";
     };
 
+    const getGenres = () => {
+        if (!anime.genres || anime.genres.length === 0) return [];
+        
+        // Handle both AniList format (strings) and Jikan format (objects with name)
+        return anime.genres.map(g => {
+            if (typeof g === 'string') return g;
+            return g.name || g;
+        });
+    };
+
+    const getScore = () => {
+        // Try different score fields
+        return anime.averageScore || 
+               (anime.score ? Math.round(anime.score * 10) : null) ||
+               anime.mean_score ||
+               null;
+    };
+
+    const getEpisodes = () => {
+        return anime.episodes || anime.episodeCount || anime.total_episodes || "?";
+    };
+
+    const getRating = () => {
+        return anime.ageRating || 
+               anime.rating || 
+               (anime.isAdult ? "18+" : "N/A");
+    };
+
+    const getAiredInfo = () => {
+        // For type badge - handle both AniList and Jikan formats
+        if (anime.startDate) {
+            return formatDate(anime.startDate);
+        }
+        if (anime.aired?.from) {
+            return formatDate(anime.aired.from);
+        }
+        return "TBA";
+    };
+
+    const getAiredRange = () => {
+        // For type badge range
+        if (anime.type?.toLowerCase() === "movie" || anime.format?.toLowerCase() === "movie") {
+            return getAiredInfo(); // Just start date for movies
+        }
+        
+        if (anime.startDate && anime.endDate) {
+            return `${formatDate(anime.startDate)} - ${formatDate(anime.endDate)}`;
+        }
+        if (anime.aired?.from && anime.aired?.to) {
+            return `${formatDate(anime.aired.from)} - ${formatDate(anime.aired.to)}`;
+        }
+        if (anime.startDate || anime.aired?.from) {
+            return `${getAiredInfo()} - Ongoing`;
+        }
+        return "TBA";
+    };
+
     const truncateSynopsis = (text, maxLength = 900) => {
         if (!text) return "No description available.";
-        return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+        const cleanText = text.replace(/<[^>]*>/g, '');
+        return cleanText.length > maxLength ? cleanText.substring(0, maxLength) + "..." : cleanText;
     };
 
     const fullSynopsis = anime.synopsis || anime.description || "No description available.";
@@ -163,24 +240,12 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                 <div className="image-overlay"></div>
                             </div>
 
-                            {(anime.type || anime.format || anime.aired?.prop || anime.startDate) && (
+                            {(anime.type || anime.format || getAiredInfo()) && (
                                 <div className="anime-type-badge">
                                     <div className="badge-content">
                                         <div className="badge-row">
                                             <span className="badge-type">{anime.type || anime.format}</span>
-
-                                            {(anime.aired?.prop || anime.startDate) && (
-                                                <span className="badge-date">
-                                                    {anime.startDate
-                                                        ? formatDate(anime.startDate)
-                                                        : anime.aired?.prop?.from
-                                                            ? anime.type?.toLowerCase() === "movie"
-                                                                ? `${formatDate(anime.aired.prop.from)}`
-                                                                : `${formatDate(anime.aired.prop.from)} - ${formatDate(anime.aired.prop.to)}`
-                                                            : "TBA"
-                                                    }
-                                                </span>
-                                            )}
+                                            <span className="badge-date">{getAiredRange()}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -226,22 +291,22 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                         <div className="stat-item">
                                             <span className="stat-label">Episodes :</span>
                                             <span className="stat-value">
-                                                {anime.episodes || anime.episodeCount || "?"}
+                                                {getEpisodes()}
                                             </span>
                                         </div>
                                         <div className="stat-item">
                                             <span className="stat-label">Score :</span>
                                             <span
                                                 className="stat-value score"
-                                                style={{ color: getScoreColor(anime.score || anime.averageScore) }}
+                                                style={{ color: getScoreColor(getScore()) }}
                                             >
-                                                ⭐ {anime.score || anime.averageScore || "N/A"}
+                                                ⭐ {getScore() || "N/A"}
                                             </span>
                                         </div>
                                         <div className="stat-item">
                                             <span className="stat-label">Age Rating :</span>
                                             <span className="stat-value age-rating">
-                                                {anime.ageRating || anime.rating || (anime.isAdult ? "18+" : "N/A")}
+                                                {getRating()}
                                             </span>
                                         </div>
                                     </div>
@@ -284,16 +349,16 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                                 Genres :
                                             </strong>
                                             <div className="genre-tags">
-                                                {anime.genres?.length > 0 ? (
-                                                    anime.genres.map((g, i) => {
-                                                        const bgColor = genreColors[g.name] || genreColors[g] || "linear-gradient(135deg, #666, #888)";
+                                                {getGenres().length > 0 ? (
+                                                    getGenres().map((genre, i) => {
+                                                        const bgColor = genreColors[genre] || "linear-gradient(135deg, #666, #888)";
                                                         return (
                                                             <span
                                                                 key={i}
                                                                 className="genre-pill"
                                                                 style={{ background: bgColor }}
                                                             >
-                                                                {g.name || g}
+                                                                {genre}
                                                             </span>
                                                         );
                                                     })
@@ -317,9 +382,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                             ) : (
                                 <div className="related-tab-wrapper">
                                     <RelatedTab
-                                        animeId={anime.id}
-                                        animeMalId={anime.idMal || anime.mal_id}
+                                        animeId={anime.animeId || anime.id}
+                                        animeMalId={anime.animeMalId || anime.idMal || anime.mal_id}
                                         onSelect={(selectedNormalizedAnime) => {
+                                            console.log("Modal received related anime:", selectedNormalizedAnime);
                                             if (typeof onOpenAnime === "function") {
                                                 onOpenAnime(selectedNormalizedAnime);
                                                 setActiveTab("info"); // Switch back to info tab

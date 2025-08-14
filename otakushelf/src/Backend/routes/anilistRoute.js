@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const router = express.Router();
 
-// ✅ Declare headers only once and reuse
+// Declare headers only once and reuse
 const axiosConfig = {
   headers: {
     'Content-Type': 'application/json',
@@ -15,7 +15,7 @@ const axiosConfig = {
   }
 };
 
-// 🧩 Latest Sequels Route
+// Latest Sequels Route
 router.get("/latest-sequels", async (req, res) => {
   try {
     const query = `
@@ -140,7 +140,7 @@ router.get("/latest-sequels", async (req, res) => {
   }
 });
 
-// 🔥 Trending Anime Route
+// Trending Anime Route
 router.get("/trending", async (req, res) => {
   try {
     const query = `
