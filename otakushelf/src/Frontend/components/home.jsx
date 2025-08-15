@@ -165,23 +165,24 @@ const AnimeHomepage = () => {
         };
     };
 
+    const API_BASE =
+        import.meta.env.MODE === "development"
+            ? "http://localhost:5000"
+            : "https://otakushelf-uuvw.onrender.com";
+
     useEffect(() => {
         const fetchAnnouncements = async () => {
             try {
-                const res = await axios.get("http://localhost:5000/api/anilist/latest-sequels");
-                const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                const normalizedAnnouncements = sorted.slice(0, 10).map(normalizeHeroAnime);
+                const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
+                const sorted = res.data.sort(
+                    (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+                );
+                const normalizedAnnouncements = sorted
+                    .slice(0, 10)
+                    .map(normalizeHeroAnime);
                 setAnnouncements(normalizedAnnouncements);
             } catch (err) {
-                console.error("Failed to fetch dynamic announcements:", err);
-                // Fallback to trending if sequels fail
-                try {
-                    const fallbackRes = await axios.get("http://localhost:5000/api/anilist/trending");
-                    const normalizedFallback = fallbackRes.data.slice(0, 8).map(normalizeHeroAnime);
-                    setAnnouncements(normalizedFallback);
-                } catch (fallbackErr) {
-                    console.error("Failed to fetch fallback announcements:", fallbackErr);
-                }
+                console.error("Error fetching announcements:", err);
             }
         };
         fetchAnnouncements();
@@ -190,7 +191,7 @@ const AnimeHomepage = () => {
     useEffect(() => {
         const fetchAnimeSections = async () => {
             try {
-                const res = await axios.get("http://localhost:5000/api/anime/anime-sections");
+                const res = await axios.get(`${API_BASE}/api/anime/anime-sections`);
                 setTopAiring(res.data.topAiring.map(normalizeGridAnime));
                 setMostWatched(res.data.mostWatched.map(normalizeGridAnime));
                 settopMovies(res.data.topMovies.map(normalizeGridAnime));
