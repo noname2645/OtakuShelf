@@ -137,38 +137,348 @@ body {
   text-align: center;
 }
 
-/* From Uiverse.io by vinodjangid07 */
+/* Enhanced Search Input Styles */
 .InputContainer {
-  width: 180px;
+  width: 200px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: 900px;
+}
+
+.InputContainer.active {
+  transform: scale(1.05);
+  z-index: 1200;
+}
+
+.input {
+  width: 100%;
+  height: 50px;
+  border: none;
+  outline: none;
+  border-radius: 25px;
+  padding: 0 20px 0 50px;
+  background: rgba(30, 30, 30, 0.8);
+  backdrop-filter: blur(10px);
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 2px solid transparent;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
+.input:focus {
+  background: rgba(20, 20, 20, 0.95);
+  border-color: #ff6b6b;
+  box-shadow: 0 8px 30px rgba(255, 107, 107, 0.3), 0 0 0 1px rgba(255, 107, 107, 0.2);
+  transform: translateY(-2px);
+}
+
+.InputContainer::before {
+  content: "🔍";
+  position: absolute;
+  left: 18px;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.6);
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.InputContainer.active::before {
+  color: #ff6b6b;
+  transform: scale(1.1);
+}
+
+/* Enhanced Search Overlay */
+.search-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(15px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 120px;
+  z-index: 1100;
+  animation: overlayFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(15px);
+  }
+}
+
+/* Search Results Header */
+.search-results-header {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 0 20px;
+}
+
+.search-results-title {
+  color: white;
+  font-size: 1.8rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.close-search-button {
+  background: rgba(255, 107, 107, 0.2);
+  border: 2px solid rgba(255, 107, 107, 0.4);
+  border-radius: 50%;
+  width: 50px;
   height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to bottom, rgb(227, 213, 255), rgb(255, 231, 231));
-  border-radius: 30px;
-  overflow: hidden;
+  color: #ff6b6b;
   cursor: pointer;
-  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.075);
-  margin-left: 950px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
-.input {
-  font-family: "Nata Sans", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: 600;
-  font-style: normal;
-  letter-spacing: 1.5px;
-  width: 170px;
-  height: 40px;
-  border: none;
-  outline: none;
-  caret-color: rgb(255, 81, 0);
-  background-color: rgb(255, 255, 255);
-  border-radius: 30px;
-  padding-left: 15px;
-  color: rgb(19, 19, 19);
-  font-size: 15.4px;
+.close-search-button:hover {
+  background: rgba(255, 107, 107, 0.3);
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
 }
+
+/* Loading State */
+.loading-text {
+  color: white;
+  font-size: 1.2rem;
+  margin: 2rem 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loading-text::after {
+  content: "";
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top: 2px solid #ff6b6b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Enhanced Anime Cards Container */
+.anime-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 20px;
+  margin-bottom: 40px;
+}
+
+/* Enhanced Anime Card Styles */
+.search-overlay .anime-card {
+  background: rgba(30, 30, 30, 0.8);
+  border-radius: 15px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  aspect-ratio: 0.7;
+  position: relative;
+  animation: cardSlideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.search-overlay .anime-card:nth-child(1) { animation-delay: 0.1s; }
+.search-overlay .anime-card:nth-child(2) { animation-delay: 0.15s; }
+.search-overlay .anime-card:nth-child(3) { animation-delay: 0.2s; }
+.search-overlay .anime-card:nth-child(4) { animation-delay: 0.25s; }
+.search-overlay .anime-card:nth-child(5) { animation-delay: 0.3s; }
+.search-overlay .anime-card:nth-child(6) { animation-delay: 0.35s; }
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.search-overlay .anime-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  border-color: rgba(255, 107, 107, 0.5);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(255, 107, 107, 0.2);
+}
+
+.search-overlay .anime-card img {
+  width: 100%;
+  height: 80%;
+  object-fit: cover;
+  transition: all 0.4s ease;
+}
+
+.search-overlay .anime-card:hover img {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+.search-overlay .card-title-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.4));
+  backdrop-filter: blur(5px);
+}
+
+.search-overlay .card-title-bottom h3 {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
+  line-height: 1.3;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 8px;
+  padding: 5px;
+  transition: all 0.3s ease;
+}
+
+.search-overlay .anime-card:hover .card-title-bottom h3 {
+  border-color: rgba(255, 107, 107, 0.8);
+  box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+}
+
+/* No Results State */
+.no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+  margin: 3rem 0;
+  animation: fadeIn 0.5s ease;
+}
+
+.no-results-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.no-results h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.no-results p {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 300px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Design for Search */
+@media (max-width: 768px) {
+  .InputContainer {
+    width: 250px;
+  }
+  
+  .search-overlay {
+    padding-top: 100px;
+  }
+  
+  .anime-cards-container {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    padding: 0 15px;
+  }
+  
+  .search-results-title {
+    font-size: 1.4rem;
+  }
+  
+  .close-search-button {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .InputContainer {
+    width: 200px;
+  }
+  
+  .input {
+    height: 45px;
+    padding: 0 15px 0 45px;
+    font-size: 14px;
+  }
+  
+  .InputContainer::before {
+    left: 15px;
+    font-size: 16px;
+  }
+  
+  .anime-cards-container {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    padding: 0 10px;
+  }
+  
+  .search-overlay .card-title-bottom h3 {
+    font-size: 0.8rem;
+    padding: 3px;
+  }
+  
+  .search-results-header {
+    padding: 0 10px;
+  }
+}
+
 
 .auth-buttons {
   display: flex;

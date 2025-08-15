@@ -20,6 +20,10 @@ const AnimeHomepage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAnime, setSelectedAnime] = useState(null);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchLoading, setSearchLoading] = useState(false);
+
 
     useEffect(() => {
         const handleScroll = () => {
@@ -127,18 +131,27 @@ const AnimeHomepage = () => {
             mal_id: anime.mal_id,
 
             // Title
-            title: anime.title || anime.title_english,
-            // title_english: anime.title_english,
+            title: anime.title || anime.title_english || anime.title_japanese,
+            title_english: anime.title_english,
             title_romaji: anime.title,
 
-            // Images
+            // Images - Handle different image structures
             coverImage: {
-                large: anime.images?.jpg?.large_image_url,
-                medium: anime.images?.jpg?.image_url,
-                extraLarge: anime.images?.jpg?.large_image_url
+                large: anime.images?.jpg?.large_image_url || anime.images?.webp?.large_image_url,
+                medium: anime.images?.jpg?.image_url || anime.images?.webp?.image_url,
+                extraLarge: anime.images?.jpg?.large_image_url || anime.images?.webp?.large_image_url
             },
-            images: anime.images,
-            image_url: anime.images?.jpg?.large_image_url,
+            images: anime.images || {
+                jpg: {
+                    image_url: '/placeholder-anime.jpg',
+                    large_image_url: '/placeholder-anime.jpg'
+                },
+                webp: {
+                    image_url: '/placeholder-anime.jpg',
+                    large_image_url: '/placeholder-anime.jpg'
+                }
+            },
+            image_url: anime.images?.jpg?.large_image_url || anime.images?.webp?.large_image_url,
 
             // Details
             status: anime.status,
@@ -157,8 +170,9 @@ const AnimeHomepage = () => {
                 month: new Date(anime.aired.from).getMonth() + 1,
                 day: new Date(anime.aired.from).getDate()
             } : null,
-            popularity: anime.popularity,
+            popularity: anime.popularity || anime.members,
             isAdult: anime.rating?.includes("R") || anime.rating?.includes("Rx"),
+            year: anime.year || (anime.aired?.from ? new Date(anime.aired.from).getFullYear() : null),
 
             // Keep original data
             ...anime
@@ -169,6 +183,7 @@ const AnimeHomepage = () => {
         import.meta.env.MODE === "development"
             ? "http://localhost:5000"
             : "https://otakushelf-uuvw.onrender.com";
+
 
     useEffect(() => {
         const fetchAnnouncements = async () => {
@@ -184,6 +199,7 @@ const AnimeHomepage = () => {
         fetchAnnouncements();
     }, []);
 
+
     useEffect(() => {
         const fetchAnimeSections = async () => {
             try {
@@ -198,10 +214,67 @@ const AnimeHomepage = () => {
         fetchAnimeSections();
     }, []);
 
+
     useEffect(() => {
         const timer = setTimeout(() => setLoading(false), 1500);
         return () => clearTimeout(timer);
     }, []);
+
+
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setSearchResults([]);
+            setSearchLoading(false);
+            return;
+        }
+
+        setSearchLoading(true);
+
+        const fetchSearch = async () => {
+            try {
+                console.log(`Searching for: ${searchQuery}`); // Debug log
+
+                // Try your backend first
+                try {
+                    const backendRes = await axios.get(`${API_BASE}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=12`);
+                    console.log("Backend response:", backendRes.data); // Debug log
+
+                    if (backendRes.data && backendRes.data.length > 0) {
+                        const normalized = backendRes.data.map(normalizeGridAnime);
+                        setSearchResults(normalized);
+                        setSearchLoading(false);
+                        return;
+                    }
+                } catch (backendError) {
+                    console.warn("Backend search failed, trying Jikan directly:", backendError);
+                }
+
+                // Fallback to direct Jikan API call
+                const jikanRes = await axios.get(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(searchQuery)}&limit=12`);
+                console.log("Jikan response:", jikanRes.data); // Debug log
+
+                if (jikanRes.data && jikanRes.data.data) {
+                    const normalized = jikanRes.data.data.map(normalizeGridAnime);
+                    setSearchResults(normalized);
+                } else {
+                    setSearchResults([]);
+                }
+            } catch (err) {
+                console.error("All search methods failed:", err);
+                setSearchResults([]);
+
+                // Show user-friendly error
+                // You could set an error state here if needed
+            } finally {
+                setSearchLoading(false);
+            }
+        };
+
+        // Debounce the search
+        const debounce = setTimeout(fetchSearch, 500); // Increased debounce time
+        return () => clearTimeout(debounce);
+    }, [searchQuery]);
+
 
     const removeDuplicates = (animeArray) => {
         const seen = new Set();
@@ -279,6 +352,18 @@ const AnimeHomepage = () => {
         setIsModalOpen(false);
     };
 
+    const closeSearch = () => {
+        setSearchQuery("");
+        setSearchResults([]);
+        setSearchLoading(false);
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            closeSearch();
+        }
+    };
+
     const renderAnimeGrid = (title, data) => (
         <div className="anime-section-container">
             <h2 className="section-title">{title}</h2>
@@ -339,9 +424,83 @@ const AnimeHomepage = () => {
                             <img src={logo} alt="no img" />
                         </div>
                     </div>
-                    <div class="InputContainer">
-                        <input placeholder="Search.." id="input" class="input" name="text" type="text"></input>
+                    <div className={`InputContainer ${searchQuery ? "active" : ""}`}>
+                        <input
+                            placeholder="Search anime..."
+                            id="input"
+                            className="input"
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                        />
                     </div>
+
+                    {searchQuery && (
+                        <div className="search-overlay" onClick={closeSearch}>
+                            <div className="search-results-header">
+                                <h2 className="search-results-title">
+                                    Search Results for "{searchQuery}"
+                                </h2>
+                                <button
+                                    className="close-search-button"
+                                    onClick={closeSearch}
+                                    aria-label="Close search"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {searchLoading ? (
+                                <p className="loading-text">Searching anime...</p>
+                            ) : (
+                                <div className="anime-cards-container" onClick={(e) => e.stopPropagation()}>
+                                    {searchResults.length > 0 ? (
+                                        searchResults.map((anime, index) => (
+                                            <div
+                                                key={anime.mal_id || anime.id || index}
+                                                className="anime-card"
+                                                onClick={() => {
+                                                    console.log("Opening anime:", anime); // Debug log
+                                                    openModal(anime);
+                                                    closeSearch();
+                                                }}
+                                                style={{
+                                                    animationDelay: `${index * 0.05}s`
+                                                }}
+                                            >
+                                                <img
+                                                    src={
+                                                        anime.images?.webp?.large_image_url ||
+                                                        anime.images?.jpg?.large_image_url ||
+                                                        anime.images?.webp?.image_url ||
+                                                        anime.images?.jpg?.image_url ||
+                                                        '/placeholder-anime.jpg'
+                                                    }
+                                                    alt={anime.title || 'Anime'}
+                                                    loading="lazy"
+                                                    onError={(e) => {
+                                                        e.target.src = '/placeholder-anime.jpg';
+                                                    }}
+                                                />
+                                                <div className="card-title-bottom">
+                                                    <h3>{anime.title || 'Unknown Title'}</h3>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="no-results">
+                                            <div className="no-results-icon">🔍</div>
+                                            <h3>No anime found</h3>
+                                            <p>Try searching with a different title or check your spelling.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+
                     <div className="auth-buttons">
                         <button>
                             <span className="button_login"> Login </span>
