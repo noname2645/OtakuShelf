@@ -165,26 +165,22 @@ const AnimeHomepage = () => {
         };
     };
 
-    const API_BASE =
-        import.meta.env.MODE === "development"
-            ? "http://localhost:5000"
-            : "https://otakushelf-uuvw.onrender.com";
+const API_BASE =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:5000"
+    : "https://otakushelf-uuvw.onrender.com";
 
     useEffect(() => {
-        const fetchAnnouncements = async () => {
-            try {
-                const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
-                const sorted = res.data.sort(
-                    (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-                );
-                const normalizedAnnouncements = sorted
-                    .slice(0, 10)
-                    .map(normalizeHeroAnime);
-                setAnnouncements(normalizedAnnouncements);
-            } catch (err) {
-                console.error("Error fetching announcements:", err);
-            }
-        };
+    const fetchAnnouncements = async () => {
+  try {
+    const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
+    const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    const normalizedAnnouncements = sorted.slice(0, 10).map(normalizeHeroAnime);
+    setAnnouncements(normalizedAnnouncements);
+  } catch (err) {
+    console.error("Error fetching announcements:", err);
+  }
+};
         fetchAnnouncements();
     }, []);
 

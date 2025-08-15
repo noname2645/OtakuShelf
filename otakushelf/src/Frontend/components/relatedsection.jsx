@@ -71,6 +71,10 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
                     seasonYear
                     popularity
                     isAdult
+                    trailer {
+                      id
+                      site
+                    }
                   }
                 }
               }
@@ -194,6 +198,14 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         popularity: node.popularity,
         isAdult: node.isAdult,
         
+        // Trailer data - Enhanced
+        trailer: node.trailer ? {
+          id: node.trailer.id,
+          site: node.trailer.site,
+          youtube_id: node.trailer.site === "youtube" ? node.trailer.id : null,
+        } : null,
+        trailer_video_id: node.trailer?.site === "youtube" ? node.trailer.id : null,
+        
         // Meta
         relationType: edge.relationType,
         source: "anilist",
@@ -257,6 +269,14 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         seasonYear: details.year,
         popularity: details.popularity,
         isAdult: details.rating?.includes("R") || details.rating?.includes("Rx"),
+        
+        // Trailer data - Enhanced for Jikan
+        trailer: details.trailer ? {
+          youtube_id: details.trailer.youtube_id,
+          url: details.trailer.url,
+          embed_url: details.trailer.embed_url,
+        } : null,
+        trailer_video_id: details.trailer?.youtube_id,
         
         // Meta
         relationType: relationName.toUpperCase().replace(/ /g, "_"),

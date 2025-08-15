@@ -1,18 +1,58 @@
-// src/components/Modal.jsx
-import React, { useState, useEffect } from "react";
+// Enhanced Modal Component with Dynamic Title Sizing
+import React, { useState, useEffect, useRef } from "react";
 import "../Stylesheets/modal.css";
 import RelatedTab from "./relatedsection.jsx";
+import Trailer from "./trailer";
 
 const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [synopsisModalOpen, setSynopsisModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState("info"); // 'info' or 'related'
+    const [activeTab, setActiveTab] = useState("info");
+    const [trailerVideoId, setTrailerVideoId] = useState(null);
+    const titleRef = useRef(null);
 
     useEffect(() => {
         setSynopsisModalOpen(false);
         setActiveTab("info");
+        setTrailerVideoId(null);
     }, [anime?.id, anime?.mal_id]);
 
-    // Prevent background scrolling when modal is open - MUST be before early return
+    // Dynamic title class assignment based on length
+    useEffect(() => {
+        if (titleRef.current && anime) {
+            const title = animeTitle;
+            const titleElement = titleRef.current;
+
+            // Remove existing title classes
+            titleElement.classList.remove('long-title', 'very-long-title');
+
+            // Apply classes based on title length
+            if (title.length > 60) {
+                titleElement.classList.add('very-long-title');
+            } else if (title.length > 35) {
+                titleElement.classList.add('long-title');
+            }
+
+            // Alternative: Check actual rendered height
+            setTimeout(() => {
+                const titleHeight = titleElement.scrollHeight;
+                if (titleHeight > 80) {
+                    titleElement.classList.add('very-long-title');
+                } else if (titleHeight > 60) {
+                    titleElement.classList.add('long-title');
+                }
+            }, 100);
+        }
+    }, [anime]);
+
+    // Fetch trailer data when component mounts or anime changes
+    useEffect(() => {
+        if (anime && isOpen) {
+            const videoId = getTrailerVideoId();
+            setTrailerVideoId(videoId);
+        }
+    }, [anime, isOpen]);
+
+    // Prevent background scrolling when modal is open
     useEffect(() => {
         if (isOpen || synopsisModalOpen) {
             document.body.style.overflow = 'hidden';
@@ -20,7 +60,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             document.body.style.overflow = 'unset';
         }
 
-        // Cleanup when component unmounts
         return () => {
             document.body.style.overflow = 'unset';
         };
@@ -46,10 +85,40 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         anime.images?.jpg?.large_image_url ||
         anime.image_url;
 
+    // Enhanced trailer video ID extraction
+    const getTrailerVideoId = () => {
+        if (trailerVideoId && anime && (anime.id === anime.id || anime.mal_id === anime.mal_id)) {
+            return trailerVideoId;
+        }
+
+        if (anime.trailer?.site === "youtube" && anime.trailer?.id) {
+            return anime.trailer.id;
+        }
+
+        if (anime.trailer?.youtube_id) {
+            return anime.trailer.youtube_id;
+        }
+
+        if (anime.trailer?.url && anime.trailer.url.includes('youtube.com/watch?v=')) {
+            const urlParams = new URLSearchParams(anime.trailer.url.split('?')[1]);
+            return urlParams.get('v');
+        }
+
+        if (anime.trailer_video_id) {
+            return anime.trailer_video_id;
+        }
+
+        if (anime.trailer?.embed_url && anime.trailer.embed_url.includes('youtube.com/embed/')) {
+            const videoId = anime.trailer.embed_url.split('youtube.com/embed/')[1].split('?')[0];
+            return videoId;
+        }
+
+        return null;
+    };
+
     const formatDate = (dateObj) => {
         if (!dateObj) return "TBA";
-        
-        // Handle string dates (from Jikan)
+
         if (typeof dateObj === 'string') {
             const date = new Date(dateObj);
             const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -57,8 +126,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             const month = months[date.getMonth()];
             return `${day} ${month} ${date.getFullYear()}`;
         }
-        
-        // Handle AniList date objects
+
         if (!dateObj.year) return "TBA";
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const day = dateObj.day ? String(dateObj.day).padStart(2, "0") : "??";
@@ -84,10 +152,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
     const getScoreColor = (score) => {
         const numScore = parseFloat(score);
-        if (numScore >= 8) return "#4ade80"; // green
-        if (numScore >= 7) return "#fbbf24"; // yellow
-        if (numScore >= 6) return "#fb923c"; // orange
-        return "#ef4444"; // red
+        if (numScore >= 8) return "#4ade80";
+        if (numScore >= 7) return "#fbbf24";
+        if (numScore >= 6) return "#fb923c";
+        return "#ef4444";
     };
 
     const getStatusColor = (status) => {
@@ -115,20 +183,17 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     };
 
     const getStudioInfo = () => {
-        // AniList studio format
         if (anime.studios?.edges && Array.isArray(anime.studios.edges)) {
             return anime.studios.edges.map(edge => edge.node.name).join(", ") || "N/A";
         }
         if (anime.studios?.nodes && Array.isArray(anime.studios.nodes)) {
             return anime.studios.nodes.map(node => node.name).join(", ") || "N/A";
         }
-        
-        // Jikan/normalized studio format
+
         if (Array.isArray(anime.studios)) {
             return anime.studios.map(s => s.name || s).join(", ") || "N/A";
         }
-        
-        // Single studio
+
         if (anime.mainStudio) {
             return anime.mainStudio;
         }
@@ -140,8 +205,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
     const getGenres = () => {
         if (!anime.genres || anime.genres.length === 0) return [];
-        
-        // Handle both AniList format (strings) and Jikan format (objects with name)
+
         return anime.genres.map(g => {
             if (typeof g === 'string') return g;
             return g.name || g;
@@ -149,11 +213,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     };
 
     const getScore = () => {
-        // Try different score fields
-        return anime.averageScore || 
-               (anime.score ? Math.round(anime.score * 10) : null) ||
-               anime.mean_score ||
-               null;
+        return anime.averageScore ||
+            (anime.score ? Math.round(anime.score * 10) : null) ||
+            anime.mean_score ||
+            null;
     };
 
     const getEpisodes = () => {
@@ -161,13 +224,12 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     };
 
     const getRating = () => {
-        return anime.ageRating || 
-               anime.rating || 
-               (anime.isAdult ? "18+" : "N/A");
+        return anime.ageRating ||
+            anime.rating ||
+            (anime.isAdult ? "18+" : "N/A");
     };
 
     const getAiredInfo = () => {
-        // For type badge - handle both AniList and Jikan formats
         if (anime.startDate) {
             return formatDate(anime.startDate);
         }
@@ -178,11 +240,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     };
 
     const getAiredRange = () => {
-        // For type badge range
         if (anime.type?.toLowerCase() === "movie" || anime.format?.toLowerCase() === "movie") {
-            return getAiredInfo(); // Just start date for movies
+            return getAiredInfo();
         }
-        
+
         if (anime.startDate && anime.endDate) {
             return `${formatDate(anime.startDate)} - ${formatDate(anime.endDate)}`;
         }
@@ -195,7 +256,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         return "TBA";
     };
 
-    const truncateSynopsis = (text, maxLength = 900) => {
+    const truncateSynopsis = (text, maxLength = 1000) => {
         if (!text) return "No description available.";
         const cleanText = text.replace(/<[^>]*>/g, '');
         return cleanText.length > maxLength ? cleanText.substring(0, maxLength) + "..." : cleanText;
@@ -210,6 +271,8 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const closeSynopsisModal = () => {
         setSynopsisModalOpen(false);
     };
+
+    const currentTrailerVideoId = trailerVideoId || getTrailerVideoId();
 
     return (
         <>
@@ -227,9 +290,12 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                         <span className="close-icon">✖</span>
                     </button>
 
-                    {/* Title at the top */}
+                    {/* Enhanced Title with dynamic sizing */}
                     <div className="modal-title">
-                        <h2>{animeTitle}</h2>
+                        <h2 ref={titleRef} title={animeTitle}>
+                            {animeTitle}
+                        </h2>
+
                     </div>
 
                     {/* Body with image left and info right */}
@@ -257,14 +323,12 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                 <button
                                     className={`info-btn synopsis-btn ${activeTab === 'info' ? 'active' : ''}`}
                                     onClick={() => {
-                                        if (activeTab === 'related') {
-                                            setActiveTab('info');
-                                        } else {
-                                            handleSynopsisClick();
-                                        }
+
+                                        setActiveTab('info');
+
                                     }}
                                 >
-                                    <span className="btn-icon"></span>
+                                    <span className="btn-icon">📖</span>
                                     <span className="btn-text">Synopsis</span>
                                     <div className="btn-glow"></div>
                                 </button>
@@ -272,27 +336,26 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                     className={`info-btn related-btn ${activeTab === 'related' ? 'active' : ''}`}
                                     onClick={() => setActiveTab(activeTab === 'related' ? 'info' : 'related')}
                                 >
-                                    <span className="btn-icon"></span>
+                                    <span className="btn-icon">🔗</span>
                                     <span className="btn-text">Related</span>
                                     <div className="btn-glow"></div>
                                 </button>
                                 <button
-                                    className={`info-btn trailer-btn ${activeTab === 'info' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('info')}
+                                    className={`info-btn trailer-btn ${activeTab === 'trailer' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab(activeTab === 'trailer' ? 'info' : 'trailer')}
                                 >
-                                    <span className="btn-icon"></span>
+                                    <span className="btn-icon">▶️</span>
                                     <span className="btn-text">Trailer</span>
                                     <div className="btn-glow"></div>
                                 </button>
                             </div>
+
                             {activeTab === 'info' ? (
                                 <>
                                     <div className="stats-grid">
                                         <div className="stat-item">
                                             <span className="stat-label">Episodes :</span>
-                                            <span className="stat-value">
-                                                {getEpisodes()}
-                                            </span>
+                                            <span className="stat-value">{getEpisodes()}</span>
                                         </div>
                                         <div className="stat-item">
                                             <span className="stat-label">Score :</span>
@@ -305,17 +368,15 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                         </div>
                                         <div className="stat-item">
                                             <span className="stat-label">Age Rating :</span>
-                                            <span className="stat-value age-rating">
-                                                {getRating()}
-                                            </span>
+                                            <span className="stat-value age-rating">{getRating()}</span>
                                         </div>
                                     </div>
 
                                     <div className="synopsis-section">
                                         <p className="synopsis-text">
-                                            {truncateSynopsis(fullSynopsis, 800)}
+                                            {truncateSynopsis(fullSynopsis, 1000)}
                                         </p>
-                                        {fullSynopsis.length > 800 && (
+                                        {fullSynopsis.length > 1000 && (
                                             <button className="read-more-btn" onClick={handleSynopsisClick}>
                                                 Read More
                                             </button>
@@ -379,7 +440,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                         </div>
                                     </div>
                                 </>
-                            ) : (
+                            ) : activeTab === 'related' ? (
                                 <div className="related-tab-wrapper">
                                     <RelatedTab
                                         animeId={anime.animeId || anime.id}
@@ -388,14 +449,28 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                             console.log("Modal received related anime:", selectedNormalizedAnime);
                                             if (typeof onOpenAnime === "function") {
                                                 onOpenAnime(selectedNormalizedAnime);
-                                                setActiveTab("info"); // Switch back to info tab
+                                                setActiveTab("info");
+                                                setTrailerVideoId(null);
                                             } else {
                                                 console.warn("onOpenAnime not provided to Modal; selected:", selectedNormalizedAnime);
                                             }
                                         }}
                                     />
                                 </div>
-                            )}
+                            ) : activeTab === 'trailer' ? (
+                                <div className="trailer-tab-wrapper">
+                                    {currentTrailerVideoId ? (
+                                        <Trailer
+                                            key={`trailer-${anime.id || anime.mal_id}-${currentTrailerVideoId}`}
+                                            videoId={currentTrailerVideoId}
+                                        />
+                                    ) : (
+                                        <div className="no-trailer">
+                                            <p>No trailer available for this anime.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 </div>
