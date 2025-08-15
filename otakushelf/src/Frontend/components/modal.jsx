@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "../Stylesheets/modal.css";
 import RelatedTab from "./relatedsection.jsx";
 import Trailer from "./trailer";
+import { TransitionGroup, CSSTransition } from "react-transition-group";
 
 const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [synopsisModalOpen, setSynopsisModalOpen] = useState(false);
