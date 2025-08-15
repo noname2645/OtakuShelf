@@ -227,7 +227,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const getRating = () => {
         return anime.ageRating ||
             anime.rating ||
-            (anime.isAdult ? "18+" : "N/A");
+            (anime.isAdult ? "R - 17+ (violence & profanity)" : "N/A");
     };
 
     const getAiredInfo = () => {
@@ -257,7 +257,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         return "TBA";
     };
 
-    const truncateSynopsis = (text, maxLength = 1000) => {
+    const truncateSynopsis = (text, maxLength = 800) => {
         if (!text) return "No description available.";
         const cleanText = text.replace(/<[^>]*>/g, '');
         return cleanText.length > maxLength ? cleanText.substring(0, maxLength) + "..." : cleanText;
@@ -329,7 +329,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
                                     }}
                                 >
-                                    <span className="btn-icon">📖</span>
+                                    <span className="btn-icon"></span>
                                     <span className="btn-text">Synopsis</span>
                                     <div className="btn-glow"></div>
                                 </button>
@@ -337,7 +337,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                     className={`info-btn related-btn ${activeTab === 'related' ? 'active' : ''}`}
                                     onClick={() => setActiveTab(activeTab === 'related' ? 'info' : 'related')}
                                 >
-                                    <span className="btn-icon">🔗</span>
+                                    <span className="btn-icon"></span>
                                     <span className="btn-text">Related</span>
                                     <div className="btn-glow"></div>
                                 </button>
@@ -345,7 +345,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                     className={`info-btn trailer-btn ${activeTab === 'trailer' ? 'active' : ''}`}
                                     onClick={() => setActiveTab(activeTab === 'trailer' ? 'info' : 'trailer')}
                                 >
-                                    <span className="btn-icon">▶️</span>
+                                    <span className="btn-icon"></span>
                                     <span className="btn-text">Trailer</span>
                                     <div className="btn-glow"></div>
                                 </button>
@@ -375,9 +375,9 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
                                     <div className="synopsis-section">
                                         <p className="synopsis-text">
-                                            {truncateSynopsis(fullSynopsis, 1000)}
+                                            {truncateSynopsis(fullSynopsis, 800)}
                                         </p>
-                                        {fullSynopsis.length > 1000 && (
+                                        {fullSynopsis.length > 800 && (
                                             <button className="read-more-btn" onClick={handleSynopsisClick}>
                                                 Read More
                                             </button>
@@ -387,7 +387,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                     <div className="anime-info-vertical">
                                         <div className="info-row status-row">
                                             <strong className="info-label">
-                                                <span className="label-icon">📊</span>
+                                                <span className="label-icon"></span>
                                                 Status :
                                             </strong>
                                             <span
@@ -407,7 +407,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
                                         <div className="info-row genre-row">
                                             <strong className="info-label">
-                                                <span className="label-icon">🏷️</span>
+                                                <span className="label-icon"></span>
                                                 Genres :
                                             </strong>
                                             <div className="genre-tags">
@@ -432,7 +432,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
                                         <div className="info-row studio-row">
                                             <strong className="info-label">
-                                                <span className="label-icon">🎭</span>
+                                                <span className="label-icon"></span>
                                                 Studio :
                                             </strong>
                                             <span className="info-value studio-value">

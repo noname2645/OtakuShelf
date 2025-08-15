@@ -72,7 +72,7 @@ const AnimeHomepage = () => {
 
             // Title
             title: anime.title,
-            title_english: anime.title?.english,
+            // title_english: anime.title?.english,
             title_romaji: anime.title?.romaji,
 
             // Images
@@ -128,7 +128,7 @@ const AnimeHomepage = () => {
 
             // Title
             title: anime.title || anime.title_english,
-            title_english: anime.title_english,
+            // title_english: anime.title_english,
             title_romaji: anime.title,
 
             // Images
@@ -165,22 +165,22 @@ const AnimeHomepage = () => {
         };
     };
 
-const API_BASE =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:5000"
-    : "https://otakushelf-uuvw.onrender.com";
+    const API_BASE =
+        import.meta.env.MODE === "development"
+            ? "http://localhost:5000"
+            : "https://otakushelf-uuvw.onrender.com";
 
     useEffect(() => {
-    const fetchAnnouncements = async () => {
-  try {
-    const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
-    const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    const normalizedAnnouncements = sorted.slice(0, 10).map(normalizeHeroAnime);
-    setAnnouncements(normalizedAnnouncements);
-  } catch (err) {
-    console.error("Error fetching announcements:", err);
-  }
-};
+        const fetchAnnouncements = async () => {
+            try {
+                const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
+                const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                const normalizedAnnouncements = sorted.slice(0, 10).map(normalizeHeroAnime);
+                setAnnouncements(normalizedAnnouncements);
+            } catch (err) {
+                console.error("Error fetching announcements:", err);
+            }
+        };
         fetchAnnouncements();
     }, []);
 
@@ -339,6 +339,9 @@ const API_BASE =
                             <img src={logo} alt="no img" />
                         </div>
                     </div>
+                    <div class="InputContainer">
+                        <input placeholder="Search.." id="input" class="input" name="text" type="text"></input>
+                    </div>
                     <div className="auth-buttons">
                         <button>
                             <span className="button_login"> Login </span>
@@ -381,11 +384,7 @@ const API_BASE =
                                             <h2 className="anime-title">
                                                 {anime.title?.romaji || anime.title?.english}
                                             </h2>
-                                            {anime.title?.english !== anime.title?.romaji && (
-                                                <h3 className="anime-title-english">
-                                                    {anime.title.english || anime.title.romaji}
-                                                </h3>
-                                            )}
+
                                             <div className="anime-info2">
                                                 <div className="info-item2">
                                                     <span className="info-label">Status</span>
