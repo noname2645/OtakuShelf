@@ -192,6 +192,8 @@ const AnimeHomepage = () => {
                 const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
                 const normalizedAnnouncements = sorted.slice(0, 10).map(normalizeHeroAnime);
                 setAnnouncements(normalizedAnnouncements);
+                localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
+
             } catch (err) {
                 console.error("Error fetching announcements:", err);
             }
@@ -207,6 +209,12 @@ const AnimeHomepage = () => {
                 setTopAiring(res.data.topAiring.map(normalizeGridAnime));
                 setMostWatched(res.data.mostWatched.map(normalizeGridAnime));
                 settopMovies(res.data.topMovies.map(normalizeGridAnime));
+                localStorage.setItem('animeSections', JSON.stringify({
+                    topAiring: res.data.topAiring,
+                    mostWatched: res.data.mostWatched,
+                    topMovies: res.data.topMovies
+                }));
+
             } catch (error) {
                 console.error("Error fetching anime sections:", error);
             }
@@ -216,8 +224,33 @@ const AnimeHomepage = () => {
 
 
     useEffect(() => {
-        const timer = setTimeout(() => setLoading(false), 1500);
-        return () => clearTimeout(timer);
+        const sectionsReady = topAiring.length || mostWatched.length || topmovies.length;
+        if (announcements.length && sectionsReady) {
+            setLoading(false);
+        }
+    }, [announcements.length, topAiring.length, mostWatched.length, topmovies.length]);
+
+    useEffect(() => {
+        // Try cached announcements
+        const cachedAnns = localStorage.getItem('announcements');
+        if (cachedAnns) {
+            try {
+                const parsed = JSON.parse(cachedAnns);
+                if (Array.isArray(parsed) && parsed.length) setAnnouncements(parsed);
+            } catch { }
+        }
+
+        // Try cached sections
+        const cachedSections = localStorage.getItem('animeSections');
+        if (cachedSections) {
+            try {
+                const parsed = JSON.parse(cachedSections);
+                if (parsed?.topAiring?.length) setTopAiring(parsed.topAiring.map(normalizeGridAnime));
+                if (parsed?.mostWatched?.length) setMostWatched(parsed.mostWatched.map(normalizeGridAnime));
+                if (parsed?.topMovies?.length) settopMovies(parsed.topMovies.map(normalizeGridAnime));
+                setLoading(false); // show something immediately
+            } catch { }
+        }
     }, []);
 
 
@@ -530,14 +563,13 @@ const AnimeHomepage = () => {
                                     <div className="slide-content-wrapper">
                                         <div className="slide-image-left">
                                             <img
-                                                src={
-                                                    anime.bannerImage ||
-                                                    anime.coverImage?.extraLarge ||
-                                                    anime.coverImage?.large
-                                                }
+                                                src={anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large}
                                                 alt={anime.title?.romaji || anime.title?.english}
-                                                loading="lazy"
+                                                loading={index === currentSlide ? "eager" : "lazy"}
+                                                fetchpriority={index === currentSlide ? "high" : "auto"}
+                                                decoding="async"
                                             />
+
                                         </div>
                                         <div className="slide-info-right">
                                             <h2 className="anime-title">

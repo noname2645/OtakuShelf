@@ -1,10 +1,9 @@
-// anilistRoute.js
+// routes/anilistRoute.js
 import express from 'express';
 import axios from 'axios';
 
 const router = express.Router();
 
-// Declare headers only once and reuse
 const axiosConfig = {
   headers: {
     'Content-Type': 'application/json',
@@ -15,75 +14,41 @@ const axiosConfig = {
   }
 };
 
-// Latest Sequels Route
+// simple in-memory cache (10 minutes)
+let sequelsCache = { data: null, timestamp: 0 };
+const SEQUELS_TTL = 10 * 60 * 1000;
+
 router.get("/latest-sequels", async (req, res) => {
   try {
+    const now = Date.now();
+    if (sequelsCache.data && now - sequelsCache.timestamp < SEQUELS_TTL) {
+      return res.json(sequelsCache.data);
+    }
+
     const query = `
       query {
-        Page(perPage: 50) {
+        Page(perPage: 20) {
           media(
-            sort: UPDATED_AT_DESC, 
-            type: ANIME, 
-            isAdult: false, 
+            sort: UPDATED_AT_DESC,
+            type: ANIME,
+            isAdult: false,
             status_in: [NOT_YET_RELEASED, RELEASING]
           ) {
             id
-            title {
-              romaji
-              english
-              native
-            }
+            title { romaji english }
             description(asHtml: false)
-            startDate {
-              year
-              month
-              day
-            }
-            endDate {
-              year
-              month
-              day
-            }
+            startDate { year month day }
             status
             season
             seasonYear
             episodes
-            duration
-            genres
             averageScore
             popularity
-            favourites
             bannerImage
-            coverImage {
-              large
-              extraLarge
-              color
-            }
-            studios {
-              nodes {
-                name
-                isAnimationStudio
-              }
-            }
-            relations {
-              edges {
-                relationType
-                node {
-                  id
-                  type
-                  title {
-                    romaji
-                    english
-                  }
-                  status
-                }
-              }
-            }
-            nextAiringEpisode {
-              airingAt
-              episode
-              timeUntilAiring
-            }
+            coverImage { large extraLarge }
+            genres
+            studios { nodes { name isAnimationStudio } }
+            nextAiringEpisode { episode }
             updatedAt
           }
         }
@@ -91,98 +56,26 @@ router.get("/latest-sequels", async (req, res) => {
     `;
 
     const response = await axios.post('https://graphql.anilist.co', { query }, axiosConfig);
+    const media = response.data?.data?.Page?.media || [];
 
-    const allMedia = response.data.data.Page.media;
+    // keep only items with imagery + description
+    const filtered = media.filter(anime =>
+      (anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large) && anime.description
+    ).slice(0, 10);
 
-    const relatedAnime = allMedia.filter((anime) => {
-      const hasAnimeRelations = anime.relations?.edges?.some((rel) =>
-        rel.node.type === "ANIME" &&
-        (rel.relationType === "SEQUEL" ||
-         rel.relationType === "PREQUEL" ||
-         rel.relationType === "SIDE_STORY" ||
-         rel.relationType === "ALTERNATIVE")
-      );
-
-      const isHighlyAnticipated = anime.popularity > 10000 || anime.favourites > 5000;
-      return hasAnimeRelations || isHighlyAnticipated;
-    });
-
-    const sortedAnime = relatedAnime.sort((a, b) => {
-      const timeScore = b.updatedAt - a.updatedAt;
-      const popularityScore = (b.popularity || 0) - (a.popularity || 0);
-      return timeScore * 0.7 + popularityScore * 0.3;
-    });
-
-    const finalResults = sortedAnime
-      .filter(anime =>
-        anime.title?.romaji &&
-        (anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large) &&
-        anime.description
-      )
-      .slice(0, 10);
-
-    const enhancedResults = finalResults.map(anime => ({
+    // add small helpers the frontend expects
+    const enhanced = filtered.map(anime => ({
       ...anime,
-      displayTitle: anime.title.english || anime.title.romaji,
-      hasNextEpisode: !!anime.nextAiringEpisode,
-      mainStudio: anime.studios?.nodes?.find(studio => studio.isAnimationStudio)?.name || 'Unknown Studio',
-      isSequel: anime.relations?.edges?.some(rel => rel.relationType === "SEQUEL"),
-      relatedCount: anime.relations?.edges?.length || 0
+      displayTitle: anime.title?.english || anime.title?.romaji,
+      mainStudio: anime.studios?.nodes?.find(s => s.isAnimationStudio)?.name || 'Unknown Studio',
+      hasNextEpisode: !!anime.nextAiringEpisode
     }));
 
-    res.json(enhancedResults);
+    sequelsCache = { data: enhanced, timestamp: now };
+    res.json(enhanced);
   } catch (err) {
     console.error("Error fetching sequels from AniList:", err.message);
-    res.status(500).json({
-      error: "Failed to fetch latest sequels.",
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-  }
-});
-
-// Trending Anime Route
-router.get("/trending", async (req, res) => {
-  try {
-    const query = `
-      query {
-        Page(perPage: 15) {
-          media(
-            sort: TRENDING_DESC,
-            type: ANIME,
-            isAdult: false
-          ) {
-            id
-            title {
-              romaji
-              english
-            }
-            description(asHtml: false)
-            startDate {
-              year
-              month
-              day
-            }
-            status
-            bannerImage
-            coverImage {
-              large
-              extraLarge
-            }
-            genres
-            averageScore
-            popularity
-            updatedAt
-          }
-        }
-      }
-    `;
-
-    const response = await axios.post('https://graphql.anilist.co', { query }, axiosConfig);
-    const trendingAnime = response.data.data.Page.media.slice(0, 10);
-    res.json(trendingAnime);
-  } catch (err) {
-    console.error("Error fetching trending anime:", err.message);
-    res.status(500).json({ error: "Failed to fetch trending anime." });
+    res.status(500).json({ error: "Failed to fetch latest sequels." });
   }
 });
 

@@ -8,9 +8,9 @@ let cache = { data: null, timestamp: 0 };
 router.get('/anime-sections', async (req, res) => {
   const now = Date.now();
 
-  if (cache.data && now - cache.timestamp < 1000 * 60 * 5) {
-    return res.json(cache.data); // Serve from cache for 5 min
-  }
+ if (cache.data && now - cache.timestamp < 1000 * 60 * 10) {
+  return res.json(cache.data);
+}
 
   try {
     const [airing, watched, movies] = await Promise.all([
