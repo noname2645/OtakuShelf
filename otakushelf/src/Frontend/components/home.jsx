@@ -24,7 +24,8 @@ const AnimeHomepage = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const controllerRef = useRef(null);
-    
+    const [isSearching, setIsSearching] = useState(false);
+
 
 
 
@@ -259,12 +260,14 @@ const AnimeHomepage = () => {
 
     useEffect(() => {
         if (!searchQuery.trim()) {
+            setIsSearching(false);
             setSearchResults([]);
             setSearchLoading(false);
             return;
         }
 
         setSearchLoading(true);
+        setIsSearching(true);
 
         if (controllerRef.current) {
             controllerRef.current.abort();
@@ -382,7 +385,9 @@ const AnimeHomepage = () => {
         setSearchQuery("");
         setSearchResults([]);
         setSearchLoading(false);
+        setIsSearching(false);
     };
+
 
     const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
@@ -461,70 +466,6 @@ const AnimeHomepage = () => {
                             onKeyDown={handleKeyDown}
                         />
                     </div>
-
-                    {searchQuery && (
-                        <div className="search-overlay" onClick={closeSearch}>
-                            <div className="search-results-header">
-                                <h2 className="search-results-title">
-                                    Search Results for "{searchQuery}"
-                                </h2>
-                                <button
-                                    className="close-search-button"
-                                    onClick={closeSearch}
-                                    aria-label="Close search"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-
-                            {searchLoading ? (
-                                <p className="loading-text">Searching anime...</p>
-                            ) : (
-                                <div className="anime-cards-container" onClick={(e) => e.stopPropagation()}>
-                                    {searchResults.length > 0 ? (
-                                        searchResults.map((anime, index) => (
-                                            <div
-                                                key={anime.mal_id || anime.id || index}
-                                                className="anime-card"
-                                                onClick={() => {
-                                                    console.log("Opening anime:", anime); // Debug log
-                                                    openModal(anime);
-                                                    closeSearch();
-                                                }}
-                                                style={{
-                                                    animationDelay: `${index * 0.05}s`
-                                                }}
-                                            >
-                                                <img
-                                                    src={
-                                                        anime.images?.webp?.large_image_url ||
-                                                        anime.images?.jpg?.large_image_url ||
-                                                        anime.images?.webp?.image_url ||
-                                                        anime.images?.jpg?.image_url ||
-                                                        '/placeholder-anime.jpg'
-                                                    }
-                                                    alt={anime.title || 'Anime'}
-                                                    loading="lazy"
-                                                    onError={(e) => {
-                                                        e.target.src = '/placeholder-anime.jpg';
-                                                    }}
-                                                />
-                                                <div className="card-title-bottom">
-                                                    <h3>{anime.title || 'Unknown Title'}</h3>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="no-results">
-                                            <div className="no-results-icon">🔍</div>
-                                            <h3>No anime found</h3>
-                                            <p>Try searching with a different title or check your spelling.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
 
 
                     <div className="auth-buttons">
@@ -644,10 +585,57 @@ const AnimeHomepage = () => {
                     )}
                 </section>
                 <main className="anime-sections">
-                    {renderAnimeGrid("Top Airing", removeDuplicates(topAiring))}
-                    {renderAnimeGrid("Most Watched", removeDuplicates(mostWatched))}
-                    {renderAnimeGrid("Top Movies", removeDuplicates(topmovies))}
+                    {isSearching ? (
+                        <div className="anime-section-container">
+                            <h2 className="section-title">Search Results for "{searchQuery}"</h2>
+                            {searchLoading ? (
+                                <p className="loading-text">Searching anime...</p>
+                            ) : searchResults.length > 0 ? (
+                                <div className="anime-grid">
+                                    {searchResults.map((anime, index) => (
+                                        <div
+                                            key={anime.mal_id || anime.id || index}
+                                            className="anime-card"
+                                            onClick={() => openModal(anime)}
+                                            style={{ "--card-index": index }}
+                                        >
+                                            <img
+                                                src={
+                                                    anime.images?.webp?.large_image_url ||
+                                                    anime.images?.jpg?.large_image_url ||
+                                                    anime.images?.webp?.image_url ||
+                                                    anime.images?.jpg?.image_url ||
+                                                    '/placeholder-anime.jpg'
+                                                }
+                                                alt={anime.title || 'Anime'}
+                                                loading="lazy"
+                                                onError={(e) => {
+                                                    e.target.src = '/placeholder-anime.jpg';
+                                                }}
+                                            />
+                                            <div className="card-title-bottom">
+                                                <h3>{anime.title || 'Unknown Title'}</h3>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="no-results">
+                                    <div className="no-results-icon">🔍</div>
+                                    <h3>No anime found</h3>
+                                    <p>Try searching with a different title or check your spelling.</p>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <>
+                            {renderAnimeGrid("Top Airing", removeDuplicates(topAiring))}
+                            {renderAnimeGrid("Most Watched", removeDuplicates(mostWatched))}
+                            {renderAnimeGrid("Top Movies", removeDuplicates(topmovies))}
+                        </>
+                    )}
                 </main>
+
             </div>
             <Modal
                 isOpen={isModalOpen}
