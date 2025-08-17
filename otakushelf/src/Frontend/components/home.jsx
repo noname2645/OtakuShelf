@@ -23,6 +23,9 @@ const AnimeHomepage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [searchLoading, setSearchLoading] = useState(false);
+    const controllerRef = useRef(null);
+    
+
 
 
     useEffect(() => {
@@ -263,50 +266,40 @@ const AnimeHomepage = () => {
 
         setSearchLoading(true);
 
+        if (controllerRef.current) {
+            controllerRef.current.abort();
+        }
+        controllerRef.current = new AbortController();
+
         const fetchSearch = async () => {
             try {
-                console.log(`Searching for: ${searchQuery}`); // Debug log
+                const res = await axios.get(
+                    `${API_BASE}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=12`,
+                    { signal: controllerRef.current.signal }
+                );
 
-                // Try your backend first
-                try {
-                    const backendRes = await axios.get(`${API_BASE}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=12`);
-                    console.log("Backend response:", backendRes.data); // Debug log
-
-                    if (backendRes.data && backendRes.data.length > 0) {
-                        const normalized = backendRes.data.map(normalizeGridAnime);
-                        setSearchResults(normalized);
-                        setSearchLoading(false);
-                        return;
-                    }
-                } catch (backendError) {
-                    console.warn("Backend search failed, trying Jikan directly:", backendError);
-                }
-
-                // Fallback to direct Jikan API call
-                const jikanRes = await axios.get(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(searchQuery)}&limit=12`);
-                console.log("Jikan response:", jikanRes.data); // Debug log
-
-                if (jikanRes.data && jikanRes.data.data) {
-                    const normalized = jikanRes.data.data.map(normalizeGridAnime);
+                if (res.data && res.data.length > 0) {
+                    const normalized = res.data.map(normalizeGridAnime);
                     setSearchResults(normalized);
                 } else {
                     setSearchResults([]);
                 }
             } catch (err) {
-                console.error("All search methods failed:", err);
-                setSearchResults([]);
-
-                // Show user-friendly error
-                // You could set an error state here if needed
+                if (axios.isCancel(err)) {
+                    console.log("Search request cancelled:", searchQuery);
+                } else {
+                    console.error("Search failed:", err);
+                    setSearchResults([]);
+                }
             } finally {
                 setSearchLoading(false);
             }
         };
 
-        // Debounce the search
-        const debounce = setTimeout(fetchSearch, 500); // Increased debounce time
+        const debounce = setTimeout(fetchSearch, 400); // debounce keystrokes
         return () => clearTimeout(debounce);
     }, [searchQuery]);
+
 
 
     const removeDuplicates = (animeArray) => {
@@ -371,13 +364,13 @@ const AnimeHomepage = () => {
 
     const openModal = (anime) => {
         console.log("Opening anime with data:", anime);
-        setSelectedAnime(anime); // anime is already normalized
+        setSelectedAnime(anime);
         setIsModalOpen(true);
     };
 
     const handleOpenRelatedAnime = (relatedAnime) => {
         console.log("Opening related anime:", relatedAnime);
-        setSelectedAnime(relatedAnime); // relatedAnime is already normalized from RelatedSection
+        setSelectedAnime(relatedAnime);
     };
 
     const closeModal = () => {

@@ -35,4 +35,24 @@ router.get('/anime-sections', async (req, res) => {
   }
 });
 
+
+// Search Anime (Jikan API)
+router.get('/search', async (req, res) => {
+  const q = req.query.q;
+  if (!q) {
+    return res.status(400).json({ error: "Missing search query" });
+  }
+
+  try {
+    const response = await axios.get(
+      `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=12`
+    );
+    res.json(response.data.data); // just forward array
+  } catch (error) {
+    console.error("Jikan search error:", error?.response?.data || error.message);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
+
 export default router;
