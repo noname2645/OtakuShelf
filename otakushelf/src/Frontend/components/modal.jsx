@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from "react";
 import "../Stylesheets/modal.css";
 import RelatedTab from "./relatedsection.jsx";
 import Trailer from "./trailer";
-import { TransitionGroup, CSSTransition } from "react-transition-group";
 
 const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [synopsisModalOpen, setSynopsisModalOpen] = useState(false);
@@ -323,10 +322,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                             <div className="info-buttons">
                                 <button
                                     className={`info-btn synopsis-btn ${activeTab === 'info' ? 'active' : ''}`}
-                                    onClick={() => {
-
-                                        setActiveTab('info');
-
+                                    onClick={() => {setActiveTab('info');
                                     }}
                                 >
                                     <span className="btn-icon"></span>
@@ -335,7 +331,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                 </button>
                                 <button
                                     className={`info-btn related-btn ${activeTab === 'related' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab(activeTab === 'related' ? 'info' : 'related')}
+                                    onClick={() => setActiveTab('related')}
                                 >
                                     <span className="btn-icon"></span>
                                     <span className="btn-text">Related</span>
@@ -343,7 +339,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                 </button>
                                 <button
                                     className={`info-btn trailer-btn ${activeTab === 'trailer' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab(activeTab === 'trailer' ? 'info' : 'trailer')}
+                                    onClick={() => setActiveTab('trailer')}
                                 >
                                     <span className="btn-icon"></span>
                                     <span className="btn-text">Trailer</span>

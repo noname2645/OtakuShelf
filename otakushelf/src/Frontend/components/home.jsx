@@ -28,7 +28,7 @@ const AnimeHomepage = () => {
 
 
 
-
+    // Handle scroll events
     useEffect(() => {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 20);
@@ -37,6 +37,7 @@ const AnimeHomepage = () => {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
+    // Initialize smooth scrolling
     useEffect(() => {
         const lenis = new Lenis({
             lerp: 0.09,
@@ -59,6 +60,8 @@ const AnimeHomepage = () => {
         };
     }, []);
 
+
+    // Fetch announcements
     useEffect(() => {
         if (announcements.length === 0) return;
 
@@ -67,6 +70,7 @@ const AnimeHomepage = () => {
         }, 7000);
         return () => clearInterval(interval);
     }, [announcements.length]);
+
 
     // Normalize hero slider anime data
     const normalizeHeroAnime = (anime) => {
@@ -123,6 +127,7 @@ const AnimeHomepage = () => {
             ...anime
         };
     };
+
 
     // Normalize grid anime data (from Jikan)
     const normalizeGridAnime = (anime) => {
@@ -183,12 +188,14 @@ const AnimeHomepage = () => {
         };
     };
 
+    // API base URL
     const API_BASE =
         import.meta.env.MODE === "development"
             ? "http://localhost:5000"
             : "https://otakushelf-uuvw.onrender.com";
 
 
+    // Fetch announcements
     useEffect(() => {
         const fetchAnnouncements = async () => {
             try {
@@ -206,6 +213,7 @@ const AnimeHomepage = () => {
     }, []);
 
 
+    // Fetch anime sections
     useEffect(() => {
         const fetchAnimeSections = async () => {
             try {
@@ -227,6 +235,7 @@ const AnimeHomepage = () => {
     }, []);
 
 
+    // Check if all sections are ready
     useEffect(() => {
         const sectionsReady = topAiring.length || mostWatched.length || topmovies.length;
         if (announcements.length && sectionsReady) {
@@ -234,6 +243,8 @@ const AnimeHomepage = () => {
         }
     }, [announcements.length, topAiring.length, mostWatched.length, topmovies.length]);
 
+
+    // Try cached data
     useEffect(() => {
         // Try cached announcements
         const cachedAnns = localStorage.getItem('announcements');
@@ -243,6 +254,7 @@ const AnimeHomepage = () => {
                 if (Array.isArray(parsed) && parsed.length) setAnnouncements(parsed);
             } catch { }
         }
+
 
         // Try cached sections
         const cachedSections = localStorage.getItem('animeSections');
@@ -257,7 +269,7 @@ const AnimeHomepage = () => {
         }
     }, []);
 
-
+    // Search functionality
     useEffect(() => {
         if (!searchQuery.trim()) {
             setIsSearching(false);
@@ -304,7 +316,7 @@ const AnimeHomepage = () => {
     }, [searchQuery]);
 
 
-
+    // Remove duplicate anime entries
     const removeDuplicates = (animeArray) => {
         const seen = new Set();
         return animeArray.filter((anime) => {
@@ -314,6 +326,7 @@ const AnimeHomepage = () => {
         });
     };
 
+    // Format date
     const formatDate = (startDate) => {
         if (!startDate || !startDate.year) return "TBA";
         const year = startDate.year;
@@ -322,6 +335,7 @@ const AnimeHomepage = () => {
         return `${year}-${month}-${day}`;
     };
 
+    // Truncate description
     const truncateDescription = (description, maxLength = 250) => {
         if (!description) return "No description available.";
         const cleanText = description.replace(/<[^>]*>/g, '');
@@ -330,15 +344,18 @@ const AnimeHomepage = () => {
             : cleanText;
     };
 
+    // Format genres
     const formatGenres = (genres) => {
         if (!genres || genres.length === 0) return "Unknown";
         return genres.slice(0, 3).map(g => g.name || g).join(", ");
     };
 
+    // Format score
     const formatScore = (score) => {
         return score ? `${score}/100` : "N/A";
     };
 
+    // Format popularity
     const formatPopularity = (popularity) => {
         if (!popularity) return "N/A";
         if (popularity >= 1000000) {
@@ -349,6 +366,7 @@ const AnimeHomepage = () => {
         return popularity.toString();
     };
 
+    // Get status color
     const getStatusColor = (status) => {
         switch (status?.toLowerCase()) {
             case 'releasing':
@@ -365,22 +383,26 @@ const AnimeHomepage = () => {
         }
     };
 
+    // Open modal for selected anime
     const openModal = (anime) => {
         console.log("Opening anime with data:", anime);
         setSelectedAnime(anime);
         setIsModalOpen(true);
     };
 
+    // Open modal for related anime
     const handleOpenRelatedAnime = (relatedAnime) => {
         console.log("Opening related anime:", relatedAnime);
         setSelectedAnime(relatedAnime);
     };
 
+    // Close modal
     const closeModal = () => {
         setSelectedAnime(null);
         setIsModalOpen(false);
     };
 
+    // Close search
     const closeSearch = () => {
         setSearchQuery("");
         setSearchResults([]);
@@ -388,13 +410,14 @@ const AnimeHomepage = () => {
         setIsSearching(false);
     };
 
-
+    // Handle key down events
     const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
             closeSearch();
         }
     };
 
+    // Render anime grid
     const renderAnimeGrid = (title, data) => (
         <div className="anime-section-container">
             <h2 className="section-title">{title}</h2>

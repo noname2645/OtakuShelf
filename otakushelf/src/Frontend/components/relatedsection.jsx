@@ -8,12 +8,15 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Fetch related anime
   useEffect(() => {
     if (!animeId && !animeMalId) {
       setRelated([]);
       setLoading(false);
       return;
     }
+
+    setLoading(true);
 
     const fetchFromAniList = async (id) => {
       try {
@@ -82,11 +85,13 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
           }
         `;
 
+        // Fetch from AniList
         const res = await axios.post("https://graphql.anilist.co", {
           query,
           variables: { id: parseInt(id) },
         });
 
+        // Check if media exists
         const media = res.data.data?.Media;
         if (!media) return [];
 
@@ -97,6 +102,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       }
     };
 
+    // Fetch from Jikan
     const fetchFromJikan = async (malId) => {
       try {
         const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}/relations`);
@@ -107,6 +113,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       }
     };
 
+    // Fetch Jikan anime details
     const fetchJikanAnimeDetails = async (malId) => {
       try {
         const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}`);
@@ -117,6 +124,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       }
     };
 
+    // Check if media exists
     const isSequelOrPrequel = (relationType) => {
       const normalizedType = relationType?.toUpperCase();
       return normalizedType === "SEQUEL" ||
@@ -126,6 +134,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         normalizedType?.includes("PREQUEL");
     };
 
+    // Get the best image URL from a node
     const getBestImageUrl = (node) => {
       return (
         node.coverImage?.extraLarge ||
@@ -139,6 +148,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       );
     };
 
+    // Normalize AniList node
     const normalizeAniListNode = (edge) => {
       const node = edge.node;
       const imageUrl = getBestImageUrl(node);
@@ -212,8 +222,8 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       };
     };
 
+    // Normalize Jikan entry
     const normalizeJikanEntry = async (entry, relationName) => {
-      // Fetch full details for this anime
       const details = await fetchJikanAnimeDetails(entry.mal_id);
       if (!details) return null;
 
@@ -284,8 +294,8 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       };
     };
 
+    // Fetch related anime
     const fetchData = async () => {
-      setLoading(true);
       setError(null);
 
       try {
@@ -339,9 +349,26 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       }
     };
 
+    // Fetch related anime immediately without loading state
     fetchData();
   }, [animeId, animeMalId]);
 
+  // Render skeleton cards
+  const renderSkeletonCards = (count = 3) => {
+    const variants = ['skeleton-variant-1', 'skeleton-variant-2', 'skeleton-variant-3'];
+    return Array.from({ length: count }, (_, index) => (
+      <div key={`skeleton-${index}`} className="anime-item">
+        <div className={`card-skeleton floating ${variants[index % variants.length]}`}>
+          <div className="skeleton-image"></div>
+          <div className="skeleton-content">
+            <div className="skeleton-title"></div>
+          </div>
+        </div>
+      </div>
+    ));
+  };
+
+  // Format the relation type for display
   const formatRelationType = (relationType) => {
     if (!relationType) return "RELATED";
     return relationType
@@ -350,10 +377,33 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       .replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  if (loading) return <div className="loading-message">Loading sequels and prequels...</div>;
+  // Show error if there's an actual error
   if (error) return <div className="error-message">Error: {error}</div>;
-  if (!related.length) return <div className="no-results">No sequels or prequels found.</div>;
 
+  // Show skeleton loading with headers immediately
+  if (loading) {
+    return (
+      <div className="related-container">
+            <div className="relation-group">
+          <h4 style={{ marginTop: "4px" }}>Prequel</h4>
+          <div className="related-grid">
+            {renderSkeletonCards(1)}
+          </div>
+        </div>
+        <div className="relation-group">
+          <h4 style={{ marginTop: "4px" }}>Sequel</h4>
+          <div className="related-grid">
+            {renderSkeletonCards(1)}
+          </div>
+        </div>  
+      </div>
+    );
+  }
+  
+  // Show nothing if no results
+  if (!related.length) return "Sequel or Prequel is not available for this anime";
+
+  // Group related anime by relation type
   const groupedRelated = related.reduce((acc, anime) => {
     const relType = anime.relationType || "RELATED";
     if (!acc[relType]) acc[relType] = [];
@@ -372,6 +422,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
                 <AnimeCard
                   anime={node} // Pass the full normalized object
                   onClick={() => onSelect && onSelect(node)} // Pass the full normalized object
+                  lazy={true} // Enable lazy loading for sequel/prequel cards
                 />
               </div>
             ))}
