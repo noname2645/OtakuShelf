@@ -31,12 +31,14 @@
     color: white;
     border-radius: 24px;
     width: 1350px;
-    height: 700px;
+    height: 690px;
     padding: 10px;
     position: relative;
     animation: modalSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    overflow: hidden; /* Prevent content overflow */
+    overflow: hidden;
+    /* Prevent content overflow */
 }
+
 /* Floating Particles */
 .floating-particles {
     position: absolute;
@@ -152,8 +154,8 @@
 /* Close Button */
 .modal-close {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    /* top: 20px; */
+    right: 10px;
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -170,16 +172,22 @@
     font-size: 0;
 }
 
+.synopsis-modal-overlay .synopsis-modal-content .synopsis-modal-close span {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .modal-close:hover {
     background: rgba(255, 255, 255, 0.2);
-    transform: rotate(90deg) scale(1.1);
+    transform: rotate(90deg);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
 .close-icon {
     font-size: 16px;
     font-weight: bold;
-    transition: transform 0.3s ease;
+    /* transition: transform 0.3s ease; */
 }
 
 /* Modal Title */
@@ -187,7 +195,8 @@
     text-align: center;
     position: relative;
     z-index: 10;
-    min-height: 80px; /* Fixed minimum height for consistent layout */
+    min-height: 80px;
+    /* Fixed minimum height for consistent layout */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -207,23 +216,27 @@
     text-shadow: none;
     letter-spacing: 1px;
     line-height: 1.2;
-    max-height: 80px; /* Limit title height */
+    max-height: 80px;
+    /* Limit title height */
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2; /* Allow maximum 2 lines */
+    -webkit-line-clamp: 2;
+    /* Allow maximum 2 lines */
     text-overflow: ellipsis;
     word-break: break-word;
     hyphens: auto;
 }
 
 .modal-title h2.long-title {
-    font-size: 2.2rem; /* Slightly smaller for long titles */
+    font-size: 2.2rem;
+    /* Slightly smaller for long titles */
     line-height: 1.1;
 }
 
 .modal-title h2.very-long-title {
-    font-size: 1.9rem; /* Even smaller for very long titles */
+    font-size: 1.9rem;
+    /* Even smaller for very long titles */
     line-height: 1.0;
 }
 
@@ -231,10 +244,12 @@
     width: 100px;
     height: 3px;
     background: linear-gradient(90deg, #4facfe, #00f2fe);
-    margin: 10px auto 0; /* Reduced margin */
+    margin: 10px auto 0;
+    /* Reduced margin */
     border-radius: 2px;
     opacity: 0.8;
-    flex-shrink: 0; /* Prevent decoration from shrinking */
+    flex-shrink: 0;
+    /* Prevent decoration from shrinking */
 }
 
 /* Modal Body */
@@ -244,9 +259,12 @@
     flex: 1;
     position: relative;
     z-index: 10;
-    min-height: 0; /* Important: allows flex children to shrink */
-    height: calc(100% - 140px); /* Account for title height and padding */
+    min-height: 0;
+    /* Important: allows flex children to shrink */
+    height: calc(100% - 140px);
+    /* Account for title height and padding */
 }
+
 /* Image Section */
 .modal-image-wrapper {
     flex-shrink: 0;
@@ -345,9 +363,8 @@
 /* Info Buttons */
 .info-buttons {
     display: flex;
-    gap: 12px;
-    /* Smaller gap */
-    flex-shrink: 0;
+    gap: 20px;
+    /* flex-shrink: 0; */
 }
 
 .info-btn {
@@ -363,9 +380,7 @@
     font-weight: 500;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    text-align: center;
 }
 
 .info-btn:hover {
@@ -463,11 +478,12 @@
     border-radius: 16px;
     padding: 20px;
     flex: 1;
-    height: 500px;
     overflow: visible;
     position: relative;
     display: flex;
     flex-direction: column;
+    margin-top: 20px;
+
 }
 
 .synopsis-text {
@@ -517,10 +533,10 @@
     border: none;
     border-radius: 20px;
     padding: 8px 16px;
-    color: white;
+    color: rgb(18, 1, 74);
     font-family: "Inter", sans-serif;
     font-size: 0.85rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     margin-top: 12px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -529,17 +545,17 @@
 }
 
 .read-more-btn:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
     background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
 }
 
 /* Info Vertical Section */
 .anime-info-vertical {
+    margin-top: 20px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    /* Smaller gap */
     flex-shrink: 0;
 }
 
@@ -548,7 +564,6 @@
     align-items: flex-start;
     gap: 15px;
     min-height: auto;
-    /* Remove fixed heights */
 }
 
 .info-label {
@@ -561,7 +576,6 @@
     color: white;
     min-width: 120px;
     padding: 6px 9px;
-    /* More compact padding */
 }
 
 .label-icon {
@@ -576,7 +590,6 @@
     font-weight: 500;
     color: rgba(255, 255, 255, 0.9);
     padding: 6px 9px;
-    /* More compact padding */
     word-wrap: break-word;
 }
 
@@ -604,16 +617,13 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    /* Smaller gap */
 }
 
 .genre-pill {
     padding: 6px 14px;
-    /* More compact */
     border-radius: 18px;
     font-family: "JetBrains Mono", monospace;
     font-size: 0.8rem;
-    /* Slightly smaller */
     font-weight: 500;
     color: white;
     box-shadow:
@@ -784,22 +794,25 @@
         opacity: 1;
     }
 }
+
 @keyframes pulse-glow {
-  0% {
-    opacity: 0.5; 
-    transform: scale(1);
-    box-shadow: 0 0 10px #00f; /* Initial blue glow */ 
-  }
-  50% {
-    opacity: 1.5; 
-    transform: scale(1.2); 
-    box-shadow: 0 0 20px #00f, 0 0 30px #00f; /* Intensified glow */
-  }
-  100% {
-    opacity: 0.5; 
-    transform: scale(1);
-    box-shadow: 0 0 10px #00f; /* Back to initial glow */
-  }
+    0% {
+        opacity: 0.5;
+        transform: scale(1);
+        box-shadow: 0 0 10px #00f;
+    }
+
+    50% {
+        opacity: 1.5;
+        transform: scale(1.2);
+        box-shadow: 0 0 20px #00f, 0 0 30px #00f;
+    }
+
+    100% {
+        opacity: 0.5;
+        transform: scale(1);
+        box-shadow: 0 0 10px #00f;
+    }
 }
 
 /* Responsive Design */
@@ -849,10 +862,8 @@
     .stats-grid {
         display: flex;
         flex-wrap: nowrap;
-        /* keep them in a row */
         gap: 10px;
         overflow-x: auto;
-        /* scroll if needed */
     }
 
     .info-row {
@@ -891,12 +902,12 @@
     .modal-title {
         min-height: 70px;
     }
-    
+
     .modal-title h2 {
         font-size: 2.2rem;
         max-height: 70px;
     }
-    
+
     .modal-body {
         height: calc(100% - 130px);
     }
@@ -907,25 +918,25 @@
         min-height: 60px;
         margin-bottom: 20px;
     }
-    
+
     .modal-title h2 {
         font-size: 1.8rem;
         max-height: 60px;
         -webkit-line-clamp: 2;
     }
-    
+
     .modal-title h2.long-title {
         font-size: 1.6rem;
     }
-    
+
     .modal-title h2.very-long-title {
         font-size: 1.4rem;
     }
-    
+
     .modal-body {
         height: calc(100% - 110px);
     }
-    
+
     .title-decoration {
         margin: 8px auto 0;
     }
@@ -936,21 +947,21 @@
         min-height: 50px;
         margin-bottom: 15px;
     }
-    
+
     .modal-title h2 {
         font-size: 1.5rem;
         max-height: 50px;
         letter-spacing: 0.5px;
     }
-    
+
     .modal-title h2.long-title {
         font-size: 1.3rem;
     }
-    
+
     .modal-title h2.very-long-title {
         font-size: 1.2rem;
     }
-    
+
     .modal-body {
         height: calc(100% - 95px);
     }

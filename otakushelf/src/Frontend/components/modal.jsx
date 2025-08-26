@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "../Stylesheets/modal.css";
 import RelatedTab from "./relatedsection.jsx";
 import Trailer from "./trailer";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [synopsisModalOpen, setSynopsisModalOpen] = useState(false);
@@ -295,7 +296,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                         <h2 ref={titleRef} title={animeTitle}>
                             {animeTitle}
                         </h2>
-
                     </div>
 
                     {/* Body with image left and info right */}
@@ -322,8 +322,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                             <div className="info-buttons">
                                 <button
                                     className={`info-btn synopsis-btn ${activeTab === 'info' ? 'active' : ''}`}
-                                    onClick={() => {setActiveTab('info');
-                                    }}
+                                    onClick={() => setActiveTab('info')}
                                 >
                                     <span className="btn-icon"></span>
                                     <span className="btn-text">Synopsis</span>
@@ -347,127 +346,155 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                 </button>
                             </div>
 
-                            {activeTab === 'info' ? (
-                                <>
-                                    <div className="stats-grid">
-                                        <div className="stat-item">
-                                            <span className="stat-label">Episodes :</span>
-                                            <span className="stat-value">{getEpisodes()}</span>
-                                        </div>
-                                        <div className="stat-item">
-                                            <span className="stat-label">Score :</span>
-                                            <span
-                                                className="stat-value score"
-                                                style={{ color: getScoreColor(getScore()) }}
-                                            >
-                                                ⭐ {getScore() || "N/A"}
-                                            </span>
-                                        </div>
-                                        <div className="stat-item">
-                                            <span className="stat-label">Age Rating :</span>
-                                            <span className="stat-value age-rating">{getRating()}</span>
-                                        </div>
-                                    </div>
+                            <div className="tab-content">
+                                <AnimatePresence mode="wait">
+                                    {activeTab === "info" && (
+                                        <motion.div
+                                            key="info"
+                                            initial={{ opacity: 0, y: 30 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, x: -30 }}
+                                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                                        >
+                                            <div className="stats-grid">
+                                                <div className="stat-item">
+                                                    <span className="stat-label">Episodes :</span>
+                                                    <span className="stat-value">{getEpisodes()}</span>
+                                                </div>
+                                                <div className="stat-item">
+                                                    <span className="stat-label">Score :</span>
+                                                    <span
+                                                        className="stat-value score"
+                                                        style={{ color: getScoreColor(getScore()) }}
+                                                    >
+                                                        ⭐ {getScore() || "N/A"}
+                                                    </span>
+                                                </div>
+                                                <div className="stat-item">
+                                                    <span className="stat-label">Age Rating :</span>
+                                                    <span className="stat-value age-rating">{getRating()}</span>
+                                                </div>
+                                            </div>
 
-                                    <div className="synopsis-section">
-                                        <p className="synopsis-text">
-                                            {truncateSynopsis(fullSynopsis, 800)}
-                                        </p>
-                                        {fullSynopsis.length > 800 && (
-                                            <button className="read-more-btn" onClick={handleSynopsisClick}>
-                                                Read More
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="anime-info-vertical">
-                                        <div className="info-row status-row">
-                                            <strong className="info-label">
-                                                <span className="label-icon"></span>
-                                                Status :
-                                            </strong>
-                                            <span
-                                                className="info-value status-value"
-                                                style={{ color: getStatusColor(anime.status) }}
-                                            >
-                                                <span
-                                                    className="status-indicator"
-                                                    style={{
-                                                        backgroundColor: getStatusColor(anime.status),
-                                                        boxShadow: `0 0 10px ${getStatusColor(anime.status)}`
-                                                    }}
-                                                ></span>
-                                                {anime.status || "Unknown"}
-                                            </span>
-                                        </div>
-
-                                        <div className="info-row genre-row">
-                                            <strong className="info-label">
-                                                <span className="label-icon"></span>
-                                                Genres :
-                                            </strong>
-                                            <div className="genre-tags">
-                                                {getGenres().length > 0 ? (
-                                                    getGenres().map((genre, i) => {
-                                                        const bgColor = genreColors[genre] || "linear-gradient(135deg, #666, #888)";
-                                                        return (
-                                                            <span
-                                                                key={i}
-                                                                className="genre-pill"
-                                                                style={{ background: bgColor }}
-                                                            >
-                                                                {genre}
-                                                            </span>
-                                                        );
-                                                    })
-                                                ) : (
-                                                    <span className="genre-pill no-genre">N/A</span>
+                                            <div className="synopsis-section">
+                                                <p className="synopsis-text">
+                                                    {truncateSynopsis(fullSynopsis, 800)}
+                                                </p>
+                                                {fullSynopsis.length > 800 && (
+                                                    <button className="read-more-btn" onClick={handleSynopsisClick}>
+                                                        Read More
+                                                    </button>
                                                 )}
                                             </div>
-                                        </div>
 
-                                        <div className="info-row studio-row">
-                                            <strong className="info-label">
-                                                <span className="label-icon"></span>
-                                                Studio :
-                                            </strong>
-                                            <span className="info-value studio-value">
-                                                {getStudioInfo()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : activeTab === 'related' ? (
-                                <div className="related-tab-wrapper">
-                                    <RelatedTab
-                                        animeId={anime.animeId || anime.id}
-                                        animeMalId={anime.animeMalId || anime.idMal || anime.mal_id}
-                                        onSelect={(selectedNormalizedAnime) => {
-                                            console.log("Modal received related anime:", selectedNormalizedAnime);
-                                            if (typeof onOpenAnime === "function") {
-                                                onOpenAnime(selectedNormalizedAnime);
-                                                setActiveTab("info");
-                                                setTrailerVideoId(null);
-                                            } else {
-                                                console.warn("onOpenAnime not provided to Modal; selected:", selectedNormalizedAnime);
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            ) : activeTab === 'trailer' ? (
-                                <div className="trailer-tab-wrapper">
-                                    {currentTrailerVideoId ? (
-                                        <Trailer
-                                            key={`trailer-${anime.id || anime.mal_id}-${currentTrailerVideoId}`}
-                                            videoId={currentTrailerVideoId}
-                                        />
-                                    ) : (
-                                        <div className="no-trailer">
-                                            <p>No trailer available for this anime.</p>
-                                        </div>
+                                            <div className="anime-info-vertical">
+                                                <div className="info-row status-row">
+                                                    <strong className="info-label">
+                                                        <span className="label-icon"></span>
+                                                        Status :
+                                                    </strong>
+                                                    <span
+                                                        className="info-value status-value"
+                                                        style={{ color: getStatusColor(anime.status) }}
+                                                    >
+                                                        <span
+                                                            className="status-indicator"
+                                                            style={{
+                                                                backgroundColor: getStatusColor(anime.status),
+                                                                boxShadow: `0 0 10px ${getStatusColor(anime.status)}`
+                                                            }}
+                                                        ></span>
+                                                        {anime.status || "Unknown"}
+                                                    </span>
+                                                </div>
+
+                                                <div className="info-row genre-row">
+                                                    <strong className="info-label">
+                                                        <span className="label-icon"></span>
+                                                        Genres :
+                                                    </strong>
+                                                    <div className="genre-tags">
+                                                        {getGenres().length > 0 ? (
+                                                            getGenres().map((genre, i) => {
+                                                                const bgColor = genreColors[genre] || "linear-gradient(135deg, #666, #888)";
+                                                                return (
+                                                                    <span
+                                                                        key={i}
+                                                                        className="genre-pill"
+                                                                        style={{ background: bgColor }}
+                                                                    >
+                                                                        {genre}
+                                                                    </span>
+                                                                );
+                                                            })
+                                                        ) : (
+                                                            <span className="genre-pill no-genre">N/A</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="info-row studio-row">
+                                                    <strong className="info-label">
+                                                        <span className="label-icon"></span>
+                                                        Studio :
+                                                    </strong>
+                                                    <span className="info-value studio-value">
+                                                        {getStudioInfo()}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
                                     )}
-                                </div>
-                            ) : null}
+
+                                    {activeTab === 'related' && (
+                                        <motion.div
+                                            key="related"
+                                            initial={{ opacity: 0, x: 0 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, x: -30 }}
+                                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                                            className="related-tab-wrapper"
+                                        >
+                                            <RelatedTab
+                                                animeId={anime.animeId || anime.id}
+                                                animeMalId={anime.animeMalId || anime.idMal || anime.mal_id}
+                                                onSelect={(selectedNormalizedAnime) => {
+                                                    console.log("Modal received related anime:", selectedNormalizedAnime);
+                                                    if (typeof onOpenAnime === "function") {
+                                                        onOpenAnime(selectedNormalizedAnime);
+                                                        setActiveTab("info");
+                                                        setTrailerVideoId(null);
+                                                    } else {
+                                                        console.warn("onOpenAnime not provided to Modal; selected:", selectedNormalizedAnime);
+                                                    }
+                                                }}
+                                            />
+                                        </motion.div>
+                                    )}
+
+                                    {activeTab === 'trailer' && (
+                                        <motion.div
+                                            key="trailer"
+                                            initial={{ opacity: 0, x: 0 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, x: -30 }}
+                                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                                            className="trailer-tab-wrapper"
+                                        >
+                                            {currentTrailerVideoId ? (
+                                                <Trailer
+                                                    key={`trailer-${anime.id || anime.mal_id}-${currentTrailerVideoId}`}
+                                                    videoId={currentTrailerVideoId}
+                                                />
+                                            ) : (
+                                                <div className="no-trailer">
+                                                    <p>No trailer available for this anime.</p>
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
                     </div>
                 </div>
