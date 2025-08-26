@@ -60,7 +60,7 @@ router.get("/latest-sequels", async (req, res) => {
 
     // keep only items with imagery + description
     const filtered = media.filter(anime =>
-      (anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large) && anime.description
+      (anime.coverImage?.extraLarge || anime.coverImage?.large) && anime.description
     ).slice(0, 10);
 
     // add small helpers the frontend expects

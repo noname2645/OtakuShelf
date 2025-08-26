@@ -80,7 +80,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
     // Universal image fetch (AniList + Jikan)
     const animeImage =
-        anime.bannerImage ||
         anime.coverImage?.extraLarge ||
         anime.coverImage?.large ||
         anime.images?.jpg?.large_image_url ||

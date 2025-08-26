@@ -140,10 +140,6 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         node.coverImage?.extraLarge ||
         node.coverImage?.large ||
         node.coverImage?.medium ||
-        node.images?.jpg?.large_image_url ||
-        node.images?.webp?.large_image_url ||
-        node.images?.jpg?.image_url ||
-        node.images?.webp?.image_url ||
         null
       );
     };
@@ -176,18 +172,6 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
           medium: node.coverImage?.medium || imageUrl,
           extraLarge: node.coverImage?.extraLarge || imageUrl,
         },
-        bannerImage: node.bannerImage,
-        images: {
-          jpg: { 
-            large_image_url: imageUrl, 
-            image_url: imageUrl 
-          },
-          webp: { 
-            large_image_url: imageUrl, 
-            image_url: imageUrl 
-          }
-        },
-        image_url: imageUrl,
         
         // Details
         status: node.status,
@@ -278,7 +262,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         season: details.season,
         seasonYear: details.year,
         popularity: details.popularity,
-        isAdult: details.rating?.includes("R") || details.rating?.includes("Rx"),
+        isAdult: details.rating?.includes("R") || details.rating?.includes("R"),
         
         // Trailer data - Enhanced for Jikan
         trailer: details.trailer ? {

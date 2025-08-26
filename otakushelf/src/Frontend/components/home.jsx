@@ -71,62 +71,60 @@ const AnimeHomepage = () => {
         return () => clearInterval(interval);
     }, [announcements.length]);
 
-
-    // Normalize hero slider anime data
+    // Normalize hero anime data
     const normalizeHeroAnime = (anime) => {
         return {
             // IDs
             id: anime.id,
-            animeId: anime.id, // AniList ID
-            animeMalId: anime.idMal || anime.mal_id || null, // MAL ID
-            idMal: anime.idMal || anime.mal_id,
-            mal_id: anime.idMal || anime.mal_id,
+            animeId: anime.id,
+            animeMalId: anime.idMal || null,
 
-            // Title
-            title: anime.title,
-            // title_english: anime.title?.english,
-            title_romaji: anime.title?.romaji,
+            // Titles
+            title: {
+                romaji: anime.title?.romaji || null,
+                english: anime.title?.english || null,
+                native: anime.title?.native || null,
+            },
 
-            // Images
-            coverImage: anime.coverImage,
-            bannerImage: anime.bannerImage,
+            coverImage: {
+                extraLarge: anime.coverImage?.extraLarge || null,
+                large: anime.coverImage?.large || null,
+                medium: anime.coverImage?.medium || null,
+            },
+
+
             images: {
                 jpg: {
                     large_image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
-                    image_url: anime.coverImage?.large || anime.coverImage?.medium
+                    image_url: anime.coverImage?.large || anime.coverImage?.medium,
                 },
                 webp: {
                     large_image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
-                    image_url: anime.coverImage?.large || anime.coverImage?.medium
-                }
+                    image_url: anime.coverImage?.large || anime.coverImage?.medium,
+                },
             },
             image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
 
             // Details
-            status: anime.status,
-            description: anime.description,
-            synopsis: anime.description,
-            episodes: anime.episodes,
-            episodeCount: anime.episodes,
-            averageScore: anime.averageScore,
-            score: anime.averageScore,
-            format: anime.format,
-            type: anime.format,
-            genres: anime.genres,
-            studios: anime.studios,
-            startDate: anime.startDate,
-            endDate: anime.endDate,
-            season: anime.season,
-            seasonYear: anime.seasonYear,
-            popularity: anime.popularity,
-            isAdult: anime.isAdult,
-            mainStudio: anime.mainStudio,
-            nextAiringEpisode: anime.nextAiringEpisode,
+            status: anime.status || null,
+            description: anime.description || null,
+            episodes: anime.episodes || null,
+            averageScore: anime.averageScore || null,
+            format: anime.format || null,
+            genres: anime.genres || [],
+            studios: anime.studios?.nodes?.map(s => s.name) || [],
+            startDate: anime.startDate || null,
+            endDate: anime.endDate || null,
+            season: anime.season || null,
+            seasonYear: anime.seasonYear || null,
+            popularity: anime.popularity || null,
+            isAdult: anime.isAdult || false,
+            nextAiringEpisode: anime.nextAiringEpisode || null,
 
-            // Keep original data
-            ...anime
+            ...anime,
         };
     };
+
 
 
     // Normalize grid anime data (from Jikan)
@@ -264,7 +262,7 @@ const AnimeHomepage = () => {
                 if (parsed?.topAiring?.length) setTopAiring(parsed.topAiring.map(normalizeGridAnime));
                 if (parsed?.mostWatched?.length) setMostWatched(parsed.mostWatched.map(normalizeGridAnime));
                 if (parsed?.topMovies?.length) settopMovies(parsed.topMovies.map(normalizeGridAnime));
-                setLoading(false); // show something immediately
+                setLoading(false);
             } catch { }
         }
     }, []);
@@ -520,12 +518,13 @@ const AnimeHomepage = () => {
                                     <div className="slide-content-wrapper">
                                         <div className="slide-image-left">
                                             <img
-                                                src={anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large}
+                                                src={anime.coverImage?.extraLarge || anime.coverImage?.large || anime.coverImage?.medium}
                                                 alt={anime.title?.romaji || anime.title?.english}
                                                 loading={index === currentSlide ? "eager" : "lazy"}
                                                 fetchpriority={index === currentSlide ? "high" : "auto"}
                                                 decoding="async"
                                             />
+
 
                                         </div>
                                         <div className="slide-info-right">
