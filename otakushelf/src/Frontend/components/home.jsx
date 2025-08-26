@@ -2,14 +2,15 @@ import { React, useState, useEffect, useRef } from 'react';
 import { Play, Star, Calendar, Users } from 'lucide-react';
 import "../Stylesheets/home.css";
 import axios from "axios";
-import sidebar from "../images/sidebar.png"
 import logo from "../images/logo.png"
 import Lenis from '@studio-freight/lenis'
 import Modal from "../components/modal.jsx";
+import list from "../images/list.png"
+import search from "../images/search.png"
+import { Link } from 'react-router-dom';
 
 
 const AnimeHomepage = () => {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
     const [mostWatched, setMostWatched] = useState([]);
@@ -454,23 +455,8 @@ const AnimeHomepage = () => {
 
     return (
         <div className="homepage">
-            <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-                <div className="sidebar-content">
-                    <div className="sidebar-header"></div>
-                    <nav className="sidebar-nav">
-                        <a href="#" className="nav-item"><Play size={20} /> Home</a>
-                        <a href="#" className="nav-item"><Star size={20} /> Top Rated</a>
-                        <a href="#" className="nav-item"><Calendar size={20} /> Seasonal</a>
-                        <a href="#" className="nav-item"><Users size={20} /> Popular</a>
-                    </nav>
-                </div>
-            </div>
-
-            {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
-
             <div className="main-content">
                 <header className={`header ${isScrolled ? "scrolled" : ""}`}>
-                    <img id="sidebar" src={sidebar} onClick={() => setSidebarOpen(true)} alt="" />
                     <div className="header-center">
                         <div className="logo">
                             <img src={logo} alt="no img" />
@@ -478,7 +464,7 @@ const AnimeHomepage = () => {
                     </div>
                     <div className={`InputContainer ${searchQuery ? "active" : ""}`}>
                         <input
-                            placeholder="Search anime..."
+                            placeholder="Search anime"
                             id="input"
                             className="input"
                             type="text"
@@ -490,14 +476,55 @@ const AnimeHomepage = () => {
 
 
                     <div className="auth-buttons">
+                        <Link to="/login">
                         <button>
                             <span className="button_login"> Login </span>
                         </button>
+                        </Link>
+                        <Link to="/register">
                         <button>
                             <span className="button_register"> Register </span>
                         </button>
+                        </Link>
                     </div>
                 </header>
+
+                <div className="bottom-button-container">
+                    {/* Home Button */}
+                    <button className="button">
+                        <div className="button-content">
+                            <Link to="/list">
+                            <img className="button-icon" src={list} alt="Home"/>
+                            </Link>
+                            <span className="button-text">List</span>
+                            
+                        </div>
+                    </button>
+
+                    {/* Search Button */}
+                    <button className="button">
+                        <div className="button-content">
+                            <img className="button-icon" src={search} alt="Search" />
+                            <span className="button-text">Advanced search</span>
+                        </div>
+                    </button>
+
+                    {/* Profile Button */}
+                    <button className="button">
+                        <div className="button-content">
+                            <img className="button-icon" src={list} alt="Profile" />
+                            <span className="button-text">Profile</span>
+                        </div>
+                    </button>
+
+                    {/* Cart Button */}
+                    <button className="button">
+                        <div className="button-content">
+                            <img className="button-icon" src={list} alt="Cart" />
+                            <span className="button-text">Cart</span>
+                        </div>
+                    </button>
+                </div>
 
                 <section className="hero-slider">
                     <div className="slider-container">
