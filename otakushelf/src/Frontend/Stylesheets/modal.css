@@ -308,9 +308,11 @@
 .anime-type-badge {
     position: absolute;
     bottom: 10px;
-    left: 20px;
-    right: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 15;
+    width: 380px;
+    text-align: center; 
 }
 
 .badge-content {
@@ -327,7 +329,6 @@
     justify-content: center;
     align-items: center;
     gap: 15px;
-    width: 100%;
 }
 
 .badge-type {
@@ -354,10 +355,8 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
-    /* Slightly smaller gap */
     min-height: 0;
     height: 100%;
-    /* Use full available height */
 }
 
 /* Info Buttons */

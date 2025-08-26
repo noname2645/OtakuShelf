@@ -1,0 +1,52 @@
+.anime-list-container {
+  width: 80%;
+  margin: 2rem auto;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Tabs container */
+.tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 0.5rem;
+}
+
+/* Tab buttons */
+.tabs button {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: #555;
+  transition: color 0.2s, border-bottom 0.2s;
+}
+
+/* Active tab */
+.tabs button.active {
+  color: #111;
+  border-bottom: 3px solid #4e73df; /* bluish accent */
+}
+
+/* Tab content area */
+.anime-cards-display {
+  padding: 1rem;
+  background: #fafafa;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Example styling for each tab’s content */
+.tab-content h2 {
+  margin-bottom: 0.5rem;
+  font-size: 1.3rem;
+  color: #333;
+}
+
+.tab-content p {
+  font-size: 0.95rem;
+  color: #666;
+}
