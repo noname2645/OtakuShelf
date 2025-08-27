@@ -14,6 +14,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
@@ -24,39 +25,6 @@ const allowedOrigins = [
   "http://localhost:5173", // vite
   "https://yourfrontenddomain.com"
 ];
-
-// Express session configuration - BEFORE routes
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/your-db-name'
-  }),
-  cookie: {
-    secure: false, // Set to true if using HTTPS
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'lax' // Important for cross-origin requests
-  }
-}));
-
-// Body parsing middleware
-
-app.use(express.urlencoded({ extended: true }));
-
-// Auth middleware
-const isAuthenticated = (req, res, next) => {
-  console.log('Auth middleware - Session ID:', req.sessionID);
-  console.log('Auth middleware - Session:', req.session);
-  console.log('Auth middleware - User:', req.session?.user);
-  
-  if (req.session && req.session.user) {
-    return next();
-  } else {
-    return res.status(401).json({ message: 'Not authenticated' });
-  }
-};
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -177,10 +145,6 @@ app.post("/auth/register", async (req, res) => {
     });
 
     await newUser.save();
-     req.session.user = {
-      id: newUser._id,
-      email: newUser.email,
-    };
     res.json({ message: "Registration successful!" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -233,8 +197,6 @@ app.post("/auth/login", async (req, res) => {
 
 
 
-
-
 // Trigger Google login
 app.get("/auth/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
@@ -248,7 +210,6 @@ app.get("/auth/google/callback",
     res.redirect("http://localhost:3000/home");
   }
 );
-
 // Check current user
 app.get("/auth/me", (req, res) => {
   console.log("Auth me called, isAuthenticated:", req.isAuthenticated());
@@ -269,7 +230,6 @@ app.get("/auth/me", (req, res) => {
 });
 
 
-
 // Logout
 app.get("/auth/logout", (req, res) => {
   req.logout((err) => {
@@ -287,11 +247,12 @@ app.get("/auth/logout", (req, res) => {
   });
 });
 
+
 // =======================
 // Anime List Routes
 // =======================
 
-// Get user’s anime list
+// Get userâ€™s anime list
 app.get("/api/list/:userId", async (req, res) => {
   try {
     const list = await AnimeList.findOne({ userId: req.params.userId });
@@ -341,5 +302,5 @@ server.keepAliveTimeout = 65 * 1000;
 server.headersTimeout = 66 * 1000;
 
 server.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
