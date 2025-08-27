@@ -60,6 +60,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String }, // optional (only for local accounts)
   authType: { type: String, enum: ["local", "google"], required: true },
+  photo: { type: String }, // ✅ Add this field for profile pictures
+  name: { type: String }, // ✅ Also add name field for Google users
 });
 const User = mongoose.model("User", userSchema);
 
@@ -91,6 +93,8 @@ passport.use(new GoogleStrategy(
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: "http://localhost:5000/auth/google/callback",
+    // ✅ Add this to get profile picture
+    scope: ['profile', 'email']
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
@@ -100,12 +104,22 @@ passport.use(new GoogleStrategy(
         user = new User({
           email: profile.emails[0].value,
           authType: "google",
+          photo: profile.photos?.[0]?.value || null, // ✅ Save photo to database
+          name: profile.displayName || null // ✅ Save name
         });
         await user.save();
+      } else {
+        // ✅ Update existing user with photo if missing
+        if (!user.photo && profile.photos?.[0]?.value) {
+          user.photo = profile.photos[0].value;
+          await user.save();
+        }
+        // ✅ Update name if missing
+        if (!user.name && profile.displayName) {
+          user.name = profile.displayName;
+          await user.save();
+        }
       }
-
-      // attach profile pic to session user object
-      user.photo = profile.photos?.[0]?.value || null;
 
       return done(null, user);
     } catch (err) {
@@ -113,7 +127,6 @@ passport.use(new GoogleStrategy(
     }
   }
 ));
-
 
 
 passport.serializeUser((user, done) => {
@@ -179,11 +192,12 @@ app.post("/auth/login", async (req, res) => {
 
       res.json({
         message: "Login successful!",
-        user: { 
-          _id: user._id, 
-          email: user.email, 
+        user: {
+          _id: user._id,
+          email: user.email,
           authType: user.authType,
-          photo: null
+          photo: user.photo || null, // ✅ Include photo
+          name: user.name || null // ✅ Include name
         },
         token,
       });
@@ -214,15 +228,16 @@ app.get("/auth/google/callback",
 app.get("/auth/me", (req, res) => {
   console.log("Auth me called, isAuthenticated:", req.isAuthenticated());
   console.log("Session user:", req.user);
-  
+
   if (req.isAuthenticated()) {
-    res.json({ 
-      user: { 
-        _id: req.user._id, 
-        email: req.user.email, 
-        authType: req.user.authType, 
-        photo: req.user.photo || null 
-      } 
+    res.json({
+      user: {
+        _id: req.user._id,
+        email: req.user.email,
+        authType: req.user.authType,
+        photo: req.user.photo || null, // ✅ Include photo
+        name: req.user.name || null // ✅ Include name
+      }
     });
   } else {
     res.status(401).json({ message: "Not logged in" });

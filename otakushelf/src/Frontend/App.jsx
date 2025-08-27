@@ -5,6 +5,7 @@ import Home from "../Frontend/components/home.jsx"
 import List from "../Frontend/components/list.jsx"
 import Login from "../Frontend/components/login.jsx"
 import Register from "../Frontend/components/register.jsx"
+import { AuthProvider } from "../Frontend/components/AuthContext.jsx"; // Import AuthProvider
 
 function App() {
   const router = createBrowserRouter([
@@ -29,10 +30,11 @@ function App() {
       element: <Register />,
     },
   ]);
+  
   return (
-    <>
+    <AuthProvider> {/* Wrap everything with AuthProvider */}
       <RouterProvider router={router} />
-    </>
+    </AuthProvider>
   )
 }
 

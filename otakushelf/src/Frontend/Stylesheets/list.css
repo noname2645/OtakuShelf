@@ -28,7 +28,7 @@
 /* Active tab */
 .tabs button.active {
   color: #111;
-  border-bottom: 3px solid #4e73df; /* bluish accent */
+  border-bottom: 3px solid #4e73df;
 }
 
 /* Tab content area */
@@ -40,13 +40,13 @@
 }
 
 /* Example styling for each tab’s content */
-.tab-content h2 {
+.list-tab-content h2 {
   margin-bottom: 0.5rem;
   font-size: 1.3rem;
   color: #333;
 }
 
-.tab-content p {
+.list-tab-content p {
   font-size: 0.95rem;
   color: #666;
 }

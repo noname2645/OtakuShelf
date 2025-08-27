@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
+import { useAuth } from "./AuthContext";
 import "../Stylesheets/register.css";
 
 const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
@@ -8,32 +9,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  // Configure axios to send cookies with requests
-  axios.defaults.withCredentials = true;
-
-  // Check if user is already logged in and redirect to home
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const response = await axios.get("http://localhost:5000/auth/me");
-      if (response.data.user) {
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-        // If user is already logged in, call onRegisterSuccess to update parent state
-        if (onRegisterSuccess) {
-          onRegisterSuccess(response.data.user);
-        } else {
-          window.location.href = "/";
-        }
-      }
-    } catch (error) {
-      console.log("Not authenticated");
-      localStorage.removeItem("user");
-    }
-  };
+  const { login } = useAuth();
 
   const validateForm = () => {
     if (!email || !password || !confirmPassword) {
@@ -74,34 +50,24 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
       const res = await axios.post("http://localhost:5000/auth/register", {
         email,
         password,
-      });
-      
+      }, { withCredentials: true });
+
       setMessage(res.data.message);
-      
-      // If registration is successful, automatically log the user in
+
       if (res.data.message.includes("successful")) {
         try {
-          // Automatically login after successful registration
           const loginRes = await axios.post("http://localhost:5000/auth/login", {
             email,
             password,
-          });
+          }, { withCredentials: true });
 
           if (loginRes.data.user) {
-            localStorage.setItem("user", JSON.stringify(loginRes.data.user));
-            
+            login(loginRes.data.user);
             if (onRegisterSuccess) {
               onRegisterSuccess(loginRes.data.user);
-            } else {
-              // Fallback to redirect
-              setTimeout(() => {
-                window.location.href = "/";
-              }, 1000);
             }
           }
         } catch (loginErr) {
-          console.error("Auto-login failed:", loginErr);
-          // If auto-login fails, still switch to login page
           if (onRegisterSuccess) {
             setTimeout(() => {
               onRegisterSuccess();
@@ -113,11 +79,9 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
       setEmail("");
       setPassword("");
       setConfirmPassword("");
-      
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Error registering user";
       setMessage(errorMessage);
-      console.error("Registration error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -190,11 +154,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary"
-            disabled={isLoading}
-          >
+          <button type="submit" className="btn btn-primary" disabled={isLoading}>
             {isLoading ? (
               <>
                 <div className="loading-spinner"></div>
@@ -210,48 +170,22 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
           <span className="divider-text">or sign up with</span>
         </div>
 
-        <button
-          onClick={handleGoogleSignup}
-          className="btn btn-google"
-          disabled={isLoading}
-          type="button"
-        >
+        <button onClick={handleGoogleSignup} className="btn btn-google" disabled={isLoading} type="button">
           <svg className="google-icon" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-            />
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
           Sign up with Google
         </button>
 
-        {message && (
-          <div className={getMessageClass()}>
-            {message}
-          </div>
-        )}
+        {message && <div className={getMessageClass()}>{message}</div>}
 
         <div className="auth-footer">
-          <p style={{ color: '#666', margin: 0, fontSize: '14px' }}>
+          <p>
             Already have an account?{" "}
-            <button 
-              type="button"
-              className="auth-link"
-              onClick={onSwitchToLogin}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
-            >
+            <button type="button" id="auth-link2" onClick={onSwitchToLogin}>
               Sign in here
             </button>
           </p>

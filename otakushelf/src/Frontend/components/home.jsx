@@ -9,20 +9,13 @@ import list from "../images/list.png"
 import search from "../images/search.png"
 import { Link } from 'react-router-dom';
 import { useLocation } from "react-router-dom";
+import { useAuth } from './AuthContext';
 
 // ProfileDropdown Component
 const ProfileDropdown = () => {
-    const [user, setUser] = useState(null);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
-
-    // Configure axios to send cookies with requests
-    axios.defaults.withCredentials = true;
-
-    // Check if user is logged in
-    useEffect(() => {
-        checkAuthStatus();
-    }, []);
+    const { user, logout } = useAuth();
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -38,37 +31,11 @@ const ProfileDropdown = () => {
         };
     }, []);
 
-    const checkAuthStatus = async () => {
-        try {
-            const response = await axios.get("http://localhost:5000/auth/me");
-            if (response.data.user) {
-                setUser(response.data.user);
-            }
-        } catch (error) {
-            console.log("Not authenticated");
-            // Check localStorage as fallback
-            const storedUser = localStorage.getItem("user");
-            if (storedUser) {
-                try {
-                    setUser(JSON.parse(storedUser));
-                } catch (e) {
-                    localStorage.removeItem("user");
-                }
-            }
-        }
-    };
 
     const handleLogout = async () => {
-        try {
-            await axios.get("http://localhost:5000/auth/logout");
-        } catch (error) {
-            console.error("Logout error:", error);
-        } finally {
-            setUser(null);
-            localStorage.removeItem("user");
-            setShowDropdown(false);
-            window.location.href = "/login";
-        }
+        await logout(); // Use context logout
+        setShowDropdown(false);
+        window.location.href = "/";
     };
 
     const getInitials = (email) => {
@@ -82,14 +49,16 @@ const ProfileDropdown = () => {
 
     return (
         <div style={{ position: 'relative', display: 'inline-block' }} ref={dropdownRef}>
-            <button 
+            <button
                 onClick={() => setShowDropdown(!showDropdown)}
                 style={{
+                    fontFamily: "Open Sans, sans-serif",
+                    width: '195px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
                     padding: '8px 12px',
-                    background: 'rgba(255, 255, 255, 0.1)',
+                    background: 'rgba(255, 255, 255, 0.16)',
                     backdropFilter: 'blur(10px)',
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     borderRadius: '12px',
@@ -97,24 +66,25 @@ const ProfileDropdown = () => {
                     fontSize: '14px',
                     color: '#ffffff',
                     boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    letterSpacing: '0.5px'
                 }}
                 onMouseEnter={(e) => {
                     e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.15)';
+                    e.target.style.background = 'rgba(255, 255, 255, 0.16)';
                 }}
                 onMouseLeave={(e) => {
                     e.target.style.transform = 'translateY(0)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.target.style.background = 'rgba(255, 255, 255, 0.16)';
                 }}
             >
                 {user.photo ? (
-                    <img 
-                        src={user.photo} 
-                        alt="Profile" 
+                    <img
+                        src={user.photo}
+                        alt="Profile"
                         style={{
-                            width: '32px',
-                            height: '32px',
+                            width: '40px',
+                            height: '40px',
                             borderRadius: '50%',
                             objectFit: 'cover',
                             border: '2px solid rgba(255, 255, 255, 0.3)'
@@ -137,23 +107,36 @@ const ProfileDropdown = () => {
                         {getInitials(user.email)}
                     </div>
                 )}
-                
+
                 <div style={{ textAlign: 'left', maxWidth: '120px' }}>
-                    <div style={{ 
-                        fontWeight: '600', 
-                        fontSize: '13px',
+                    <div style={{
+                        fontWeight: '600',
+                        fontSize: '14px',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis'
+                        textOverflow: 'ellipsis',
+                        color: 'rgba(175, 139, 22, 1)'
                     }}>
-                        {user.name || user.email}
+                        {"Welcome "}
+                        <span style={{
+                            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                            backgroundClip: 'text',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            fontSize: '15px',
+                            fontWeight: '700',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            
+                        }}>
+                            {user.name || user.email}
+                        </span>
                     </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                    <div style={{ fontSize: '13px', color: 'rgba(255, 0, 0, 0.7)' }}>
                         {user.authType === 'google' ? 'Google' : 'Local'}
                     </div>
                 </div>
-                
-                <svg 
+
+                <svg
                     style={{
                         width: '14px',
                         height: '14px',
@@ -161,8 +144,8 @@ const ProfileDropdown = () => {
                         transition: 'transform 0.2s ease',
                         flexShrink: 0
                     }}
-                    fill="none" 
-                    stroke="currentColor" 
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                 >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -199,7 +182,7 @@ const ProfileDropdown = () => {
                     </div>
 
                     {/* Profile Button */}
-                    <button 
+                    <button
                         onClick={() => {
                             setShowDropdown(false);
                             // Add your profile page navigation here
@@ -230,7 +213,7 @@ const ProfileDropdown = () => {
                     </button>
 
                     {/* Settings Button */}
-                    <button 
+                    <button
                         onClick={() => {
                             setShowDropdown(false);
                             // Add your settings page navigation here
@@ -269,7 +252,7 @@ const ProfileDropdown = () => {
                     }}></div>
 
                     {/* Logout Button */}
-                    <button 
+                    <button
                         onClick={handleLogout}
                         style={{
                             display: 'flex',
@@ -315,8 +298,9 @@ const AnimeHomepage = () => {
     const [searchLoading, setSearchLoading] = useState(false);
     const controllerRef = useRef(null);
     const [isSearching, setIsSearching] = useState(false);
-    const [user, setUser] = useState(null);
-   
+
+    const { user } = useAuth();
+
 
     const Home = () => {
         const location = useLocation();
@@ -344,12 +328,7 @@ const AnimeHomepage = () => {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-    }, []);
+
     // Initialize smooth scrolling
     useEffect(() => {
         const lenis = new Lenis({

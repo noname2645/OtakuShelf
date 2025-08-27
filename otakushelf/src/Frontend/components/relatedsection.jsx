@@ -102,10 +102,12 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       }
     };
 
-    // Fetch from Jikan
+    // Fetch from Jikan - UPDATED with CORS fix
     const fetchFromJikan = async (malId) => {
       try {
-        const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}/relations`);
+        const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}/relations`, {
+          withCredentials: false // ← CRITICAL FIX
+        });
         return res.data.data || [];
       } catch (error) {
         console.error("Jikan fetch error:", error);
@@ -113,10 +115,12 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       }
     };
 
-    // Fetch Jikan anime details
+    // Fetch Jikan anime details - UPDATED with CORS fix
     const fetchJikanAnimeDetails = async (malId) => {
       try {
-        const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}`);
+        const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}`, {
+          withCredentials: false // ← CRITICAL FIX
+        });
         return res.data.data;
       } catch (error) {
         console.error(`Failed to fetch details for MAL ID ${malId}:`, error);

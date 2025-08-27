@@ -156,6 +156,7 @@
   background: #fff;
   color: #333;
   border: 2px solid #e1e5e9;
+  width: 100%;
 }
 
 .btn-google:hover {
@@ -223,16 +224,16 @@
   border-top: 1px solid #e1e5e9;
 }
 
-.auth-link {
+.auth-footer #auth-link2 {
   color: #667eea;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.3s ease;
 }
 
-.auth-link:hover {
+.auth-footer #auth-link2:hover  {
   color: #764ba2;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Loading spinner */

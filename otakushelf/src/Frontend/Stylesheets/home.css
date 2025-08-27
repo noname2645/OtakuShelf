@@ -469,7 +469,6 @@ body {
 
 
 button {
-  /* Variables */
   --button_radius: 30px;
   --button_color: #04d42a;
   --button_outline_color: #000000;

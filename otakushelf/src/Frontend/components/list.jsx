@@ -58,7 +58,7 @@ const AnimeList = () => {
 
       {/* Tab Content */}
       <div className="anime-cards-display">
-        <div className="tab-content">
+        <div className="list-tab-content">
           <h2>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} List</h2>
           <ul>
             {animeList[activeTab]?.length > 0 ? (
