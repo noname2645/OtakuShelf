@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import "../Stylesheets/login.css"; // Import the CSS file
+import "../Stylesheets/login.css";
 
 const Login = ({ onLoginSuccess, onSwitchToRegister }) => {
   const [email, setEmail] = useState("");
@@ -11,12 +11,35 @@ const Login = ({ onLoginSuccess, onSwitchToRegister }) => {
   // Configure axios to send cookies with requests
   axios.defaults.withCredentials = true;
 
+  // Check if user is already logged in and redirect to home
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/auth/me");
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        // If user is already logged in, call onLoginSuccess to update parent state
+        if (onLoginSuccess) {
+          onLoginSuccess(response.data.user);
+        } else {
+          // Fallback to redirect only if no callback is provided
+          window.location.href = "/";
+        }
+      }
+    } catch (error) {
+      console.log("Not authenticated");
+      localStorage.removeItem("user");
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
 
-    // Basic client-side validation
     if (!email || !password) {
       setMessage("Please fill in all fields");
       setIsLoading(false);
@@ -31,19 +54,23 @@ const Login = ({ onLoginSuccess, onSwitchToRegister }) => {
 
       setMessage(res.data.message);
 
-      // Call success callback if provided (for navigation)
-      if (onLoginSuccess && res.data.user) {
+      if (res.data.user) {
         localStorage.setItem("user", JSON.stringify(res.data.user));
-        window.location.href = "/home";
-        setTimeout(() => {
+        
+        // Clear form fields
+        setEmail("");
+        setPassword("");
+
+        if (onLoginSuccess) {
+          // Use callback to update parent component state immediately
           onLoginSuccess(res.data.user);
-        }, 1000);
+        } else {
+          // Fallback to redirect only if no callback is provided
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 1000);
+        }
       }
-
-
-      // Clear form on success
-      setEmail("");
-      setPassword("");
 
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Error logging in";
@@ -55,7 +82,8 @@ const Login = ({ onLoginSuccess, onSwitchToRegister }) => {
   };
 
   const handleGoogleLogin = () => {
-    // Redirect to Google OAuth endpoint
+    // For Google OAuth, you might need to handle the callback differently
+    // Consider using a popup window or handling the redirect properly
     window.location.href = "http://localhost:5000/auth/google";
   };
 
@@ -146,7 +174,7 @@ const Login = ({ onLoginSuccess, onSwitchToRegister }) => {
             />
             <path
               fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 极速下载 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
           Sign in with Google

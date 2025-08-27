@@ -14,7 +14,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
@@ -25,6 +24,39 @@ const allowedOrigins = [
   "http://localhost:5173", // vite
   "https://yourfrontenddomain.com"
 ];
+
+// Express session configuration - BEFORE routes
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/your-db-name'
+  }),
+  cookie: {
+    secure: false, // Set to true if using HTTPS
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax' // Important for cross-origin requests
+  }
+}));
+
+// Body parsing middleware
+
+app.use(express.urlencoded({ extended: true }));
+
+// Auth middleware
+const isAuthenticated = (req, res, next) => {
+  console.log('Auth middleware - Session ID:', req.sessionID);
+  console.log('Auth middleware - Session:', req.session);
+  console.log('Auth middleware - User:', req.session?.user);
+  
+  if (req.session && req.session.user) {
+    return next();
+  } else {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+};
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -145,6 +177,10 @@ app.post("/auth/register", async (req, res) => {
     });
 
     await newUser.save();
+     req.session.user = {
+      id: newUser._id,
+      email: newUser.email,
+    };
     res.json({ message: "Registration successful!" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -168,18 +204,33 @@ app.post("/auth/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+    // Store user in session for consistency
+    req.login(user, (err) => {
+      if (err) {
+        console.error("Session login error:", err);
+        return res.status(500).json({ message: "Session error" });
+      }
 
-    res.json({
-      message: "Login successful!",
-      user: { _id: user._id, email: user.email, authType: user.authType },
-      token,
+      const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+
+      res.json({
+        message: "Login successful!",
+        user: { 
+          _id: user._id, 
+          email: user.email, 
+          authType: user.authType,
+          photo: null
+        },
+        token,
+      });
     });
+
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
 
 
 
@@ -191,36 +242,50 @@ app.get("/auth/google",
 
 // Google callback
 app.get("/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "http://localhost:5173/login" }),
+  passport.authenticate("google", { failureRedirect: "http://localhost:3000/login" }),
   (req, res) => {
-    // Successful login
-  res.redirect("http://localhost:3000/home");
-
+    // Make sure this URL matches where your frontend is running
+    res.redirect("http://localhost:3000/home");
   }
 );
 
 // Check current user
 app.get("/auth/me", (req, res) => {
+  console.log("Auth me called, isAuthenticated:", req.isAuthenticated());
+  console.log("Session user:", req.user);
+  
   if (req.isAuthenticated()) {
-    res.json({ user: { 
-      _id: req.user._id, 
-      email: req.user.email, 
-      authType: req.user.authType, 
-      photo: req.user.photo || null 
-    } });
+    res.json({ 
+      user: { 
+        _id: req.user._id, 
+        email: req.user.email, 
+        authType: req.user.authType, 
+        photo: req.user.photo || null 
+      } 
+    });
   } else {
     res.status(401).json({ message: "Not logged in" });
   }
 });
 
 
+
 // Logout
 app.get("/auth/logout", (req, res) => {
-  req.logout(() => {
-    res.json({ message: "Logged out" });
+  req.logout((err) => {
+    if (err) {
+      console.error("Logout error:", err);
+      return res.status(500).json({ message: "Logout error" });
+    }
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destroy error:", err);
+      }
+      res.clearCookie('connect.sid');
+      res.json({ message: "Logged out successfully" });
+    });
   });
 });
-
 
 // =======================
 // Anime List Routes

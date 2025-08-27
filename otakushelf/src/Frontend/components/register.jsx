@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import "../Stylesheets/register.css"; // Import the CSS file
+import "../Stylesheets/register.css";
 
 const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
   const [email, setEmail] = useState("");
@@ -11,6 +11,29 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
 
   // Configure axios to send cookies with requests
   axios.defaults.withCredentials = true;
+
+  // Check if user is already logged in and redirect to home
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/auth/me");
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        // If user is already logged in, call onRegisterSuccess to update parent state
+        if (onRegisterSuccess) {
+          onRegisterSuccess(response.data.user);
+        } else {
+          window.location.href = "/";
+        }
+      }
+    } catch (error) {
+      console.log("Not authenticated");
+      localStorage.removeItem("user");
+    }
+  };
 
   const validateForm = () => {
     if (!email || !password || !confirmPassword) {
@@ -28,7 +51,6 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
       return false;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setMessage("Please enter a valid email address");
@@ -43,7 +65,6 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
     setIsLoading(true);
     setMessage("");
 
-    // Validate form
     if (!validateForm()) {
       setIsLoading(false);
       return;
@@ -57,14 +78,38 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
       
       setMessage(res.data.message);
       
-      // Call success callback if provided
-      if (onRegisterSuccess) {
-        setTimeout(() => {
-          onRegisterSuccess();
-        }, 2000);
+      // If registration is successful, automatically log the user in
+      if (res.data.message.includes("successful")) {
+        try {
+          // Automatically login after successful registration
+          const loginRes = await axios.post("http://localhost:5000/auth/login", {
+            email,
+            password,
+          });
+
+          if (loginRes.data.user) {
+            localStorage.setItem("user", JSON.stringify(loginRes.data.user));
+            
+            if (onRegisterSuccess) {
+              onRegisterSuccess(loginRes.data.user);
+            } else {
+              // Fallback to redirect
+              setTimeout(() => {
+                window.location.href = "/";
+              }, 1000);
+            }
+          }
+        } catch (loginErr) {
+          console.error("Auto-login failed:", loginErr);
+          // If auto-login fails, still switch to login page
+          if (onRegisterSuccess) {
+            setTimeout(() => {
+              onRegisterSuccess();
+            }, 2000);
+          }
+        }
       }
 
-      // Clear form on success
       setEmail("");
       setPassword("");
       setConfirmPassword("");
@@ -79,7 +124,6 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
   };
 
   const handleGoogleSignup = () => {
-    // Redirect to Google OAuth endpoint
     window.location.href = "http://localhost:5000/auth/google";
   };
 
