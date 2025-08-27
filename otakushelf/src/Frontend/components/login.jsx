@@ -28,20 +28,23 @@ const Login = ({ onLoginSuccess, onSwitchToRegister }) => {
         email,
         password,
       });
-      
+
       setMessage(res.data.message);
-      
+
       // Call success callback if provided (for navigation)
       if (onLoginSuccess && res.data.user) {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        window.location.href = "/home";
         setTimeout(() => {
           onLoginSuccess(res.data.user);
         }, 1000);
       }
 
+
       // Clear form on success
       setEmail("");
       setPassword("");
-      
+
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Error logging in";
       setMessage(errorMessage);
@@ -102,8 +105,8 @@ const Login = ({ onLoginSuccess, onSwitchToRegister }) => {
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary"
             disabled={isLoading}
           >
@@ -158,7 +161,7 @@ const Login = ({ onLoginSuccess, onSwitchToRegister }) => {
         <div className="auth-footer">
           <p style={{ color: '#666', margin: 0, fontSize: '14px' }}>
             Don't have an account?{" "}
-            <button 
+            <button
               type="button"
               className="auth-link"
               onClick={onSwitchToRegister}

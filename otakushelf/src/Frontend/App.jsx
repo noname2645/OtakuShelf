@@ -9,7 +9,7 @@ import Register from "../Frontend/components/register.jsx"
 function App() {
   const router = createBrowserRouter([
     {
-      path: "/",
+      path: "/home",
       element: <Home />,
     },
     {

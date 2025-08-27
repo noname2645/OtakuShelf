@@ -8,6 +8,7 @@ import Modal from "../components/modal.jsx";
 import list from "../images/list.png"
 import search from "../images/search.png"
 import { Link } from 'react-router-dom';
+ import { useLocation } from "react-router-dom";
 
 
 const AnimeHomepage = () => {
@@ -26,8 +27,25 @@ const AnimeHomepage = () => {
     const [searchLoading, setSearchLoading] = useState(false);
     const controllerRef = useRef(null);
     const [isSearching, setIsSearching] = useState(false);
+    const [user, setUser] = useState(null);
+   
 
+    const Home = () => {
+        const location = useLocation();
 
+        useEffect(() => {
+            const params = new URLSearchParams(location.search);
+            const user = params.get("user");
+            if (user) {
+                const parsedUser = JSON.parse(decodeURIComponent(user));
+                localStorage.setItem("user", JSON.stringify(parsedUser));
+                // optionally clean up the URL:
+                window.history.replaceState({}, "", "/home");
+            }
+        }, [location]);
+
+        return <div>Welcome Home!</div>;
+    };
 
     // Handle scroll events
     useEffect(() => {
@@ -38,6 +56,12 @@ const AnimeHomepage = () => {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
+    useEffect(() => {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+    }, []);
     // Initialize smooth scrolling
     useEffect(() => {
         const lenis = new Lenis({
@@ -476,17 +500,32 @@ const AnimeHomepage = () => {
 
 
                     <div className="auth-buttons">
-                        <Link to="/login">
-                        <button>
-                            <span className="button_login"> Login </span>
-                        </button>
-                        </Link>
-                        <Link to="/register">
-                        <button>
-                            <span className="button_register"> Register </span>
-                        </button>
-                        </Link>
+                        {user ? (
+                            <div className="profile" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                <img
+                                    className="profile-pic"
+                                    src={user.photo || "/default-avatar.png"}
+                                    alt={user.name || "User"}
+                                    style={{ width: "35px", height: "35px", borderRadius: "50%" }}
+                                />
+                                <span className="profile-name">{user.name || user.email}</span>
+                            </div>
+                        ) : (
+                            <>
+                                <Link to="/login">
+                                    <button>
+                                        <span className="button_login">Login</span>
+                                    </button>
+                                </Link>
+                                <Link to="/register">
+                                    <button>
+                                        <span className="button_register">Register</span>
+                                    </button>
+                                </Link>
+                            </>
+                        )}
                     </div>
+
                 </header>
 
                 <div className="bottom-button-container">
@@ -494,10 +533,10 @@ const AnimeHomepage = () => {
                     <button className="button">
                         <div className="button-content">
                             <Link to="/list">
-                            <img className="button-icon" src={list} alt="Home"/>
+                                <img className="button-icon" src={list} alt="Home" />
                             </Link>
                             <span className="button-text">List</span>
-                            
+
                         </div>
                     </button>
 
