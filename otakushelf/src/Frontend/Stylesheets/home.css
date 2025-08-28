@@ -1134,7 +1134,7 @@ body {
   display: block;
 }
 
-.anime-card:hover .card-image img {
+.anime-card:hover .home-card-image img {
   transform: scale(1.1);
 }
 

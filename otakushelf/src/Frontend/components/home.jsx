@@ -592,7 +592,7 @@ const AnimeHomepage = () => {
                             </div>
                         ) : (
                             <>
-                                <div className="card-image">
+                                <div className="home-card-image">
                                     <img
                                         src={anime.images.webp?.large_image_url || anime.images.jpg.large_image_url}
                                         alt={anime.title}

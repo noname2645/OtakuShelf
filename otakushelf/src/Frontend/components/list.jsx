@@ -1,8 +1,10 @@
+// Create a new file: EnhancedAnimeList.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import "../Stylesheets/list.css";
+import { Edit, Star, Calendar, Play, Check, Trash2 } from 'lucide-react';
 
-const AnimeList = () => {
+const EnhancedAnimeList = () => {
   const [activeTab, setActiveTab] = useState('watching');
   const [animeList, setAnimeList] = useState({
     watching: [],
@@ -10,30 +12,71 @@ const AnimeList = () => {
     planned: [],
     dropped: [],
   });
-  const [newAnime, setNewAnime] = useState("");
+  const [editingAnime, setEditingAnime] = useState(null);
+  const [editForm, setEditForm] = useState({
+    startDate: '',
+    finishDate: '',
+    userRating: 0,
+    episodesWatched: 0,
+    notes: ''
+  });
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // Fetch anime list when component mounts
   useEffect(() => {
     if (user) {
-      axios.get(`http://localhost:5000/api/list/${user._id || user.id}`)
-        .then(res => setAnimeList(res.data))
-        .catch(err => console.error("Error fetching list:", err));
+      fetchAnimeList();
     }
   }, [user]);
 
-  const handleAddAnime = async () => {
-    if (!newAnime) return;
+  const fetchAnimeList = async () => {
     try {
-      const res = await axios.post(`http://localhost:5000/api/list/${user._id || user.id}`, {
+      const response = await axios.get(`http://localhost:5000/api/list/${user._id || user.id}`);
+      setAnimeList(response.data);
+    } catch (error) {
+      console.error("Error fetching list:", error);
+    }
+  };
+
+  const handleEdit = (anime) => {
+    setEditingAnime(anime);
+    setEditForm({
+      startDate: anime.startDate ? new Date(anime.startDate).toISOString().split('T')[0] : '',
+      finishDate: anime.finishDate ? new Date(anime.finishDate).toISOString().split('T')[0] : '',
+      userRating: anime.userRating || 0,
+      episodesWatched: anime.episodesWatched || 0,
+      notes: anime.notes || ''
+    });
+  };
+
+const handleSaveEdit = async () => {
+  try {
+    const response = await axios.put(
+      `http://localhost:5000/api/list/${user._id || user.id}/${editingAnime._id}`,
+      {
+        ...editForm,
         category: activeTab,
-        animeTitle: newAnime,
-      });
-      setAnimeList(res.data.list);
-      setNewAnime("");
-    } catch (err) {
-      console.error("Error updating list:", err);
+        title: editingAnime.title,   
+        image: editingAnime.image,   
+        animeId: editingAnime.animeId, 
+        malId: editingAnime.malId   
+      }
+    );
+
+    setAnimeList(response.data.list);
+    setEditingAnime(null);
+  } catch (error) {
+    console.error("Error updating anime:", error);
+  }
+};
+
+
+  const handleRemove = async (animeId) => {
+    try {
+      const response = await axios.delete(`http://localhost:5000/api/list/${user._id || user.id}/${animeId}`);
+      setAnimeList(response.data.list);
+    } catch (error) {
+      console.error("Error removing anime:", error);
     }
   };
 
@@ -42,46 +85,150 @@ const AnimeList = () => {
   }
 
   return (
-    <div className="anime-list-container">
-      {/* Tabs */}
-      <div className="tabs">
-        {["watching", "completed", "planned", "dropped"].map(tab => (
-          <button
-            key={tab}
-            className={activeTab === tab ? 'active' : ''}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      <div className="anime-cards-display">
-        <div className="list-tab-content">
-          <h2>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} List</h2>
-          <ul>
-            {animeList[activeTab]?.length > 0 ? (
-              animeList[activeTab].map((title, idx) => <li key={idx}>{title}</li>)
-            ) : (
-              <p>No anime here yet</p>
-            )}
-          </ul>
-
-          {/* Add new anime input */}
-          <div className="add-anime">
-            <input
-              type="text"
-              placeholder={`Add to ${activeTab}`}
-              value={newAnime}
-              onChange={(e) => setNewAnime(e.target.value)}
-            />
-            <button onClick={handleAddAnime}>Add</button>
-          </div>
+    <div className="enhanced-anime-list">
+      <div className="list-header">
+        <h1>My Anime List</h1>
+        <div className="list-tabs">
+          {["watching", "completed", "planned", "dropped"].map(tab => (
+            <button
+              key={tab}
+              className={activeTab === tab ? 'active' : ''}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              <span className="count-badge">{animeList[tab]?.length || 0}</span>
+            </button>
+          ))}
         </div>
       </div>
+
+      <div className="table-container">
+        <table className="anime-table">
+          <thead>
+            <tr>
+              <th className="image-column">Anime</th>
+              <th>Start Date</th>
+              <th>Finish Date</th>
+              <th>Rating</th>
+              <th>Episodes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {animeList[activeTab]?.map(anime => (
+              <tr key={anime._id || anime.title} className="anime-table-row">
+                <td className="anime-info-cell">
+                  <div className="anime-info">
+                    <img src={anime.image} alt={anime.title} className="table-anime-image" />
+                    <span className="anime-title">{anime.title}</span>
+                  </div>
+                </td>
+                <td>
+                  {anime.startDate ? new Date(anime.startDate).toLocaleDateString() : '-'}
+                </td>
+                <td>
+                  {anime.finishDate ? new Date(anime.finishDate).toLocaleDateString() : '-'}
+                </td>
+                <td>
+                  {anime.userRating > 0 ? (
+                    <div className="rating-display">
+                      <Star size={14} fill="currentColor" />
+                      <span>{anime.userRating}/10</span>
+                    </div>
+                  ) : '-'}
+                </td>
+                <td>
+                  {anime.episodesWatched > 0 ? (
+                    <div className="episodes-display">
+                      <Play size={14} />
+                      <span>{anime.episodesWatched}</span>
+                    </div>
+                  ) : '-'}
+                </td>
+                <td>
+                  <div className="table-actions">
+                    <button className="edit-btn" onClick={() => handleEdit(anime)} title="Edit">
+                      <Edit size={16} />
+                    </button>
+                    <button className="remove-btn" onClick={() => handleRemove(anime._id)} title="Remove">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        
+        {animeList[activeTab]?.length === 0 && (
+          <div className="empty-state">
+            <p>No anime in this category yet.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      {editingAnime && (
+        <div className="edit-modal">
+          <div className="edit-modal-content">
+            <h2>Edit {editingAnime.title}</h2>
+            
+            <div className="form-group2">
+              <label>Start Date</label>
+              <input
+                type="date"
+                value={editForm.startDate}
+                onChange={(e) => setEditForm({...editForm, startDate: e.target.value})}
+              />
+            </div>
+            
+            <div className="form-group2">
+              <label>Finish Date</label>
+              <input
+                type="date"
+                value={editForm.finishDate}
+                onChange={(e) => setEditForm({...editForm, finishDate: e.target.value})}
+              />
+            </div>
+            
+            <div className="form-group2">
+              <label>Your Rating (1-10)</label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={editForm.userRating}
+                onChange={(e) => setEditForm({...editForm, userRating: parseInt(e.target.value)})}
+              />
+            </div>
+            
+            <div className="form-group2">
+              <label>Episodes Watched</label>
+              <input
+                type="number"
+                value={editForm.episodesWatched}
+                onChange={(e) => setEditForm({...editForm, episodesWatched: parseInt(e.target.value)})}
+              />
+            </div>
+            
+            <div className="form-group2">
+              <label>Notes</label>
+              <textarea
+                value={editForm.notes}
+                onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
+                placeholder="Your thoughts on this anime..."
+              />
+            </div>
+            
+            <div className="modal-actions">
+              <button onClick={() => setEditingAnime(null)}>Cancel</button>
+              <button onClick={handleSaveEdit}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default AnimeList;
+export default EnhancedAnimeList;

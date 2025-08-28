@@ -4,12 +4,25 @@ import "../Stylesheets/modal.css";
 import RelatedTab from "./relatedsection.jsx";
 import Trailer from "./trailer";
 import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Check } from 'lucide-react';
+import { useAuth } from "../components/AuthContext.jsx";
+import axios from "axios";
 
 const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [synopsisModalOpen, setSynopsisModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("info");
     const [trailerVideoId, setTrailerVideoId] = useState(null);
     const titleRef = useRef(null);
+    const [isAddingToList, setIsAddingToList] = useState(false);
+    const [isInList, setIsInList] = useState(false);
+    const [userListStatus, setUserListStatus] = useState(null);
+    const { user } = useAuth();
+
+    useEffect(() => {
+        if (user && anime) {
+            checkIfInList();
+        }
+    }, [user, anime]);
 
     useEffect(() => {
         setSynopsisModalOpen(false);
@@ -70,6 +83,55 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
     console.log("Modal received anime data:", anime);
 
+    const checkIfInList = async () => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/list/${user._id || user.id}`);
+            const userList = response.data;
+
+            // Check if anime is in any category
+            const allAnime = [
+                ...userList.watching || [],
+                ...userList.completed || [],
+                ...userList.planned || [],
+                ...userList.dropped || []
+            ];
+
+            const animeTitle = anime.title?.english || anime.title_english || anime.title?.romaji || anime.title;
+            const isInUserList = allAnime.includes(animeTitle);
+
+            setIsInList(isInUserList);
+        } catch (error) {
+            console.error("Error checking if anime is in list:", error);
+        }
+    };
+
+    const addToList = async (status) => {
+        if (!user) {
+            alert("Please log in to add anime to your list");
+            return;
+        }
+
+        setIsAddingToList(true);
+        try {
+            const animeTitle = anime.title?.english || anime.title_english || anime.title?.romaji || anime.title;
+
+            const response = await axios.post(`http://localhost:5000/api/list/${user._id || user.id}`, {
+                category: status,
+                animeTitle: animeTitle,
+                animeData: anime // Send the full anime data for better tracking
+            });
+
+            setIsInList(true);
+            setUserListStatus(status);
+            alert(`Added to ${status} list!`);
+        } catch (error) {
+            console.error("Error adding to list:", error);
+            alert("Failed to add to list");
+        } finally {
+            setIsAddingToList(false);
+        };
+    };
+
     // Universal title fetch (AniList + Jikan)
     const animeTitle =
         anime.title?.english ||
@@ -83,7 +145,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         anime.coverImage?.extraLarge ||
         anime.coverImage?.large ||
         anime.images?.jpg?.large_image_url ||
-        anime.image_url;
+        anime.image_url ||
+        anime.image || 
+        null;
+
 
     // Enhanced trailer video ID extraction
     const getTrailerVideoId = () => {
@@ -303,6 +368,43 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                             <div className="image-container">
                                 <img src={animeImage} alt={animeTitle} />
                                 <div className="image-overlay"></div>
+
+                                {/* Add to list buttons */}
+                                <div className="add-to-list-buttons">
+                                    {!isInList ? (
+                                        <div className="list-options">
+                                            <button
+                                                className="list-option-btn watching-btn"
+                                                onClick={() => addToList('watching')}
+                                                disabled={isAddingToList}
+                                            >
+                                                <Plus size={16} />
+                                                <span>Watching</span>
+                                            </button>
+                                            <button
+                                                className="list-option-btn completed-btn"
+                                                onClick={() => addToList('completed')}
+                                                disabled={isAddingToList}
+                                            >
+                                                <Plus size={16} />
+                                                <span>Completed</span>
+                                            </button>
+                                            <button
+                                                className="list-option-btn planned-btn"
+                                                onClick={() => addToList('planned')}
+                                                disabled={isAddingToList}
+                                            >
+                                                <Plus size={16} />
+                                                <span>Plan to Watch</span>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="already-in-list">
+                                            <Check size={20} />
+                                            <span>In your {userListStatus} list</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {(anime.type || anime.format || getAiredInfo()) && (
