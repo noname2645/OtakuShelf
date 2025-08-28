@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import "../Stylesheets/list.css";
 import { Edit, Star, Calendar, Play, Check, Trash2 } from 'lucide-react';
+import { Navigate } from "react-router-dom";
 
 const EnhancedAnimeList = () => {
   const [activeTab, setActiveTab] = useState('watching');
@@ -49,26 +50,26 @@ const EnhancedAnimeList = () => {
     });
   };
 
-const handleSaveEdit = async () => {
-  try {
-    const response = await axios.put(
-      `http://localhost:5000/api/list/${user._id || user.id}/${editingAnime._id}`,
-      {
-        ...editForm,
-        category: activeTab,
-        title: editingAnime.title,   
-        image: editingAnime.image,   
-        animeId: editingAnime.animeId, 
-        malId: editingAnime.malId   
-      }
-    );
+  const handleSaveEdit = async () => {
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/api/list/${user._id || user.id}/${editingAnime._id}`,
+        {
+          ...editForm,
+          category: activeTab,
+          title: editingAnime.title,
+          image: editingAnime.image,
+          animeId: editingAnime.animeId,
+          malId: editingAnime.malId
+        }
+      );
 
-    setAnimeList(response.data.list);
-    setEditingAnime(null);
-  } catch (error) {
-    console.error("Error updating anime:", error);
-  }
-};
+      setAnimeList(response.data.list);
+      setEditingAnime(null);
+    } catch (error) {
+      console.error("Error updating anime:", error);
+    }
+  };
 
 
   const handleRemove = async (animeId) => {
@@ -81,13 +82,12 @@ const handleSaveEdit = async () => {
   };
 
   if (!user) {
-    return <p>Please log in to view your anime list.</p>;
+    return <Navigate to="/login" replace />;
   }
-
   return (
+    <>
     <div className="enhanced-anime-list">
       <div className="list-header">
-        <h1>My Anime List</h1>
         <div className="list-tabs">
           {["watching", "completed", "planned", "dropped"].map(tab => (
             <button
@@ -105,7 +105,7 @@ const handleSaveEdit = async () => {
       <div className="table-container">
         <table className="anime-table">
           <thead>
-            <tr>
+            <tr className="anime-table-header">
               <th className="image-column">Anime</th>
               <th>Start Date</th>
               <th>Finish Date</th>
@@ -120,7 +120,7 @@ const handleSaveEdit = async () => {
                 <td className="anime-info-cell">
                   <div className="anime-info">
                     <img src={anime.image} alt={anime.title} className="table-anime-image" />
-                    <span className="anime-title">{anime.title}</span>
+                    <span className="anime-title2">{anime.title}</span>
                   </div>
                 </td>
                 <td>
@@ -159,7 +159,7 @@ const handleSaveEdit = async () => {
             ))}
           </tbody>
         </table>
-        
+
         {animeList[activeTab]?.length === 0 && (
           <div className="empty-state">
             <p>No anime in this category yet.</p>
@@ -171,26 +171,26 @@ const handleSaveEdit = async () => {
       {editingAnime && (
         <div className="edit-modal">
           <div className="edit-modal-content">
-            <h2>Edit {editingAnime.title}</h2>
-            
+            <h2>{editingAnime.title}</h2>
+
             <div className="form-group2">
               <label>Start Date</label>
               <input
                 type="date"
                 value={editForm.startDate}
-                onChange={(e) => setEditForm({...editForm, startDate: e.target.value})}
+                onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
               />
             </div>
-            
+
             <div className="form-group2">
               <label>Finish Date</label>
               <input
                 type="date"
                 value={editForm.finishDate}
-                onChange={(e) => setEditForm({...editForm, finishDate: e.target.value})}
+                onChange={(e) => setEditForm({ ...editForm, finishDate: e.target.value })}
               />
             </div>
-            
+
             <div className="form-group2">
               <label>Your Rating (1-10)</label>
               <input
@@ -198,28 +198,28 @@ const handleSaveEdit = async () => {
                 min="1"
                 max="10"
                 value={editForm.userRating}
-                onChange={(e) => setEditForm({...editForm, userRating: parseInt(e.target.value)})}
+                onChange={(e) => setEditForm({ ...editForm, userRating: parseInt(e.target.value) })}
               />
             </div>
-            
+
             <div className="form-group2">
               <label>Episodes Watched</label>
               <input
                 type="number"
                 value={editForm.episodesWatched}
-                onChange={(e) => setEditForm({...editForm, episodesWatched: parseInt(e.target.value)})}
+                onChange={(e) => setEditForm({ ...editForm, episodesWatched: parseInt(e.target.value) })}
               />
             </div>
-            
+
             <div className="form-group2">
               <label>Notes</label>
               <textarea
                 value={editForm.notes}
-                onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
+                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
                 placeholder="Your thoughts on this anime..."
               />
             </div>
-            
+
             <div className="modal-actions">
               <button onClick={() => setEditingAnime(null)}>Cancel</button>
               <button onClick={handleSaveEdit}>Save Changes</button>
@@ -227,7 +227,8 @@ const handleSaveEdit = async () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
