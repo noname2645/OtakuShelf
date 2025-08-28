@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useAuth } from "./AuthContext";
 import "../Stylesheets/login.css";
+import { Link } from "react-router-dom";
+import { useEffect } from "react";
 
 const Login = ({ onSwitchToRegister }) => {
   const [email, setEmail] = useState("");
@@ -9,6 +11,15 @@ const Login = ({ onSwitchToRegister }) => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+
+      useEffect(() => {
+      if (message) {
+        const timer = setTimeout(() => {
+          setMessage("");
+        }, 3000);
+        return () => clearTimeout(timer); // cleanup on unmount
+      }
+    }, [message]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -123,9 +134,7 @@ const Login = ({ onSwitchToRegister }) => {
         <div className="auth-footer">
           <p>
             Don't have an account?{" "}
-            <button type="button" className="auth-link" onClick={onSwitchToRegister}>
-              Create one here
-            </button>
+            <Link to="/register" className="auth-link">Register</Link>
           </p>
         </div>
       </div>

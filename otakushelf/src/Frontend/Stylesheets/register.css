@@ -1,14 +1,13 @@
-/* Enhanced CSS for Login and Register Components */
-
 /* Global styles for auth pages */
 .auth-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 2px 3px 20px black, 0 0 60px #8a4d0f inset;
+  background: #fffef0;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  height: 100vh;
 }
 
 .auth-card {
@@ -21,17 +20,10 @@
   max-width: 420px;
   position: relative;
   overflow: hidden;
+  height: auto
 }
 
-.auth-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-}
+
 
 /* Header styles */
 .auth-header {
@@ -196,12 +188,17 @@
 
 /* Message styles */
 .message {
+  position: fixed;
+  top: 20px;
+  right: 130px;
+  width: 250px;
   padding: 12px 16px;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
-  margin-top: 16px;
   animation: slideIn 0.3s ease;
+  text-align: center; 
+  z-index: 9999; 
 }
 
 .message-success {
@@ -222,16 +219,19 @@
   margin-top: 24px;
   padding-top: 24px;
   border-top: 1px solid #e1e5e9;
+  text-decoration: none;
 }
 
-.auth-footer #auth-link2 {
+.auth-footer .auth-link {
+  font-size: 17px;
   color: #667eea;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.3s ease;
+  cursor: pointer;
 }
 
-.auth-footer #auth-link2:hover  {
+.auth-link:hover {
   color: #764ba2;
   text-decoration: none;
 }

@@ -12,6 +12,8 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from './AuthContext';
 
 // ProfileDropdown Component
+// ProfileDropdown Component
+// ProfileDropdown Component
 const ProfileDropdown = () => {
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
@@ -31,9 +33,8 @@ const ProfileDropdown = () => {
         };
     }, []);
 
-
     const handleLogout = async () => {
-        await logout(); // Use context logout
+        await logout();
         setShowDropdown(false);
         window.location.href = "/";
     };
@@ -48,135 +49,55 @@ const ProfileDropdown = () => {
     }
 
     return (
-        <div style={{ position: 'relative', display: 'inline-block' }} ref={dropdownRef}>
+        <div className="profile-container" ref={dropdownRef}>
             <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                style={{
-                    fontFamily: "Open Sans, sans-serif",
-                    width: '195px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 12px',
-                    background: 'rgba(255, 255, 255, 0.16)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    color: '#ffffff',
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-                    transition: 'all 0.2s ease',
-                    letterSpacing: '0.5px'
-                }}
-                onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.16)';
-                }}
-                onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.16)';
-                }}
+                className="profile-button"
             >
+                <div className="profile-glow"></div>
+                
                 {user.photo ? (
-                    <img
-                        src={user.photo}
-                        alt="Profile"
-                        style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: '2px solid rgba(255, 255, 255, 0.3)'
-                        }}
-                    />
+                    <div className="profile-avatar">
+                        <img
+                            src={user.photo}
+                            alt="Profile"
+                        />
+                        
+                    </div>
                 ) : (
-                    <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        backgroundColor: '#6366f1',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        border: '2px solid rgba(255, 255, 255, 0.3)'
-                    }}>
+                    <div className="profile-initials">
                         {getInitials(user.email)}
                     </div>
                 )}
 
-                <div style={{ textAlign: 'left', maxWidth: '120px' }}>
-                    <div style={{
-                        fontWeight: '600',
-                        fontSize: '14px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        color: 'rgba(175, 139, 22, 1)'
-                    }}>
-                        {"Welcome "}
-                        <span style={{
-                            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            fontSize: '15px',
-                            fontWeight: '700',
-                            textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            
-                        }}>
-                            {user.name || user.email}
-                        </span>
+                <div className="profile-info">
+                    <div className="welcome-text">
+                        Welcome
                     </div>
-                    <div style={{ fontSize: '13px', color: 'rgba(255, 0, 0, 0.7)' }}>
-                        {user.authType === 'google' ? 'Google' : 'Local'}
+                    <div className="username">
+                        {user.name || user.email}
                     </div>
                 </div>
 
                 <svg
-                    style={{
-                        width: '14px',
-                        height: '14px',
-                        transform: showDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s ease',
-                        flexShrink: 0
-                    }}
+                    className={`dropdown-arrow ${showDropdown ? "rotated" : ""}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    strokeWidth="2"
                 >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
 
             {showDropdown && (
-                <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    right: '0',
-                    marginTop: '8px',
-                    minWidth: '220px',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
-                    zIndex: 1000,
-                    padding: '12px'
-                }}>
+                <div className="profile-dropdown">
                     {/* User Info Section */}
-                    <div style={{
-                        padding: '12px',
-                        borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-                        marginBottom: '8px'
-                    }}>
-                        <div style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>
+                    <div className="user-info-section">
+                        <div className="user-name">
                             {user.name || user.email}
                         </div>
-                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
+                        <div className="auth-type">
                             {user.authType === 'google' ? 'Signed in with Google' : 'Local Account'}
                         </div>
                     </div>
@@ -185,28 +106,10 @@ const ProfileDropdown = () => {
                     <button
                         onClick={() => {
                             setShowDropdown(false);
-                            // Add your profile page navigation here
-                            // window.location.href = "/profile";
                         }}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            width: '100%',
-                            padding: '10px 12px',
-                            background: 'none',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            color: '#374151',
-                            transition: 'background-color 0.2s ease',
-                            marginBottom: '4px'
-                        }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                        className="dropdown-item"
                     >
-                        <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         View Profile
@@ -216,28 +119,10 @@ const ProfileDropdown = () => {
                     <button
                         onClick={() => {
                             setShowDropdown(false);
-                            // Add your settings page navigation here
-                            // window.location.href = "/settings";
                         }}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            width: '100%',
-                            padding: '10px 12px',
-                            background: 'none',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            color: '#374151',
-                            transition: 'background-color 0.2s ease',
-                            marginBottom: '4px'
-                        }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                        className="dropdown-item"
                     >
-                        <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -245,33 +130,14 @@ const ProfileDropdown = () => {
                     </button>
 
                     {/* Divider */}
-                    <div style={{
-                        height: '1px',
-                        backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                        margin: '8px 0'
-                    }}></div>
+                    <div className="dropdown-divider"></div>
 
                     {/* Logout Button */}
                     <button
                         onClick={handleLogout}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            width: '100%',
-                            padding: '10px 12px',
-                            background: 'none',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            color: '#dc2626',
-                            transition: 'background-color 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(220, 38, 38, 0.1)'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                        className="dropdown-item logout-button"
                     >
-                        <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
                         Logout
