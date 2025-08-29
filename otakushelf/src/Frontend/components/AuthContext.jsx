@@ -16,19 +16,26 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Set axios authorization header if token exists
+  const token = localStorage.getItem("token");
+  if (token) {
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  }
+
+
   // FIXED: Handle token from URL parameters first, before checking auth status
   useEffect(() => {
     const handleTokenFromUrl = async () => {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("token");
-      
+
       if (token) {
         console.log('Token found in URL:', token);
         localStorage.setItem("token", token);
-        
+
         // Clean URL immediately
         window.history.replaceState({}, document.title, "/");
-        
+
         // Fetch user profile using this token
         try {
           const response = await axios.get(`${API_BASE}/auth/me`, {
@@ -37,7 +44,7 @@ export const AuthProvider = ({ children }) => {
               Authorization: `Bearer ${token}`
             }
           });
-          
+
           if (response.data.user) {
             console.log('User authenticated via token:', response.data.user);
             setUser(response.data.user);
@@ -57,7 +64,7 @@ export const AuthProvider = ({ children }) => {
 
     const initializeAuth = async () => {
       const tokenProcessed = await handleTokenFromUrl();
-      
+
       // Only check auth status if no token was processed
       if (!tokenProcessed) {
         await checkAuthStatus();
@@ -70,11 +77,13 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       console.log('Checking auth status...');
+      const token = localStorage.getItem("token");
       const response = await axios.get(`${API_BASE}/auth/me`, {
         withCredentials: true,
-        timeout: 10000 // 10 second timeout
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
-      
+
+
       if (response.data.user) {
         console.log('User authenticated:', response.data.user);
         setUser(response.data.user);
