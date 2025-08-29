@@ -57,18 +57,21 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
       setIsLoading(false);
       return;
     }
+    const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
     try {
-      const res = await axios.post("http://localhost:5000/auth/register", {
+      const res = await axios.post(`${API_BASE}/auth/register`, {
         email,
         password,
       }, { withCredentials: true });
 
       setMessage(res.data.message);
 
+
+
       if (res.data.message.includes("successful")) {
         try {
-          const loginRes = await axios.post("http://localhost:5000/auth/login", {
+          const loginRes = await axios.post(`${API_BASE}/auth/login`, {
             email,
             password,
           }, { withCredentials: true });
@@ -100,7 +103,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "http://localhost:5000/auth/google";
+    window.location.href = `${API_BASE}/auth/google`;
   };
 
 

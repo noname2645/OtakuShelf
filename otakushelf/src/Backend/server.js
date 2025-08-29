@@ -24,7 +24,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173", // vite
-  "https://yourfrontenddomain.com"
+  "https://yesotakushelf.onrender.com"
 ];
 
 app.use(cors({
@@ -61,8 +61,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String }, // optional (only for local accounts)
   authType: { type: String, enum: ["local", "google"], required: true },
-  photo: { type: String }, // ✅ Add this field for profile pictures
-  name: { type: String }, // ✅ Also add name field for Google users
+  photo: { type: String }, // field for profile pictures
+  name: { type: String }, // field for Google users
 });
 const User = mongoose.model("User", userSchema);
 
@@ -127,6 +127,7 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
+
 
 passport.use(new GoogleStrategy(
   {
@@ -235,8 +236,8 @@ app.post("/auth/login", async (req, res) => {
           _id: user._id,
           email: user.email,
           authType: user.authType,
-          photo: user.photo || null, // ✅ Include photo
-          name: user.name || null // ✅ Include name
+          photo: user.photo || null, 
+          name: user.name || null 
         },
         token,
       });

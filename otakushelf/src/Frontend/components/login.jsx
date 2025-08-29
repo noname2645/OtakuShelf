@@ -32,8 +32,10 @@ const Login = ({ onSwitchToRegister }) => {
       return;
     }
 
+    const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
     try {
-      const res = await axios.post("http://localhost:5000/auth/login", {
+      const res = await axios.post(`${API_BASE}/auth/login`, {
         email,
         password,
       }, { withCredentials: true });
@@ -54,7 +56,7 @@ const Login = ({ onSwitchToRegister }) => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/auth/google";
+    window.location.href = `${API_BASE}/auth/google`;
   };
 
   const getMessageClass = () => {
