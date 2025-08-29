@@ -132,8 +132,7 @@ passport.use(new GoogleStrategy(
   {
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost:5000/auth/google/callback",
-    // ✅ Add this to get profile picture
+    callbackURL: process.env.GOOGLE_CALLBACK_URL,
     scope: ['profile', 'email']
   },
   async (accessToken, refreshToken, profile, done) => {
@@ -144,17 +143,17 @@ passport.use(new GoogleStrategy(
         user = new User({
           email: profile.emails[0].value,
           authType: "google",
-          photo: profile.photos?.[0]?.value || null, // ✅ Save photo to database
-          name: profile.displayName || null // ✅ Save name
+          photo: profile.photos?.[0]?.value || null, // Save photo to database
+          name: profile.displayName || null // Save name
         });
         await user.save();
       } else {
-        // ✅ Update existing user with photo if missing
+        // Update existing user with photo if missing
         if (!user.photo && profile.photos?.[0]?.value) {
           user.photo = profile.photos[0].value;
           await user.save();
         }
-        // ✅ Update name if missing
+        // Update name if missing
         if (!user.name && profile.displayName) {
           user.name = profile.displayName;
           await user.save();
@@ -258,10 +257,10 @@ app.get("/auth/google",
 
 // Google callback
 app.get("/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "http://localhost:3000/login" }),
+  passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
     // Make sure this URL matches where your frontend is running
-    res.redirect("http://localhost:3000/home");
+    res.redirect(`${process.env.FRONTEND_URL}/home`);
   }
 );
 // Check current user
