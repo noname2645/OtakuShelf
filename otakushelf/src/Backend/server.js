@@ -47,13 +47,6 @@ app.use(express.json());
 
 app.use(compression());
 
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, 'dist')));
-
-// Handle React routing - return all requests to React app
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
 
 // health check (for uptime pinger)
 app.get('/healthz', (req, res) => res.send('ok'));
@@ -484,6 +477,13 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
 // =======================
 app.use('/api/anime', animeRoutes);
 app.use('/api/anilist', anilistRoutes);
+
+// Serve static files from React build
+app.use(express.static(path.join(__dirname, 'dist')));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
+});
 
 // Server
 const server = http.createServer(app);
