@@ -301,27 +301,39 @@ app.get("/auth/google/callback",
   }
 );
 
-// FIXED: Enhanced auth check endpoint
+// Enhanced user info endpoint
 app.get("/auth/me", (req, res) => {
-  console.log('Auth check - isAuthenticated:', req.isAuthenticated());
-  console.log('Auth check - user:', req.user ? req.user.email : 'none');
-  console.log('Auth check - sessionID:', req.sessionID);
-  
+  const authHeader = req.headers["authorization"];
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      return User.findById(decoded.id).then(user => {
+        if (!user) return res.status(401).json({ message: "Invalid token" });
+        res.json({
+          user: {
+            _id: user._id,
+            email: user.email,
+            authType: user.authType,
+            photo: user.photo || null,
+            name: user.name || null
+          }
+        });
+      });
+    } catch (err) {
+      return res.status(401).json({ message: "Invalid token", error: err.message });
+    }
+  }
+
+  // fallback: session-based auth
   if (req.isAuthenticated() && req.user) {
-    res.json({
-      user: {
-        _id: req.user._id,
-        email: req.user.email,
-        authType: req.user.authType,
-        photo: req.user.photo || null,
-        name: req.user.name || null
-      }
-    });
+    return res.json({ user: req.user });
   } else {
-    res.status(401).json({ message: "Not authenticated" });
+    return res.status(401).json({ message: "Not authenticated" });
   }
 });
 
+// Enhanced logout endpoint
 app.get("/auth/logout", (req, res) => {
   const userEmail = req.user ? req.user.email : 'unknown';
   
@@ -345,7 +357,7 @@ app.get("/auth/logout", (req, res) => {
   });
 });
 
-// Anime list routes (unchanged but with better error handling)
+// Anime list routes 
 app.get("/api/list/:userId", async (req, res) => {
   try {
     const list = await AnimeList.findOne({ userId: req.params.userId });
@@ -495,7 +507,7 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
 app.use('/api/anime', animeRoutes);
 app.use('/api/anilist', anilistRoutes);
 
-// Add this BEFORE React catch-all to make sure backend routes are not eaten
+
 app.use("/auth", (req, res, next) => next());  
 app.use("/api", (req, res, next) => next());
 
