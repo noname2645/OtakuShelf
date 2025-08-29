@@ -10,16 +10,21 @@ import anilistRoutes from './routes/anilistRoute.js';
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import session from "express-session";
+import MongoStore from 'connect-mongo';
 import dotenv from "dotenv";
-dotenv.config();
 import path from 'path';
 import { fileURLToPath } from 'url';
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const isProduction = process.env.NODE_ENV === 'production';
+
+// CRITICAL: Trust proxy for Render deployment
+app.set('trust proxy', 1);
 
 // Middleware
 const allowedOrigins = [
@@ -29,30 +34,27 @@ const allowedOrigins = [
   "https://otakushelf-uuvw.onrender.com"
 ];
 
+// Enhanced CORS configuration
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('Blocked origin:', origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // For legacy browser support
 }));
 
 app.use(express.json());
 app.use(compression());
-
-// Session middleware (needed for Passport) - MOVE THIS UP
-app.use(session({
-  secret: process.env.SESSION_SECRET || "mysecret",
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false }
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/animeApp", {
@@ -61,6 +63,27 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/animeApp", 
 })
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.error("MongoDB Error:", err));
+
+// FIXED: Session middleware with proper production settings
+app.use(session({
+  secret: process.env.SESSION_SECRET || "mysecret",
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/animeApp",
+    collectionName: 'sessions'
+  }),
+  cookie: {
+    secure: isProduction, // Only use secure cookies in production (HTTPS)
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24, // 24 hours
+    sameSite: isProduction ? 'none' : 'lax' // Important for cross-site requests in production
+  },
+  name: 'sessionId' // Change default session name for security
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // =======================
 // User Schema + Model
@@ -165,8 +188,12 @@ passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 passport.deserializeUser(async (id, done) => {
-  const user = await User.findById(id);
-  done(null, user);
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
 });
 
 // =======================
@@ -176,22 +203,32 @@ passport.deserializeUser(async (id, done) => {
 // Health check
 app.get('/healthz', (req, res) => res.send('ok'));
 
-// Auth routes
+// FIXED: Auth routes with better error handling
 app.post("/auth/register", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ message: "User already exists" });
+    
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
 
-    const hashed = await bcrypt.hash(password, 10);
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const hashed = await bcrypt.hash(password, 12); // Increased salt rounds
     const newUser = new User({
       email,
       password: hashed,
       authType: "local",
     });
     await newUser.save();
+    
+    console.log('User registered successfully:', email);
     res.json({ message: "Registration successful!" });
   } catch (err) {
+    console.error('Registration error:', err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
@@ -199,20 +236,37 @@ app.post("/auth/register", async (req, res) => {
 app.post("/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "User not found" });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+    
     if (user.authType !== "local") {
       return res.status(400).json({ message: "This account uses Google login only" });
     }
+    
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
+    // FIXED: Better session handling
     req.login(user, (err) => {
       if (err) {
         console.error("Session login error:", err);
         return res.status(500).json({ message: "Session error" });
       }
-      const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+      
+      const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "24h" });
+      
+      console.log('User logged in successfully:', email);
+      console.log('Session ID:', req.sessionID);
+      
       res.json({
         message: "Login successful!",
         user: {
@@ -234,15 +288,26 @@ app.post("/auth/login", async (req, res) => {
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
 app.get("/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
+  passport.authenticate("google", { failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed` }),
   (req, res) => {
-    const token = jwt.sign({ id: req.user._id }, JWT_SECRET, { expiresIn: "1h" });
-    res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
+    try {
+      const token = jwt.sign({ id: req.user._id }, JWT_SECRET, { expiresIn: "24h" });
+      console.log('Google auth successful for:', req.user.email);
+      res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
+    } catch (err) {
+      console.error('Google callback error:', err);
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=token_generation_failed`);
+    }
   }
 );
 
+// FIXED: Enhanced auth check endpoint
 app.get("/auth/me", (req, res) => {
-  if (req.isAuthenticated()) {
+  console.log('Auth check - isAuthenticated:', req.isAuthenticated());
+  console.log('Auth check - user:', req.user ? req.user.email : 'none');
+  console.log('Auth check - sessionID:', req.sessionID);
+  
+  if (req.isAuthenticated() && req.user) {
     res.json({
       user: {
         _id: req.user._id,
@@ -253,33 +318,41 @@ app.get("/auth/me", (req, res) => {
       }
     });
   } else {
-    res.status(401).json({ message: "Not logged in" });
+    res.status(401).json({ message: "Not authenticated" });
   }
 });
 
 app.get("/auth/logout", (req, res) => {
+  const userEmail = req.user ? req.user.email : 'unknown';
+  
   req.logout((err) => {
     if (err) {
       console.error("Logout error:", err);
       return res.status(500).json({ message: "Logout error" });
     }
+    
     req.session.destroy((err) => {
       if (err) {
         console.error("Session destroy error:", err);
+        return res.status(500).json({ message: "Session destroy error" });
       }
-      res.clearCookie('connect.sid');
+      
+      res.clearCookie('sessionId');
+      res.clearCookie('connect.sid'); // Fallback for default name
+      console.log('User logged out successfully:', userEmail);
       res.json({ message: "Logged out successfully" });
     });
   });
 });
 
-// Anime list routes
+// Anime list routes (unchanged but with better error handling)
 app.get("/api/list/:userId", async (req, res) => {
   try {
     const list = await AnimeList.findOne({ userId: req.params.userId });
     if (!list) return res.json({ watching: [], completed: [], planned: [], dropped: [] });
     res.json(list);
   } catch (err) {
+    console.error('Fetch list error:', err);
     res.status(500).json({ message: "Error fetching list", error: err.message });
   }
 });
@@ -288,13 +361,16 @@ app.post("/api/list/:userId", async (req, res) => {
   try {
     const { category, animeTitle, animeData } = req.body;
     const userId = req.params.userId;
+    
     if (!["watching", "completed", "planned", "dropped"].includes(category)) {
       return res.status(400).json({ message: "Invalid category" });
     }
+    
     let list = await AnimeList.findOne({ userId });
     if (!list) {
       list = new AnimeList({ userId, watching: [], completed: [], planned: [], dropped: [] });
     }
+    
     const allCategories = ['watching', 'completed', 'planned', 'dropped'];
     for (const cat of allCategories) {
       const index = list[cat].findIndex(item => item.title === animeTitle);
@@ -302,6 +378,7 @@ app.post("/api/list/:userId", async (req, res) => {
         list[cat].splice(index, 1);
       }
     }
+    
     const animeEntry = {
       title: animeTitle,
       animeId: animeData?.id || animeData?.mal_id || null,
@@ -309,21 +386,24 @@ app.post("/api/list/:userId", async (req, res) => {
       image: animeData?.images?.jpg?.large_image_url || animeData?.coverImage?.large || animeData?.image_url || null,
       addedDate: new Date()
     };
+    
     if (category === 'watching' || category === 'completed') {
       animeEntry.startDate = new Date();
       animeEntry.episodesWatched = 0;
     }
+    
     if (category === 'completed') {
       animeEntry.finishDate = new Date();
     }
+    
     list[category].push(animeEntry);
     await list.save();
     res.json({ message: "Anime list updated", list });
   } catch (err) {
+    console.error('Update list error:', err);
     res.status(500).json({ message: "Error updating list", error: err.message });
   }
 });
-
 
 // Get specific anime list with details
 app.get("/api/list/:userId/:animeId", async (req, res) => {
@@ -331,7 +411,6 @@ app.get("/api/list/:userId/:animeId", async (req, res) => {
     const list = await AnimeList.findOne({ userId: req.params.userId });
     if (!list) return res.status(404).json({ message: "List not found" });
 
-    // Find anime in any category
     let anime = null;
     const categories = ['watching', 'completed', 'planned', 'dropped'];
 
@@ -344,6 +423,7 @@ app.get("/api/list/:userId/:animeId", async (req, res) => {
 
     res.json(anime);
   } catch (err) {
+    console.error('Fetch anime error:', err);
     res.status(500).json({ message: "Error fetching anime", error: err.message });
   }
 });
@@ -354,16 +434,15 @@ app.put("/api/list/:userId/:animeId", async (req, res) => {
     const { startDate, finishDate, userRating, episodesWatched, notes, category } = req.body;
     const list = await AnimeList.findOne({ userId: req.params.userId });
 
-    if (!list) return res.status(404).json({ message: "List not found" });  // ✅ add return
+    if (!list) return res.status(404).json({ message: "List not found" });
 
     const animeIndex = list[category].findIndex(item => item._id.toString() === req.params.animeId);
     if (animeIndex === -1) {
-      return res.status(404).json({ message: "Anime not found in specified category" }); // ✅ add return
+      return res.status(404).json({ message: "Anime not found in specified category" });
     }
 
-    // Update
     list[category][animeIndex] = {
-      ...list[category][animeIndex]._doc, // keep old fields like title/image
+      ...list[category][animeIndex]._doc,
       startDate: startDate ? new Date(startDate) : list[category][animeIndex].startDate,
       finishDate: finishDate ? new Date(finishDate) : list[category][animeIndex].finishDate,
       userRating: userRating ?? list[category][animeIndex].userRating,
@@ -372,13 +451,12 @@ app.put("/api/list/:userId/:animeId", async (req, res) => {
     };
 
     await list.save();
-    return res.json({ message: "Anime updated", list });  // ✅ final response
+    return res.json({ message: "Anime updated", list });
   } catch (err) {
     console.error("PUT error:", err);
-    return res.status(500).json({ message: "Error updating anime", error: err.message }); // ✅ final fallback
+    return res.status(500).json({ message: "Error updating anime", error: err.message });
   }
 });
-
 
 // Remove anime from list
 app.delete("/api/list/:userId/:animeId", async (req, res) => {
@@ -387,7 +465,6 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
 
     if (!list) return res.status(404).json({ message: "List not found" });
 
-    // Find and remove anime from any category
     const categories = ['watching', 'completed', 'planned', 'dropped'];
     let removed = false;
 
@@ -407,6 +484,7 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
     await list.save();
     res.json({ message: "Anime removed", list });
   } catch (err) {
+    console.error('Remove anime error:', err);
     res.status(500).json({ message: "Error removing anime", error: err.message });
   }
 });
@@ -428,4 +506,5 @@ server.headersTimeout = 66 * 1000;
 
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`);
 });
