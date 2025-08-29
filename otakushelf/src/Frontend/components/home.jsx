@@ -12,8 +12,6 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from './AuthContext';
 
 // ProfileDropdown Component
-// ProfileDropdown Component
-// ProfileDropdown Component
 const ProfileDropdown = () => {
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
@@ -167,23 +165,6 @@ const AnimeHomepage = () => {
 
     const { user } = useAuth();
 
-
-    const Home = () => {
-        const location = useLocation();
-
-        useEffect(() => {
-            const params = new URLSearchParams(location.search);
-            const user = params.get("user");
-            if (user) {
-                const parsedUser = JSON.parse(decodeURIComponent(user));
-                localStorage.setItem("user", JSON.stringify(parsedUser));
-                // optionally clean up the URL:
-                window.history.replaceState({}, "", "/home");
-            }
-        }, [location]);
-
-        return <div>Welcome Home!</div>;
-    };
 
     // Handle scroll events
     useEffect(() => {
