@@ -21,10 +21,12 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 // Middleware
+// In server.js, update allowedOrigins:
 const allowedOrigins = [
   "http://localhost:3000",
-  "http://localhost:5173", // vite
-  "https://yesotakushelf.onrender.com"
+  "http://localhost:5173",
+  "https://yesotakushelf.onrender.com",
+  "https://otakushelf-uuvw.onrender.com"
 ];
 
 app.use(cors({
@@ -236,8 +238,8 @@ app.post("/auth/login", async (req, res) => {
           _id: user._id,
           email: user.email,
           authType: user.authType,
-          photo: user.photo || null, 
-          name: user.name || null 
+          photo: user.photo || null,
+          name: user.name || null
         },
         token,
       });

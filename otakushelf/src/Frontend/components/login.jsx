@@ -11,15 +11,16 @@ const Login = ({ onSwitchToRegister }) => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-      useEffect(() => {
-      if (message) {
-        const timer = setTimeout(() => {
-          setMessage("");
-        }, 3000);
-        return () => clearTimeout(timer); // cleanup on unmount
-      }
-    }, [message]);
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage("");
+      }, 3000);
+      return () => clearTimeout(timer); // cleanup on unmount
+    }
+  }, [message]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -32,7 +33,7 @@ const Login = ({ onSwitchToRegister }) => {
       return;
     }
 
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 
     try {
       const res = await axios.post(`${API_BASE}/auth/login`, {

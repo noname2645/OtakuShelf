@@ -13,8 +13,9 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-    useEffect(() => {
+  useEffect(() => {
     if (message) {
       const timer = setTimeout(() => {
         setMessage("");
@@ -57,7 +58,7 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
       setIsLoading(false);
       return;
     }
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 
     try {
       const res = await axios.post(`${API_BASE}/auth/register`, {

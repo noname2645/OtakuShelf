@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -21,7 +22,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/auth/me", {
+      const response = await axios.get(`${API_BASE}/auth/me`, {
         withCredentials: true
       });
       if (response.data.user) {
@@ -42,7 +43,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.get("http://localhost:5000/auth/logout", {
+      await axios.get(`${API_BASE}/auth/logout`, {
         withCredentials: true
       });
     } catch (error) {
