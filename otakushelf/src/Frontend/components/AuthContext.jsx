@@ -20,6 +20,17 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus();
   }, []);
 
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+  if (token) {
+    localStorage.setItem("token", token);
+    // optionally fetch user profile using this token
+    window.history.replaceState({}, document.title, "/"); // clean URL
+  }
+}, []);
+
+
   const checkAuthStatus = async () => {
     try {
       const response = await axios.get(`${API_BASE}/auth/me`, {

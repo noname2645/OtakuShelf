@@ -233,9 +233,13 @@ app.post("/auth/login", async (req, res) => {
 
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-app.get("/auth/google/callback", passport.authenticate("google", { failureRedirect: "/login" }), (req, res) => {
-  res.redirect(`${process.env.FRONTEND_URL}/`);
-});
+app.get("/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  (req, res) => {
+    const token = jwt.sign({ id: req.user._id }, JWT_SECRET, { expiresIn: "1h" });
+    res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
+  }
+);
 
 app.get("/auth/me", (req, res) => {
   if (req.isAuthenticated()) {
