@@ -417,14 +417,6 @@ app.use('/api/anilist', anilistRoutes);
 app.use("/auth", (req, res, next) => next());  
 app.use("/api", (req, res, next) => next());
 
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, 'dist')));
-
-// React catch-all route (MUST BE THE LAST ROUTE)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
-
 // Server
 const server = http.createServer(app);
 server.keepAliveTimeout = 65 * 1000;
