@@ -234,7 +234,7 @@ app.post("/auth/login", async (req, res) => {
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
 app.get("/auth/google/callback", passport.authenticate("google", { failureRedirect: "/login" }), (req, res) => {
-  res.redirect(`${process.env.FRONTEND_URL}/home`);
+  res.redirect(`${process.env.FRONTEND_URL}/`);
 });
 
 app.get("/auth/me", (req, res) => {
