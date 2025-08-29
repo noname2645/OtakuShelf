@@ -18,17 +18,6 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, 'dist')));
-
-// Handle React routing - return all requests to React app
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
-
-
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
@@ -57,6 +46,14 @@ app.use(cors({
 app.use(express.json());
 
 app.use(compression());
+
+// Serve static files from React build
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Handle React routing - return all requests to React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
 
 // health check (for uptime pinger)
 app.get('/healthz', (req, res) => res.send('ok'));
