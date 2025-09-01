@@ -88,20 +88,41 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             const response = await axios.get(`http://localhost:5000/api/list/${user._id || user.id}`);
             const userList = response.data;
 
-            // Check if anime is in any category
-            const allAnime = [
-                ...userList.watching || [],
-                ...userList.completed || [],
-                ...userList.planned || [],
-                ...userList.dropped || []
-            ];
-
+            // Get the anime title from various possible sources
             const animeTitle = anime.title?.english || anime.title_english || anime.title?.romaji || anime.title;
-            const isInUserList = allAnime.includes(animeTitle);
 
-            setIsInList(isInUserList);
+            // Check if anime is in any category with better matching
+            const categories = ['watching', 'completed', 'planned', 'dropped'];
+            let foundStatus = null;
+
+            for (const category of categories) {
+                const animeInCategory = userList[category] || [];
+                const foundAnime = animeInCategory.find(item => {
+                    // Multiple matching strategies
+                    return (
+                        item.title === animeTitle ||
+                        item.animeId === anime.id ||
+                        item.malId === anime.mal_id ||
+                        (anime.title_english && item.title === anime.title_english) ||
+                        (anime.title_romaji && item.title === anime.title_romaji) ||
+                        (anime.id && item.animeId === anime.id.toString()) ||
+                        (anime.mal_id && item.malId === anime.mal_id.toString())
+                    );
+                });
+
+                if (foundAnime) {
+                    foundStatus = category;
+                    break;
+                }
+            }
+
+            setIsInList(foundStatus !== null);
+            setUserListStatus(foundStatus);
+
         } catch (error) {
             console.error("Error checking if anime is in list:", error);
+            setIsInList(false);
+            setUserListStatus(null);
         }
     };
 
@@ -118,19 +139,26 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             const response = await axios.post(`http://localhost:5000/api/list/${user._id || user.id}`, {
                 category: status,
                 animeTitle: animeTitle,
-                animeData: anime // Send the full anime data for better tracking
+                animeData: anime
             });
 
+            // Immediately update the local state
             setIsInList(true);
             setUserListStatus(status);
-            alert(`Added to ${status} list!`);
+
+            // Re-fetch the actual list status to ensure consistency
+            setTimeout(() => {
+                checkIfInList();
+            }, 100);
+
         } catch (error) {
             console.error("Error adding to list:", error);
             alert("Failed to add to list");
         } finally {
             setIsAddingToList(false);
-        };
+        }
     };
+
 
     // Universal title fetch (AniList + Jikan)
     const animeTitle =
@@ -146,7 +174,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         anime.coverImage?.large ||
         anime.images?.jpg?.large_image_url ||
         anime.image_url ||
-        anime.image || 
+        anime.image ||
         null;
 
 
@@ -369,7 +397,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                 <img src={animeImage} alt={animeTitle} />
                                 <div className="image-overlay"></div>
 
-                                {/* Add to list buttons */}
+                                {/* add-to-list-buttons JSX with this: */}
                                 <div className="add-to-list-buttons">
                                     {!isInList ? (
                                         <div className="list-options">
@@ -378,30 +406,28 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                                 onClick={() => addToList('watching')}
                                                 disabled={isAddingToList}
                                             >
-                                                <Plus size={16} />
-                                                <span>Watching</span>
+                                                {isAddingToList ? 'Adding...' : <><Plus size={16} /><span>Watching</span></>}
                                             </button>
                                             <button
                                                 className="list-option-btn completed-btn"
                                                 onClick={() => addToList('completed')}
                                                 disabled={isAddingToList}
                                             >
-                                                <Plus size={16} />
-                                                <span>Completed</span>
+                                                {isAddingToList ? 'Adding...' : <><Plus size={16} /><span>Completed</span></>}
                                             </button>
                                             <button
                                                 className="list-option-btn planned-btn"
                                                 onClick={() => addToList('planned')}
                                                 disabled={isAddingToList}
                                             >
-                                                <Plus size={16} />
-                                                <span>Plan to Watch</span>
+                                                {isAddingToList ? 'Adding...' : <><Plus size={16} /><span>Plan to Watch</span></>}
                                             </button>
                                         </div>
                                     ) : (
                                         <div className="already-in-list">
                                             <Check size={20} />
                                             <span>In your {userListStatus} list</span>
+                                      
                                         </div>
                                     )}
                                 </div>
