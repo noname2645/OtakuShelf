@@ -8,336 +8,367 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Create isolated axios instances for external APIs
+  const createJikanAxios = () => {
+    return axios.create({
+      withCredentials: false,
+      headers: {
+        'Authorization': undefined
+      }
+    });
+  };
+
+  const createAniListAxios = () => {
+    return axios.create({
+      baseURL: 'https://graphql.anilist.co',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+  };
+
+  // Helper function to validate IDs
+  const isValidId = (id) => {
+    return id && !isNaN(parseInt(id));
+  };
+
+  // Check if relation is sequel or prequel
+  const isSequelOrPrequel = (relationType) => {
+    if (!relationType) return false;
+    const normalizedType = relationType?.toUpperCase();
+    return normalizedType === "SEQUEL" ||
+      normalizedType === "PREQUEL" ||
+      normalizedType === "SEQUEL/PREQUEL" ||
+      normalizedType?.includes("SEQUEL") ||
+      normalizedType?.includes("PREQUEL");
+  };
+
+  // Fetch from AniList
+  const fetchFromAniList = async (id) => {
+    try {
+      const query = `
+        query ($id: Int) {
+          Media(id: $id, type: ANIME) {
+            id
+            title {
+              romaji
+              english
+              native
+            }
+            relations {
+              edges {
+                relationType
+                node {
+                  id
+                  idMal
+                  title {
+                    romaji
+                    english
+                    native
+                  }
+                  type
+                  coverImage {
+                    large
+                    medium
+                    extraLarge
+                  }
+                  bannerImage
+                  status
+                  description
+                  episodes
+                  averageScore
+                  format
+                  genres
+                  studios {
+                    edges {
+                      node {
+                        name
+                      }
+                    }
+                  }
+                  startDate {
+                    year
+                    month
+                    day
+                  }
+                  endDate {
+                    year
+                    month
+                    day
+                  }
+                  season
+                  seasonYear
+                  popularity
+                  isAdult
+                  trailer {
+                    id
+                    site
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      // Convert ID to integer
+      const animeId = parseInt(id);
+      if (isNaN(animeId)) {
+        console.error('Invalid AniList ID:', id);
+        return [];
+      }
+
+      // Use dedicated axios instance for AniList
+      const aniListAxios = createAniListAxios();
+      const res = await aniListAxios.post("/", {
+        query,
+        variables: { id: animeId },
+      });
+
+      // Check if media exists
+      const media = res.data.data?.Media;
+      if (!media) return [];
+
+      return media.relations?.edges || [];
+    } catch (error) {
+      console.error("AniList fetch error:", error.response?.data || error.message);
+      return [];
+    }
+  };
+
+  // Fetch from Jikan
+  const fetchFromJikan = async (malId) => {
+    try {
+      const jikanAxios = createJikanAxios();
+      const res = await jikanAxios.get(`https://api.jikan.moe/v4/anime/${malId}/relations`);
+      return res.data.data || [];
+    } catch (error) {
+      console.error("Jikan fetch error:", error.message);
+      throw error;
+    }
+  };
+
+  // Fetch Jikan anime details
+  const fetchJikanAnimeDetails = async (malId) => {
+    try {
+      const jikanAxios = createJikanAxios();
+      const res = await jikanAxios.get(`https://api.jikan.moe/v4/anime/${malId}`);
+      return res.data.data;
+    } catch (error) {
+      console.error(`Failed to fetch details for MAL ID ${malId}:`, error);
+      return null;
+    }
+  };
+
+  // Get the best image URL from a node
+  const getBestImageUrl = (node) => {
+    return (
+      node.coverImage?.extraLarge ||
+      node.coverImage?.large ||
+      node.coverImage?.medium ||
+      null
+    );
+  };
+
+  // Normalize AniList node
+  const normalizeAniListNode = (edge) => {
+    const node = edge.node;
+    const imageUrl = getBestImageUrl(node);
+    
+    return {
+      // IDs
+      id: node.id,
+      animeId: node.id,
+      animeMalId: node.idMal,
+      idMal: node.idMal,
+      mal_id: node.idMal,
+      
+      // Title
+      title: {
+        english: node.title?.english,
+        romaji: node.title?.romaji,
+        native: node.title?.native
+      },
+      title_english: node.title?.english,
+      title_romaji: node.title?.romaji,
+      
+      // Images
+      coverImage: {
+        large: node.coverImage?.large || imageUrl,
+        medium: node.coverImage?.medium || imageUrl,
+        extraLarge: node.coverImage?.extraLarge || imageUrl,
+      },
+      
+      // Details
+      status: node.status,
+      description: node.description,
+      synopsis: node.description,
+      episodes: node.episodes,
+      episodeCount: node.episodes,
+      averageScore: node.averageScore,
+      score: node.averageScore,
+      format: node.format,
+      type: node.format,
+      genres: node.genres?.map(g => ({ name: g })) || node.genres,
+      studios: node.studios,
+      startDate: node.startDate,
+      endDate: node.endDate,
+      season: node.season,
+      seasonYear: node.seasonYear,
+      popularity: node.popularity,
+      isAdult: node.isAdult,
+      
+      // Trailer data
+      trailer: node.trailer ? {
+        id: node.trailer.id,
+        site: node.trailer.site,
+        youtube_id: node.trailer.site === "youtube" ? node.trailer.id : null,
+      } : null,
+      trailer_video_id: node.trailer?.site === "youtube" ? node.trailer.id : null,
+      
+      // Meta
+      relationType: edge.relationType,
+      source: "anilist",
+    };
+  };
+
+  // Normalize Jikan entry
+  const normalizeJikanEntry = async (entry, relationName) => {
+    const details = await fetchJikanAnimeDetails(entry.mal_id);
+    if (!details) return null;
+
+    return {
+      // IDs
+      id: details.mal_id,
+      animeId: details.anilist_id || null,
+      animeMalId: details.mal_id,
+      idMal: details.mal_id,
+      mal_id: details.mal_id,
+      
+      // Title
+      title: {
+        english: details.title_english || details.title,
+        romaji: details.title || details.title_english,
+        native: details.title_japanese
+      },
+      title_english: details.title_english,
+      title_romaji: details.title,
+      
+      // Images
+      coverImage: {
+        large: details.images?.jpg?.large_image_url,
+        medium: details.images?.jpg?.image_url,
+        extraLarge: details.images?.jpg?.large_image_url
+      },
+      images: details.images,
+      image_url: details.images?.jpg?.large_image_url,
+      
+      // Details
+      status: details.status,
+      description: details.synopsis,
+      synopsis: details.synopsis,
+      episodes: details.episodes,
+      episodeCount: details.episodes,
+      averageScore: details.score ? Math.round(details.score * 10) : null,
+      score: details.score,
+      format: details.type,
+      type: details.type,
+      genres: details.genres?.map(g => ({ name: g.name })) || [],
+      studios: details.studios?.map(s => ({ name: s.name })) || [],
+      startDate: details.aired?.from ? {
+        year: new Date(details.aired.from).getFullYear(),
+        month: new Date(details.aired.from).getMonth() + 1,
+        day: new Date(details.aired.from).getDate()
+      } : null,
+      endDate: details.aired?.to ? {
+        year: new Date(details.aired.to).getFullYear(),
+        month: new Date(details.aired.to).getMonth() + 1,
+        day: new Date(details.aired.to).getDate()
+      } : null,
+      season: details.season,
+      seasonYear: details.year,
+      popularity: details.popularity,
+      isAdult: details.rating?.includes("R") || details.rating?.includes("R+"),
+      
+      // Trailer data
+      trailer: details.trailer ? {
+        youtube_id: details.trailer.youtube_id,
+        url: details.trailer.url,
+        embed_url: details.trailer.embed_url,
+      } : null,
+      trailer_video_id: details.trailer?.youtube_id,
+      
+      // Meta
+      relationType: relationName.toUpperCase().replace(/ /g, "_"),
+      source: "jikan",
+    };
+  };
+
   // Fetch related anime
+  const fetchData = async () => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      let normalized = [];
+      let fetchedFromAniList = false;
+
+      // Try AniList first if animeId exists and is valid
+      if (isValidId(animeId)) {
+        try {
+          const edges = await fetchFromAniList(animeId);
+          const animeRelations = edges.filter(edge => edge.node.type === "ANIME");
+          const sequelPrequelRelations = animeRelations.filter(edge => isSequelOrPrequel(edge.relationType));
+
+          normalized = sequelPrequelRelations.map(normalizeAniListNode);
+          fetchedFromAniList = normalized.length > 0;
+        } catch (err) {
+          console.warn("AniList fetch failed:", err.message);
+        }
+      }
+
+      // If AniList failed or no results, try MAL
+      if ((!fetchedFromAniList || normalized.length === 0) && isValidId(animeMalId)) {
+        try {
+          const data = await fetchFromJikan(animeMalId);
+          for (const rel of data) {
+            const relationName = rel.relation || "RELATED";
+            if (isSequelOrPrequel(relationName)) {
+              const entries = Array.isArray(rel.entry) ? rel.entry : [rel.entry].filter(Boolean);
+
+              for (const entry of entries) {
+                if (entry && entry.mal_id) {
+                  const normalizedEntry = await normalizeJikanEntry(entry, relationName);
+                  if (normalizedEntry) {
+                    normalized.push(normalizedEntry);
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.warn("Jikan fetch failed:", err.message);
+        }
+      }
+
+      setRelated(normalized);
+    } catch (err) {
+      console.error("Overall fetch error:", err);
+      setError(err.message || "Failed to fetch related anime");
+      setRelated([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (!animeId && !animeMalId) {
+    if (!isValidId(animeId) && !isValidId(animeMalId)) {
       setRelated([]);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
-
-    const fetchFromAniList = async (id) => {
-      try {
-        const query = `
-          query ($id: Int) {
-            Media(id: $id, type: ANIME) {
-              id
-              title {
-                romaji
-                english
-                native
-              }
-              relations {
-                edges {
-                  relationType
-                  node {
-                    id
-                    idMal
-                    title {
-                      romaji
-                      english
-                      native
-                    }
-                    type
-                    coverImage {
-                      large
-                      medium
-                      extraLarge
-                    }
-                    bannerImage
-                    status
-                    description
-                    episodes
-                    averageScore
-                    format
-                    genres
-                    studios {
-                      edges {
-                        node {
-                          name
-                        }
-                      }
-                    }
-                    startDate {
-                      year
-                      month
-                      day
-                    }
-                    endDate {
-                      year
-                      month
-                      day
-                    }
-                    season
-                    seasonYear
-                    popularity
-                    isAdult
-                    trailer {
-                      id
-                      site
-                    }
-                  }
-                }
-              }
-            }
-          }
-        `;
-
-        // Fetch from AniList
-        const res = await axios.post("https://graphql.anilist.co", {
-          query,
-          variables: { id: parseInt(id) },
-        });
-
-        // Check if media exists
-        const media = res.data.data?.Media;
-        if (!media) return [];
-
-        return media.relations?.edges || [];
-      } catch (error) {
-        console.error("AniList fetch error:", error);
-        throw error;
-      }
-    };
-
-    // Fetch from Jikan - UPDATED with CORS fix
-    const fetchFromJikan = async (malId) => {
-      try {
-        const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}/relations`, {
-          withCredentials: false // ← CRITICAL FIX
-        });
-        return res.data.data || [];
-      } catch (error) {
-        console.error("Jikan fetch error:", error);
-        throw error;
-      }
-    };
-
-    // Fetch Jikan anime details - UPDATED with CORS fix
-    const fetchJikanAnimeDetails = async (malId) => {
-      try {
-        const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}`, {
-          withCredentials: false // ← CRITICAL FIX
-        });
-        return res.data.data;
-      } catch (error) {
-        console.error(`Failed to fetch details for MAL ID ${malId}:`, error);
-        return null;
-      }
-    };
-
-    // Check if media exists
-    const isSequelOrPrequel = (relationType) => {
-      const normalizedType = relationType?.toUpperCase();
-      return normalizedType === "SEQUEL" ||
-        normalizedType === "PREQUEL" ||
-        normalizedType === "SEQUEL/PREQUEL" ||
-        normalizedType?.includes("SEQUEL") ||
-        normalizedType?.includes("PREQUEL");
-    };
-
-    // Get the best image URL from a node
-    const getBestImageUrl = (node) => {
-      return (
-        node.coverImage?.extraLarge ||
-        node.coverImage?.large ||
-        node.coverImage?.medium ||
-        null
-      );
-    };
-
-    // Normalize AniList node
-    const normalizeAniListNode = (edge) => {
-      const node = edge.node;
-      const imageUrl = getBestImageUrl(node);
-      
-      return {
-        // IDs
-        id: node.id,
-        animeId: node.id, // AniList ID
-        animeMalId: node.idMal, // MAL ID
-        idMal: node.idMal,
-        mal_id: node.idMal,
-        
-        // Title
-        title: {
-          english: node.title?.english,
-          romaji: node.title?.romaji,
-          native: node.title?.native
-        },
-        title_english: node.title?.english,
-        title_romaji: node.title?.romaji,
-        
-        // Images
-        coverImage: {
-          large: node.coverImage?.large || imageUrl,
-          medium: node.coverImage?.medium || imageUrl,
-          extraLarge: node.coverImage?.extraLarge || imageUrl,
-        },
-        
-        // Details
-        status: node.status,
-        description: node.description,
-        synopsis: node.description,
-        episodes: node.episodes,
-        episodeCount: node.episodes,
-        averageScore: node.averageScore,
-        score: node.averageScore,
-        format: node.format,
-        type: node.format,
-        genres: node.genres?.map(g => ({ name: g })) || node.genres,
-        studios: node.studios,
-        startDate: node.startDate,
-        endDate: node.endDate,
-        season: node.season,
-        seasonYear: node.seasonYear,
-        popularity: node.popularity,
-        isAdult: node.isAdult,
-        
-        // Trailer data - Enhanced
-        trailer: node.trailer ? {
-          id: node.trailer.id,
-          site: node.trailer.site,
-          youtube_id: node.trailer.site === "youtube" ? node.trailer.id : null,
-        } : null,
-        trailer_video_id: node.trailer?.site === "youtube" ? node.trailer.id : null,
-        
-        // Meta
-        relationType: edge.relationType,
-        source: "anilist",
-      };
-    };
-
-    // Normalize Jikan entry
-    const normalizeJikanEntry = async (entry, relationName) => {
-      const details = await fetchJikanAnimeDetails(entry.mal_id);
-      if (!details) return null;
-
-      return {
-        // IDs
-        id: details.mal_id,
-        animeId: details.anilist_id || null, // Some Jikan responses include AniList ID
-        animeMalId: details.mal_id,
-        idMal: details.mal_id,
-        mal_id: details.mal_id,
-        
-        // Title
-        title: {
-          english: details.title_english || details.title,
-          romaji: details.title || details.title_english,
-          native: details.title_japanese
-        },
-        title_english: details.title_english,
-        title_romaji: details.title,
-        
-        // Images
-        coverImage: {
-          large: details.images?.jpg?.large_image_url,
-          medium: details.images?.jpg?.image_url,
-          extraLarge: details.images?.jpg?.large_image_url
-        },
-        images: details.images,
-        image_url: details.images?.jpg?.large_image_url,
-        
-        // Details
-        status: details.status,
-        description: details.synopsis,
-        synopsis: details.synopsis,
-        episodes: details.episodes,
-        episodeCount: details.episodes,
-        averageScore: details.score ? Math.round(details.score * 10) : null,
-        score: details.score,
-        format: details.type,
-        type: details.type,
-        genres: details.genres?.map(g => ({ name: g.name })) || [],
-        studios: details.studios?.map(s => ({ name: s.name })) || [],
-        startDate: details.aired?.from ? {
-          year: new Date(details.aired.from).getFullYear(),
-          month: new Date(details.aired.from).getMonth() + 1,
-          day: new Date(details.aired.from).getDate()
-        } : null,
-        endDate: details.aired?.to ? {
-          year: new Date(details.aired.to).getFullYear(),
-          month: new Date(details.aired.to).getMonth() + 1,
-          day: new Date(details.aired.to).getDate()
-        } : null,
-        season: details.season,
-        seasonYear: details.year,
-        popularity: details.popularity,
-        isAdult: details.rating?.includes("R") || details.rating?.includes("R"),
-        
-        // Trailer data - Enhanced for Jikan
-        trailer: details.trailer ? {
-          youtube_id: details.trailer.youtube_id,
-          url: details.trailer.url,
-          embed_url: details.trailer.embed_url,
-        } : null,
-        trailer_video_id: details.trailer?.youtube_id,
-        
-        // Meta
-        relationType: relationName.toUpperCase().replace(/ /g, "_"),
-        source: "jikan",
-      };
-    };
-
-    // Fetch related anime
-    const fetchData = async () => {
-      setError(null);
-
-      try {
-        let normalized = [];
-        let fetchedFromAniList = false;
-
-        // Try AniList first if animeId exists
-        if (animeId) {
-          try {
-            const edges = await fetchFromAniList(animeId);
-            const animeRelations = edges.filter(edge => edge.node.type === "ANIME");
-            const sequelPrequelRelations = animeRelations.filter(edge => isSequelOrPrequel(edge.relationType));
-
-            normalized = sequelPrequelRelations.map(normalizeAniListNode);
-            fetchedFromAniList = normalized.length > 0;
-          } catch (err) {
-            console.warn("AniList fetch failed:", err.message);
-          }
-        }
-
-        // If AniList failed or no results, try MAL
-        if ((!fetchedFromAniList || normalized.length === 0) && animeMalId) {
-          try {
-            const data = await fetchFromJikan(animeMalId);
-            for (const rel of data) {
-              const relationName = rel.relation || "RELATED";
-              if (isSequelOrPrequel(relationName)) {
-                const entries = Array.isArray(rel.entry) ? rel.entry : [rel.entry].filter(Boolean);
-
-                for (const entry of entries) {
-                  if (entry && entry.mal_id) {
-                    const normalizedEntry = await normalizeJikanEntry(entry, relationName);
-                    if (normalizedEntry) {
-                      normalized.push(normalizedEntry);
-                    }
-                  }
-                }
-              }
-            }
-          } catch (err) {
-            console.warn("Jikan fetch failed:", err.message);
-          }
-        }
-
-        setRelated(normalized);
-      } catch (err) {
-        setError(err.message || "Failed to fetch related anime");
-        setRelated([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Fetch related anime immediately without loading state
     fetchData();
   }, [animeId, animeMalId]);
 
@@ -372,7 +403,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
   if (loading) {
     return (
       <div className="related-container">
-            <div className="relation-group">
+        <div className="relation-group">
           <h4 style={{ marginTop: "4px" }}>Prequel</h4>
           <div className="related-grid">
             {renderSkeletonCards(1)}
@@ -408,9 +439,9 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
             {animeList.map((node) => (
               <div key={`${node.id}-${node.relationType}`} className="anime-item">
                 <AnimeCard
-                  anime={node} // Pass the full normalized object
-                  onClick={() => onSelect && onSelect(node)} // Pass the full normalized object
-                  lazy={true} // Enable lazy loading for sequel/prequel cards
+                  anime={node}
+                  onClick={() => onSelect && onSelect(node)}
+                  lazy={true}
                 />
               </div>
             ))}

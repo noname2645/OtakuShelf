@@ -32,11 +32,11 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         console.log('Token found in URL:', token);
         localStorage.setItem("token", token);
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
         // Clean URL immediately
         window.history.replaceState({}, document.title, "/");
 
-        // Fetch user profile using this token
         try {
           const response = await axios.get(`${API_BASE}/auth/me`, {
             withCredentials: true,
@@ -49,6 +49,9 @@ export const AuthProvider = ({ children }) => {
             console.log('User authenticated via token:', response.data.user);
             setUser(response.data.user);
             localStorage.setItem("user", JSON.stringify(response.data.user));
+
+            // Ensure anime list exists for Google users
+            await ensureAnimeListExists(response.data.user._id);
           }
         } catch (error) {
           console.error('Token authentication failed:', error);
@@ -57,9 +60,25 @@ export const AuthProvider = ({ children }) => {
         } finally {
           setLoading(false);
         }
-        return true; // Token was processed
+        return true;
       }
-      return false; // No token found
+      return false;
+    };
+
+    const ensureAnimeListExists = async (userId) => {
+      try {
+        // Check if user has an anime list, create if not
+        await axios.get(`http://localhost:5000/api/list/${userId}`);
+      } catch (error) {
+        if (error.response?.status === 404) {
+          // List doesn't exist, create empty one
+          await axios.post(`http://localhost:5000/api/list/${userId}`, {
+            category: "watching",
+            animeTitle: "dummy",
+            animeData: {}
+          });
+        }
+      }
     };
 
     const initializeAuth = async () => {

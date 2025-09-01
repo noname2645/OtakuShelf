@@ -22,6 +22,8 @@ const EnhancedAnimeList = () => {
     notes: ''
   });
 
+  
+
   const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
@@ -30,14 +32,30 @@ const EnhancedAnimeList = () => {
     }
   }, [user]);
 
-  const fetchAnimeList = async () => {
-    try {
-      const response = await axios.get(`http://localhost:5000/api/list/${user._id || user.id}`);
-      setAnimeList(response.data);
-    } catch (error) {
-      console.error("Error fetching list:", error);
+const fetchAnimeList = async () => {
+  try {
+    // Get user ID from both possible locations
+    const userId = user._id || user.id;
+    if (!userId) {
+      console.error("No user ID found");
+      return;
     }
-  };
+
+    const response = await axios.get(`http://localhost:5000/api/list/${userId}`);
+    setAnimeList(response.data);
+  } catch (error) {
+    console.error("Error fetching list:", error);
+    // If 404, create empty list
+    if (error.response?.status === 404) {
+      setAnimeList({
+        watching: [],
+        completed: [],
+        planned: [],
+        dropped: [],
+      });
+    }
+  }
+};
 
   const handleEdit = (anime) => {
     setEditingAnime(anime);
@@ -50,36 +68,38 @@ const EnhancedAnimeList = () => {
     });
   };
 
-  const handleSaveEdit = async () => {
-    try {
-      const response = await axios.put(
-        `http://localhost:5000/api/list/${user._id || user.id}/${editingAnime._id}`,
-        {
-          ...editForm,
-          category: activeTab,
-          title: editingAnime.title,
-          image: editingAnime.image,
-          animeId: editingAnime.animeId,
-          malId: editingAnime.malId
-        }
-      );
+ // Update all API calls to use consistent user ID
+const handleSaveEdit = async () => {
+  try {
+    const userId = user._id || user.id;
+    const response = await axios.put(
+      `http://localhost:5000/api/list/${userId}/${editingAnime._id}`,
+      {
+        ...editForm,
+        category: activeTab,
+        title: editingAnime.title,
+        image: editingAnime.image,
+        animeId: editingAnime.animeId,
+        malId: editingAnime.malId
+      }
+    );
+    setAnimeList(response.data.list);
+    setEditingAnime(null);
+  } catch (error) {
+    console.error("Error updating anime:", error);
+  }
+};
 
-      setAnimeList(response.data.list);
-      setEditingAnime(null);
-    } catch (error) {
-      console.error("Error updating anime:", error);
-    }
-  };
 
-
-  const handleRemove = async (animeId) => {
-    try {
-      const response = await axios.delete(`http://localhost:5000/api/list/${user._id || user.id}/${animeId}`);
-      setAnimeList(response.data.list);
-    } catch (error) {
-      console.error("Error removing anime:", error);
-    }
-  };
+const handleRemove = async (animeId) => {
+  try {
+    const userId = user._id || user.id;
+    const response = await axios.delete(`http://localhost:5000/api/list/${userId}/${animeId}`);
+    setAnimeList(response.data.list);
+  } catch (error) {
+    console.error("Error removing anime:", error);
+  }
+};
 
   if (!user) {
     return <Navigate to="/login" replace />;

@@ -17,7 +17,6 @@ import { fileURLToPath } from 'url';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
@@ -418,28 +417,28 @@ app.post("/api/list/:userId", async (req, res) => {
 });
 
 // Get specific anime list with details
-app.get("/api/list/:userId/:animeId", async (req, res) => {
+app.get("/api/list/:userId", async (req, res) => {
   try {
-    const list = await AnimeList.findOne({ userId: req.params.userId });
-    if (!list) return res.status(404).json({ message: "List not found" });
-
-    let anime = null;
-    const categories = ['watching', 'completed', 'planned', 'dropped'];
-
-    for (const category of categories) {
-      anime = list[category].find(item => item._id.toString() === req.params.animeId);
-      if (anime) break;
+    let list = await AnimeList.findOne({ userId: req.params.userId });
+    
+    if (!list) {
+      // Create empty list if it doesn't exist
+      list = new AnimeList({
+        userId: req.params.userId,
+        watching: [],
+        completed: [],
+        planned: [],
+        dropped: []
+      });
+      await list.save();
     }
-
-    if (!anime) return res.status(404).json({ message: "Anime not found" });
-
-    res.json(anime);
+    
+    res.json(list);
   } catch (err) {
-    console.error('Fetch anime error:', err);
-    res.status(500).json({ message: "Error fetching anime", error: err.message });
+    console.error('Fetch list error:', err);
+    res.status(500).json({ message: "Error fetching list", error: err.message });
   }
 });
-
 // Update anime in list
 app.put("/api/list/:userId/:animeId", async (req, res) => {
   try {
@@ -500,6 +499,31 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
     res.status(500).json({ message: "Error removing anime", error: err.message });
   }
 });
+
+app.use("/api/list/:userId", async (req, res, next) => {
+  try {
+    const userId = req.params.userId;
+    const list = await AnimeList.findOne({ userId });
+    
+    if (!list) {
+      // Create empty list if it doesn't exist
+      const newList = new AnimeList({
+        userId,
+        watching: [],
+        completed: [],
+        planned: [],
+        dropped: []
+      });
+      await newList.save();
+    }
+    
+    next();
+  } catch (err) {
+    console.error('List middleware error:', err);
+    next();
+  }
+});
+
 
 // =======================
 // Other Routes
