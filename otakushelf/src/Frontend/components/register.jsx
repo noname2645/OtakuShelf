@@ -4,9 +4,10 @@ import { useAuth } from "./AuthContext";
 import "../Stylesheets/register.css";
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
 
+const Register = ({ onRegisterSuccess}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -49,6 +50,9 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
     return true;
   };
 
+  const navigate = useNavigate();
+
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -66,41 +70,28 @@ const Register = ({ onRegisterSuccess, onSwitchToLogin }) => {
         password,
       }, { withCredentials: true });
 
+      console.log("Register response:", res.data)
       setMessage(res.data.message);
 
+      const loginRes = await axios.post(`${API_BASE}/auth/login`, {
+        email,
+        password,
+      }, { withCredentials: true });
 
+      console.log("Login response:", loginRes.data); 
 
-      if (res.data.message.includes("successful")) {
-        try {
-          const loginRes = await axios.post(`${API_BASE}/auth/login`, {
-            email,
-            password,
-          }, { withCredentials: true });
-
-          if (loginRes.data.user) {
-            login(loginRes.data.user);
-            if (onRegisterSuccess) {
-              onRegisterSuccess(loginRes.data.user);
-            }
-          }
-        } catch (loginErr) {
-          if (onRegisterSuccess) {
-            setTimeout(() => {
-              onRegisterSuccess();
-            }, 2000);
-          }
-        }
+      if (loginRes.data.user) {
+        login(loginRes.data.user);
+        if (onRegisterSuccess) onRegisterSuccess(loginRes.data.user);
+        navigate("/"); 
       }
-
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "Error registering user";
-      setMessage(errorMessage);
+      console.error("Register/Login error:", err);
+      setMessage(err.response?.data?.message || "Error registering user");
     } finally {
       setIsLoading(false);
     }
+
   };
 
   const handleGoogleSignup = () => {

@@ -1,5 +1,4 @@
 import { React, useState, useEffect, useRef } from 'react';
-import { Play, Star, Calendar, Users } from 'lucide-react';
 import "../Stylesheets/home.css";
 import axios from "axios";
 import logo from "../images/logo.png"
@@ -8,8 +7,13 @@ import Modal from "../components/modal.jsx";
 import list from "../images/list.png"
 import search from "../images/search.png"
 import { Link } from 'react-router-dom';
-import { useLocation } from "react-router-dom";
 import { useAuth } from './AuthContext';
+import BottomNavigation from '@mui/material/BottomNavigation';
+import BottomNavigationAction from '@mui/material/BottomNavigationAction';
+import FolderIcon from '@mui/icons-material/Folder';
+import RestoreIcon from '@mui/icons-material/Restore';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 // ProfileDropdown Component
 const ProfileDropdown = () => {
@@ -43,7 +47,7 @@ const ProfileDropdown = () => {
 
     // Don't render anything if user is not logged in
     if (!user) {
-        return null;
+        return "Please log in";
     }
 
     return (
@@ -53,14 +57,14 @@ const ProfileDropdown = () => {
                 className="profile-button"
             >
                 <div className="profile-glow"></div>
-                
+
                 {user.photo ? (
                     <div className="profile-avatar">
                         <img
                             src={user.photo}
                             alt="Profile"
                         />
-                        
+
                     </div>
                 ) : (
                     <div className="profile-initials">
@@ -162,9 +166,10 @@ const AnimeHomepage = () => {
     const [searchLoading, setSearchLoading] = useState(false);
     const controllerRef = useRef(null);
     const [isSearching, setIsSearching] = useState(false);
-
     const { user } = useAuth();
 
+
+    const [value, setValue] = useState(0);
 
     // Handle scroll events
     useEffect(() => {
@@ -632,44 +637,20 @@ const AnimeHomepage = () => {
                     </div>
 
                 </header>
-
-                <div className="bottom-button-container">
-                    {/* Home Button */}
-                    <button className="button">
-                        <div className="button-content">
-                            <Link to="/list">
-                                <img className="button-icon" src={list} alt="Home" />
-                            </Link>
-                            <span className="button-text">List</span>
-
-                        </div>
-                    </button>
-
-                    {/* Search Button */}
-                    <button className="button">
-                        <div className="button-content">
-                            <img className="button-icon" src={search} alt="Search" />
-                            <span className="button-text">Advanced search</span>
-                        </div>
-                    </button>
-
-                    {/* Profile Button */}
-                    <button className="button">
-                        <div className="button-content">
-                            <img className="button-icon" src={list} alt="Profile" />
-                            <span className="button-text">Profile</span>
-                        </div>
-                    </button>
-
-                    {/* Cart Button */}
-                    <button className="button">
-                        <div className="button-content">
-                            <img className="button-icon" src={list} alt="Cart" />
-                            <span className="button-text">Cart</span>
-                        </div>
-                    </button>
+                <div className="bottom-button-bar">
+                    <BottomNavigation
+                        sx={{ width: 378 }}
+                        value={value}
+                        onChange={(_, newValue) => setValue(newValue)}
+                    >
+                        <Link to="/list">
+                            <BottomNavigationAction label="Recents" value={0} icon={<img className="bottom-icons" src={list} alt="Recents" />} />
+                        </Link>
+                        <BottomNavigationAction label="Favorites" value={1} icon={<FavoriteIcon />} />
+                        <BottomNavigationAction label="Nearby" value={2} icon={<LocationOnIcon />} />
+                        <BottomNavigationAction label="Folder" value={3} icon={<FolderIcon />} />
+                    </BottomNavigation>
                 </div>
-
                 <section className="hero-slider">
                     <div className="slider-container">
                         {announcements.map((anime, index) => {

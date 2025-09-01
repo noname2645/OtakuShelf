@@ -4,21 +4,23 @@ import { useAuth } from "./AuthContext";
 import "../Stylesheets/login.css";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-const Login = ({ onSwitchToRegister }) => {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
+    const navigate = useNavigate();
 
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => {
         setMessage("");
       }, 3000);
-      return () => clearTimeout(timer); // cleanup on unmount
+      return () => clearTimeout(timer); 
     }
   }, [message]);
 
@@ -33,13 +35,13 @@ const Login = ({ onSwitchToRegister }) => {
       return;
     }
 
-
-
     try {
       const res = await axios.post(`${API_BASE}/auth/login`, {
         email,
         password,
       }, { withCredentials: true });
+
+      console.log("Login response:", res.data); 
 
       setMessage(res.data.message);
 
@@ -47,14 +49,17 @@ const Login = ({ onSwitchToRegister }) => {
         login(res.data.user);
         setEmail("");
         setPassword("");
+        navigate("/");
       }
     } catch (err) {
+      console.error("Login error:", err);
       const errorMessage = err.response?.data?.message || "Error logging in";
       setMessage(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const handleGoogleLogin = () => {
     window.location.href = `${API_BASE}/auth/google`;
