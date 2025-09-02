@@ -151,27 +151,142 @@ const ProfileDropdown = () => {
 };
 
 // TrailerHero Component
+// TrailerHero Component - Fixed YouTube Autoplay
 const TrailerHero = ({ announcements, onOpenModal }) => {
     const [currentAnime, setCurrentAnime] = useState(0);
-    const [scrollY, setScrollY] = useState(0);
     const [opacity, setOpacity] = useState(1);
     const heroRef = useRef(null);
     const [isMuted, setIsMuted] = useState(true);
+    const [hasUserInteracted, setHasUserInteracted] = useState(false);
+    const playerRef = useRef(null);
+    const [isPlayerReady, setIsPlayerReady] = useState(false);
 
-    const toggleMute = () => setIsMuted(prev => !prev);
+    // Track user interaction for autoplay permission
+    useEffect(() => {
+        const handleInteraction = () => {
+            setHasUserInteracted(true);
+        };
 
+        // Listen for any user interaction
+        ['click', 'touchstart', 'scroll', 'keydown'].forEach(event => {
+            document.addEventListener(event, handleInteraction, { once: true, passive: true });
+        });
 
-    // Get trailer URL for anime (replace with your actual trailer data)
- const getTrailerUrl = (anime) => {
-    if (anime.trailer?.site === "youtube" && anime.trailer?.id) {
-        return `https://www.youtube.com/embed/${anime.trailer.id}?autoplay=1&mute=${isMuted ? 1 : 0}&loop=1&playlist=${anime.trailer.id}&controls=0&modestbranding=1&rel=0`;
-    }
-    if (anime.trailer?.embed_url) {
-        return `${anime.trailer.embed_url}?autoplay=1&mute=${isMuted ? 1 : 0}&loop=1`;
-    }
-    return null;
-};
+        return () => {
+            ['click', 'touchstart', 'scroll', 'keydown'].forEach(event => {
+                document.removeEventListener(event, handleInteraction);
+            });
+        };
+    }, []);
 
+    // YouTube Player API integration
+    useEffect(() => {
+        // Load YouTube IFrame API
+        const loadYouTubeAPI = () => {
+            if (window.YT && window.YT.Player) {
+                return Promise.resolve();
+            }
+
+            return new Promise((resolve) => {
+                if (document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+                    const checkYT = () => {
+                        if (window.YT && window.YT.Player) {
+                            resolve();
+                        } else {
+                            setTimeout(checkYT, 100);
+                        }
+                    };
+                    checkYT();
+                    return;
+                }
+
+                window.onYouTubeIframeAPIReady = resolve;
+                const script = document.createElement('script');
+                script.src = 'https://www.youtube.com/iframe_api';
+                script.async = true;
+                document.head.appendChild(script);
+            });
+        };
+
+        loadYouTubeAPI();
+    }, []);
+
+    const toggleMute = () => {
+        if (playerRef.current) {
+            if (isMuted) {
+                playerRef.current.unMute();
+            } else {
+                playerRef.current.mute();
+            }
+            setIsMuted(!isMuted);
+        }
+    };
+
+    // Get clean video ID from trailer
+    const getVideoId = (anime) => {
+        if (anime.trailer?.site === "youtube" && anime.trailer?.id) {
+            return anime.trailer.id;
+        }
+        
+        if (anime.trailer?.embed_url) {
+            const match = anime.trailer.embed_url.match(/(?:youtube\.com\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return match ? match[1] : null;
+        }
+        
+        return null;
+    };
+
+    // Initialize YouTube player
+    const initializePlayer = (videoId) => {
+        if (!window.YT || !videoId) return;
+
+        // Clean up existing player
+        if (playerRef.current && typeof playerRef.current.destroy === 'function') {
+            playerRef.current.destroy();
+        }
+
+        playerRef.current = new window.YT.Player('youtube-player', {
+            height: '100%',
+            width: '100%',
+            videoId: videoId,
+            playerVars: {
+                autoplay: hasUserInteracted ? 1 : 0,
+                mute: 1, // Always start muted for autoplay to work
+                loop: 1,
+                playlist: videoId, // Required for looping single video
+                controls: 0,
+                showinfo: 0,
+                modestbranding: 1,
+                rel: 0,
+                iv_load_policy: 3,
+                fs: 0,
+                disablekb: 1,
+                playsinline: 1,
+                start: 0,
+                end: 0
+            },
+            events: {
+                onReady: (event) => {
+                    setIsPlayerReady(true);
+                    
+                    // Try to play if user has interacted
+                    if (hasUserInteracted) {
+                        event.target.mute(); // Ensure muted for autoplay
+                        event.target.playVideo();
+                    }
+                },
+                onStateChange: (event) => {
+                    // Handle player state changes
+                    if (event.data === window.YT.PlayerState.ENDED) {
+                        event.target.playVideo(); // Loop the video
+                    }
+                },
+                onError: (event) => {
+                    console.error('YouTube Player Error:', event.data);
+                }
+            }
+        });
+    };
 
     // Handle scroll effect for fade and parallax
     useEffect(() => {
@@ -194,22 +309,44 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Auto-advance anime
+    // Auto-advance anime and initialize player
     useEffect(() => {
+        const currentAnimeData = announcements[currentAnime];
+        if (!currentAnimeData) return;
+
+        const videoId = getVideoId(currentAnimeData);
+        if (videoId && window.YT) {
+            // Small delay to ensure DOM is ready
+            setTimeout(() => initializePlayer(videoId), 100);
+        }
+
+        // Auto-advance
         if (announcements.length > 1) {
             const interval = setInterval(() => {
                 setCurrentAnime(prev => (prev + 1) % announcements.length);
             }, 15000);
             return () => clearInterval(interval);
         }
-    }, [announcements.length]);
+    }, [currentAnime, announcements, hasUserInteracted]);
+
+    // Retry autoplay when user interacts
+    useEffect(() => {
+        if (hasUserInteracted && playerRef.current && isPlayerReady) {
+            try {
+                playerRef.current.mute();
+                playerRef.current.playVideo();
+            } catch (error) {
+                console.error('Error starting video after interaction:', error);
+            }
+        }
+    }, [hasUserInteracted, isPlayerReady]);
 
     const currentAnimeData = announcements[currentAnime];
     if (!currentAnimeData) return null;
 
-    const trailerUrl = getTrailerUrl(currentAnimeData);
+    const videoId = getVideoId(currentAnimeData);
 
-    // Helper functions (use your existing ones)
+    // Helper functions
     const formatGenres = (genres) => {
         if (!genres || genres.length === 0) return "Unknown";
         return genres.slice(0, 3).map(g => g.name || g).join(" • ");
@@ -255,25 +392,20 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                 }}
             >
                 {/* Video Background */}
-                {trailerUrl ? (
-                    <iframe
-                        className="absolute inset-0 w-full h-full"
-                        src={trailerUrl}
-                        title={currentAnimeData.title?.romaji || "Anime Trailer"}
-                        allow="autoplay; fullscreen"
+                {videoId ? (
+                    <div
+                        id="youtube-player"
                         style={{
                             position: 'absolute',
                             top: 0,
                             left: 0,
                             width: '100%',
                             height: '100%',
-                            objectFit: 'cover',
                             zIndex: -1,
                         }}
-                        
-                    ></iframe>
+                    />
                 ) : (
-                    // fallback image if no trailer
+                    // Fallback image if no trailer
                     <div
                         style={{
                             position: 'absolute',
@@ -289,6 +421,52 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                     />
                 )}
 
+                {/* User Interaction Prompt */}
+                {!hasUserInteracted && videoId && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: '20px',
+                            right: '20px',
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            color: 'white',
+                            padding: '10px 15px',
+                            borderRadius: '5px',
+                            fontSize: '0.9rem',
+                            zIndex: 3,
+                            cursor: 'pointer',
+                        }}
+                        onClick={() => setHasUserInteracted(true)}
+                    >
+                        Click anywhere to enable video
+                    </div>
+                )}
+
+                {/* Mute/Unmute Button */}
+                {videoId && playerRef.current && (
+                    <button
+                        onClick={toggleMute}
+                        style={{
+                            position: 'absolute',
+                            top: '20px',
+                            left: '20px',
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '50px',
+                            height: '50px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 3,
+                            fontSize: '18px'
+                        }}
+                    >
+                        {isMuted ? '🔇' : '🔊'}
+                    </button>
+                )}
 
                 {/* Gradient Overlay */}
                 <div
@@ -446,7 +624,6 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                         ))}
                     </div>
                 )}
-                
             </section>
 
             {/* Spacer to push content down */}
