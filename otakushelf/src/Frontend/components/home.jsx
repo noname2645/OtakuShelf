@@ -167,9 +167,24 @@ const AnimeHomepage = () => {
     const controllerRef = useRef(null);
     const [isSearching, setIsSearching] = useState(false);
     const { user } = useAuth();
+    const searchRef = useRef(null);
+    const [animateCards, setAnimateCards] = useState(false);
 
 
     const [value, setValue] = useState(0);
+
+    useEffect(() => {
+        if ((!isSearching && (topAiring.length > 0 || mostWatched.length > 0 || topmovies.length > 0)) ||
+            (isSearching && searchResults.length > 0 && !searchLoading)) {
+            // Trigger the staggered animation
+            setAnimateCards(false);
+            const timer = setTimeout(() => {
+                setAnimateCards(true);
+            }, 100);
+
+            return () => clearTimeout(timer);
+        }
+    }, [topAiring, mostWatched, topmovies, searchResults, isSearching, searchLoading]);
 
     // Handle scroll events
     useEffect(() => {
@@ -429,6 +444,8 @@ const AnimeHomepage = () => {
         controllerRef.current = new AbortController();
 
         const fetchSearch = async () => {
+            setSearchLoading(true);
+
             try {
                 const res = await axios.get(
                     `${API_BASE}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=12`,
@@ -559,15 +576,50 @@ const AnimeHomepage = () => {
         }
     };
 
+    //go to view
+    const scrollToView = () => {
+        if (searchRef.current) {
+            const headerHeight = 100; // Add some margin from the top
+            const elementTop = searchRef.current.getBoundingClientRect().top;
+            const absoluteElementTop = elementTop + window.pageYOffset;
+            const targetPosition = absoluteElementTop - headerHeight;
+
+            window.scrollTo({
+                top: targetPosition,
+                behavior: "smooth"
+            });
+        }
+    };
+
+    // Add this useEffect to scroll when search results are ready:
+    useEffect(() => {
+        if (isSearching && (searchResults.length > 0 || !searchLoading)) {
+            setTimeout(() => {
+                scrollToView();
+            }, 100);
+        }
+    }, [searchResults, searchLoading, isSearching]);
+
+
+    useEffect(() => {
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        window.scrollTo(0, 0);
+    }, [])
+
     // Render anime grid
     const renderAnimeGrid = (title, data) => (
         <div className="anime-section-container">
             <h2 className="section-title">{title}</h2>
             <div className="anime-grid">
-                {data.map((anime) => (
-                    <div key={anime.mal_id} className={`anime-card ${loading ? 'loading' : ''}`}
+                {data.map((anime, index) => (
+                    <div
+                        key={anime.mal_id}
+                        className={`anime-card ${loading ? 'loading' : ''} ${animateCards ? 'animate-in' : ''}`}
                         onClick={() => openModal(anime)}
-                        style={{ cursor: "pointer" }}>
+                        style={{ cursor: "pointer", "--card-index": index }}
+                    >
                         {loading ? (
                             <div className="card-skeleton">
                                 <div className="skeleton-image"></div>
@@ -614,6 +666,7 @@ const AnimeHomepage = () => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
+                            onClick={scrollToView}
                         />
                     </div>
 
@@ -760,8 +813,7 @@ const AnimeHomepage = () => {
                 </section>
                 <main className="anime-sections">
                     {isSearching ? (
-                        <div className="anime-section-container">
-                            <h2 className="section-title">Search Results for "{searchQuery}"</h2>
+                        <div ref={searchRef} className="anime-section-container">
                             {searchLoading ? (
                                 <p className="loading-text">Searching anime...</p>
                             ) : searchResults.length > 0 ? (
@@ -769,7 +821,7 @@ const AnimeHomepage = () => {
                                     {searchResults.map((anime, index) => (
                                         <div
                                             key={anime.mal_id || anime.id || index}
-                                            className="anime-card"
+                                            className={`anime-card ${animateCards ? 'animate-in' : ''}`}
                                             onClick={() => openModal(anime)}
                                             style={{ "--card-index": index }}
                                         >
@@ -795,9 +847,7 @@ const AnimeHomepage = () => {
                                 </div>
                             ) : (
                                 <div className="no-results">
-                                    <div className="no-results-icon">🔍</div>
-                                    <h3>No anime found</h3>
-                                    <p>Try searching with a different title or check your spelling.</p>
+                                    <div className="no-results-icon">No anime found</div>
                                 </div>
                             )}
                         </div>
@@ -809,8 +859,8 @@ const AnimeHomepage = () => {
                         </>
                     )}
                 </main>
-
             </div>
+
             <Modal
                 isOpen={isModalOpen}
                 onClose={closeModal}
@@ -820,5 +870,4 @@ const AnimeHomepage = () => {
         </div>
     );
 };
-
 export default AnimeHomepage;

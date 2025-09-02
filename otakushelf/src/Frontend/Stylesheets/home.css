@@ -580,16 +580,74 @@ body {
 }
 
 /* Enhanced Anime Cards Container */
-.anime-cards-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-  width: 100%;
-  max-width: 1200px;
-  padding: 0 20px;
-  margin-bottom: 40px;
+.anime-card {
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+  transition: opacity 1s cubic-bezier(0.23, 1, 0.32, 1), 
+              transform 1s cubic-bezier(0.23, 1, 0.32, 1),
+              box-shadow 0.3s ease;
 }
 
+.anime-card.animate-in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Staggered animation delays for up to 20 cards */
+.anime-card.animate-in:nth-child(1) { transition-delay: calc(0.1s * 1); }
+.anime-card.animate-in:nth-child(2) { transition-delay: calc(0.1s * 2); }
+.anime-card.animate-in:nth-child(3) { transition-delay: calc(0.1s * 3); }
+.anime-card.animate-in:nth-child(4) { transition-delay: calc(0.1s * 4); }
+.anime-card.animate-in:nth-child(5) { transition-delay: calc(0.1s * 5); }
+.anime-card.animate-in:nth-child(6) { transition-delay: calc(0.1s * 6); }
+.anime-card.animate-in:nth-child(7) { transition-delay: calc(0.1s * 7); }
+.anime-card.animate-in:nth-child(8) { transition-delay: calc(0.1s * 8); }
+.anime-card.animate-in:nth-child(9) { transition-delay: calc(0.1s * 9); }
+.anime-card.animate-in:nth-child(10) { transition-delay: calc(0.1s * 10); }
+.anime-card.animate-in:nth-child(11) { transition-delay: calc(0.1s * 11); }
+.anime-card.animate-in:nth-child(12) { transition-delay: calc(0.1s * 12); }
+.anime-card.animate-in:nth-child(13) { transition-delay: calc(0.1s * 13); }
+.anime-card.animate-in:nth-child(14) { transition-delay: calc(0.1s * 14); }
+.anime-card.animate-in:nth-child(15) { transition-delay: calc(0.1s * 15); }
+.anime-card.animate-in:nth-child(16) { transition-delay: calc(0.1s * 16); }
+.anime-card.animate-in:nth-child(17) { transition-delay: calc(0.1s * 17); }
+.anime-card.animate-in:nth-child(18) { transition-delay: calc(0.1s * 18); }
+.anime-card.animate-in:nth-child(19) { transition-delay: calc(0.1s * 19); }
+.anime-card.animate-in:nth-child(20) { transition-delay: calc(0.1s * 20); }
+
+/* Remove the existing fadeIn animation to avoid conflicts */
+.anime-card {
+  animation: none !important;
+}
+
+/* Enhanced hover effect */
+.anime-card.animate-in:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Loading state should not have animation */
+.anime-card.loading {
+  opacity: 1;
+  transform: none;
+  animation: pulse-loading 2s ease-in-out infinite;
+}
+
+
+/*
+.anime-section-container .anime-grid .anime-card {
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+}
+
+.anime-card.loading {
+  opacity: 1;
+  transform: none;
+  animation: pulse-loading 2s ease-in-out infinite;
+}
+*/
 
 /* No Results State */
 .no-results {
