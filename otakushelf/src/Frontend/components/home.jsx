@@ -617,11 +617,6 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                             marginBottom: '1.5rem',
                             textShadow: '0 2px 10px rgba(0,0,0,0.8)',
                             fontFamily: '"Josefin Sans", sans-serif',
-                            backgroundImage: 'linear-gradient(90deg, #00aaffff, #00c8ffff)',
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            color: 'transparent',
-                            WebkitTextFillColor: 'transparent'
                         }}
                     >
                         {truncateDescription(getAnimeDescription(currentAnimeData))}
