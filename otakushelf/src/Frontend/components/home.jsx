@@ -150,6 +150,311 @@ const ProfileDropdown = () => {
     );
 };
 
+// TrailerHero Component
+const TrailerHero = ({ announcements, onOpenModal }) => {
+    const [currentAnime, setCurrentAnime] = useState(0);
+    const [scrollY, setScrollY] = useState(0);
+    const [opacity, setOpacity] = useState(1);
+    const heroRef = useRef(null);
+    const [isMuted, setIsMuted] = useState(true);
+
+    const toggleMute = () => setIsMuted(prev => !prev);
+
+
+    // Get trailer URL for anime (replace with your actual trailer data)
+ const getTrailerUrl = (anime) => {
+    if (anime.trailer?.site === "youtube" && anime.trailer?.id) {
+        return `https://www.youtube.com/embed/${anime.trailer.id}?autoplay=1&mute=${isMuted ? 1 : 0}&loop=1&playlist=${anime.trailer.id}&controls=0&modestbranding=1&rel=0`;
+    }
+    if (anime.trailer?.embed_url) {
+        return `${anime.trailer.embed_url}?autoplay=1&mute=${isMuted ? 1 : 0}&loop=1`;
+    }
+    return null;
+};
+
+
+    // Handle scroll effect for fade and parallax
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollTop = window.pageYOffset;
+            setScrollY(scrollTop);
+
+            const heroHeight = heroRef.current?.offsetHeight || 600;
+            const fadeStart = heroHeight * 0.3;
+            const fadeEnd = heroHeight * 0.8;
+
+            let newOpacity = 1;
+            if (scrollTop > fadeStart) {
+                newOpacity = Math.max(0, 1 - (scrollTop - fadeStart) / (fadeEnd - fadeStart));
+            }
+            setOpacity(newOpacity);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Auto-advance anime
+    useEffect(() => {
+        if (announcements.length > 1) {
+            const interval = setInterval(() => {
+                setCurrentAnime(prev => (prev + 1) % announcements.length);
+            }, 15000);
+            return () => clearInterval(interval);
+        }
+    }, [announcements.length]);
+
+    const currentAnimeData = announcements[currentAnime];
+    if (!currentAnimeData) return null;
+
+    const trailerUrl = getTrailerUrl(currentAnimeData);
+
+    // Helper functions (use your existing ones)
+    const formatGenres = (genres) => {
+        if (!genres || genres.length === 0) return "Unknown";
+        return genres.slice(0, 3).map(g => g.name || g).join(" • ");
+    };
+
+    const truncateDescription = (description, maxLength = 180) => {
+        if (!description) return "No description available.";
+        const cleanText = description.replace(/<[^>]*>/g, '');
+        return cleanText.length > maxLength
+            ? cleanText.substring(0, maxLength) + "..."
+            : cleanText;
+    };
+
+    const getStatusColor = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'releasing':
+            case 'currently_airing':
+                return '#4CAF50';
+            case 'not_yet_released':
+            case 'not_yet_aired':
+                return '#FF9800';
+            case 'finished':
+            case 'finished_airing':
+                return '#2196F3';
+            default:
+                return '#757575';
+        }
+    };
+
+    return (
+        <>
+            {/* Fixed Trailer Section */}
+            <section
+                ref={heroRef}
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    zIndex: 1,
+                    opacity: opacity,
+                }}
+            >
+                {/* Video Background */}
+                {trailerUrl ? (
+                    <iframe
+                        className="absolute inset-0 w-full h-full"
+                        src={trailerUrl}
+                        title={currentAnimeData.title?.romaji || "Anime Trailer"}
+                        allow="autoplay; fullscreen"
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            zIndex: -1,
+                        }}
+                        
+                    ></iframe>
+                ) : (
+                    // fallback image if no trailer
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            backgroundImage: `url(${currentAnimeData.bannerImage || currentAnimeData.coverImage?.extraLarge})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            zIndex: -1,
+                        }}
+                    />
+                )}
+
+
+                {/* Gradient Overlay */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
+                        zIndex: 1
+                    }}
+                />
+
+                {/* Content Overlay */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        bottom: '15%',
+                        left: '5%',
+                        right: '5%',
+                        color: 'white',
+                        zIndex: 2,
+                        maxWidth: '600px'
+                    }}
+                >
+                    <h1
+                        style={{
+                            fontSize: 'clamp(2.5rem, 6vw, 5rem)',
+                            fontWeight: '900',
+                            marginBottom: '1rem',
+                            textShadow: '0 4px 20px rgba(0,0,0,0.9)',
+                            lineHeight: '1.1'
+                        }}
+                    >
+                        {currentAnimeData.title?.english || currentAnimeData.title?.romaji}
+                    </h1>
+
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '1.5rem',
+                            marginBottom: '1.5rem',
+                            fontSize: '1.1rem',
+                            fontWeight: '500',
+                            textShadow: '0 2px 10px rgba(0,0,0,0.8)'
+                        }}
+                    >
+                        <span
+                            style={{
+                                backgroundColor: getStatusColor(currentAnimeData.status),
+                                padding: '0.3rem 0.8rem',
+                                borderRadius: '20px',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                textTransform: 'uppercase'
+                            }}
+                        >
+                            {currentAnimeData.status?.replace(/_/g, ' ') || 'Unknown'}
+                        </span>
+                        <span>{currentAnimeData.seasonYear || 'TBA'}</span>
+                        {currentAnimeData.episodes && (
+                            <>
+                                <span>•</span>
+                                <span>{currentAnimeData.episodes} Episodes</span>
+                            </>
+                        )}
+                        {currentAnimeData.averageScore && (
+                            <>
+                                <span>•</span>
+                                <span style={{ color: '#FFD700' }}>
+                                    ⭐ {currentAnimeData.averageScore}/100
+                                </span>
+                            </>
+                        )}
+                    </div>
+
+                    <p
+                        style={{
+                            fontSize: '1.2rem',
+                            lineHeight: '1.7',
+                            marginBottom: '1.5rem',
+                            textShadow: '0 2px 10px rgba(0,0,0,0.8)',
+                            color: '#f0f0f0'
+                        }}
+                    >
+                        {truncateDescription(currentAnimeData.description)}
+                    </p>
+
+                    <div
+                        style={{
+                            marginBottom: '2rem',
+                            fontSize: '1rem',
+                            color: '#ddd',
+                            textShadow: '0 2px 8px rgba(0,0,0,0.8)'
+                        }}
+                    >
+                        <strong>Genres:</strong> {formatGenres(currentAnimeData.genres)}
+                    </div>
+
+                    <button
+                        onClick={() => onOpenModal(currentAnimeData)}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.8rem',
+                            padding: '1rem 2.5rem',
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            color: '#000',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontSize: '1.1rem',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            backdropFilter: 'blur(10px)',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                            transition: 'all 0.3s ease',
+                            textTransform: 'uppercase'
+                        }}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
+                        </svg>
+                        More Details
+                    </button>
+                </div>
+
+                {/* Slide Indicators */}
+                {announcements.length > 1 && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            bottom: '5%',
+                            right: '5%',
+                            display: 'flex',
+                            gap: '0.5rem',
+                            zIndex: 2
+                        }}
+                    >
+                        {announcements.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => setCurrentAnime(index)}
+                                style={{
+                                    width: index === currentAnime ? '40px' : '12px',
+                                    height: '4px',
+                                    backgroundColor: index === currentAnime ? 'white' : 'rgba(255,255,255,0.4)',
+                                    border: 'none',
+                                    borderRadius: '2px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease'
+                                }}
+                            />
+                        ))}
+                    </div>
+                )}
+                
+            </section>
+
+            {/* Spacer to push content down */}
+            <div style={{ height: '100vh' }} />
+        </>
+    );
+};
+
 const AnimeHomepage = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -230,15 +535,43 @@ const AnimeHomepage = () => {
         return () => clearInterval(interval);
     }, [announcements.length]);
 
+    useEffect(() => {
+        const fetchHeroPool = async () => {
+            try {
+                const res = await axios.get(`${API_BASE}/api/anime/anime-sections`);
+
+                // Normalize each section
+                const airing = res.data.topAiring.map(normalizeHeroAnime);
+                const movies = res.data.topMovies.map(normalizeHeroAnime);
+                const watched = res.data.mostWatched.map(normalizeHeroAnime);
+
+                // Merge + filter only anime with trailers
+                const combined = [...airing, ...movies, ...watched].filter(
+                    (anime) =>
+                        anime.trailer &&
+                        (anime.trailer.id || anime.trailer.embed_url) // AniList or Jikan
+                );
+
+                // Optional: random shuffle
+                const shuffled = combined.sort(() => Math.random() - 0.5);
+
+                setAnnouncements(shuffled.slice(0, 10)); // pick first 10
+            } catch (err) {
+                console.error("Error fetching hero pool:", err);
+            }
+        };
+
+        fetchHeroPool();
+    }, []);
+
+
     // Normalize hero anime data
     const normalizeHeroAnime = (anime) => {
         return {
-            // IDs
             id: anime.id,
             animeId: anime.id,
             animeMalId: anime.idMal || null,
 
-            // Titles
             title: {
                 romaji: anime.title?.romaji || null,
                 english: anime.title?.english || null,
@@ -251,34 +584,18 @@ const AnimeHomepage = () => {
                 medium: anime.coverImage?.medium || null,
             },
 
+            bannerImage: anime.bannerImage || null,
 
-            images: {
-                jpg: {
-                    large_image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
-                    image_url: anime.coverImage?.large || anime.coverImage?.medium,
-                },
-                webp: {
-                    large_image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
-                    image_url: anime.coverImage?.large || anime.coverImage?.medium,
-                },
-            },
-            image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
+            // 🔥 Trailer fields
+            trailer: anime.trailer || null,
 
-            // Details
-            status: anime.status || null,
             description: anime.description || null,
             episodes: anime.episodes || null,
             averageScore: anime.averageScore || null,
-            format: anime.format || null,
-            genres: anime.genres || [],
-            studios: anime.studios?.nodes?.map(s => s.name) || [],
-            startDate: anime.startDate || null,
-            endDate: anime.endDate || null,
-            season: anime.season || null,
+            status: anime.status || null,
             seasonYear: anime.seasonYear || null,
-            popularity: anime.popularity || null,
+            genres: anime.genres || [],
             isAdult: anime.isAdult || false,
-            nextAiringEpisode: anime.nextAiringEpisode || null,
 
             ...anime,
         };
@@ -354,18 +671,31 @@ const AnimeHomepage = () => {
 
     // Fetch announcements
     useEffect(() => {
-        const fetchAnnouncements = async () => {
-            try {
-                const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
-                const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                const normalizedAnnouncements = sorted.slice(0, 10).map(normalizeHeroAnime);
-                setAnnouncements(normalizedAnnouncements);
-                localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
+   const fetchAnnouncements = async () => {
+    try {
+        const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
+        const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
-            } catch (err) {
-                console.error("Error fetching announcements:", err);
-            }
-        };
+        const normalizedAnnouncements = sorted
+            .map(normalizeHeroAnime)
+            .filter(anime => {
+                // Must have trailer
+                const hasTrailer = anime.trailer && (anime.trailer.id || anime.trailer.embed_url);
+
+                // Exclude TBA (not yet released)
+                const notTBA = anime.status?.toLowerCase() !== "not_yet_released" &&
+                               anime.status?.toLowerCase() !== "not_yet_aired";
+
+                return hasTrailer && notTBA;
+            });
+
+        setAnnouncements(normalizedAnnouncements.slice(0, 10));
+        localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
+    } catch (err) {
+        console.error("Error fetching announcements:", err);
+    }
+};
+
         fetchAnnouncements();
     }, []);
 
@@ -704,113 +1034,10 @@ const AnimeHomepage = () => {
                         <BottomNavigationAction label="Folder" value={3} icon={<FolderIcon />} />
                     </BottomNavigation>
                 </div>
-                <section className="hero-slider">
-                    <div className="slider-container">
-                        {announcements.map((anime, index) => {
-                            const isVisible =
-                                index === currentSlide ||
-                                index === (currentSlide + 1) % announcements.length ||
-                                index === (currentSlide - 1 + announcements.length) % announcements.length;
-                            if (!isVisible) return null;
-
-                            return (
-                                <div
-                                    key={anime.id}
-                                    className={`slide ${index === currentSlide ? "active" : ""}`}
-                                    onClick={() => openModal(anime)}
-                                    style={{ cursor: "pointer" }}
-                                >
-                                    <div className="slide-content-wrapper">
-                                        <div className="slide-image-left">
-                                            <img
-                                                src={anime.coverImage?.extraLarge || anime.coverImage?.large || anime.coverImage?.medium}
-                                                alt={anime.title?.romaji || anime.title?.english}
-                                                loading={index === currentSlide ? "eager" : "lazy"}
-                                                fetchpriority={index === currentSlide ? "high" : "auto"}
-                                                decoding="async"
-                                            />
-
-
-                                        </div>
-                                        <div className="slide-info-right">
-                                            <h2 className="anime-title">
-                                                {anime.title?.romaji || anime.title?.english}
-                                            </h2>
-
-                                            <div className="anime-info2">
-                                                <div className="info-item2">
-                                                    <span className="info-label">Status</span>
-                                                    <span
-                                                        className={`info-value ${getStatusColor(anime.status)}`}
-                                                    >
-                                                        {anime.status?.replace(/_/g, " ").toUpperCase() || "Unknown"}
-                                                    </span>
-                                                </div>
-                                                <div className="info-item2">
-                                                    <span className="info-label">Release Date</span>
-                                                    <span className="info-value">
-                                                        {formatDate(anime.startDate)}
-                                                    </span>
-                                                </div>
-                                                <div className="info-item2">
-                                                    <span className="info-label">Episodes</span>
-                                                    <span className="info-value">
-                                                        {anime.episodes || "TBA"}
-                                                    </span>
-                                                </div>
-                                                <div className="info-item2">
-                                                    <span className="info-label">Score</span>
-                                                    <span className="info-value">
-                                                        {formatScore(anime.averageScore)}
-                                                    </span>
-                                                </div>
-                                                <div className="info-item2">
-                                                    <span className="info-label">Genres</span>
-                                                    <span className="info-value">
-                                                        {formatGenres(anime.genres)}
-                                                    </span>
-                                                </div>
-                                                <div className="info-item2">
-                                                    <span className="info-label">Popularity</span>
-                                                    <span className="info-value">
-                                                        {formatPopularity(anime.popularity)}
-                                                    </span>
-                                                </div>
-                                                {anime.nextAiringEpisode && (
-                                                    <div className="info-item2">
-                                                        <span className="info-label">Next Episode</span>
-                                                        <span className="info-value">
-                                                            Episode {anime.nextAiringEpisode.episode}
-                                                        </span>
-                                                    </div>
-                                                )}
-
-                                            </div>
-                                            <p className="anime-description">
-                                                {truncateDescription(anime.description)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {announcements.length > 1 && (
-                        <div className="slider-navigation">
-                            <div className="slider-dots">
-                                {announcements.map((_, index) => (
-                                    <button
-                                        key={index}
-                                        className={`dot ${index === currentSlide ? "active" : ""}`}
-                                        onClick={() => setCurrentSlide(index)}
-                                        aria-label={`Go to slide ${index + 1}`}
-                                    ></button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </section>
+                <TrailerHero
+                    announcements={announcements}
+                    onOpenModal={openModal}
+                />
                 <main className="anime-sections">
                     {isSearching ? (
                         <div ref={searchRef} className="anime-section-container">
