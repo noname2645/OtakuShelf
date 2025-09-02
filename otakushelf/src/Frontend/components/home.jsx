@@ -150,12 +150,28 @@ const ProfileDropdown = () => {
     );
 };
 
+const getAnimeTitle = (anime) => {
+    // Handle different title structures
+    if (anime.title?.english) return anime.title.english;
+    if (anime.title?.romaji) return anime.title.romaji;
+    if (anime.title?.native) return anime.title.native;
+    if (typeof anime.title === 'string') return anime.title;
+    if (anime.title_english) return anime.title_english;
+    if (anime.title_romaji) return anime.title_romaji;
+    return anime.title || 'Unknown Title';
+};
+
+const getAnimeDescription = (anime) => {
+    // Handle different description structures
+    return anime.description || anime.synopsis || 'No description available.';
+};
+
 // TrailerHero Component
-// TrailerHero Component - Fixed YouTube Autoplay
 const TrailerHero = ({ announcements, onOpenModal }) => {
     const [currentAnime, setCurrentAnime] = useState(0);
     const [opacity, setOpacity] = useState(1);
     const heroRef = useRef(null);
+    const [scrollY, setScrollY] = useState(0); // This was missing!
     const [isMuted, setIsMuted] = useState(true);
     const [hasUserInteracted, setHasUserInteracted] = useState(false);
     const playerRef = useRef(null);
@@ -211,14 +227,21 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
         loadYouTubeAPI();
     }, []);
 
-    const toggleMute = () => {
-        if (playerRef.current) {
-            if (isMuted) {
-                playerRef.current.unMute();
-            } else {
-                playerRef.current.mute();
+    const toggleMute = (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+
+        if (playerRef.current && isPlayerReady) {
+            try {
+                if (isMuted) {
+                    playerRef.current.unMute();
+                    playerRef.current.setVolume(50); // Set to 50% volume when unmuting
+                } else {
+                    playerRef.current.mute();
+                }
+                setIsMuted(!isMuted);
+            } catch (error) {
+                console.error('Error toggling mute:', error);
             }
-            setIsMuted(!isMuted);
         }
     };
 
@@ -227,12 +250,12 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
         if (anime.trailer?.site === "youtube" && anime.trailer?.id) {
             return anime.trailer.id;
         }
-        
+
         if (anime.trailer?.embed_url) {
             const match = anime.trailer.embed_url.match(/(?:youtube\.com\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
             return match ? match[1] : null;
         }
-        
+
         return null;
     };
 
@@ -242,7 +265,11 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
 
         // Clean up existing player
         if (playerRef.current && typeof playerRef.current.destroy === 'function') {
-            playerRef.current.destroy();
+            try {
+                playerRef.current.destroy();
+            } catch (error) {
+                console.error('Error destroying player:', error);
+            }
         }
 
         playerRef.current = new window.YT.Player('youtube-player', {
@@ -251,9 +278,9 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
             videoId: videoId,
             playerVars: {
                 autoplay: hasUserInteracted ? 1 : 0,
-                mute: 1, // Always start muted for autoplay to work
+                mute: 1,
                 loop: 1,
-                playlist: videoId, // Required for looping single video
+                playlist: videoId,
                 controls: 0,
                 showinfo: 0,
                 modestbranding: 1,
@@ -267,12 +294,18 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
             },
             events: {
                 onReady: (event) => {
+                    console.log('YouTube player ready');
                     setIsPlayerReady(true);
-                    
+                    setIsMuted(true); // Ensure state matches player
+
                     // Try to play if user has interacted
                     if (hasUserInteracted) {
-                        event.target.mute(); // Ensure muted for autoplay
-                        event.target.playVideo();
+                        try {
+                            event.target.mute(); // Ensure muted for autoplay
+                            event.target.playVideo();
+                        } catch (error) {
+                            console.error('Error starting video:', error);
+                        }
                     }
                 },
                 onStateChange: (event) => {
@@ -283,6 +316,7 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                 },
                 onError: (event) => {
                     console.error('YouTube Player Error:', event.data);
+                    setIsPlayerReady(false);
                 }
             }
         });
@@ -310,25 +344,24 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
     }, []);
 
     // Auto-advance anime and initialize player
+    // Replace your existing auto-advance useEffect with this:
     useEffect(() => {
         const currentAnimeData = announcements[currentAnime];
         if (!currentAnimeData) return;
 
         const videoId = getVideoId(currentAnimeData);
         if (videoId && window.YT) {
-            // Small delay to ensure DOM is ready
             setTimeout(() => initializePlayer(videoId), 100);
         }
 
-        // Auto-advance
+        // Auto-advance every 15 seconds instead of 15000ms
         if (announcements.length > 1) {
             const interval = setInterval(() => {
                 setCurrentAnime(prev => (prev + 1) % announcements.length);
-            }, 15000);
+            }, 30000);
             return () => clearInterval(interval);
         }
     }, [currentAnime, announcements, hasUserInteracted]);
-
     // Retry autoplay when user interacts
     useEffect(() => {
         if (hasUserInteracted && playerRef.current && isPlayerReady) {
@@ -354,7 +387,17 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
 
     const truncateDescription = (description, maxLength = 180) => {
         if (!description) return "No description available.";
-        const cleanText = description.replace(/<[^>]*>/g, '');
+        // Remove HTML tags and decode HTML entities
+        const cleanText = description
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#x27;/g, "'")
+            .replace(/&nbsp;/g, ' ')
+            .trim();
+
         return cleanText.length > maxLength
             ? cleanText.substring(0, maxLength) + "..."
             : cleanText;
@@ -397,11 +440,15 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                         id="youtube-player"
                         style={{
                             position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
+                            top: '50%',
+                            left: '50%',
+                            width: '100vw',
+                            height: '56.25vw', // 16:9 aspect ratio
+                            minWidth: '177.78vh', // 16:9 aspect ratio
+                            minHeight: '100vh',
+                            transform: 'translate(-50%, -50%)',
                             zIndex: -1,
+                            objectFit: 'cover',
                         }}
                     />
                 ) : (
@@ -426,8 +473,8 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                     <div
                         style={{
                             position: 'absolute',
-                            top: '20px',
-                            right: '20px',
+                            bottom: '50%',
+                            right: '23%',
                             backgroundColor: 'rgba(0, 0, 0, 0.7)',
                             color: 'white',
                             padding: '10px 15px',
@@ -443,14 +490,14 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                 )}
 
                 {/* Mute/Unmute Button */}
-                {videoId && playerRef.current && (
+                {videoId && (
                     <button
                         onClick={toggleMute}
                         style={{
                             position: 'absolute',
-                            top: '20px',
+                            bottom: '20px',
                             left: '20px',
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
                             color: 'white',
                             border: 'none',
                             borderRadius: '50%',
@@ -460,8 +507,19 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             cursor: 'pointer',
-                            zIndex: 3,
-                            fontSize: '18px'
+                            zIndex: 99, // Increased z-index
+                            fontSize: '20px',
+                            transition: 'all 0.3s ease',
+                            backdropFilter: 'blur(10px)',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+                            e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                            e.target.style.transform = 'scale(1)';
                         }}
                     >
                         {isMuted ? '🔇' : '🔊'}
@@ -476,8 +534,8 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                         left: 0,
                         width: '100%',
                         height: '100%',
-                        background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
-                        zIndex: 1
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.6) 20%, rgba(0,0,0,0) 80%)',
+                        zIndex: 1,
                     }}
                 />
 
@@ -495,14 +553,21 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                 >
                     <h1
                         style={{
-                            fontSize: 'clamp(2.5rem, 6vw, 5rem)',
-                            fontWeight: '900',
+                            fontFamily: "Playwrite AU QLD",
+                            fontSize: '3.4em',
+                            fontWeight: '600',
                             marginBottom: '1rem',
-                            textShadow: '0 4px 20px rgba(0,0,0,0.9)',
-                            lineHeight: '1.1'
+                            lineHeight: '1.1',
+                            backgroundImage: 'linear-gradient(90deg, #ff4b2b, #ff416c)',
+                            WebkitBackgroundClip: 'text',
+                            backgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            // border: '2px solid black',
+                            height: 'auto',
+                            padding: '5px'
                         }}
                     >
-                        {currentAnimeData.title?.english || currentAnimeData.title?.romaji}
+                        {getAnimeTitle(currentAnimeData)}
                     </h1>
 
                     <div
@@ -544,18 +609,24 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                             </>
                         )}
                     </div>
-
                     <p
                         style={{
-                            fontSize: '1.2rem',
-                            lineHeight: '1.7',
+                            fontSize: '1.5em',
+                            fontWeight: 600,
+                            lineHeight: '1.4',
                             marginBottom: '1.5rem',
                             textShadow: '0 2px 10px rgba(0,0,0,0.8)',
-                            color: '#f0f0f0'
+                            fontFamily: '"Josefin Sans", sans-serif',
+                            backgroundImage: 'linear-gradient(90deg, #00aaffff, #00c8ffff)',
+                            backgroundClip: 'text',
+                            WebkitBackgroundClip: 'text',
+                            color: 'transparent',
+                            WebkitTextFillColor: 'transparent'
                         }}
                     >
-                        {truncateDescription(currentAnimeData.description)}
+                        {truncateDescription(getAnimeDescription(currentAnimeData))}
                     </p>
+
 
                     <div
                         style={{
@@ -848,30 +919,30 @@ const AnimeHomepage = () => {
 
     // Fetch announcements
     useEffect(() => {
-   const fetchAnnouncements = async () => {
-    try {
-        const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
-        const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        const fetchAnnouncements = async () => {
+            try {
+                const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
+                const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
-        const normalizedAnnouncements = sorted
-            .map(normalizeHeroAnime)
-            .filter(anime => {
-                // Must have trailer
-                const hasTrailer = anime.trailer && (anime.trailer.id || anime.trailer.embed_url);
+                const normalizedAnnouncements = sorted
+                    .map(normalizeHeroAnime)
+                    .filter(anime => {
+                        // Must have trailer
+                        const hasTrailer = anime.trailer && (anime.trailer.id || anime.trailer.embed_url);
 
-                // Exclude TBA (not yet released)
-                const notTBA = anime.status?.toLowerCase() !== "not_yet_released" &&
-                               anime.status?.toLowerCase() !== "not_yet_aired";
+                        // Exclude TBA (not yet released)
+                        const notTBA = anime.status?.toLowerCase() !== "not_yet_released" &&
+                            anime.status?.toLowerCase() !== "not_yet_aired";
 
-                return hasTrailer && notTBA;
-            });
+                        return hasTrailer && notTBA;
+                    });
 
-        setAnnouncements(normalizedAnnouncements.slice(0, 10));
-        localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
-    } catch (err) {
-        console.error("Error fetching announcements:", err);
-    }
-};
+                setAnnouncements(normalizedAnnouncements.slice(0, 10));
+                localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
+            } catch (err) {
+                console.error("Error fetching announcements:", err);
+            }
+        };
 
         fetchAnnouncements();
     }, []);
