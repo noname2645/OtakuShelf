@@ -371,12 +371,24 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         <>
             <div className="modal-overlay" onClick={onClose}>
                 <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                    {/* Floating particles background */}
-                    <div className="floating-particles">
-                        {[...Array(15)].map((_, i) => (
-                            <div key={i} className={`particle particle-${i + 1}`}></div>
-                        ))}
-                    </div>
+                    {/* Banner image background */}
+                    <div
+                        className="modal-background"
+                        style={{
+                            backgroundImage: `url(${anime?.bannerImage || anime?.coverImage?.extraLarge || '/fallback.jpg'})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat',
+                            filter: 'blur(1px) brightness(0.3)',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: -1, // stays behind content
+                        }}
+                    ></div>
+
 
                     {/* Close button */}
                     <button className="modal-close" onClick={onClose}>
@@ -427,7 +439,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                         <div className="already-in-list">
                                             <Check size={20} />
                                             <span>In your {userListStatus} list</span>
-                                      
+
                                         </div>
                                     )}
                                 </div>

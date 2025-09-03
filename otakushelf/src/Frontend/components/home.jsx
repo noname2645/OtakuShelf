@@ -11,9 +11,27 @@ import { useAuth } from './AuthContext';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import FolderIcon from '@mui/icons-material/Folder';
-import RestoreIcon from '@mui/icons-material/Restore';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+
+
+// API base URL
+const API_BASE = import.meta.env.MODE === "development"
+    ? "http://localhost:5000"
+    : "https://otakushelf-uuvw.onrender.com";
+
+// UTILITY FUNCTIONS
+const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await axios.get(url, { timeout: 10000 });
+            return response.data;
+        } catch (error) {
+            if (i === retries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+};
 
 // ProfileDropdown Component
 const ProfileDropdown = () => {
@@ -151,7 +169,6 @@ const ProfileDropdown = () => {
 };
 
 const getAnimeTitle = (anime) => {
-    // Handle different title structures
     if (anime.title?.english) return anime.title.english;
     if (anime.title?.romaji) return anime.title.romaji;
     if (anime.title?.native) return anime.title.native;
@@ -162,7 +179,6 @@ const getAnimeTitle = (anime) => {
 };
 
 const getAnimeDescription = (anime) => {
-    // Handle different description structures
     return anime.description || anime.synopsis || 'No description available.';
 };
 
@@ -171,11 +187,33 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
     const [currentAnime, setCurrentAnime] = useState(0);
     const [opacity, setOpacity] = useState(1);
     const heroRef = useRef(null);
-    const [scrollY, setScrollY] = useState(0); // This was missing!
+    const [scrollY, setScrollY] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
     const [hasUserInteracted, setHasUserInteracted] = useState(false);
     const playerRef = useRef(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
+    const [playerError, setPlayerError] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
+
+    useEffect(() => {
+        if (playerError && retryCount < 2) {
+            const timer = setTimeout(() => {
+                setRetryCount(prev => prev + 1);
+                setPlayerError(false);
+
+                // Reinitialize player after a delay
+                const currentAnimeData = announcements[currentAnime];
+                const videoId = getVideoId(currentAnimeData);
+
+                if (videoId && window.YT) {
+                    initializePlayer(videoId);
+                }
+            }, 2000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [playerError, retryCount, currentAnime, announcements]);
+
 
     // Track user interaction for autoplay permission
     useEffect(() => {
@@ -184,12 +222,12 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
         };
 
         // Listen for any user interaction
-        ['click', 'touchstart', 'scroll', 'keydown'].forEach(event => {
+        ['click', 'touchstart', 'scroll', 'keydown', 'hover'].forEach(event => {
             document.addEventListener(event, handleInteraction, { once: true, passive: true });
         });
 
         return () => {
-            ['click', 'touchstart', 'scroll', 'keydown'].forEach(event => {
+            ['click', 'touchstart', 'scroll', 'keydown', 'hover'].forEach(event => {
                 document.removeEventListener(event, handleInteraction);
             });
         };
@@ -197,39 +235,104 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
 
     // YouTube Player API integration
     useEffect(() => {
-        // Load YouTube IFrame API
-        const loadYouTubeAPI = () => {
-            if (window.YT && window.YT.Player) {
-                return Promise.resolve();
+        let isMounted = true;
+
+        const initializeYouTube = () => {
+            if (!window.YT) {
+                // Load YouTube API if not already loaded
+                const tag = document.createElement('script');
+                tag.src = 'https://www.youtube.com/iframe_api';
+                const firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+                // Set up callback for when API is ready
+                window.onYouTubeIframeAPIReady = () => {
+                    if (isMounted && announcements.length > 0) {
+                        createPlayer();
+                    }
+                };
+            } else {
+                // API already loaded, create player directly
+                createPlayer();
             }
-
-            return new Promise((resolve) => {
-                if (document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-                    const checkYT = () => {
-                        if (window.YT && window.YT.Player) {
-                            resolve();
-                        } else {
-                            setTimeout(checkYT, 100);
-                        }
-                    };
-                    checkYT();
-                    return;
-                }
-
-                window.onYouTubeIframeAPIReady = resolve;
-                const script = document.createElement('script');
-                script.src = 'https://www.youtube.com/iframe_api';
-                script.async = true;
-                document.head.appendChild(script);
-            });
         };
 
-        loadYouTubeAPI();
-    }, []);
+        const createPlayer = () => {
+            const currentAnimeData = announcements[currentAnime];
+            const videoId = getVideoId(currentAnimeData);
+
+            if (!videoId || !window.YT) {
+                setPlayerError(true);
+                return;
+            }
+
+            // Clean up existing player
+            if (playerRef.current) {
+                try {
+                    playerRef.current.destroy();
+                } catch (e) {
+                    console.log('Error destroying player:', e);
+                }
+            }
+
+            // Create new player
+            try {
+                playerRef.current = new window.YT.Player('youtube-player', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: videoId,
+                    playerVars: {
+                        autoplay: hasUserInteracted ? 1 : 0,
+                        mute: 1,
+                        loop: 1,
+                        controls: 0,
+                        modestbranding: 1,
+                        rel: 0,
+                        enablejsapi: 1,
+                        origin: window.location.origin
+                    },
+                    events: {
+                        onReady: (event) => {
+                            if (isMounted) {
+                                setIsPlayerReady(true);
+                                setPlayerError(false);
+
+                                if (hasUserInteracted) {
+                                    try {
+                                        event.target.playVideo();
+                                    } catch (error) {
+                                        console.log('Error playing video:', error);
+                                    }
+                                }
+                            }
+                        },
+                        onError: () => {
+                            if (isMounted) {
+                                setPlayerError(true);
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.log('Error creating YouTube player:', error);
+                setPlayerError(true);
+            }
+        };
+
+        if (announcements.length > 0) {
+            initializeYouTube();
+        }
+
+        return () => {
+            isMounted = false;
+            // Clean up global callback
+            window.onYouTubeIframeAPIReady = null;
+        };
+    }, [announcements, currentAnime, hasUserInteracted]);
+
 
     const toggleMute = (e) => {
-        e.stopPropagation(); // Prevent event bubbling
-
+        e.stopPropagation();
         if (playerRef.current && isPlayerReady) {
             try {
                 if (isMuted) {
@@ -261,66 +364,68 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
 
     // Initialize YouTube player
     const initializePlayer = (videoId) => {
-        if (!window.YT || !videoId) return;
-
-        // Clean up existing player
-        if (playerRef.current && typeof playerRef.current.destroy === 'function') {
-            try {
-                playerRef.current.destroy();
-            } catch (error) {
-                console.error('Error destroying player:', error);
-            }
+        if (!window.YT || !videoId) {
+            setPlayerError(true);
+            return;
         }
 
-        playerRef.current = new window.YT.Player('youtube-player', {
-            height: '100%',
-            width: '100%',
-            videoId: videoId,
-            playerVars: {
-                autoplay: hasUserInteracted ? 1 : 0,
-                mute: 1,
-                loop: 1,
-                playlist: videoId,
-                controls: 0,
-                showinfo: 0,
-                modestbranding: 1,
-                rel: 0,
-                iv_load_policy: 3,
-                fs: 0,
-                disablekb: 1,
-                playsinline: 1,
-                start: 0,
-                end: 0
-            },
-            events: {
-                onReady: (event) => {
-                    console.log('YouTube player ready');
-                    setIsPlayerReady(true);
-                    setIsMuted(true); // Ensure state matches player
-
-                    // Try to play if user has interacted
-                    if (hasUserInteracted) {
-                        try {
-                            event.target.mute(); // Ensure muted for autoplay
-                            event.target.playVideo();
-                        } catch (error) {
-                            console.error('Error starting video:', error);
-                        }
-                    }
-                },
-                onStateChange: (event) => {
-                    // Handle player state changes
-                    if (event.data === window.YT.PlayerState.ENDED) {
-                        event.target.playVideo(); // Loop the video
-                    }
-                },
-                onError: (event) => {
-                    console.error('YouTube Player Error:', event.data);
-                    setIsPlayerReady(false);
-                }
+        try {
+            // Clean up existing player
+            if (playerRef.current && typeof playerRef.current.destroy === 'function') {
+                playerRef.current.destroy();
             }
-        });
+
+            playerRef.current = new window.YT.Player('youtube-player', {
+                height: '100%',
+                width: '100%',
+                videoId: videoId,
+                playerVars: {
+                    autoplay: hasUserInteracted ? 1 : 0,
+                    mute: 1,
+                    loop: 1,
+                    playlist: videoId,
+                    controls: 0,
+                    showinfo: 0,
+                    modestbranding: 1,
+                    rel: 0,
+                    iv_load_policy: 3,
+                    fs: 0,
+                    disablekb: 1,
+                    playsinline: 1,
+                    start: 0,
+                    end: 0
+                },
+                events: {
+                    onReady: (event) => {
+                        console.log('YouTube player ready');
+                        setIsPlayerReady(true);
+                        setIsMuted(true);
+                        setPlayerError(false);
+
+                        // Try to play if user has interacted
+                        if (hasUserInteracted) {
+                            try {
+                                event.target.mute();
+                                event.target.playVideo();
+                            } catch (error) {
+                                console.error('Error starting video:', error);
+                                setPlayerError(true);
+                            }
+                        }
+                    },
+                    onError: (event) => {
+                        console.error('YouTube Player Error:', event.data);
+                        setIsPlayerReady(false);
+                        setPlayerError(true);
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error initializing YouTube player:', error);
+            setPlayerError(true);
+        }
     };
+
 
     // Handle scroll effect for fade and parallax
     useEffect(() => {
@@ -344,7 +449,6 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
     }, []);
 
     // Auto-advance anime and initialize player
-    // Replace your existing auto-advance useEffect with this:
     useEffect(() => {
         const currentAnimeData = announcements[currentAnime];
         if (!currentAnimeData) return;
@@ -354,7 +458,7 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
             setTimeout(() => initializePlayer(videoId), 100);
         }
 
-        // Auto-advance every 15 seconds instead of 15000ms
+        // Auto-advance every 30 seconds
         if (announcements.length > 1) {
             const interval = setInterval(() => {
                 setCurrentAnime(prev => (prev + 1) % announcements.length);
@@ -430,29 +534,28 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                     left: 0,
                     width: '100vw',
                     height: '100vh',
-                    zIndex: 1,
+                    zIndex: 3,
                     opacity: opacity,
                 }}
             >
                 {/* Video Background */}
-                {videoId ? (
-                    <div
-                        id="youtube-player"
-                        style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            width: '100vw',
-                            height: '56.25vw', // 16:9 aspect ratio
-                            minWidth: '177.78vh', // 16:9 aspect ratio
-                            minHeight: '100vh',
-                            transform: 'translate(-50%, -50%)',
-                            zIndex: -1,
-                            objectFit: 'cover',
-                        }}
-                    />
-                ) : (
-                    // Fallback image if no trailer
+                <div
+                    id="youtube-player"
+                    style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        width: '100vw',        // fill full screen width
+                        height: 'auto',        // auto height keeps 16:9 intact
+                        aspectRatio: '16/9',
+                        transform: 'translate(-50%, -50%)', // keep it centered
+                        zIndex: -1,
+                    }}
+                />
+
+
+                {/* Fallback Image */}
+                {playerError && (
                     <div
                         style={{
                             position: 'absolute',
@@ -460,14 +563,13 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                             left: 0,
                             width: '100%',
                             height: '100%',
-                            backgroundImage: `url(${currentAnimeData.bannerImage || currentAnimeData.coverImage?.extraLarge})`,
+                            backgroundImage: `url(${currentAnimeData.bannerImage || currentAnimeData.coverImage?.extraLarge || '/fallback-image.jpg'})`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
-                            zIndex: -1,
+                            zIndex: 9,
                         }}
                     />
                 )}
-
                 {/* User Interaction Prompt */}
                 {!hasUserInteracted && videoId && (
                     <div
@@ -507,7 +609,7 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             cursor: 'pointer',
-                            zIndex: 99, // Increased z-index
+                            zIndex: 9, 
                             fontSize: '20px',
                             transition: 'all 0.3s ease',
                             backdropFilter: 'blur(10px)',
@@ -693,18 +795,20 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
             </section>
 
             {/* Spacer to push content down */}
-            <div style={{ height: '100vh' }} />
+            <div style={{
+                height: '100vh',
+                position: 'relative',
+                zIndex: 2 // Higher than the trailer
+            }} />
         </>
     );
 };
 
 const AnimeHomepage = () => {
-    const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
     const [mostWatched, setMostWatched] = useState([]);
     const [topmovies, settopMovies] = useState([]);
     const [topAiring, setTopAiring] = useState([]);
-    const [announcements, setAnnouncements] = useState([]);
     const lenisRef = useRef(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAnime, setSelectedAnime] = useState(null);
@@ -717,6 +821,12 @@ const AnimeHomepage = () => {
     const { user } = useAuth();
     const searchRef = useRef(null);
     const [animateCards, setAnimateCards] = useState(false);
+
+
+    const [announcements, setAnnouncements] = useState(() => {
+        const cached = localStorage.getItem('announcements');
+        return cached ? JSON.parse(cached) : [];
+    });
 
 
     const [value, setValue] = useState(0);
@@ -829,9 +939,8 @@ const AnimeHomepage = () => {
 
             bannerImage: anime.bannerImage || null,
 
-            // 🔥 Trailer fields
+            // Trailer fields
             trailer: anime.trailer || null,
-
             description: anime.description || null,
             episodes: anime.episodes || null,
             averageScore: anime.averageScore || null,
@@ -851,7 +960,7 @@ const AnimeHomepage = () => {
         return {
             // IDs
             id: anime.mal_id,
-            animeId: null, // We don't have AniList ID from Jikan
+            animeId: null,
             animeMalId: anime.mal_id,
             idMal: anime.mal_id,
             mal_id: anime.mal_id,
@@ -905,65 +1014,86 @@ const AnimeHomepage = () => {
         };
     };
 
-    // API base URL
-    const API_BASE =
-        import.meta.env.MODE === "development"
-            ? "http://localhost:5000"
-            : "https://otakushelf-uuvw.onrender.com";
-
 
     // Fetch announcements
     useEffect(() => {
         const fetchAnnouncements = async () => {
+            // If we already have cached data, use it immediately
+            if (announcements.length > 0) return;
+
             try {
-                const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
-                const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                // Use fetchWithRetry for better reliability
+                const data = await fetchWithRetry(`${API_BASE}/api/anilist/latest-sequels`);
+                const sorted = data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
                 const normalizedAnnouncements = sorted
                     .map(normalizeHeroAnime)
                     .filter(anime => {
-                        // Must have trailer
                         const hasTrailer = anime.trailer && (anime.trailer.id || anime.trailer.embed_url);
-
-                        // Exclude TBA (not yet released)
                         const notTBA = anime.status?.toLowerCase() !== "not_yet_released" &&
                             anime.status?.toLowerCase() !== "not_yet_aired";
-
                         return hasTrailer && notTBA;
                     });
 
                 setAnnouncements(normalizedAnnouncements.slice(0, 10));
                 localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
             } catch (err) {
-                console.error("Error fetching announcements:", err);
+                console.error("Error fetching announcements after retries:", err);
+
+                // If API fails, try to use any cached data we might have
+                const cached = localStorage.getItem('announcements');
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        if (Array.isArray(parsed) && parsed.length) {
+                            setAnnouncements(parsed.slice(0, 10));
+                        }
+                    } catch (parseError) {
+                        console.error("Error parsing cached announcements:", parseError);
+                    }
+                }
             }
         };
 
         fetchAnnouncements();
     }, []);
 
-
-    // Fetch anime sections
+    // Fetch anime sections with retry and caching
     useEffect(() => {
         const fetchAnimeSections = async () => {
             try {
-                const res = await axios.get(`${API_BASE}/api/anime/anime-sections`);
-                setTopAiring(res.data.topAiring.map(normalizeGridAnime));
-                setMostWatched(res.data.mostWatched.map(normalizeGridAnime));
-                settopMovies(res.data.topMovies.map(normalizeGridAnime));
-                localStorage.setItem('animeSections', JSON.stringify({
-                    topAiring: res.data.topAiring,
-                    mostWatched: res.data.mostWatched,
-                    topMovies: res.data.topMovies
-                }));
+                // Use fetchWithRetry for better reliability
+                const data = await fetchWithRetry(`${API_BASE}/api/anime/anime-sections`);
 
+                setTopAiring(data.topAiring.map(normalizeGridAnime));
+                setMostWatched(data.mostWatched.map(normalizeGridAnime));
+                settopMovies(data.topMovies.map(normalizeGridAnime));
+
+                localStorage.setItem('animeSections', JSON.stringify({
+                    topAiring: data.topAiring,
+                    mostWatched: data.mostWatched,
+                    topMovies: data.topMovies
+                }));
             } catch (error) {
                 console.error("Error fetching anime sections:", error);
+
+                // Try to use cached data as fallback
+                const cachedSections = localStorage.getItem('animeSections');
+                if (cachedSections) {
+                    try {
+                        const parsed = JSON.parse(cachedSections);
+                        if (parsed?.topAiring?.length) setTopAiring(parsed.topAiring.map(normalizeGridAnime));
+                        if (parsed?.mostWatched?.length) setMostWatched(parsed.mostWatched.map(normalizeGridAnime));
+                        if (parsed?.topMovies?.length) settopMovies(parsed.topMovies.map(normalizeGridAnime));
+                    } catch (parseError) {
+                        console.error("Error parsing cached sections:", parseError);
+                    }
+                }
             }
         };
+
         fetchAnimeSections();
     }, []);
-
 
     // Check if all sections are ready
     useEffect(() => {
@@ -976,7 +1106,6 @@ const AnimeHomepage = () => {
 
     // Try cached data
     useEffect(() => {
-        // Try cached announcements
         const cachedAnns = localStorage.getItem('announcements');
         if (cachedAnns) {
             try {
@@ -1067,53 +1196,6 @@ const AnimeHomepage = () => {
         return `${year}-${month}-${day}`;
     };
 
-    // Truncate description
-    const truncateDescription = (description, maxLength = 250) => {
-        if (!description) return "No description available.";
-        const cleanText = description.replace(/<[^>]*>/g, '');
-        return cleanText.length > maxLength
-            ? cleanText.substring(0, maxLength) + "..."
-            : cleanText;
-    };
-
-    // Format genres
-    const formatGenres = (genres) => {
-        if (!genres || genres.length === 0) return "Unknown";
-        return genres.slice(0, 3).map(g => g.name || g).join(", ");
-    };
-
-    // Format score
-    const formatScore = (score) => {
-        return score ? `${score}/100` : "N/A";
-    };
-
-    // Format popularity
-    const formatPopularity = (popularity) => {
-        if (!popularity) return "N/A";
-        if (popularity >= 1000000) {
-            return `${(popularity / 1000000).toFixed(1)}M`;
-        } else if (popularity >= 1000) {
-            return `${(popularity / 1000).toFixed(1)}K`;
-        }
-        return popularity.toString();
-    };
-
-    // Get status color
-    const getStatusColor = (status) => {
-        switch (status?.toLowerCase()) {
-            case 'releasing':
-            case 'currently_airing':
-                return 'status-releasing';
-            case 'not_yet_released':
-            case 'not_yet_aired':
-                return 'status-not_yet_released';
-            case 'finished':
-            case 'finished_airing':
-                return 'status-finished';
-            default:
-                return '';
-        }
-    };
 
     // Open modal for selected anime
     const openModal = (anime) => {
@@ -1164,7 +1246,7 @@ const AnimeHomepage = () => {
         }
     };
 
-    // Add this useEffect to scroll when search results are ready:
+    //useEffect to scroll when search results are ready:
     useEffect(() => {
         if (isSearching && (searchResults.length > 0 || !searchLoading)) {
             setTimeout(() => {
@@ -1191,7 +1273,7 @@ const AnimeHomepage = () => {
                         key={anime.mal_id}
                         className={`anime-card ${loading ? 'loading' : ''} ${animateCards ? 'animate-in' : ''}`}
                         onClick={() => openModal(anime)}
-                        style={{ cursor: "pointer", "--card-index": index }}
+                        style={{ cursor: "pointer", "--card-index": index, zIndex: '5' }}
                     >
                         {loading ? (
                             <div className="card-skeleton">
@@ -1293,7 +1375,7 @@ const AnimeHomepage = () => {
                                             key={anime.mal_id || anime.id || index}
                                             className={`anime-card ${animateCards ? 'animate-in' : ''}`}
                                             onClick={() => openModal(anime)}
-                                            style={{ "--card-index": index }}
+                                            style={{ "--card-index": index, zIndex: '5' }}
                                         >
                                             <img
                                                 src={
