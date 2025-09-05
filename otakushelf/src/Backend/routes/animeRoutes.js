@@ -45,14 +45,22 @@ router.get('/search', async (req, res) => {
 
   try {
     const response = await axios.get(
-      `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=12`
+      `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=20`
     );
-    res.json(response.data.data); // just forward array
+
+    // Filter out hentai / adult stuff
+    const safeResults = (response.data.data || []).filter(anime => {
+      const rating = anime.rating ? anime.rating.toLowerCase() : "";
+      return !(rating.includes("rx") || rating.includes("hentai"));
+    });
+
+    res.json(safeResults); 
   } catch (error) {
     console.error("Jikan search error:", error?.response?.data || error.message);
     res.status(500).json({ error: "Search failed" });
   }
 });
+
 
 
 export default router;

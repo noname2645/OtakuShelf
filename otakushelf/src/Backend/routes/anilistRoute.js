@@ -14,30 +14,34 @@ const axiosConfig = {
   }
 };
 
-// simple in-memory cache (10 minutes)
-let sequelsCache = { data: null, timestamp: 0 };
-const SEQUELS_TTL = 10 * 60 * 1000;
+// cache results for 10 mins
+let heroCache = { data: null, timestamp: 0 };
+const HERO_TTL = 10 * 60 * 1000;
 
-router.get("/latest-sequels", async (req, res) => {
+router.get("/hero-trailers", async (req, res) => {
   try {
     const now = Date.now();
-    if (sequelsCache.data && now - sequelsCache.timestamp < SEQUELS_TTL) {
-      return res.json(sequelsCache.data);
+    if (heroCache.data && now - heroCache.timestamp < HERO_TTL) {
+      return res.json(heroCache.data);
     }
 
+    // GraphQL query
     const query = `
       query {
-        Page(perPage: 20) {
+        Page(perPage: 30) {
           media(
-            sort: UPDATED_AT_DESC,
-            type: ANIME,
-            isAdult: false,
-            status_in: [NOT_YET_RELEASED, RELEASING]
+            sort: TRENDING_DESC
+            type: ANIME
+            isAdult: false
+            status_in: [RELEASING, NOT_YET_RELEASED, FINISHED]
           ) {
             id
-            title { romaji english }
+            title {
+              romaji
+              english
+              native
+            }
             description(asHtml: false)
-            startDate { year month day }
             status
             season
             seasonYear
@@ -45,37 +49,55 @@ router.get("/latest-sequels", async (req, res) => {
             averageScore
             popularity
             bannerImage
-            coverImage { large extraLarge }
+            coverImage {
+              large
+              extraLarge
+            }
             genres
-            studios { nodes { name isAnimationStudio } }
-            nextAiringEpisode { episode }
-            updatedAt
+            studios {
+              nodes {
+                name
+                isAnimationStudio
+              }
+            }
+            trailer {
+              id
+              site
+              thumbnail
+            }
           }
         }
       }
     `;
 
-    const response = await axios.post('https://graphql.anilist.co', { query }, axiosConfig);
+    const response = await axios.post(
+      'https://graphql.anilist.co',
+      { query },
+      axiosConfig
+    );
+
     const media = response.data?.data?.Page?.media || [];
 
-    // keep only items with imagery + description
+    // filter: must have trailer + banner/cover
     const filtered = media.filter(anime =>
-      (anime.coverImage?.extraLarge || anime.coverImage?.large) && anime.description
-    ).slice(0, 10);
+      anime.trailer?.id &&
+      anime.trailer?.site?.toLowerCase() === "youtube" &&
+      (anime.bannerImage || anime.coverImage?.extraLarge)
+    );
 
-    // add small helpers the frontend expects
+    // map to frontend-friendly object
     const enhanced = filtered.map(anime => ({
       ...anime,
-      displayTitle: anime.title?.english || anime.title?.romaji,
+      displayTitle: anime.title.english || anime.title.romaji,
       mainStudio: anime.studios?.nodes?.find(s => s.isAnimationStudio)?.name || 'Unknown Studio',
-      hasNextEpisode: !!anime.nextAiringEpisode
     }));
 
-    sequelsCache = { data: enhanced, timestamp: now };
+    heroCache = { data: enhanced, timestamp: now };
     res.json(enhanced);
+
   } catch (err) {
-    console.error("Error fetching sequels from AniList:", err.message);
-    res.status(500).json({ error: "Failed to fetch latest sequels." });
+    console.error("Error fetching AniList hero trailers:", err.message);
+    res.status(500).json({ error: "Failed to fetch hero trailers." });
   }
 });
 

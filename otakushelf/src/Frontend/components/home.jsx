@@ -21,18 +21,6 @@ const API_BASE = import.meta.env.MODE === "development"
     ? "http://localhost:5000"
     : "https://otakushelf-uuvw.onrender.com";
 
-// Fetch with retry logic for trailer hero
-const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
-    for (let i = 0; i < retries; i++) {
-        try {
-            const response = await axios.get(url, { timeout: 10000 });
-            return response.data;
-        } catch (error) {
-            if (i === retries - 1) throw error;
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-};
 
 // ProfileDropdown Component
 const ProfileDropdown = () => {
@@ -247,71 +235,6 @@ const AnimeHomepage = () => {
 
 
 
-    useEffect(() => {
-        const fetchHeroPool = async () => {
-            try {
-                const res = await axios.get(`${API_BASE}/api/anime/anime-sections`);
-                // Normalize each section
-                const airing = res.data.topAiring.map(normalizeHeroAnime);
-                const movies = res.data.topMovies.map(normalizeHeroAnime);
-                const watched = res.data.mostWatched.map(normalizeHeroAnime);
-
-                // Merge + filter only anime with trailers
-                const combined = [...airing, ...movies, ...watched].filter(
-                    (anime) =>
-                        anime.trailer &&
-                        (anime.trailer.id || anime.trailer.embed_url) // AniList or Jikan
-                );
-
-                // Optional: random shuffle
-                const shuffled = combined.sort(() => Math.random() - 0.5);
-
-                setAnnouncements(shuffled.slice(0, 10)); // pick first 10
-            } catch (err) {
-                console.error("Error fetching hero pool:", err);
-            }
-        };
-
-        fetchHeroPool();
-    }, []);
-
-
-    // Normalize hero anime data for trailer section (from AniList)
-    const normalizeHeroAnime = (anime) => {
-        return {
-            id: anime.id,
-            animeId: anime.id,
-            animeMalId: anime.idMal || null,
-
-            title: {
-                romaji: anime.title?.romaji || null,
-                english: anime.title?.english || null,
-                native: anime.title?.native || null,
-            },
-
-            coverImage: {
-                extraLarge: anime.coverImage?.extraLarge || null,
-                large: anime.coverImage?.large || null,
-                medium: anime.coverImage?.medium || null,
-            },
-
-            bannerImage: anime.bannerImage || null,
-
-            // Trailer fields
-            trailer: anime.trailer || null,
-            description: anime.description || null,
-            episodes: anime.episodes || null,
-            averageScore: anime.averageScore || null,
-            status: anime.status || null,
-            seasonYear: anime.seasonYear || null,
-            genres: anime.genres || [],
-            isAdult: anime.isAdult || false,
-
-            ...anime,
-        };
-    };
-
-
 
     // Normalize grid anime data (from Jikan)
     const normalizeGridAnime = (anime) => {
@@ -372,50 +295,18 @@ const AnimeHomepage = () => {
         };
     };
 
-
-    // Fetch announcements for trailer hero section with retry and caching
-    useEffect(() => {
-        const fetchAnnouncements = async () => {
-            // If we already have cached data, use it immediately
-            if (announcements.length > 0) return;
-
+    // Fetch with retry logic for home component
+    const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
+        for (let i = 0; i < retries; i++) {
             try {
-                // Use fetchWithRetry for better reliability
-                const data = await fetchWithRetry(`${API_BASE}/api/anilist/latest-sections`);
-                const sorted = data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-
-                const normalizedAnnouncements = sorted
-                    .map(normalizeHeroAnime)
-                    .filter(anime => {
-                        const hasTrailer = anime.trailer && (anime.trailer.id || anime.trailer.embed_url);
-                        const notTBA = anime.status?.toLowerCase() !== "not_yet_released" &&
-                            anime.status?.toLowerCase() !== "not_yet_aired";
-                        return hasTrailer && notTBA;
-                    });
-
-                setAnnouncements(normalizedAnnouncements.slice(0, 10));
-                localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
-            } catch (err) {
-                console.error("Error fetching announcements after retries:", err);
-
-                // If API fails, try to use any cached data we might have
-                const cached = localStorage.getItem('announcements');
-                if (cached) {
-                    try {
-                        const parsed = JSON.parse(cached);
-                        if (Array.isArray(parsed) && parsed.length) {
-                            setAnnouncements(parsed.slice(0, 10));
-                        }
-                    } catch (parseError) {
-                        console.error("Error parsing cached announcements:", parseError);
-                    }
-                }
+                const response = await axios.get(url, { timeout: 10000 });
+                return response.data;
+            } catch (error) {
+                if (i === retries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
-        };
-
-        fetchAnnouncements();
-    }, []);
-
+        }
+    };
 
 
     // Fetch anime sections with retry and caching for top airing, most watched, top movies in trailer hero
@@ -424,7 +315,6 @@ const AnimeHomepage = () => {
             try {
                 // Use fetchWithRetry for better reliability
                 const data = await fetchWithRetry(`${API_BASE}/api/anime/anime-sections`);
-
                 setTopAiring(data.topAiring.map(normalizeGridAnime));
                 setMostWatched(data.mostWatched.map(normalizeGridAnime));
                 settopMovies(data.topMovies.map(normalizeGridAnime));
@@ -460,21 +350,14 @@ const AnimeHomepage = () => {
     // Check if all sections are ready for trailer and home section
     useEffect(() => {
         const sectionsReady = topAiring.length || mostWatched.length || topmovies.length;
-        if (announcements.length && sectionsReady) {
+        if (sectionsReady) {
             setLoading(false);
         }
-    }, [announcements.length, topAiring.length, mostWatched.length, topmovies.length]);
+    }, [topAiring.length, mostWatched.length, topmovies.length]);
 
 
     // Try cached data for trailer section
     useEffect(() => {
-        const cachedAnns = localStorage.getItem('announcements');
-        if (cachedAnns) {
-            try {
-                const parsed = JSON.parse(cachedAnns);
-                if (Array.isArray(parsed) && parsed.length) setAnnouncements(parsed);
-            } catch { }
-        }
         // Try cached sections
         const cachedSections = localStorage.getItem('animeSections');
         if (cachedSections) {

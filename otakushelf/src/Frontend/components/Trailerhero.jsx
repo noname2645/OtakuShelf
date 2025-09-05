@@ -1,21 +1,14 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
+import axios from 'axios';
 
-const getAnimeTitle = (anime) => {
-    if (anime.title?.english) return anime.title.english;
-    if (anime.title?.romaji) return anime.title.romaji;
-    if (anime.title?.native) return anime.title.native;
-    if (typeof anime.title === 'string') return anime.title;
-    if (anime.title_english) return anime.title_english;
-    if (anime.title_romaji) return anime.title_romaji;
-    return anime.title || 'Unknown Title';
-};
+// API base URL
+const API_BASE = import.meta.env.MODE === "development"
+    ? "http://localhost:5000"
+    : "https://otakushelf-uuvw.onrender.com";
 
-const getAnimeDescription = (anime) => {
-    return anime.description || anime.synopsis || 'No description available.';
-};
 
 // TrailerHero Component
-const TrailerHero = ({ announcements, onOpenModal }) => {
+const TrailerHero = ({ onOpenModal }) => {
     const [currentAnime, setCurrentAnime] = useState(0);
     const [opacity, setOpacity] = useState(1);
     const heroRef = useRef(null);
@@ -26,6 +19,35 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [playerError, setPlayerError] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
+    const [announcements, setAnnouncements] = useState([]);
+
+    const getAnimeTitle = (anime) => {
+        if (anime.title?.english) return anime.title.english;
+        if (anime.title?.romaji) return anime.title.romaji;
+        if (anime.title?.native) return anime.title.native;
+        if (typeof anime.title === 'string') return anime.title;
+        if (anime.title_english) return anime.title_english;
+        if (anime.title_romaji) return anime.title_romaji;
+        return anime.title || 'Unknown Title';
+    };
+
+    // Fetch with retry logic for trailer hero
+    const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await axios.get(url, { timeout: 10000 });
+                return response.data;
+            } catch (error) {
+                if (i === retries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    };
+
+
+    const getAnimeDescription = (anime) => {
+        return anime.description || anime.synopsis || 'No description available.';
+    };
 
     useEffect(() => {
         if (playerError && retryCount < 2) {
@@ -89,6 +111,8 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
             }
         };
 
+
+
         const createPlayer = () => {
             const currentAnimeData = announcements[currentAnime];
             const videoId = getVideoId(currentAnimeData);
@@ -129,12 +153,15 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                                 setIsPlayerReady(true);
                                 setPlayerError(false);
 
-                                if (hasUserInteracted) {
-                                    try {
+                                try {
+                                    // Force 1080p playback
+                                    event.target.setPlaybackQuality('hd1080');
+
+                                    if (hasUserInteracted) {
                                         event.target.playVideo();
-                                    } catch (error) {
-                                        console.log('Error playing video:', error);
                                     }
+                                } catch (error) {
+                                    console.log('Error forcing 1080p or playing video:', error);
                                 }
                             }
                         },
@@ -144,6 +171,7 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                             }
                         }
                     }
+
                 });
             } catch (error) {
                 console.log('Error creating YouTube player:', error);
@@ -193,6 +221,88 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
 
         return null;
     };
+
+
+    // Normalize hero anime data for trailer section (from AniList)
+    const normalizeHeroAnime = (anime) => {
+        return {
+            id: anime.id,
+            animeId: anime.id,
+            animeMalId: anime.idMal || null,
+
+            title: {
+                romaji: anime.title?.romaji || null,
+                english: anime.title?.english || null,
+                native: anime.title?.native || null,
+            },
+
+            coverImage: {
+                extraLarge: anime.coverImage?.extraLarge || null,
+                large: anime.coverImage?.large || null,
+                medium: anime.coverImage?.medium || null,
+            },
+
+            bannerImage: anime.bannerImage || null,
+
+            // Trailer fields
+            trailer: anime.trailer || null,
+            description: anime.description || null,
+            episodes: anime.episodes || null,
+            averageScore: anime.averageScore || null,
+            status: anime.status || null,
+            seasonYear: anime.seasonYear || null,
+            genres: anime.genres || [],
+            isAdult: anime.isAdult || false,
+
+            ...anime,
+        };
+    };
+
+
+    // Fetch announcements for trailer hero section with retry and caching
+    useEffect(() => {
+        const fetchAnnouncements = async () => {
+            // If we already have cached data, use it immediately
+            if (announcements.length > 0) return;
+
+            try {
+                // Use fetchWithRetry for better reliability
+                const data = await fetchWithRetry(`${API_BASE}/api/anilist/hero-trailers`);
+                const sorted = data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+                const normalizedAnnouncements = sorted
+                    .map(normalizeHeroAnime)
+                    .filter(anime => {
+                        const hasTrailer = anime.trailer && (anime.trailer.id || anime.trailer.embed_url);
+                        const notTBA = anime.status?.toLowerCase() !== "not_yet_released" &&
+                            anime.status?.toLowerCase() !== "not_yet_aired";
+                        return hasTrailer && notTBA;
+                    });
+
+                setAnnouncements(normalizedAnnouncements.slice(0, 10));
+                localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
+            } catch (err) {
+                console.error("Error fetching announcements after retries:", err);
+
+                // If API fails, try to use any cached data we might have
+                const cached = localStorage.getItem('announcements');
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        if (Array.isArray(parsed) && parsed.length) {
+                            setAnnouncements(parsed.slice(0, 10));
+                        }
+                    } catch (parseError) {
+                        console.error("Error parsing cached announcements:", parseError);
+                    }
+                }
+            }
+        };
+
+        fetchAnnouncements();
+    }, []);
+
+
 
     // Initialize YouTube player
     const initializePlayer = (videoId) => {
@@ -441,7 +551,7 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             cursor: 'pointer',
-                            zIndex: 9, 
+                            zIndex: 9,
                             fontSize: '20px',
                             transition: 'all 0.3s ease',
                             backdropFilter: 'blur(10px)',
@@ -487,12 +597,13 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                 >
                     <h1
                         style={{
-                            fontFamily: "Playwrite AU QLD",
-                            fontSize: '3.4em',
-                            fontWeight: '600',
+                            fontFamily: "Asimovian, sans-serif",
+                            fontSize: '2.5rem',
+                            fontWeight: 900,
                             marginBottom: '1rem',
                             lineHeight: '1.1',
-                            backgroundImage: 'linear-gradient(90deg, #ff4b2b, #ff416c)',
+                            backgroundImage: 'linear-gradient(90deg, #fd2600ff, #ff003cff)',
+                            letterSpacing: '1.5px',
                             WebkitBackgroundClip: 'text',
                             backgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
@@ -624,14 +735,15 @@ const TrailerHero = ({ announcements, onOpenModal }) => {
                         ))}
                     </div>
                 )}
-            </section>
+            </section >
 
             {/* Spacer to push content down */}
-            <div style={{
+            < div style={{
                 height: '100vh',
                 position: 'relative',
                 zIndex: 2 // Higher than the trailer
-            }} />
+            }
+            } />
         </>
     );
 };
