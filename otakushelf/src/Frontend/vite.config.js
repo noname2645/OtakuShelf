@@ -14,7 +14,7 @@ export default defineConfig(({ command, mode }) => {
       },
       extensions: ['.js', '.jsx', '.json']
     },
-    base: '/', // ✅ ensures assets are loaded correctly on Render
+    base: '/', 
     build: {
       outDir: 'dist',
       emptyOutDir: true,
@@ -30,19 +30,16 @@ export default defineConfig(({ command, mode }) => {
       strictPort: true,
       host: true,
       watch: {
-        usePolling: true, // 👈 important for Windows/WSL/Docker
+        usePolling: true, 
       },
       hmr: isProd
-        ? { clientPort: 443 } // only force this on Render
-        : true, // default for local dev
+        ? { clientPort: 443 } 
+        : true, 
     },
     preview: {
       port: 3000,
       strictPort: true
     },
-    // Optional: add this for static SPA routing in production
-    // Prevents 404s on page refresh when using BrowserRouter
-    // You can remove if using HashRouter
     optimizeDeps: {
       include: ['react', 'react-dom']
     }

@@ -431,7 +431,7 @@ const TrailerHero = ({ onOpenModal }) => {
         return genres.slice(0, 3).map(g => g.name || g).join(" • ");
     };
 
-    const truncateDescription = (description, maxLength = 180) => {
+    const truncateDescription = (description, maxLength = 100) => {
         if (!description) return "No description available.";
         // Remove HTML tags and decode HTML entities
         const cleanText = description
@@ -597,8 +597,8 @@ const TrailerHero = ({ onOpenModal }) => {
                 >
                     <h1
                         style={{
-                            fontFamily: "Asimovian, sans-serif",
-                            fontSize: '2.5rem',
+                            fontFamily: "Misrow",
+                            fontSize: '3rem',
                             fontWeight: 900,
                             marginBottom: '1rem',
                             lineHeight: '1.1',
@@ -609,7 +609,8 @@ const TrailerHero = ({ onOpenModal }) => {
                             WebkitTextFillColor: 'transparent',
                             // border: '2px solid black',
                             height: 'auto',
-                            padding: '5px'
+                            padding: '5px',
+                            width: '20em'
                         }}
                     >
                         {getAnimeTitle(currentAnimeData)}
@@ -656,12 +657,13 @@ const TrailerHero = ({ onOpenModal }) => {
                     </div>
                     <p
                         style={{
-                            fontSize: '1.5em',
-                            fontWeight: 600,
-                            lineHeight: '1.4',
+                            fontFamily: "Coolvetica",
+                            fontOpticalSizing: 'auto',
+                            fontSize: '1.9em',
+                            lineHeight: '1',
                             marginBottom: '1.5rem',
                             textShadow: '0 2px 10px rgba(0,0,0,0.8)',
-                            fontFamily: '"Josefin Sans", sans-serif',
+                            letterSpacing: '0.5px',
                         }}
                     >
                         {truncateDescription(getAnimeDescription(currentAnimeData))}

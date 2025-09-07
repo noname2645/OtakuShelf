@@ -1,3 +1,19 @@
+@font-face {
+  font-family: 'Coolvetica';
+  src: url('../Frontend/public/Coolvetica.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Misrow';
+  src: url('../Frontend/public/Misrow.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'BarberChop';
+  src: url('../Frontend/public/BarberChop.otf') format('opentype');
+}
+
+
 body {
   margin: 0 !important;
   padding: 0 !important;
