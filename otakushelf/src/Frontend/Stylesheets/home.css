@@ -15,8 +15,6 @@ body {
 .homepage {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: linear-gradient(180deg, #050814 0%, #0a1124 100%);
-
-
 }
 
 .glass-container {
@@ -676,19 +674,6 @@ body {
 }
 
 
-/*
-.anime-section-container .anime-grid .anime-card {
-  opacity: 0;
-  transform: translateY(30px) scale(0.95);
-}
-
-.anime-card.loading {
-  opacity: 1;
-  transform: none;
-  animation: pulse-loading 2s ease-in-out infinite;
-}
-*/
-
 /* No Results State */
 .no-results {
   display: flex;
@@ -1077,9 +1062,12 @@ body {
 
 /* Animation for the entire bar */
 @keyfloat subtle-float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateX(-50%) translateY(0);
   }
+
   50% {
     transform: translateX(-50%) translateY(-3px);
   }
@@ -1095,11 +1083,11 @@ body {
     width: 340px;
     padding: 6px;
   }
-  
+
   .bottom-button-bar .MuiBottomNavigationAction-root {
     padding: 4px 8px;
   }
-  
+
   .bottom-button-bar .MuiBottomNavigationAction-label {
     font-size: 11px;
   }
@@ -1110,19 +1098,19 @@ body {
     width: 300px;
     bottom: 15px;
   }
-  
+
   .bottom-button-bar .MuiBottomNavigation-root {
     height: 48px;
   }
-  
+
   .bottom-button-bar .MuiBottomNavigationAction-label {
     font-size: 10px;
   }
-  
+
   .bottom-button-bar .MuiSvgIcon-root {
     font-size: 20px;
   }
-  
+
   .bottom-button-bar .bottom-icons {
     width: 20px;
     height: 20px;
@@ -1202,31 +1190,69 @@ body {
   margin: 0 auto;
 }
 
-.anime-section-container {
-  margin-bottom: 4rem;
-}
-
 .anime-section-container:last-child {
   margin-bottom: 2rem;
 }
 
-.section-title {
-  font-family: "Arimo", sans-serif;
+.anime-sections .divider .divider-content {
+  font-family: "Dynamix", sans-serif;
   font-size: 2.5rem;
-  margin: 0 auto 2.5rem auto;
+  margin: 3rem auto 3rem auto;
   text-align: center;
-  color: #b70404;
-  font-weight: 500;
+  color: #ff6b6b;
+  font-weight: 600;
   width: fit-content;
-  min-width: 300px;
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  padding: 1rem 2rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  /* border: 2px solid rgba(255, 82, 82, 0.3); */
+  padding: 5px;
 }
+
+.anime-sections .divider::before {
+  background-color: #ff5252;
+  height: 3px;
+  border-radius: 50%;
+}
+
+.anime-sections .divider{
+  gap: 12px;
+}
+
+.anime-sections .divider::after {
+  background-color: #ff5252;
+  height: 3px;
+  border-radius: 50%;
+}
+
+/* Adding subtle glow effect */
+.anime-sections .divider .divider-content:hover {
+  color: #ff5252;
+  /* Brighter on hover */
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 20px rgba(183, 4, 4, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.anime-sections .divider .divider-content::before {
+  left: 100%;
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .anime-sections .divider .divider-content {
+    transition: none;
+  }
+
+  .anime-sections .divider .divider-content::before {
+    display: none;
+  }
+}
+
 
 .anime-grid {
   display: grid;

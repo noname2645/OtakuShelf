@@ -15,6 +15,10 @@
   src: url('../Frontend/public/BarberChop.otf') format('opentype');
 }
 
+@font-face {
+  font-family: 'Dynamix';
+  src: url('../Frontend/public/Dynamix.ttf') format('truetype');
+}
 
 body {
   margin: 0 !important;

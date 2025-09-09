@@ -204,7 +204,7 @@ const AnimeHomepage = () => {
     // Handle scroll events
     useEffect(() => {
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20);
+            setIsScrolled(window.scrollY > 600);
         };
 
         window.addEventListener("scroll", handleScroll);
@@ -216,29 +216,28 @@ const AnimeHomepage = () => {
 
 
     // Initialize smooth scrolling
-// Initialize smooth scrolling
-useEffect(() => {
-    const lenis = new Lenis({
-        lerp: 0.09,
-        smooth: true,
-        infinite: false,
-    });
+    useEffect(() => {
+        const lenis = new Lenis({
+            lerp: 0.09,
+            smooth: true,
+            infinite: false,
+        });
 
-    lenisRef.current = lenis;
+        lenisRef.current = lenis;
 
-    function raf(time) {
-        lenis.raf(time);
-        requestAnimationFrame(raf);
-    }
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
 
-    const animationId = requestAnimationFrame(raf);
+        const animationId = requestAnimationFrame(raf);
 
-    return () => {
-        cancelAnimationFrame(animationId);
-        lenis.destroy();
-        lenisRef.current = null;
-    };
-}, []);
+        return () => {
+            cancelAnimationFrame(animationId);
+            lenis.destroy();
+            lenisRef.current = null;
+        };
+    }, []);
 
 
 
@@ -264,6 +263,7 @@ useEffect(() => {
                 medium: anime.images?.jpg?.image_url || anime.images?.webp?.image_url,
                 extraLarge: anime.images?.jpg?.large_image_url || anime.images?.webp?.large_image_url
             },
+
             images: anime.images || {
                 jpg: {
                     image_url: '/placeholder-anime.jpg',
@@ -513,9 +513,9 @@ useEffect(() => {
     }, [])
 
     // Render anime grid
-    const renderAnimeGrid = (title, data) => (
+    const renderAnimeGrid = (data) => (
         <div className="anime-section-container">
-            <h2 className="section-title">{title}</h2>
+            <h2 className="section-title"></h2>
             <div className="anime-grid">
                 {data.map((anime, index) => (
                     <div
@@ -612,7 +612,7 @@ useEffect(() => {
                     announcements={announcements}
                     onOpenModal={openModal}
                 />
-                <main className="anime-sections">
+                <main className="anime-sections" style={{ backgroundColor: "linear-gradient(180deg, #050814 0%, #0a1124 100%" }}>
                     {isSearching ? (
                         <div ref={searchRef} className="anime-section-container">
                             {searchLoading ? (
@@ -654,9 +654,18 @@ useEffect(() => {
                         </div>
                     ) : (
                         <>
-                            {renderAnimeGrid("Top Airing", removeDuplicates(topAiring))}
-                            {renderAnimeGrid("Most Watched", removeDuplicates(mostWatched))}
-                            {renderAnimeGrid("Top Movies", removeDuplicates(topmovies))}
+                            <div className="divider">
+                                <span className="divider-content">TOP AIRING</span>
+                            </div>
+                            {renderAnimeGrid(removeDuplicates(topAiring))}
+                            <div className="divider">
+                                <span className="divider-content">MOST WATCHED</span>
+                            </div>
+                            {renderAnimeGrid(removeDuplicates(mostWatched))}
+                            <div className="divider">
+                                <span className="divider-content">TOP MOVIES</span>
+                            </div>
+                            {renderAnimeGrid(removeDuplicates(topmovies))}
                         </>
                     )}
                 </main>
