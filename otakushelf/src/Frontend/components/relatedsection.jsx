@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import AnimeCard from "./animecard.jsx";
-import "../Stylesheets/relatedsection.css"; 
+import "../Stylesheets/relatedsection.css";
 
 const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
   const [related, setRelated] = useState([]);
@@ -45,72 +45,72 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
   };
 
   // Fetch from AniList
-  const fetchFromAniList = async (id) => {
+  const fetchFromAniList = useCallback(async (id, signal) => {
     try {
       const query = `
-        query ($id: Int) {
-          Media(id: $id, type: ANIME) {
-            id
-            title {
-              romaji
-              english
-              native
-            }
-            relations {
-              edges {
-                relationType
-                node {
-                  id
-                  idMal
-                  title {
-                    romaji
-                    english
-                    native
-                  }
-                  type
-                  coverImage {
-                    large
-                    medium
-                    extraLarge
-                  }
-                  bannerImage
-                  status
-                  description
-                  episodes
-                  averageScore
-                  format
-                  genres
-                  studios {
-                    edges {
-                      node {
-                        name
-                      }
-                    }
-                  }
-                  startDate {
-                    year
-                    month
-                    day
-                  }
-                  endDate {
-                    year
-                    month
-                    day
-                  }
-                  season
-                  seasonYear
-                  popularity
-                  isAdult
-                  trailer {
+            query ($id: Int) {
+                Media(id: $id, type: ANIME) {
                     id
-                    site
-                  }
+                    title {
+                        romaji
+                        english
+                        native
+                    }
+                    relations {
+                        edges {
+                            relationType
+                            node {
+                                id
+                                idMal
+                                title {
+                                    romaji
+                                    english
+                                    native
+                                }
+                                type
+                                coverImage {
+                                    large
+                                    medium
+                                    extraLarge
+                                }
+                                bannerImage
+                                status
+                                description
+                                episodes
+                                averageScore
+                                format
+                                genres
+                                studios {
+                                    edges {
+                                        node {
+                                            name
+                                        }
+                                    }
+                                }
+                                startDate {
+                                    year
+                                    month
+                                    day
+                                }
+                                endDate {
+                                    year
+                                    month
+                                    day
+                                }
+                                season
+                                seasonYear
+                                popularity
+                                isAdult
+                                trailer {
+                                    id
+                                    site
+                                }
+                            }
+                        }
+                    }
                 }
-              }
             }
-          }
-        }
-      `;
+        `;
 
       // Convert ID to integer
       const animeId = parseInt(id);
@@ -124,7 +124,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       const res = await aniListAxios.post("/", {
         query,
         variables: { id: animeId },
-      });
+      }, { signal });
 
       // Check if media exists
       const media = res.data.data?.Media;
@@ -132,34 +132,46 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
 
       return media.relations?.edges || [];
     } catch (error) {
-      console.error("AniList fetch error:", error.response?.data || error.message);
+      if (axios.isCancel(error)) {
+        console.log('AniList request cancelled');
+      } else {
+        console.error("AniList fetch error:", error.response?.data || error.message);
+      }
       return [];
     }
-  };
+  }, []);
 
   // Fetch from Jikan
-  const fetchFromJikan = async (malId) => {
+  const fetchFromJikan = useCallback(async (malId, signal) => {
     try {
       const jikanAxios = createJikanAxios();
-      const res = await jikanAxios.get(`https://api.jikan.moe/v4/anime/${malId}/relations`);
+      const res = await jikanAxios.get(`https://api.jikan.moe/v4/anime/${malId}/relations`, { signal });
       return res.data.data || [];
     } catch (error) {
-      console.error("Jikan fetch error:", error.message);
+      if (axios.isCancel(error)) {
+        console.log('Jikan request cancelled');
+      } else {
+        console.error("Jikan fetch error:", error.message);
+      }
       throw error;
     }
-  };
+  }, []);
 
   // Fetch Jikan anime details
-  const fetchJikanAnimeDetails = async (malId) => {
+  const fetchJikanAnimeDetails = useCallback(async (malId, signal) => {
     try {
       const jikanAxios = createJikanAxios();
-      const res = await jikanAxios.get(`https://api.jikan.moe/v4/anime/${malId}`);
+      const res = await jikanAxios.get(`https://api.jikan.moe/v4/anime/${malId}`, { signal });
       return res.data.data;
     } catch (error) {
-      console.error(`Failed to fetch details for MAL ID ${malId}:`, error);
+      if (axios.isCancel(error)) {
+        console.log('Jikan details request cancelled');
+      } else {
+        console.error(`Failed to fetch details for MAL ID ${malId}:`, error);
+      }
       return null;
     }
-  };
+  }, []);
 
   // Get the best image URL from a node
   const getBestImageUrl = (node) => {
@@ -175,7 +187,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
   const normalizeAniListNode = (edge) => {
     const node = edge.node;
     const imageUrl = getBestImageUrl(node);
-    
+
     return {
       // IDs
       id: node.id,
@@ -183,7 +195,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       animeMalId: node.idMal,
       idMal: node.idMal,
       mal_id: node.idMal,
-      
+
       // Title
       title: {
         english: node.title?.english,
@@ -192,14 +204,14 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       },
       title_english: node.title?.english,
       title_romaji: node.title?.romaji,
-      
+
       // Images
       coverImage: {
         large: node.coverImage?.large || imageUrl,
         medium: node.coverImage?.medium || imageUrl,
         extraLarge: node.coverImage?.extraLarge || imageUrl,
       },
-      
+
       // Details
       status: node.status,
       description: node.description,
@@ -218,7 +230,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       seasonYear: node.seasonYear,
       popularity: node.popularity,
       isAdult: node.isAdult,
-      
+
       // Trailer data
       trailer: node.trailer ? {
         id: node.trailer.id,
@@ -226,7 +238,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         youtube_id: node.trailer.site === "youtube" ? node.trailer.id : null,
       } : null,
       trailer_video_id: node.trailer?.site === "youtube" ? node.trailer.id : null,
-      
+
       // Meta
       relationType: edge.relationType,
       source: "anilist",
@@ -234,8 +246,8 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
   };
 
   // Normalize Jikan entry
-  const normalizeJikanEntry = async (entry, relationName) => {
-    const details = await fetchJikanAnimeDetails(entry.mal_id);
+  const normalizeJikanEntry = useCallback(async (entry, relationName, signal) => {
+    const details = await fetchJikanAnimeDetails(entry.mal_id, signal);
     if (!details) return null;
 
     return {
@@ -245,7 +257,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       animeMalId: details.mal_id,
       idMal: details.mal_id,
       mal_id: details.mal_id,
-      
+
       // Title
       title: {
         english: details.title_english || details.title,
@@ -254,7 +266,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       },
       title_english: details.title_english,
       title_romaji: details.title,
-      
+
       // Images
       coverImage: {
         large: details.images?.jpg?.large_image_url,
@@ -263,7 +275,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       },
       images: details.images,
       image_url: details.images?.jpg?.large_image_url,
-      
+
       // Details
       status: details.status,
       description: details.synopsis,
@@ -290,7 +302,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       seasonYear: details.year,
       popularity: details.popularity,
       isAdult: details.rating?.includes("R") || details.rating?.includes("R+"),
-      
+
       // Trailer data
       trailer: details.trailer ? {
         youtube_id: details.trailer.youtube_id,
@@ -298,70 +310,14 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         embed_url: details.trailer.embed_url,
       } : null,
       trailer_video_id: details.trailer?.youtube_id,
-      
+
       // Meta
       relationType: relationName.toUpperCase().replace(/ /g, "_"),
       source: "jikan",
     };
-  };
+  }, [fetchJikanAnimeDetails]);
 
   // Fetch related anime
-  const fetchData = async () => {
-    setError(null);
-    setLoading(true);
-
-    try {
-      let normalized = [];
-      let fetchedFromAniList = false;
-
-      // Try AniList first if animeId exists and is valid
-      if (isValidId(animeId)) {
-        try {
-          const edges = await fetchFromAniList(animeId);
-          const animeRelations = edges.filter(edge => edge.node.type === "ANIME");
-          const sequelPrequelRelations = animeRelations.filter(edge => isSequelOrPrequel(edge.relationType));
-
-          normalized = sequelPrequelRelations.map(normalizeAniListNode);
-          fetchedFromAniList = normalized.length > 0;
-        } catch (err) {
-          console.warn("AniList fetch failed:", err.message);
-        }
-      }
-
-      // If AniList failed or no results, try MAL
-      if ((!fetchedFromAniList || normalized.length === 0) && isValidId(animeMalId)) {
-        try {
-          const data = await fetchFromJikan(animeMalId);
-          for (const rel of data) {
-            const relationName = rel.relation || "RELATED";
-            if (isSequelOrPrequel(relationName)) {
-              const entries = Array.isArray(rel.entry) ? rel.entry : [rel.entry].filter(Boolean);
-
-              for (const entry of entries) {
-                if (entry && entry.mal_id) {
-                  const normalizedEntry = await normalizeJikanEntry(entry, relationName);
-                  if (normalizedEntry) {
-                    normalized.push(normalizedEntry);
-                  }
-                }
-              }
-            }
-          }
-        } catch (err) {
-          console.warn("Jikan fetch failed:", err.message);
-        }
-      }
-
-      setRelated(normalized);
-    } catch (err) {
-      console.error("Overall fetch error:", err);
-      setError(err.message || "Failed to fetch related anime");
-      setRelated([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (!isValidId(animeId) && !isValidId(animeMalId)) {
       setRelated([]);
@@ -369,8 +325,83 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       return;
     }
 
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const fetchData = async () => {
+      setError(null);
+      setLoading(true);
+
+      try {
+        let normalized = [];
+        let fetchedFromAniList = false;
+
+        // Try AniList first if animeId exists and is valid
+        if (isValidId(animeId)) {
+          try {
+            const edges = await fetchFromAniList(animeId, controller.signal);
+            const animeRelations = edges.filter(edge => edge.node.type === "ANIME");
+            const sequelPrequelRelations = animeRelations.filter(edge => isSequelOrPrequel(edge.relationType));
+
+            normalized = sequelPrequelRelations.map(normalizeAniListNode);
+            fetchedFromAniList = normalized.length > 0;
+          } catch (err) {
+            if (!axios.isCancel(err) && isMounted) {
+              console.warn("AniList fetch failed:", err.message);
+            }
+          }
+        }
+
+        // If AniList failed or no results, try MAL
+        if ((!fetchedFromAniList || normalized.length === 0) && isValidId(animeMalId)) {
+          try {
+            const data = await fetchFromJikan(animeMalId, controller.signal);
+            for (const rel of data) {
+              const relationName = rel.relation || "RELATED";
+              if (isSequelOrPrequel(relationName)) {
+                const entries = Array.isArray(rel.entry) ? rel.entry : [rel.entry].filter(Boolean);
+
+                for (const entry of entries) {
+                  if (entry && entry.mal_id) {
+                    const normalizedEntry = await normalizeJikanEntry(entry, relationName, controller.signal);
+                    if (normalizedEntry && isMounted) {
+                      normalized.push(normalizedEntry);
+                    }
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            if (!axios.isCancel(err) && isMounted) {
+              console.warn("Jikan fetch failed:", err.message);
+            }
+          }
+        }
+
+        if (isMounted && !controller.signal.aborted) {
+          setRelated(normalized);
+        }
+      } catch (err) {
+        if (isMounted && !controller.signal.aborted) {
+          console.error("Overall fetch error:", err);
+          setError(err.message || "Failed to fetch related anime");
+          setRelated([]);
+        }
+      } finally {
+        if (isMounted && !controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchData();
-  }, [animeId, animeMalId]);
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [animeId, animeMalId, fetchFromAniList, fetchFromJikan, normalizeJikanEntry]);
 
   // Render skeleton cards
   const renderSkeletonCards = (count = 3) => {
@@ -414,11 +445,11 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
           <div className="related-grid">
             {renderSkeletonCards(1)}
           </div>
-        </div>  
+        </div>
       </div>
     );
   }
-  
+
   // Show nothing if no results
   if (!related.length) return "Sequel or Prequel is not available for this anime";
 

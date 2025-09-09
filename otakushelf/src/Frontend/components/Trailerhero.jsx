@@ -70,18 +70,20 @@ const TrailerHero = ({ onOpenModal }) => {
 
 
     // Track user interaction for autoplay permission
+    // Track user interaction for autoplay permission
     useEffect(() => {
         const handleInteraction = () => {
             setHasUserInteracted(true);
         };
 
-        // Listen for any user interaction
-        ['click', 'touchstart', 'scroll', 'keydown', 'mouseover'].forEach(event => {
+        const events = ['click', 'touchstart', 'scroll', 'keydown', 'mouseover'];
+
+        events.forEach(event => {
             document.addEventListener(event, handleInteraction, { once: true, passive: true });
         });
 
         return () => {
-            ['click', 'touchstart', 'scroll', 'keydown', 'mouseover'].forEach(event => {
+            events.forEach(event => {
                 document.removeEventListener(event, handleInteraction);
             });
         };
@@ -110,8 +112,6 @@ const TrailerHero = ({ onOpenModal }) => {
                 createPlayer();
             }
         };
-
-
 
         const createPlayer = () => {
             const currentAnimeData = announcements[currentAnime];
@@ -171,7 +171,6 @@ const TrailerHero = ({ onOpenModal }) => {
                             }
                         }
                     }
-
                 });
             } catch (error) {
                 console.log('Error creating YouTube player:', error);
@@ -185,6 +184,17 @@ const TrailerHero = ({ onOpenModal }) => {
 
         return () => {
             isMounted = false;
+
+            // Clean up YouTube player
+            if (playerRef.current && typeof playerRef.current.destroy === 'function') {
+                try {
+                    playerRef.current.destroy();
+                } catch (e) {
+                    console.log('Error destroying player in cleanup:', e);
+                }
+                playerRef.current = null;
+            }
+
             // Clean up global callback
             window.onYouTubeIframeAPIReady = null;
         };
@@ -387,11 +397,17 @@ const TrailerHero = ({ onOpenModal }) => {
         };
 
         window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
     }, []);
 
     // Auto-advance anime and initialize player
+    // Auto-advance anime and initialize player
     useEffect(() => {
+        let intervalId;
+
         const currentAnimeData = announcements[currentAnime];
         if (!currentAnimeData) return;
 
@@ -402,12 +418,19 @@ const TrailerHero = ({ onOpenModal }) => {
 
         // Auto-advance every 30 seconds
         if (announcements.length > 1) {
-            const interval = setInterval(() => {
+            intervalId = setInterval(() => {
                 setCurrentAnime(prev => (prev + 1) % announcements.length);
             }, 30000);
-            return () => clearInterval(interval);
         }
+
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
     }, [currentAnime, announcements, hasUserInteracted]);
+
+
     // Retry autoplay when user interacts
     useEffect(() => {
         if (hasUserInteracted && playerRef.current && isPlayerReady) {
@@ -420,9 +443,9 @@ const TrailerHero = ({ onOpenModal }) => {
         }
     }, [hasUserInteracted, isPlayerReady]);
 
+    // If no announcements, don't render
     const currentAnimeData = announcements[currentAnime];
     if (!currentAnimeData) return null;
-
     const videoId = getVideoId(currentAnimeData);
 
     // Helper functions
@@ -467,7 +490,7 @@ const TrailerHero = ({ onOpenModal }) => {
 
     return (
         <>
-            {/* Fixed Trailer Section */}
+            {/* Trailer Section */}
             <section
                 ref={heroRef}
                 style={{

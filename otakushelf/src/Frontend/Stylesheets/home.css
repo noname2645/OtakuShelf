@@ -950,79 +950,184 @@ body {
 
 
 /* Bottom button nav */
+/* Enhanced Bottom Navigation Bar */
 .bottom-button-bar {
   position: fixed;
-  bottom: 20px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 2000;
-  background: rgba(255, 255, 255, 0.95);
+  background: linear-gradient(135deg, rgba(183, 4, 4, 0.9) 0%, rgba(120, 0, 0, 0.9) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 50px;
-  padding: 6px;
-  width: 400px;
+  padding: 8px;
+  width: 380px;
   max-width: calc(100vw - 40px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
 }
 
+.bottom-button-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50px;
+  padding: 2px;
+  background: linear-gradient(45deg, rgba(255, 107, 107, 0.5), rgba(183, 4, 4, 0.5), rgba(255, 107, 107, 0.5));
+  pointer-events: none;
+}
 
 /* MUI BottomNavigation overrides */
 .bottom-button-bar .MuiBottomNavigation-root {
   background: transparent !important;
   border-radius: 50px;
   overflow: hidden;
+  height: 54px;
+}
+
+.bottom-button-bar .MuiBottomNavigationAction-root {
+  position: relative;
+  min-width: auto;
+  padding: 6px 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+  /* color: rgba(255, 255, 255, 0.7); */
+}
+
+.bottom-button-bar .MuiBottomNavigationAction-root::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
   height: 50px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.3s ease;
+  z-index: -1;
 }
 
 
-.bottom-button-bar .MuiBottomNavigationAction-root:hover {
-  transform: translateY(-2px);
-  color: inherit;
-  /* stays the same */
-}
-
-.bottom-button-bar .MuiBottomNavigationAction-root:hover::before {
-  opacity: 0.1;
-  transform: scale(1);
-}
 
 /* Active state */
 .bottom-button-bar .MuiBottomNavigationAction-root.Mui-selected {
-  color: #fff;
-  transform: translateY(-1px);
+  color: #ffffff;
+  transform: translateY(-2px);
 }
 
 .bottom-button-bar .MuiBottomNavigationAction-root.Mui-selected::before {
-  opacity: 1;
-  transform: scale(1);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.bottom-button-bar .MuiBottomNavigationAction-root.Mui-selected .MuiBottomNavigationAction-label {
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+/* Icon styling */
+.bottom-button-bar .MuiSvgIcon-root {
+  font-size: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.bottom-button-bar .MuiBottomNavigationAction-root:hover .MuiSvgIcon-root {
+  transform: scale(1.15);
+}
+
+.bottom-button-bar .MuiBottomNavigationAction-root.Mui-selected .MuiSvgIcon-root {
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
 }
 
 .bottom-button-bar .bottom-icons {
   width: 24px;
   height: 24px;
-  filter: grayscale(1) opacity(0.7);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-bottom: 4px;
-  display: block;
+  filter: brightness(0.8) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
+.bottom-button-bar .MuiBottomNavigationAction-root:hover .bottom-icons {
+  filter: brightness(1) drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+  transform: scale(1.15);
+}
 
 .bottom-button-bar .MuiBottomNavigationAction-root.Mui-selected .bottom-icons {
-  filter: brightness(0) invert(1);
-  transform: scale(1.15);
+  filter: brightness(1) drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+  transform: scale(1.2);
 }
 
 /* Label styling */
 .bottom-button-bar .MuiBottomNavigationAction-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  z-index: 1;
+  margin-top: 4px;
+  opacity: 0.9;
 }
 
+
+
+
+/* Animation for the entire bar */
+@keyfloat subtle-float {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-3px);
+  }
+}
+
+.bottom-button-bar {
+  animation: subtle-float 6s ease-in-out infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .bottom-button-bar {
+    width: 340px;
+    padding: 6px;
+  }
+  
+  .bottom-button-bar .MuiBottomNavigationAction-root {
+    padding: 4px 8px;
+  }
+  
+  .bottom-button-bar .MuiBottomNavigationAction-label {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bottom-button-bar {
+    width: 300px;
+    bottom: 15px;
+  }
+  
+  .bottom-button-bar .MuiBottomNavigation-root {
+    height: 48px;
+  }
+  
+  .bottom-button-bar .MuiBottomNavigationAction-label {
+    font-size: 10px;
+  }
+  
+  .bottom-button-bar .MuiSvgIcon-root {
+    font-size: 20px;
+  }
+  
+  .bottom-button-bar .bottom-icons {
+    width: 20px;
+    height: 20px;
+  }
+}
 
 /* Slider Navigation - Fixed Dots */
 .slider-navigation {

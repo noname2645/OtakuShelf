@@ -37,6 +37,7 @@ const ProfileDropdown = () => {
         };
 
         document.addEventListener('mousedown', handleClickOutside);
+
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
@@ -205,33 +206,39 @@ const AnimeHomepage = () => {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 20);
         };
+
         window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+        };
     }, []);
 
 
     // Initialize smooth scrolling
-    useEffect(() => {
-        const lenis = new Lenis({
-            lerp: 0.09,
-            smooth: true,
-            infinite: false,
-        });
+// Initialize smooth scrolling
+useEffect(() => {
+    const lenis = new Lenis({
+        lerp: 0.09,
+        smooth: true,
+        infinite: false,
+    });
 
-        lenisRef.current = lenis;
+    lenisRef.current = lenis;
 
-        function raf(time) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-
+    function raf(time) {
+        lenis.raf(time);
         requestAnimationFrame(raf);
+    }
 
-        return () => {
-            lenis.destroy();
-            lenisRef.current = null;
-        };
-    }, []);
+    const animationId = requestAnimationFrame(raf);
+
+    return () => {
+        cancelAnimationFrame(animationId);
+        lenis.destroy();
+        lenisRef.current = null;
+    };
+}, []);
 
 
 
@@ -373,6 +380,7 @@ const AnimeHomepage = () => {
 
 
     // Search functionality
+    // Search functionality
     useEffect(() => {
         if (!searchQuery.trim()) {
             setIsSearching(false);
@@ -416,8 +424,14 @@ const AnimeHomepage = () => {
             }
         };
 
-        const debounce = setTimeout(fetchSearch, 400); // debounce keystrokes
-        return () => clearTimeout(debounce);
+        const debounce = setTimeout(fetchSearch, 400);
+
+        return () => {
+            clearTimeout(debounce);
+            if (controllerRef.current) {
+                controllerRef.current.abort();
+            }
+        };
     }, [searchQuery]);
 
 

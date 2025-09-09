@@ -1,5 +1,5 @@
 // Enhanced Modal Component with Dynamic Title Sizing
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import "../Stylesheets/modal.css";
 import RelatedTab from "./relatedsection.jsx";
 import Trailer from "./trailer";
@@ -18,72 +18,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [userListStatus, setUserListStatus] = useState(null);
     const { user } = useAuth();
 
-    useEffect(() => {
-        if (user && anime) {
-            checkIfInList();
-        }
-    }, [user, anime]);
-
-    useEffect(() => {
-        setSynopsisModalOpen(false);
-        setActiveTab("info");
-        setTrailerVideoId(null);
-    }, [anime?.id, anime?.mal_id]);
-
-    // Dynamic title class assignment based on length
-    useEffect(() => {
-        if (titleRef.current && anime) {
-            const title = animeTitle;
-            const titleElement = titleRef.current;
-
-            // Remove existing title classes
-            titleElement.classList.remove('long-title', 'very-long-title');
-
-            // Apply classes based on title length
-            if (title.length > 60) {
-                titleElement.classList.add('very-long-title');
-            } else if (title.length > 35) {
-                titleElement.classList.add('long-title');
-            }
-
-            // Alternative: Check actual rendered height
-            setTimeout(() => {
-                const titleHeight = titleElement.scrollHeight;
-                if (titleHeight > 80) {
-                    titleElement.classList.add('very-long-title');
-                } else if (titleHeight > 60) {
-                    titleElement.classList.add('long-title');
-                }
-            }, 100);
-        }
-    }, [anime]);
-
-    // Fetch trailer data when component mounts or anime changes
-    useEffect(() => {
-        if (anime && isOpen) {
-            const videoId = getTrailerVideoId();
-            setTrailerVideoId(videoId);
-        }
-    }, [anime, isOpen]);
-
-    // Prevent background scrolling when modal is open
-    useEffect(() => {
-        if (isOpen || synopsisModalOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isOpen, synopsisModalOpen]);
-
-    if (!isOpen || !anime) return null;
-
-    console.log("Modal received anime data:", anime);
-
-    const checkIfInList = async () => {
+    // Define checkIfInList function with useCallback to prevent recreation on every render
+    const checkIfInList = useCallback(async () => {
+        if (!user || !anime) return;
+        
         try {
             const response = await axios.get(`http://localhost:5000/api/list/${user._id || user.id}`);
             const userList = response.data;
@@ -124,7 +62,84 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             setIsInList(false);
             setUserListStatus(null);
         }
-    };
+    }, [user, anime]);
+
+    // Check if anime is in user's list
+    useEffect(() => {
+        let isMounted = true;
+
+        const checkListStatus = async () => {
+            if (user && anime) {
+                await checkIfInList();
+            }
+        };
+
+        checkListStatus();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [user, anime, checkIfInList]);
+
+    useEffect(() => {
+        setSynopsisModalOpen(false);
+        setActiveTab("info");
+        setTrailerVideoId(null);
+    }, [anime?.id, anime?.mal_id]);
+
+    // Dynamic title class assignment based on length
+    useEffect(() => {
+        if (titleRef.current && anime) {
+            const title = animeTitle;
+            const titleElement = titleRef.current;
+
+            // Remove existing title classes
+            titleElement.classList.remove('long-title', 'very-long-title');
+
+            // Apply classes based on title length
+            if (title.length > 60) {
+                titleElement.classList.add('very-long-title');
+            } else if (title.length > 35) {
+                titleElement.classList.add('long-title');
+            }
+
+            // Alternative: Check actual rendered height
+            const timer = setTimeout(() => {
+                const titleHeight = titleElement.scrollHeight;
+                if (titleHeight > 80) {
+                    titleElement.classList.add('very-long-title');
+                } else if (titleHeight > 60) {
+                    titleElement.classList.add('long-title');
+                }
+            }, 100);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [anime]);
+
+    // Fetch trailer data when component mounts or anime changes
+    useEffect(() => {
+        if (anime && isOpen) {
+            const videoId = getTrailerVideoId();
+            setTrailerVideoId(videoId);
+        }
+    }, [anime, isOpen]);
+
+    // Prevent background scrolling when modal is open
+    useEffect(() => {
+        if (isOpen || synopsisModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen, synopsisModalOpen]);
+
+    if (!isOpen || !anime) return null;
+    console.log("Modal received anime data:", anime);
 
     const addToList = async (status) => {
         if (!user) {
@@ -159,7 +174,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         }
     };
 
-
     // Universal title fetch (AniList + Jikan)
     const animeTitle =
         anime.title?.english ||
@@ -176,7 +190,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         anime.image_url ||
         anime.image ||
         null;
-
 
     // Enhanced trailer video ID extraction
     const getTrailerVideoId = () => {
@@ -389,7 +402,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                         }}
                     ></div>
 
-
                     {/* Close button */}
                     <button className="modal-close" onClick={onClose}>
                         <span className="close-icon">✖</span>
@@ -439,7 +451,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                         <div className="already-in-list">
                                             <Check size={20} />
                                             <span>In your {userListStatus} list</span>
-
                                         </div>
                                     )}
                                 </div>
