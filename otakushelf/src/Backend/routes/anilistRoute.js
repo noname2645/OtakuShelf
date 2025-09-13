@@ -27,47 +27,38 @@ router.get("/hero-trailers", async (req, res) => {
 
     // GraphQL query
     const query = `
-      query {
-        Page(perPage: 30) {
-          media(
-            sort: TRENDING_DESC
-            type: ANIME
-            isAdult: false
-            status_in: [RELEASING, NOT_YET_RELEASED, FINISHED]
-          ) {
-            id
-            title {
-              romaji
-              english
-              native
-            }
-            description(asHtml: false)
-            status
-            season
-            seasonYear
-            episodes
-            averageScore
-            popularity
-            bannerImage
-            coverImage {
-              large
-              extraLarge
-            }
-            genres
-            studios {
-              nodes {
-                name
-                isAnimationStudio
-              }
-            }
-            trailer {
-              id
-              site
-              thumbnail
-            }
-          }
-        }
+ query {
+  Page(perPage: 30) {
+    media(
+      sort: TRENDING_DESC
+      type: ANIME
+      isAdult: false
+      status_in: [RELEASING, NOT_YET_RELEASED, FINISHED]
+    ) {
+      id
+      title { romaji english native }
+      description(asHtml: false)
+      status
+      season
+      seasonYear
+      episodes
+      averageScore
+      popularity
+      bannerImage
+      coverImage { large extraLarge }
+      genres
+      format   # ✅ ADD THIS
+      startDate { year month day }  # ✅ ADD THIS
+      endDate { year month day }    # ✅ ADD THIS
+      studios {
+        nodes { name isAnimationStudio }
       }
+      trailer { id site thumbnail }
+    }
+  }
+}
+
+
     `;
 
     const response = await axios.post(

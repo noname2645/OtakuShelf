@@ -70,7 +70,6 @@ const TrailerHero = ({ onOpenModal }) => {
 
 
     // Track user interaction for autoplay permission
-    // Track user interaction for autoplay permission
     useEffect(() => {
         const handleInteraction = () => {
             setHasUserInteracted(true);
@@ -253,8 +252,6 @@ const TrailerHero = ({ onOpenModal }) => {
             },
 
             bannerImage: anime.bannerImage || null,
-
-            // Trailer fields
             trailer: anime.trailer || null,
             description: anime.description || null,
             episodes: anime.episodes || null,
@@ -263,6 +260,10 @@ const TrailerHero = ({ onOpenModal }) => {
             seasonYear: anime.seasonYear || null,
             genres: anime.genres || [],
             isAdult: anime.isAdult || false,
+            format: anime.format || null,
+            startDate: anime.startDate || null,
+            endDate: anime.endDate || null,
+
 
             ...anime,
         };
@@ -403,7 +404,7 @@ const TrailerHero = ({ onOpenModal }) => {
         };
     }, []);
 
-    // Auto-advance anime and initialize player
+
     // Auto-advance anime and initialize player
     useEffect(() => {
         let intervalId;
