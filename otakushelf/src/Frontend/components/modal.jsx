@@ -376,7 +376,12 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         return cleanText.length > maxLength ? cleanText.substring(0, maxLength) + "..." : cleanText;
     };
 
-    const fullSynopsis = anime.description || "No description available.";
+    function stripHTML(html){
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        return doc.body.textContent || "";
+    }
+
+    const fullSynopsis = stripHTML(anime.description || "No description available.");
 
     const handleSynopsisClick = () => {
         setSynopsisModalOpen(true);
@@ -402,13 +407,13 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
                             backgroundRepeat: 'no-repeat',
-                            filter: 'brightness(0.3)',
+                            filter: 'brightness(0.4)',
                             position: 'absolute',
                             top: 0,
                             left: 0,
-                            width: '100%',
-                            height: '100%',
-                            zIndex: -1,
+                            width: '1350px',
+                            height: '690px',
+                            zIndex: 0,
                         }}
                     ></div>
 
@@ -538,9 +543,9 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
                                             <div className="synopsis-section">
                                                 <p className="synopsis-text">
-                                                    {truncateSynopsis(fullSynopsis, 800)}
+                                                    {truncateSynopsis(fullSynopsis, 600)}
                                                 </p>
-                                                {fullSynopsis.length > 800 && (
+                                                {fullSynopsis.length > 600 && (
                                                     <button className="read-more-btn" onClick={handleSynopsisClick}>
                                                         Read More
                                                     </button>

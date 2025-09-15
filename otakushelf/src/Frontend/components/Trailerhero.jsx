@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import axios from 'axios';
+import { motion } from "framer-motion";
+
 
 // API base URL
 const API_BASE = import.meta.env.MODE === "development"
@@ -608,7 +610,11 @@ const TrailerHero = ({ onOpenModal }) => {
                 />
 
                 {/* Content Overlay */}
-                <div
+                <motion.div
+                    key={currentAnime}  
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
                     style={{
                         position: 'absolute',
                         bottom: '15%',
@@ -674,7 +680,7 @@ const TrailerHero = ({ onOpenModal }) => {
                             <>
                                 <span>•</span>
                                 <span style={{ color: '#FFD700' }}>
-                                    ⭐ {currentAnimeData.averageScore}/100
+                                    ⭐ {(currentAnimeData.averageScore) / 10}/10
                                 </span>
                             </>
                         )}
@@ -730,7 +736,7 @@ const TrailerHero = ({ onOpenModal }) => {
                         </svg>
                         More Details
                     </button>
-                </div>
+                </motion.div>
 
                 {/* Slide Indicators */}
                 {announcements.length > 1 && (

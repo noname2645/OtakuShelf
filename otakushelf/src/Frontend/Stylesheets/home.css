@@ -8,7 +8,7 @@
 
 
 .homepage {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Roboto";
   background: linear-gradient(180deg, #050814 0%, #0a1124 100%);
 }
 
@@ -1143,8 +1143,8 @@
 }
 
 .card-title-bottom {
-  font-family: "Work Sans", sans-serif;
-  letter-spacing: 0.8px;
+  font-family: "Misrow", sans-serif;
+  letter-spacing: 2px;
   position: absolute;
   bottom: 0;
   left: 0;
@@ -1158,7 +1158,7 @@
 
 .card-title-bottom h3 {
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 300;
   text-align: center;
   line-height: 1.4;
   backdrop-filter: blur(7px);
@@ -1167,7 +1167,6 @@
   border-radius: 20px;
   padding: 5px;
 }
-
 
 
 /* Skeleton Loading */

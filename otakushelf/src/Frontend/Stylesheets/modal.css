@@ -89,16 +89,15 @@
 
 
 .modal-title h2 {
-    font-family: "Mulish", sans-serif;
+    font-family: "Misrow", sans-serif;
     margin: 0;
     font-size: 2.5rem;
-    font-weight: 700;
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #ffffff 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     text-shadow: none;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
     line-height: 1.2;
     max-height: 80px;
     overflow: hidden;
@@ -111,12 +110,12 @@
 }
 
 .modal-title h2.long-title {
-    font-size: 2.2rem;
+    font-size: 2.5rem;
     line-height: 1.1;
 }
 
 .modal-title h2.very-long-title {
-    font-size: 1.9rem;
+    font-size: 1.6rem;
     line-height: 1.0;
 }
 
@@ -371,12 +370,12 @@
 }
 
 .synopsis-text {
-    font-family: "Inter", sans-serif;
-    font-size: 0.95rem;
+    font-family: "Coolvetica", sans-serif;
+    font-size: 1.1rem;
     line-height: 1.45;
     color: rgba(87, 255, 136, 0.95);
     margin: 0;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.7px;
     word-wrap: break-word;
     overflow-wrap: break-word;
     flex: 1;
@@ -506,10 +505,11 @@
 .genre-pill {
     padding: 6px 14px;
     border-radius: 18px;
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: white;
+    font-family: "Roboto", monospace;
+    letter-spacing: 1.2px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgb(0, 0, 0);
     box-shadow:
         0 4px 12px rgba(0, 0, 0, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);

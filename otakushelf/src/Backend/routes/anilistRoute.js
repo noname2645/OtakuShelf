@@ -47,9 +47,9 @@ router.get("/hero-trailers", async (req, res) => {
       bannerImage
       coverImage { large extraLarge }
       genres
-      format   # ✅ ADD THIS
-      startDate { year month day }  # ✅ ADD THIS
-      endDate { year month day }    # ✅ ADD THIS
+      format  
+      startDate { year month day } 
+      endDate { year month day }   
       studios {
         nodes { name isAnimationStudio }
       }

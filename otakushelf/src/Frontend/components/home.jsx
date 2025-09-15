@@ -14,7 +14,6 @@ import FolderIcon from '@mui/icons-material/Folder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import TrailerHero from './TrailerHero.jsx';
-import { use } from 'react';
 
 
 // API base URL
@@ -407,7 +406,6 @@ const AnimeHomepage = () => {
 
 
     // Enhanced search functionality with better normalization
-    // Enhanced search functionality with comprehensive debugging
     useEffect(() => {
         console.log("Search useEffect triggered:", { searchQuery, trim: searchQuery.trim() });
 
@@ -504,11 +502,6 @@ const AnimeHomepage = () => {
         });
     };
 
-    const handleSearchInput = (e) => {
-        const value = e.target.value;
-        console.log("Search input changed:", value);
-        setSearchQuery(value);
-    };
 
 
     // Enhanced modal opening with comprehensive debugging
@@ -526,7 +519,6 @@ const AnimeHomepage = () => {
         console.log("Studios:", anime.studios);
         console.log("All anime properties:", Object.keys(anime));
         console.log("Original data:", anime._originalData);
-        console.log("================================");
 
         setSelectedAnime(anime);
         setIsModalOpen(true);
@@ -558,7 +550,6 @@ const AnimeHomepage = () => {
         }
     };
     // Handle key down events
-    // Enhanced search key handler
     const handleKeyDown = (e) => {
         console.log("Key pressed:", e.key);
         if (e.key === 'Escape') {
@@ -702,10 +693,12 @@ const AnimeHomepage = () => {
                         value={value}
                         onChange={(_, newValue) => setValue(newValue)}
                     >
-                        <Link to="/list">
+                        <Link to = "/list">
                             <BottomNavigationAction label="Recents" value={0} icon={<img className="bottom-icons" src={list} alt="Recents" />} />
                         </Link>
+                        <Link to = "/advance">
                         <BottomNavigationAction label="Favorites" value={1} icon={<FavoriteIcon />} />
+                        </Link>
                         <BottomNavigationAction label="Nearby" value={2} icon={<LocationOnIcon />} />
                         <BottomNavigationAction label="Folder" value={3} icon={<FolderIcon />} />
                     </BottomNavigation>
@@ -724,7 +717,7 @@ const AnimeHomepage = () => {
                                     {searchResults.map((anime, index) => (
                                         <div
                                             key={anime.id || anime.mal_id || index}
-                                            className={`anime-card ${animateCards ? 'animate-in' : ''}`}
+                                            className={`anime-card`}
                                             onClick={() => openModal(anime)}
                                             style={{ "--card-index": index, zIndex: '5' }}
                                         >
