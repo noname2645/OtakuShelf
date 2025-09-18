@@ -13,7 +13,7 @@ import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import FolderIcon from '@mui/icons-material/Folder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import TrailerHero from '/src/Frontend/components/TrailerHero.jsx';
+import TrailerHero from './TrailerHero.jsx';
 import { Header } from '../components/header.jsx';
 
 
