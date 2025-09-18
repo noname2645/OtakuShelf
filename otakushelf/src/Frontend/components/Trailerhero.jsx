@@ -780,4 +780,4 @@ const TrailerHero = ({ onOpenModal }) => {
     );
 };
 
-export default memo(TrailerHero);
+export default TrailerHero;
