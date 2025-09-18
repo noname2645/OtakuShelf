@@ -216,7 +216,7 @@ router.get('/anime-sections', async (req, res) => {
       timestamp: now,
     };
 
-    console.log('API Response Sample (topAiring[0]):', cache.data.topAiring[0]);
+    // console.log('API Response Sample (topAiring[0]):', cache.data.topAiring[0]);
 
     res.json(cache.data);
   } catch (error) {

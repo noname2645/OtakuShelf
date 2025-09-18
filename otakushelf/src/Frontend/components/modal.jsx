@@ -179,10 +179,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             return anime.title;
         }
         if (anime.title && typeof anime.title === 'object') {
-            return anime.title.english || 
-                   anime.title.romaji || 
-                   anime.title.native || 
-                   "Untitled";
+            return anime.title.english ||
+                anime.title.romaji ||
+                anime.title.native ||
+                "Untitled";
         }
         return "Untitled";
     };
@@ -191,11 +191,11 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const getAnimeImage = () => {
         if (!anime) return "/placeholder-anime.jpg";
         if (anime.coverImage) {
-            return anime.coverImage.extraLarge || 
-                   anime.coverImage.large || 
-                   anime.coverImage.medium ||
-                   anime.bannerImage || 
-                   "/placeholder-anime.jpg";
+            return anime.coverImage.extraLarge ||
+                anime.coverImage.large ||
+                anime.coverImage.medium ||
+                anime.bannerImage ||
+                "/placeholder-anime.jpg";
         }
         return anime.bannerImage || "/placeholder-anime.jpg";
     };
@@ -272,14 +272,14 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     // AniList studio extraction
     const getStudioInfo = () => {
         if (!anime.studios) return "N/A";
-        
+
         if (anime.studios.edges && Array.isArray(anime.studios.edges)) {
             return anime.studios.edges
                 .filter(edge => edge.node && edge.node.name)
                 .map(edge => edge.node.name)
                 .join(", ") || "N/A";
         }
-        
+
         if (anime.studios.nodes && Array.isArray(anime.studios.nodes)) {
             return anime.studios.nodes
                 .filter(node => node && node.name)
@@ -300,7 +300,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     // AniList genres extraction
     const getGenres = () => {
         if (!anime.genres || !Array.isArray(anime.genres)) return [];
-        
+
         // Handle both string arrays and object arrays
         return anime.genres.map(g => {
             if (typeof g === 'string') return g;
@@ -311,15 +311,17 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
     // AniList score - averageScore is out of 100
     const getScore = () => {
-        if (anime.averageScore) {
-            return (anime.averageScore / 10).toFixed(1); // Convert to 10-point scale
+        // Prefer normalized score if present
+        if (anime.score && anime.score !== "N/A") {
+            return (anime.score / 10).toFixed(1);
         }
-        // Handle other possible score formats
-        if (anime.score && anime.score <= 10) {
-            return anime.score.toFixed(1);
+        // Fallback to raw AniList averageScore
+        if (anime.averageScore) {
+            return (anime.averageScore / 10).toFixed(1);
         }
         return null;
     };
+
 
     // AniList episodes
     const getEpisodes = () => {
@@ -356,7 +358,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     // AniList format display
     const getFormatDisplay = () => {
         if (!anime.format) return anime.type || "Unknown";
-        
+
         const formatMap = {
             "TV": "TV",
             "TV_SHORT": "Short",
@@ -366,7 +368,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             "ONA": "ONA",
             "MUSIC": "Music"
         };
-        
+
         return formatMap[anime.format] || anime.format;
     };
 
@@ -376,7 +378,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         return cleanText.length > maxLength ? cleanText.substring(0, maxLength) + "..." : cleanText;
     };
 
-    function stripHTML(html){
+    function stripHTML(html) {
         const doc = new DOMParser().parseFromString(html, 'text/html');
         return doc.body.textContent || "";
     }
@@ -530,10 +532,11 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                                     <span className="stat-label">Score :</span>
                                                     <span
                                                         className="stat-value score"
-                                                        style={{ color: getScoreColor(anime.averageScore) }}
+                                                        style={{ color: getScoreColor(anime.score !== "N/A" ? anime.score : anime.averageScore) }}
                                                     >
                                                         ⭐ {getScore() || "N/A"}
                                                     </span>
+
                                                 </div>
                                                 <div className="stat-item">
                                                     <span className="stat-label">Age Rating :</span>

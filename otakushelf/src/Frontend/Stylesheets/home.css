@@ -135,12 +135,6 @@
   position: relative;
 }
 
-.main-content #sidebar {
-  height: 50px;
-  width: 50px;
-  cursor: pointer;
-  fill: wheat;
-}
 
 .main-content .header .logo img {
   margin-top: 10px;
