@@ -17,7 +17,7 @@ async function fetchAniList(query, variables = {}) {
   return response.data.data;
 }
 
-// ----------- Enhanced Anime Sections (Airing, Popular, Movies) -----------
+// Enhanced Anime Sections (Airing, Popular, Movies) 
 router.get('/anime-sections', async (req, res) => {
   const now = Date.now();
   if (cache.data && now - cache.timestamp < 1000 * 60 * 10) {
@@ -27,7 +27,7 @@ router.get('/anime-sections', async (req, res) => {
   try {
     const query = `
       query {
-        airing: Page(page: 1, perPage: 25) {
+        airing: Page(page: 1, perPage: 50) {
           media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC) {
             id
             idMal
@@ -78,7 +78,7 @@ router.get('/anime-sections', async (req, res) => {
             source
           }
         }
-        mostWatched: Page(page: 1, perPage: 25) {
+        mostWatched: Page(page: 1, perPage: 50) {
           media(type: ANIME, sort: POPULARITY_DESC) {
             id
             idMal
@@ -129,7 +129,7 @@ router.get('/anime-sections', async (req, res) => {
             source
           }
         }
-        movies: Page(page: 1, perPage: 25) {
+        movies: Page(page: 1, perPage: 50) {
           media(type: ANIME, format: MOVIE, sort: POPULARITY_DESC) {
             id
             idMal

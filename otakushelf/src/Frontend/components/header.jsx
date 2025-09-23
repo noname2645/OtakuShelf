@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext.jsx';
 import logo from "../images/logo.png";
-import "../Stylesheets/home.css";
+import "../Stylesheets/header.css";
 
 // ProfileDropdown Component (copied from home.jsx)
 const ProfileDropdown = () => {
@@ -123,24 +123,22 @@ export const Header = ({ showSearch = true, onSearchChange }) => {
     return (
         <header className={`header ${isScrolled ? "scrolled" : ""}`}>
             <div className="header-center">
-                <div className="logo">
-                    <img src={logo} alt="Logo" />
-                </div>
+                {showSearch && (
+                    <div className={`InputContainer ${onSearchChange ? "active" : ""}`}>
+                        <input
+                            placeholder="Quick Search"
+                            id="input"
+                            className="input"
+                            type="text"
+                            onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                        />
+                    </div>
+                )}
             </div>
-            
-            {showSearch && (
-                <div className={`InputContainer ${onSearchChange ? "active" : ""}`}>
-                    <input
-                        placeholder="Quick Search"
-                        id="input"
-                        className="input"
-                        type="text"
-                        onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                    />
-                </div>
-            )}
-
+            <div className="logo">
+                <img src={logo} alt="Logo" />
+            </div>
             <div className="auth-buttons">
                 {user ? (
                     <ProfileDropdown />

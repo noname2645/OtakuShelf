@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import styles from "../Stylesheets/advancedsearch.module.css";
 import Modal from "./modal.jsx";
@@ -7,129 +7,186 @@ import { Header } from '../components/header.jsx';
 import { Link } from 'react-router-dom';
 import "../Stylesheets/home.css";
 
-
-// Genre list
-const GENRES = [
+// List of all available anime genres
+const ANIME_GENRES = [
   "Action", "Adventure", "Avant Garde", "Award Winning", "Boys Love",
   "Comedy", "Drama", "Ecchi", "Erotica", "Fantasy", "Girls Love", "Gourmet",
   "Hentai", "Horror", "Mystery", "Romance", "Sci-Fi", "Slice of Life",
   "Sports", "Supernatural", "Suspense"
 ];
 
-const SEASONS = ["WINTER", "SPRING", "SUMMER", "FALL"];
-
+// List of anime seasons
+const ANIME_SEASONS = ["WINTER", "SPRING", "SUMMER", "FALL"];
 
 function AdvancedSearch() {
-  // --- States ---
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filters, setFilters] = useState({
-    type: [], status: ["RELEASING", "FINISHED"], scoreMin: 7,
-    season: "", seasonYear: "2025",
-    startYear: "", startMonth: "", startDay: "",
-    endYear: "", endMonth: "", endDay: "",
-    genres: [],
+  const [searchText, setSearchText] = useState("");
+  
+  // All the filter options
+  const [filterOptions, setFilterOptions] = useState({
+    type: [],
+    status: ["RELEASING", "FINISHED"], 
+    minimumScore: 7, 
+    season: "", 
+    seasonYear: "2025", 
+    startYear: "", 
+    startMonth: "", 
+    startDay: "",
+    endYear: "", 
+    endMonth: "", 
+    endDay: "",
+    genres: [], 
   });
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState(null);
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasNextPage, setHasNextPage] = useState(true);
-  const [totalResults, setTotalResults] = useState(0);
+  // Search results and loading states
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentOpenDropdown, setCurrentOpenDropdown] = useState(null);
 
-  // Modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAnime, setSelectedAnime] = useState(null);
+  // Page navigation for loading more results
+  const [currentPageNumber, setCurrentPageNumber] = useState(1);
+  const [hasMorePages, setHasMorePages] = useState(true);
+  const [totalResultsCount, setTotalResultsCount] = useState(0);
 
-  const lenisRef = useRef(null);
+  // Modal popup for anime details
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedAnimeForModal, setSelectedAnimeForModal] = useState(null);
 
-  // Initialize smooth scrolling
+  const smoothScrollRef = useRef(null);
+
+  // Setup smooth scrolling when component loads
   useEffect(() => {
-    const lenis = new Lenis({
+    const smoothScroll = new Lenis({
       lerp: 0.09,
       smooth: true,
       infinite: false,
     });
 
-    lenisRef.current = lenis;
+    smoothScrollRef.current = smoothScroll;
 
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
+    function animateScroll(time) {
+      smoothScroll.raf(time);
+      requestAnimationFrame(animateScroll);
     }
 
-    const animationId = requestAnimationFrame(raf);
+    const animationRequestId = requestAnimationFrame(animateScroll);
 
+    // Cleanup when component unmounts
     return () => {
-      cancelAnimationFrame(animationId);
-      lenis.destroy();
-      lenisRef.current = null;
+      cancelAnimationFrame(animationRequestId);
+      smoothScroll.destroy();
+      smoothScrollRef.current = null;
     };
   }, []);
 
-  // --- Handlers ---
-  const toggleDropdown = (name) => {
-    setActiveDropdown(prev => (prev === name ? null : name));
+  // Function to show/hide dropdown menus
+  const showOrHideDropdown = (dropdownName) => {
+    if (currentOpenDropdown === dropdownName) {
+      setCurrentOpenDropdown(null); // Close if already open
+    } else {
+      setCurrentOpenDropdown(dropdownName); // Open this dropdown
+    }
   };
 
-  const handleCheckbox = (e, field) => {
-    const value = e.target.value;
-    setFilters(prev => {
-      const arr = prev[field].includes(value)
-        ? prev[field].filter(v => v !== value)
-        : [...prev[field], value];
-      return { ...prev, [field]: arr };
+  // Function to handle checkbox selections in filters
+  const handleCheckboxClick = (event, filterField) => {
+    const selectedValue = event.target.value;
+    
+    setFilterOptions(previousFilters => {
+      const currentList = previousFilters[filterField];
+      let newList;
+      
+      if (currentList.includes(selectedValue)) {
+        // Remove if already selected
+        newList = currentList.filter(item => item !== selectedValue);
+      } else {
+        // Add if not selected
+        newList = [...currentList, selectedValue];
+      }
+      
+      return { ...previousFilters, [filterField]: newList };
     });
   };
 
-  const handleInput = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
+  // Function to handle text inputs and dropdowns
+  const handleInputChange = (event) => {
+    const inputName = event.target.name;
+    const inputValue = event.target.value;
+    
+    setFilterOptions(previousFilters => ({ 
+      ...previousFilters, 
+      [inputName]: inputValue 
+    }));
   };
 
-  const normalizeGridAnime = (anime) => {
-    let normalizedTitle = "Untitled";
-    if (typeof anime.title === "string") normalizedTitle = anime.title;
-    else if (anime.title) normalizedTitle = anime.title.romaji || anime.title.english || anime.title.native || "Untitled";
+  // Function to clean up anime data from API
+  const cleanUpAnimeData = (rawAnime) => {
+    // Get the best title available
+    let bestTitle = "Untitled";
+    if (typeof rawAnime.title === "string") {
+      bestTitle = rawAnime.title;
+    } else if (rawAnime.title) {
+      bestTitle = rawAnime.title.romaji || 
+                  rawAnime.title.english || 
+                  rawAnime.title.native || 
+                  "Untitled";
+    }
+
+    // Extract studio names from complex structure
+    let studioNames = ["Unknown"];
+    if (rawAnime.studios && rawAnime.studios.edges && rawAnime.studios.edges.length > 0) {
+      studioNames = rawAnime.studios.edges.map(edge => edge.node.name);
+    }
+
+    // Make sure genres is always an array
+    let genreList = [];
+    if (rawAnime.genres && Array.isArray(rawAnime.genres)) {
+      genreList = rawAnime.genres;
+    }
 
     return {
-      id: anime.id,
-      idMal: anime.idMal || anime.malId || undefined,
-      title: normalizedTitle,
+      id: rawAnime.id,
+      idMal: rawAnime.idMal || rawAnime.malId || undefined,
+      title: bestTitle,
       coverImage: {
-        large: anime.coverImage?.large || '/placeholder-cover.png',
-        extraLarge: anime.coverImage?.extraLarge || '/placeholder-cover.png',
-        medium: anime.coverImage?.medium || '/placeholder-cover.png',
+        large: rawAnime.coverImage?.large || '/placeholder-cover.png',
+        extraLarge: rawAnime.coverImage?.extraLarge || '/placeholder-cover.png',
+        medium: rawAnime.coverImage?.medium || '/placeholder-cover.png',
       },
-      bannerImage: anime.bannerImage || '/placeholder-banner.png',
-      description: anime.description || "No description available",
-      episodes: anime.episodes || 0,
-      duration: anime.duration || 0,
-      format: anime.format || "Unknown",
-      status: anime.status || "Unknown",
-      genres: anime.genres || [],
-      studios: anime.studios?.length ? anime.studios : ["Unknown"],
-      startDate: anime.startDate || "TBA",
-      endDate: anime.endDate || "TBA",
-      isAdult: anime.isAdult || false,
-      popularity: anime.popularity || 0,
-      trailer: anime.trailer || null,
-      season: anime.season || "Unknown",
-      year: anime.seasonYear || anime.year || "Unknown",
-      score: anime.averageScore ?? "N/A",
-      _originalData: anime
+      bannerImage: rawAnime.bannerImage || '/placeholder-banner.png',
+      description: rawAnime.description || "No description available",
+      episodes: rawAnime.episodes || 0,
+      duration: rawAnime.duration || 0,
+      format: rawAnime.format || "Unknown", 
+      status: rawAnime.status || "Unknown", 
+      genres: genreList, 
+      studios: studioNames, 
+      startDate: rawAnime.startDate || "TBA",
+      endDate: rawAnime.endDate || "TBA",
+      isAdult: rawAnime.isAdult || false,
+      popularity: rawAnime.popularity || 0,
+      trailer: rawAnime.trailer || null,
+      season: rawAnime.season || "Unknown",
+      year: rawAnime.seasonYear || rawAnime.year || "Unknown",
+      score: rawAnime.averageScore ?? "N/A", 
+      seasonYear: rawAnime.seasonYear || rawAnime.year || "Unknown",
+      averageScore: rawAnime.averageScore ?? "N/A",
+      _originalData: rawAnime
     };
   };
 
-  // --- Fetch function ---
-  const fetchAnime = async (page = 1, isNewSearch = false, query = "") => {
-    if (isNewSearch) setLoading(true);
-    else setLoadingMore(true);
+  // Main function to search for anime
+  const searchForAnime = async (pageNumber = 1, isNewSearch = false, searchQuery = "") => {
+    // Show loading spinner
+    if (isNewSearch) {
+      setIsSearching(true);
+    } else {
+      setIsLoadingMore(true);
+    }
 
     try {
-      const graphqlQuery = `
+      // GraphQL query to fetch anime data
+      const apiQuery = `
       query (
           $page: Int, 
           $perPage: Int, 
@@ -179,127 +236,193 @@ function AdvancedSearch() {
         }
       `;
 
-      const variables = {
-        page,
-        perPage: 20,
-        format_in: filters.type.length ? filters.type : null,
-        status_in: filters.status.length ? filters.status : null,
-        averageScore_greater: filters.scoreMin * 10,
-        season: filters.season || null,
-        seasonYear: filters.seasonYear ? parseInt(filters.seasonYear) : null,
-        genre_in: filters.genres.length ? filters.genres : null,
-        search: query || null
+      // Parameters to send with the query
+      const queryParameters = {
+        page: pageNumber,
+        perPage: 20, // Get 20 results per page
+        format_in: filterOptions.type.length ? filterOptions.type : null,
+        status_in: filterOptions.status.length ? filterOptions.status : null,
+        averageScore_greater: filterOptions.minimumScore * 10, // API uses 0-100 scale
+        season: filterOptions.season || null,
+        seasonYear: filterOptions.seasonYear ? parseInt(filterOptions.seasonYear) : null,
+        genre_in: filterOptions.genres.length ? filterOptions.genres : null,
+        search: searchQuery || null
       };
 
-      const cleanVariables = Object.fromEntries(
-        Object.entries(variables).filter(([_, v]) => v !== null)
-      );
-
-      const res = await axios.post(
-        "https://graphql.anilist.co",
-        { query: graphqlQuery, variables: cleanVariables },
-        { headers: { "Content-Type": "application/json", "Accept": "application/json" } }
-      );
-
-      const pageData = res.data.data.Page;
-      const animeList = pageData.media.map(normalizeGridAnime);
-
-      setHasNextPage(pageData.pageInfo.hasNextPage);
-      setTotalResults(pageData.pageInfo.total);
-
-      if (isNewSearch) {
-        setResults(animeList);
-        setCurrentPage(1);
-      } else {
-        setResults(prev => {
-          const existingIds = new Set(prev.map(a => a.id));
-          return [...prev, ...animeList.filter(a => !existingIds.has(a.id))];
-        });
-        setCurrentPage(page);
+      // Remove null parameters
+      const cleanParameters = {};
+      for (const [key, value] of Object.entries(queryParameters)) {
+        if (value !== null) {
+          cleanParameters[key] = value;
+        }
       }
 
-    } catch (err) {
-      console.error("AniList Fetch Error:", err.response?.data || err.message);
+      // Make API request
+      const apiResponse = await axios.post(
+        "https://graphql.anilist.co",
+        { 
+          query: apiQuery, 
+          variables: cleanParameters 
+        },
+        { 
+          headers: { 
+            "Content-Type": "application/json", 
+            "Accept": "application/json" 
+          } 
+        }
+      );
+
+      const responseData = apiResponse.data.data.Page;
+      const cleanedAnimeList = responseData.media.map(cleanUpAnimeData);
+
+      // Update page information
+      setHasMorePages(responseData.pageInfo.hasNextPage);
+      setTotalResultsCount(responseData.pageInfo.total);
+
+      if (isNewSearch) {
+        // Replace existing results with new search
+        setSearchResults(cleanedAnimeList);
+        setCurrentPageNumber(1);
+      } else {
+        // Add new results to existing ones (infinite scroll)
+        setSearchResults(previousResults => {
+          const existingAnimeIds = new Set(previousResults.map(anime => anime.id));
+          const newAnimeOnly = cleanedAnimeList.filter(anime => !existingAnimeIds.has(anime.id));
+          return [...previousResults, ...newAnimeOnly];
+        });
+        setCurrentPageNumber(pageNumber);
+      }
+
+    } catch (error) {
+      console.error("Error fetching anime:", error.response?.data || error.message);
     } finally {
-      if (isNewSearch) setLoading(false);
-      else setLoadingMore(false);
-      setActiveDropdown(null);
+      // Hide loading spinners
+      if (isNewSearch) {
+        setIsSearching(false);
+      } else {
+        setIsLoadingMore(false);
+      }
+      setCurrentOpenDropdown(null);
     }
   };
 
-  // --- Live search + filters useEffect (debounced) ---
+  // Automatically search when user types or changes filters
   useEffect(() => {
-    const debounce = setTimeout(() => {
-      fetchAnime(1, true, searchQuery.trim());
+    // Wait 400ms after user stops typing before searching
+    const searchDelay = setTimeout(() => {
+      searchForAnime(1, true, searchText.trim());
     }, 400);
 
-    return () => clearTimeout(debounce);
-  }, [searchQuery, filters]);
+    // Cancel previous timeout if user keeps typing
+    return () => clearTimeout(searchDelay);
+  }, [searchText, filterOptions]);
 
-  // --- Infinite scroll ---
-  const handleScroll = useCallback(() => {
-    if (loadingMore || !hasNextPage) return;
-    const scrollTop = document.documentElement.scrollTop;
+  // Handle infinite scroll - load more results when user scrolls to bottom
+  const handleScrollToBottom = () => {
+    if (isLoadingMore || !hasMorePages) return;
+    
+    const scrollPosition = document.documentElement.scrollTop;
     const windowHeight = window.innerHeight;
-    const docHeight = document.documentElement.scrollHeight;
-    if (scrollTop + windowHeight >= docHeight - 200) {
-      fetchAnime(currentPage + 1, false, searchQuery.trim());
+    const documentHeight = document.documentElement.scrollHeight;
+    
+    // If user is near the bottom (200px from bottom)
+    if (scrollPosition + windowHeight >= documentHeight - 200) {
+      searchForAnime(currentPageNumber + 1, false, searchText.trim());
     }
-  }, [currentPage, hasNextPage, loadingMore, filters, searchQuery]);
-
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
-
-  // --- Modal handlers ---
-  const openModal = (anime) => { setSelectedAnime(anime); setIsModalOpen(true); };
-  const closeModal = () => { setSelectedAnime(null); setIsModalOpen(false); };
-  const handleOpenRelatedAnime = (relatedAnime) => setSelectedAnime(relatedAnime);
-
-  const resetFilters = () => {
-    setFilters({
-      type: [], status: ["FINISHED", "RELEASING"], scoreMin: 7,
-      season: "", seasonYear: "2025",
-      genres: [],
-    });
-    setResults([]);
-    setCurrentPage(1);
-    setHasNextPage(true);
-    setTotalResults(0);
-    setSearchQuery("");
   };
 
-  const formatCount = (arr) => arr.length > 0 ? `(${arr.length})` : "";
+  // Add scroll listener
+  useEffect(() => {
+    window.addEventListener('scroll', handleScrollToBottom);
+    return () => window.removeEventListener('scroll', handleScrollToBottom);
+  }, [currentPageNumber, hasMorePages, isLoadingMore, filterOptions, searchText]);
 
+  // Functions to handle modal popup
+  const showAnimeDetails = (anime) => { 
+    setSelectedAnimeForModal(anime); 
+    setIsModalVisible(true); 
+  };
+  
+  const hideAnimeDetails = () => { 
+    setSelectedAnimeForModal(null); 
+    setIsModalVisible(false); 
+  };
+  
+  const showRelatedAnimeDetails = (relatedAnime) => {
+    setSelectedAnimeForModal(relatedAnime);
+  };
+
+  // Function to clear all filters and start fresh
+  const clearAllFilters = () => {
+    setFilterOptions({
+      type: [], 
+      status: ["FINISHED", "RELEASING"], 
+      minimumScore: 7,
+      season: "", 
+      seasonYear: "2025",
+      genres: [],
+    });
+    setSearchResults([]);
+    setCurrentPageNumber(1);
+    setHasMorePages(true);
+    setTotalResultsCount(0);
+    setSearchText("");
+  };
+
+  // Helper function to show count in dropdown buttons
+  const getFilterCount = (filterArray) => {
+    return filterArray.length > 0 ? `(${filterArray.length})` : "";
+  };
 
   return (
     <>
     <Header showSearch={false} />
     <div className={styles.advancedSearchContainer}>
-      {/* Search Bar */}
+      {/* Main Search Input */}
       <input
         type="text"
         placeholder="Search anime or apply filters"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        value={searchText}
+        onChange={(e) => setSearchText(e.target.value)}
         className={styles.searchInput}
       />
 
-      {/* Filters */}
+      {/* Filter Dropdown Buttons */}
       <div className={styles.dropdownFilters}>
-        {[{ key: "type", label: "Type", options: ["TV", "MOVIE", "OVA", "ONA", "SPECIAL", "MUSIC"] },
-        { key: "status", label: "Status", options: ["FINISHED", "RELEASING", "TBA"] }].map(drop => (
-          <div key={drop.key} className={`${styles.dropdown} ${activeDropdown === drop.key ? styles.dropdownActive : ""}`}>
-            <button className={styles.dropdownToggle} onClick={() => toggleDropdown(drop.key)}>
-              {drop.label} {formatCount(filters[drop.key])} <span className={styles.dropdownArrow}>▼</span>
+        
+        {/* Type and Status Filters */}
+        {[
+          { 
+            key: "type", 
+            label: "Type", 
+            options: ["TV", "MOVIE", "OVA", "ONA", "SPECIAL", "MUSIC"] 
+          },
+          { 
+            key: "status", 
+            label: "Status", 
+            options: ["FINISHED", "RELEASING", "TBA"] 
+          }
+        ].map(filterDropdown => (
+          <div key={filterDropdown.key} className={`${styles.dropdown} ${currentOpenDropdown === filterDropdown.key ? styles.dropdownActive : ""}`}>
+            <button 
+              className={styles.dropdownToggle} 
+              onClick={() => showOrHideDropdown(filterDropdown.key)}
+            >
+              {filterDropdown.label} {getFilterCount(filterOptions[filterDropdown.key])} 
+              <span className={styles.dropdownArrow}>▼</span>
             </button>
             <div className={styles.dropdownMenu}>
               <div className={styles.dropdownContent}>
-                {drop.options.map(opt => (
-                  <label key={opt} className={styles.checkboxLabel}>
-                    <input type="checkbox" value={opt} checked={filters[drop.key].includes(opt)} onChange={e => handleCheckbox(e, drop.key)} />
-                    <span className={styles.checkmark}></span>{opt}
+                {filterDropdown.options.map(option => (
+                  <label key={option} className={styles.checkboxLabel}>
+                    <input 
+                      type="checkbox" 
+                      value={option} 
+                      checked={filterOptions[filterDropdown.key].includes(option)} 
+                      onChange={event => handleCheckboxClick(event, filterDropdown.key)} 
+                    />
+                    <span className={styles.checkmark}></span>
+                    {option}
                   </label>
                 ))}
               </div>
@@ -307,42 +430,54 @@ function AdvancedSearch() {
           </div>
         ))}
 
-        {/* Score */}
-        <div className={`${styles.dropdown} ${activeDropdown === "score" ? styles.dropdownActive : ""}`}>
-          <button className={styles.dropdownToggle} onClick={() => toggleDropdown("score")}>
-            Score ({filters.scoreMin}) <span className={styles.dropdownArrow}>▼</span>
+        {/* Minimum Score Filter */}
+        <div className={`${styles.dropdown} ${currentOpenDropdown === "score" ? styles.dropdownActive : ""}`}>
+          <button 
+            className={styles.dropdownToggle} 
+            onClick={() => showOrHideDropdown("score")}
+          >
+            Score ({filterOptions.minimumScore}) 
+            <span className={styles.dropdownArrow}>▼</span>
           </button>
           <div className={styles.dropdownMenu}>
             <div className={`${styles.dropdownContent} ${styles.scoreRange}`}>
-              {["scoreMin"].map(key => (
-                <div className={styles.rangeInput}>
-                  <label>Min Score: {filters.scoreMin}</label>
-                  <input
-                    type="range"
-                    name="scoreMin"
-                    min="1"
-                    max="10"
-                    value={filters.scoreMin}
-                    onChange={handleInput}
-                  />
-                </div>
-              ))}
+              <div className={styles.rangeInput}>
+                <label>Min Score: {filterOptions.minimumScore}</label>
+                <input
+                  type="range"
+                  name="minimumScore"
+                  min="1"
+                  max="10"
+                  value={filterOptions.minimumScore}
+                  onChange={handleInputChange}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Genres */}
-        <div className={`${styles.dropdown} ${activeDropdown === "genres" ? styles.dropdownActive : ""}`}>
-          <button className={styles.dropdownToggle} onClick={() => toggleDropdown("genres")}>
-            Genres {formatCount(filters.genres)} <span className={styles.dropdownArrow}>▼</span>
+        {/* Genre Filter */}
+        <div className={`${styles.dropdown} ${currentOpenDropdown === "genres" ? styles.dropdownActive : ""}`}>
+          <button 
+            className={styles.dropdownToggle} 
+            onClick={() => showOrHideDropdown("genres")}
+          >
+            Genres {getFilterCount(filterOptions.genres)} 
+            <span className={styles.dropdownArrow}>▼</span>
           </button>
           <div className={`${styles.dropdownMenu} ${styles.genresMenu}`}>
             <div className={styles.dropdownContent}>
               <div className={styles.genresGrid}>
-                {GENRES.map(g => (
-                  <label key={g} className={styles.checkboxLabel}>
-                    <input type="checkbox" value={g} checked={filters.genres.includes(g)} onChange={e => handleCheckbox(e, "genres")} />
-                    <span className={styles.checkmark}></span>{g}
+                {ANIME_GENRES.map(genre => (
+                  <label key={genre} className={styles.checkboxLabel}>
+                    <input 
+                      type="checkbox" 
+                      value={genre} 
+                      checked={filterOptions.genres.includes(genre)} 
+                      onChange={event => handleCheckboxClick(event, "genres")} 
+                    />
+                    <span className={styles.checkmark}></span>
+                    {genre}
                   </label>
                 ))}
               </div>
@@ -350,33 +485,42 @@ function AdvancedSearch() {
           </div>
         </div>
 
-        {/* Season */}
-        <div className={`${styles.dropdown} ${activeDropdown === "season" ? styles.dropdownActive : ""}`}>
-          <button className={styles.dropdownToggle} onClick={() => toggleDropdown("season")}>
-            Season {filters.season ? `(${filters.season})` : ""} <span className={styles.dropdownArrow}>▼</span>
+        {/* Season Filter */}
+        <div className={`${styles.dropdown} ${currentOpenDropdown === "season" ? styles.dropdownActive : ""}`}>
+          <button 
+            className={styles.dropdownToggle} 
+            onClick={() => showOrHideDropdown("season")}
+          >
+            Season {filterOptions.season ? `(${filterOptions.season})` : ""} 
+            <span className={styles.dropdownArrow}>▼</span>
           </button>
           <div className={styles.dropdownMenu}>
             <div className={styles.dropdownContent}>
-              {SEASONS.map(s => (
-                <label key={s} className={styles.checkboxLabel}>
+              {ANIME_SEASONS.map(season => (
+                <label key={season} className={styles.checkboxLabel}>
                   <input
                     type="radio"
                     name="season"
-                    value={s}
-                    checked={filters.season === s}
-                    onChange={handleInput}
+                    value={season}
+                    checked={filterOptions.season === season}
+                    onChange={handleInputChange}
                   />
-                  <span className={styles.checkmark}></span>{s}
+                  <span className={styles.checkmark}></span>
+                  {season}
                 </label>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Season Year */}
-        <div className={`${styles.dropdown} ${activeDropdown === "seasonYear" ? styles.dropdownActive : ""}`}>
-          <button className={styles.dropdownToggle} onClick={() => toggleDropdown("seasonYear")}>
-            Year {filters.seasonYear || ""} <span className={styles.dropdownArrow}>▼</span>
+        {/* Year Filter */}
+        <div className={`${styles.dropdown} ${currentOpenDropdown === "seasonYear" ? styles.dropdownActive : ""}`}>
+          <button 
+            className={styles.dropdownToggle} 
+            onClick={() => showOrHideDropdown("seasonYear")}
+          >
+            Year {filterOptions.seasonYear || ""} 
+            <span className={styles.dropdownArrow}>▼</span>
           </button>
           <div className={styles.dropdownMenu}>
             <div className={styles.dropdownContent}>
@@ -384,24 +528,39 @@ function AdvancedSearch() {
                 type="number"
                 name="seasonYear"
                 placeholder="Enter year"
-                value={filters.seasonYear}
-                onChange={handleInput}
+                value={filterOptions.seasonYear}
+                onChange={handleInputChange}
                 className={styles.textInput}
               />
             </div>
           </div>
         </div>
-        <button className={styles.resetBtn} onClick={resetFilters}>Reset Filters</button>
+        
+        {/* Reset Button */}
+        <button className={styles.resetBtn} onClick={clearAllFilters}>
+          Reset Filters
+        </button>
       </div>
 
-
-      {/* Results */}
+      {/* Search Results Section */}
       <div className={styles.resultsSection}>
-        {loading && <div className={styles.loader}></div>}
-        {!loading && results.length > 0 && <div className={styles.resultsCount}>Showing {results.length} of {totalResults} results</div>}
+        {isSearching && <div className={styles.loader}></div>}
+        
+        {!isSearching && searchResults.length > 0 && (
+          <div className={styles.resultsCount}>
+            Showing {searchResults.length} of {totalResultsCount} results
+          </div>
+        )}
+        
+        {/* Anime Grid */}
         <div className={styles.animeGrid}>
-          {results.map(anime => (
-            <div key={anime.id} className={styles.animeCard} onClick={() => openModal(anime)} style={{ cursor: 'pointer' }}>
+          {searchResults.map(anime => (
+            <div 
+              key={anime.id} 
+              className={styles.animeCard} 
+              onClick={() => showAnimeDetails(anime)} 
+              style={{ cursor: 'pointer' }}
+            >
               <div className={styles.homeCardImage2}>
                 <img
                   src={
@@ -413,21 +572,45 @@ function AdvancedSearch() {
                   }
                   alt={anime.title || "Anime"}
                   loading="lazy"
-                  onError={e => (e.currentTarget.src = "/placeholder-anime.jpg")}
+                  onError={event => (event.currentTarget.src = "/placeholder-anime.jpg")}
                 />
-                <div className={styles.cardTitleBottom}><h3>{anime.title}</h3></div>
+                <div className={styles.cardTitleBottom}>
+                  <h3>{anime.title}</h3>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        {loadingMore && <div className={styles.loadingMore}><div className={styles.loadingSpinner}>Loading more...</div></div>}
-        {!loading && !hasNextPage && results.length > 0 && <div className={styles.endOfResults}><p>End of results</p></div>}
-        {!loading && results.length === 0 && <div className={styles.noResults}><p>No results. Adjust filters or type to search.</p></div>}
+        {/* Loading More Results */}
+        {isLoadingMore && (
+          <div className={styles.loadingMore}>
+            <div className={styles.loadingSpinner}>Loading more...</div>
+          </div>
+        )}
+        
+        {/* End of Results Message */}
+        {!isSearching && !hasMorePages && searchResults.length > 0 && (
+          <div className={styles.endOfResults}>
+            <p>End of results</p>
+          </div>
+        )}
+        
+        {/* No Results Message */}
+        {!isSearching && searchResults.length === 0 && (
+          <div className={styles.noResults}>
+            <p>No results. Adjust filters or type to search.</p>
+          </div>
+        )}
       </div>
 
-      {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} anime={selectedAnime} onOpenAnime={handleOpenRelatedAnime} />
+      {/* Modal Popup for Anime Details */}
+      <Modal 
+        isOpen={isModalVisible} 
+        onClose={hideAnimeDetails} 
+        anime={selectedAnimeForModal} 
+        onOpenAnime={showRelatedAnimeDetails} 
+      />
     </div>
     </>
   );

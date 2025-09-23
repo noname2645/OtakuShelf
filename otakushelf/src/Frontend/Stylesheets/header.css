@@ -1,0 +1,1080 @@
+.header {
+    position: fixed;
+    height: 75px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    z-index: 1100;
+    transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Default transparent background */
+.header:not(.scrolled) {
+    background: transparent;
+    backdrop-filter: none;
+    box-shadow: none;
+}
+
+/* When scrolled */
+.header.scrolled {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.header-center {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+}
+
+/* Enhanced Search Input Styles */
+.InputContainer {
+    width: 200px;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.InputContainer.active {
+    transform: scale(1.05);
+    z-index: 1200;
+    width: 500px;
+}
+
+.input {
+    width: 100%;
+    height: 50px;
+    border: none;
+    outline: none;
+    border-radius: 25px;
+    padding: 0 20px 0 50px;
+    background: rgba(30, 30, 30, 0.8);
+    backdrop-filter: blur(10px);
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border: 2px solid transparent;
+
+}
+
+.input::placeholder {
+    color: rgba(237, 235, 235, 0.822);
+    font-weight: 400;
+}
+
+.input:focus {
+    background: rgba(20, 20, 20, 0.95);
+    border-color: #ff6b6b;
+    box-shadow: 0 8px 30px rgba(255, 107, 107, 0.3), 0 0 0 1px rgba(255, 107, 107, 0.2);
+    transform: translateY(-2px);
+}
+
+.InputContainer::before {
+    content: "🔍";
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.6);
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.InputContainer.active::before {
+    color: #ff6b6b;
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* Rest of your CSS remains the same */
+.profile-container {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-button {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, rgba(48, 34, 34, 0.759) 0%, rgba(35, 25, 25, 0.452) 100%) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #ffffff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(255, 255, 255, 0.05) inset;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.3px;
+    position: relative;
+    overflow: hidden;
+    animation: subtle-pulse 4s infinite;
+}
+
+.profile-button:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.15) 100%);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25), 0 2px 12px rgba(255, 255, 255, 0.08) inset;
+    transform: translateY(-2px);
+}
+
+.profile-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.4), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.profile-button:hover .profile-glow {
+    opacity: 0.6;
+}
+
+.profile-avatar {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+}
+
+.profile-avatar img {
+    width: 42px;
+    height: 42px;
+    object-fit: cover;
+}
+
+.profile-initials {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+}
+
+.profile-info {
+    text-align: left;
+    max-width: 140px;
+    overflow: hidden;
+}
+
+.welcome-text {
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.username {
+    background: linear-gradient(150deg, #fcd34d, #f59e0b, #f88383);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 15px;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-arrow {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.dropdown-arrow.rotated {
+    transform: rotate(180deg);
+}
+
+.profile-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    min-width: 220px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    z-index: 1000;
+    padding: 12px;
+}
+
+.user-info-section {
+    padding: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    margin-bottom: 8px;
+}
+
+.user-name {
+    font-size: 13px;
+    color: #374151;
+    font-weight: 600;
+}
+
+.auth-type {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.profile-container .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    margin-bottom: 4px;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    transform: translateX(5px);
+}
+
+.dropdown-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+    margin: 8px 0;
+}
+
+.logout-button {
+    color: #dc2626;
+}
+
+.logout-button:hover {
+    background-color: rgba(220, 38, 38, 0.1);
+}
+
+/* Animation for the profile button */
+@keyframes subtle-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(255, 255, 255, 0.05) inset;
+    }
+
+    50% {
+        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3), 0 2px 12px rgba(255, 255, 255, 0.08) inset;
+    }
+}
+
+/* Auth Buttons */
+.auth-buttons {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.auth-buttons button {
+    font-size: 17px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    border-radius: 30px;
+    background: #000000;
+}
+
+.auth-buttons .button_login {
+    display: block;
+    box-sizing: border-box;
+    border: 2px solid #000000;
+    border-radius: 30px;
+    padding: 0.75em 1.5em;
+    background: #04d42a;
+    color: #000000;
+    transform: translateY(-0.2em);
+    transition: transform 0.1s ease;
+}
+
+.auth-buttons button:hover .button_login {
+    transform: translateY(-0.33em);
+}
+
+.auth-buttons button:active .button_login {
+    transform: translateY(0);
+}
+
+.auth-buttons .button_register {
+    display: block;
+    box-sizing: border-box;
+    border: 1px solid #04d42a;
+    border-radius: 30px;
+    padding: 0.75em 1.5em;
+    background: #000000;
+    color: #04d42a;
+    transform: translateY(-0.2em);
+    transition: transform 0.1s ease;
+}
+
+.auth-buttons button:hover .button_register {
+    transform: translateY(-0.33em);
+}
+
+.auth-buttons button:active .button_register {
+    transform: translateY(0);
+}
+
+/* Logo */
+.logo img {
+    height: 250px;
+    width: 250px;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+/* Header Mobile Responsive Media Queries */
+
+/* Extra Large Screens - 1200px and above */
+@media (min-width: 1200px) {
+    .header {
+        padding: 1.5rem 3rem;
+        height: 80px;
+    }
+
+    .logo img {
+        height: 280px;
+        width: 280px;
+    }
+
+    .InputContainer {
+        width: 250px;
+    }
+
+    .InputContainer.active {
+        width: 600px;
+    }
+
+    .input {
+        height: 55px;
+        font-size: 18px;
+    }
+
+    .profile-button {
+        padding: 12px 24px;
+        gap: 14px;
+    }
+
+    .profile-avatar,
+    .profile-initials {
+        width: 46px;
+        height: 46px;
+    }
+
+    .profile-avatar img {
+        width: 46px;
+        height: 46px;
+    }
+
+    .welcome-text {
+        font-size: 15px;
+    }
+
+    .username {
+        font-size: 16px;
+    }
+
+    .auth-buttons button {
+        font-size: 18px;
+    }
+}
+
+/* Large Screens - 992px to 1199px */
+@media (max-width: 1199px) and (min-width: 992px) {
+    .header {
+        padding: 1.5rem 2.5rem;
+        height: 75px;
+    }
+
+    .logo img {
+        height: 250px;
+        width: 250px;
+    }
+
+    .InputContainer {
+        width: 220px;
+    }
+
+    .InputContainer.active {
+        width: 550px;
+    }
+
+    .input {
+        height: 50px;
+        font-size: 16px;
+    }
+
+    .profile-button {
+        padding: 10px 20px;
+        gap: 12px;
+    }
+
+    .auth-buttons button {
+        font-size: 17px;
+    }
+}
+
+/* Medium Screens - 768px to 991px */
+@media (max-width: 991px) and (min-width: 768px) {
+    .header {
+        padding: 1.2rem 2rem;
+        gap: 1rem;
+    }
+
+    .header-center {
+        position: static;
+        transform: none;
+        order: 2;
+        width: 100%;
+    }
+
+    .logo {
+        order: 1;
+    }
+
+    .logo img {
+        height: 250px;
+        width: 450px;
+    }
+
+    .auth-buttons {
+        order: 3;
+    }
+
+    .InputContainer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .InputContainer.active {
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .input {
+        height: 45px;
+        font-size: 15px;
+    }
+
+    .profile-button {
+        padding: 8px 16px;
+        gap: 10px;
+    }
+
+    .profile-avatar,
+    .profile-initials {
+        width: 38px;
+        height: 38px;
+    }
+
+    .profile-avatar img {
+        width: 38px;
+        height: 38px;
+    }
+
+    .profile-initials {
+        font-size: 14px;
+    }
+
+    .welcome-text {
+        font-size: 13px;
+    }
+
+    .username {
+        font-size: 14px;
+    }
+
+    .auth-buttons button {
+        font-size: 16px;
+    }
+
+    .auth-buttons .button_login,
+    .auth-buttons .button_register {
+        padding: 0.6em 1.3em;
+    }
+}
+
+/* Small Tablets - 576px to 767px */
+@media (max-width: 767px) and (min-width: 576px) {
+    .header {
+        position: fixed;
+        height: 75px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 2rem;
+        z-index: 1100;
+        transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .header-center {
+        position: static;
+        transform: none;
+        width: 100%;
+        order: 2;
+    }
+
+    .logo {
+        order: 1;
+        align-self: center;
+    }
+
+    .logo img {
+        height: 250px;
+        width: 400px;
+    }
+
+    .auth-buttons {
+        order: 3;
+        width: 50%;
+        justify-content: center;
+    }
+
+    .InputContainer {
+        width: 100%;
+        max-width: none;
+    }
+
+    .InputContainer.active {
+        width: 100%;
+        transform: scale(1.02);
+    }
+
+    .input {
+        height: 42px;
+        font-size: 14px;
+        padding: 0 18px 0 45px;
+    }
+
+    .InputContainer::before {
+        left: 16px;
+        font-size: 16px;
+    }
+
+    .profile-button {
+        padding: 6px 12px;
+        gap: 8px;
+    }
+
+    .profile-avatar,
+    .profile-initials {
+        width: 34px;
+        height: 34px;
+    }
+
+    .profile-avatar img {
+        width: 34px;
+        height: 34px;
+    }
+
+    .profile-initials {
+        font-size: 12px;
+    }
+
+    .welcome-text {
+        font-size: 12px;
+    }
+
+    .username {
+        font-size: 13px;
+    }
+
+    .profile-info {
+        max-width: 120px;
+    }
+
+    .auth-buttons button {
+        font-size: 15px;
+    }
+
+    .auth-buttons .button_login,
+    .auth-buttons .button_register {
+        padding: 0.5em 1.2em;
+    }
+
+    .profile-dropdown {
+        min-width: 200px;
+        right: -10px;
+    }
+}
+
+/* Mobile Large - 480px to 575px */
+@media (max-width: 575px) and (min-width: 480px) {
+    .header {
+        padding: 0.8rem 1rem;
+        height: auto;
+        /* min-height: 55px; */
+        /* flex-direction: column; */
+        gap: 0.8rem;
+    }
+
+    .logo img {
+        height: 200px;
+        width: 200px;
+    }
+
+    .InputContainer {
+        width: 100%;
+    }
+
+    .InputContainer.active {
+        width: 100%;
+        transform: scale(1.01);
+    }
+
+    .input {
+        height: 40px;
+        font-size: 13px;
+        padding: 0 16px 0 42px;
+    }
+
+    .InputContainer::before {
+        left: 14px;
+        font-size: 14px;
+    }
+
+    .profile-button {
+        padding: 5px 10px;
+        gap: 6px;
+    }
+
+    .profile-avatar,
+    .profile-initials {
+        width: 30px;
+        height: 30px;
+    }
+
+    .profile-avatar img {
+        width: 30px;
+        height: 30px;
+    }
+
+    .profile-initials {
+        font-size: 11px;
+    }
+
+    .welcome-text {
+        font-size: 11px;
+    }
+
+    .username {
+        font-size: 12px;
+    }
+
+    .profile-info {
+        max-width: 100px;
+    }
+
+    .dropdown-arrow {
+        width: 14px;
+        height: 14px;
+    }
+
+    .auth-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .auth-buttons button {
+        font-size: 14px;
+        width: 100%;
+        max-width: 200px;
+    }
+
+    .auth-buttons .button_login,
+    .auth-buttons .button_register {
+        padding: 0.4em 1em;
+    }
+
+    .profile-dropdown {
+        min-width: 180px;
+        right: -20px;
+    }
+}
+
+/* Mobile Standard - 320px to 479px */
+@media (max-width: 479px) and (min-width: 320px) {
+    .header {
+        padding: 0.6rem 0.8rem;
+        height: auto;
+        min-height: 50px;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .logo img {
+        height: 80px;
+        width: 80px;
+    }
+
+    .InputContainer {
+        width: 100%;
+    }
+
+    .InputContainer.active {
+        width: 100%;
+        transform: none;
+    }
+
+    .input {
+        height: 38px;
+        font-size: 12px;
+        padding: 0 14px 0 38px;
+        border-radius: 20px;
+    }
+
+    .InputContainer::before {
+        left: 12px;
+        font-size: 12px;
+    }
+
+    .profile-button {
+        padding: 4px 8px;
+        gap: 4px;
+        font-size: 12px;
+    }
+
+    .profile-avatar,
+    .profile-initials {
+        width: 26px;
+        height: 26px;
+    }
+
+    .profile-avatar img {
+        width: 26px;
+        height: 26px;
+    }
+
+    .profile-initials {
+        font-size: 9px;
+    }
+
+    .welcome-text {
+        font-size: 9px;
+    }
+
+    .username {
+        font-size: 10px;
+    }
+
+    .profile-info {
+        max-width: 80px;
+    }
+
+    .dropdown-arrow {
+        width: 12px;
+        height: 12px;
+    }
+
+    .auth-buttons {
+        flex-direction: column;
+        gap: 0.4rem;
+        width: 100%;
+    }
+
+    .auth-buttons button {
+        font-size: 12px;
+        width: 100%;
+        max-width: 180px;
+    }
+
+    .auth-buttons .button_login,
+    .auth-buttons .button_register {
+        padding: 0.3em 0.8em;
+    }
+
+    .profile-dropdown {
+        min-width: 160px;
+        right: -30px;
+    }
+
+    .dropdown-item {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    .dropdown-icon {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* Mobile Ultra Small - 280px to 319px */
+@media (max-width: 319px) {
+    .header {
+        padding: 0.5rem 0.6rem;
+        height: auto;
+        min-height: 45px;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .logo img {
+        height: 60px;
+        width: 60px;
+    }
+
+    .InputContainer {
+        width: 100%;
+    }
+
+    .input {
+        height: 35px;
+        font-size: 11px;
+        padding: 0 12px 0 35px;
+        border-radius: 18px;
+    }
+
+    .InputContainer::before {
+        left: 10px;
+        font-size: 11px;
+    }
+
+    .profile-button {
+        padding: 3px 6px;
+        gap: 3px;
+        font-size: 10px;
+    }
+
+    .profile-avatar,
+    .profile-initials {
+        width: 22px;
+        height: 22px;
+    }
+
+    .profile-avatar img {
+        width: 22px;
+        height: 22px;
+    }
+
+    .profile-initials {
+        font-size: 8px;
+    }
+
+    .welcome-text {
+        font-size: 8px;
+    }
+
+    .username {
+        font-size: 9px;
+    }
+
+    .profile-info {
+        max-width: 60px;
+    }
+
+    .dropdown-arrow {
+        width: 10px;
+        height: 10px;
+    }
+
+    .auth-buttons {
+        flex-direction: column;
+        gap: 0.3rem;
+        width: 100%;
+    }
+
+    .auth-buttons button {
+        font-size: 10px;
+        width: 100%;
+        max-width: 150px;
+    }
+
+    .auth-buttons .button_login,
+    .auth-buttons .button_register {
+        padding: 0.25em 0.6em;
+    }
+
+    .profile-dropdown {
+        min-width: 140px;
+        right: -40px;
+    }
+
+    .dropdown-item {
+        padding: 6px 8px;
+        font-size: 10px;
+    }
+
+    .dropdown-icon {
+        width: 12px;
+        height: 12px;
+    }
+
+    .user-info-section {
+        padding: 8px;
+    }
+
+    .user-name {
+        font-size: 11px;
+    }
+
+    .auth-type {
+        font-size: 9px;
+    }
+}
+
+/* Landscape orientation adjustments for mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .header {
+        padding: 0.5rem 1rem;
+        height: 50px;
+        flex-direction: row;
+        gap: 1rem;
+    }
+
+    .header-center {
+        position: static;
+        transform: none;
+        flex: 1;
+        max-width: 300px;
+    }
+
+    .logo {
+        order: 1;
+    }
+
+    .logo img {
+        height: 40px;
+        width: 40px;
+    }
+
+    .auth-buttons {
+        order: 3;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .InputContainer {
+        width: 100%;
+    }
+
+    .input {
+        height: 35px;
+        font-size: 12px;
+    }
+
+    .profile-button {
+        padding: 4px 8px;
+        gap: 4px;
+    }
+
+    .profile-avatar,
+    .profile-initials {
+        width: 24px;
+        height: 24px;
+    }
+
+    .profile-info {
+        display: none;
+        /* Hide profile text in landscape to save space */
+    }
+
+    .auth-buttons button {
+        font-size: 11px;
+    }
+
+    .auth-buttons .button_login,
+    .auth-buttons .button_register {
+        padding: 0.3em 0.8em;
+    }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+    .logo img {
+        image-rendering: -webkit-optimize-contrast;
+    }
+
+    .profile-avatar img {
+        image-rendering: -webkit-optimize-contrast;
+    }
+}
+
+/* Touch device specific adjustments */
+@media (pointer: coarse) {
+    .input {
+        min-height: 44px;
+    }
+
+    .profile-button {
+        min-height: 44px;
+    }
+
+    .auth-buttons button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .dropdown-item {
+        min-height: 44px;
+    }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+
+    .header,
+    .input,
+    .profile-button,
+    .dropdown-arrow,
+    .InputContainer {
+        transition: none;
+    }
+
+    .auth-buttons .button_login,
+    .auth-buttons .button_register {
+        transition: none;
+    }
+
+    .profile-button {
+        animation: none;
+    }
+}

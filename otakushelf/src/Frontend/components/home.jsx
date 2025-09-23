@@ -23,9 +23,6 @@ const API_BASE = import.meta.env.MODE === "development"
     : "https://otakushelf-uuvw.onrender.com";
 
 
-// ProfileDropdown Component
-
-
 
 const useInView = (options = {}) => {
     const ref = useRef(null);
@@ -548,27 +545,33 @@ const AnimeHomepage = () => {
                                     {searchResults.map((anime, index) => (
                                         <div
                                             key={anime.id || anime.mal_id || index}
-                                            className={`anime-card`}
+                                            className={`anime-card animate-in`} // Added animate-in class
                                             onClick={() => openModal(anime)}
-                                            style={{ "--card-index": index, zIndex: '5' }}
+                                            style={{
+                                                cursor: "pointer", // Added cursor pointer
+                                                "--card-index": index,
+                                                zIndex: '5',
+                                                animationDelay: `${index * 0.1}s` // Optional: stagger animation
+                                            }}
                                         >
-                                            <img
-                                                src={
-                                                    anime.coverImage?.extraLarge ||
-                                                    anime.coverImage?.large ||
-                                                    anime.coverImage?.medium ||
-                                                    anime.bannerImage ||
-                                                    "/placeholder-anime.jpg"
-                                                }
-                                                alt={anime.title || "Anime"}
-                                                loading="lazy"
-                                                onError={(e) => {
-                                                    e.currentTarget.src = "/placeholder-anime.jpg";
-                                                }}
-                                            />
-
-                                            <div className="card-title-bottom">
-                                                <h3>{anime.title || 'Unknown Title'}</h3>
+                                            <div className="home-card-image"> {/* Added missing wrapper div */}
+                                                <img
+                                                    src={
+                                                        anime.coverImage?.extraLarge ||
+                                                        anime.coverImage?.large ||
+                                                        anime.coverImage?.medium ||
+                                                        anime.bannerImage ||
+                                                        "/placeholder-anime.jpg"
+                                                    }
+                                                    alt={anime.title || "Anime"}
+                                                    loading="lazy"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = "/placeholder-anime.jpg";
+                                                    }}
+                                                />
+                                                <div className="card-title-bottom">
+                                                    <h3>{anime.title || 'Unknown Title'}</h3>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
