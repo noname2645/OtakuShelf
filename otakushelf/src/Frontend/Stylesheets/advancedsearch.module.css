@@ -36,6 +36,74 @@
   transform: scale(1.02);
 }
 
+.bottom-button-bar {
+  --col-orange: #ff6608;
+  --col-dark: #05213c;
+  --col-darkGray: #a5a5a5;
+
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  background: var(--col-dark);
+  border-radius: 30px;
+  padding: 10px 20px;
+  width: fit-content;
+}
+
+/* nav labels */
+.bottom-button-bar .nav-label {
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: all 200ms;
+  display: inline-block;
+}
+
+.bottom-button-bar input[type="radio"] {
+  display: none;
+}
+
+.bottom-button-bar .nav-label svg {
+  width: 24px;
+  height: 24px;
+  fill: var(--col-darkGray);
+  transition: 0.2s;
+  display: block;
+}
+
+.bottom-button-bar .nav-label:hover:not(.active) svg {
+  fill: #d17842;
+  opacity: 0.6;
+}
+
+/* active state */
+.bottom-button-bar .nav-label.active svg {
+  fill: var(--col-orange);
+  scale: 1.2;
+  margin-top: -5px;
+}
+
+.bottom-button-bar .nav-label::before {
+  content: "";
+  position: relative;
+  top: 20px;
+  left: 50%;
+  width: 0%;
+  height: 2px;
+  border-radius: 5px;
+  background: var(--col-orange);
+  transition: all 0.2s;
+}
+
+.bottom-button-bar .nav-label.active::before {
+  width: 100%;
+  left: 0;
+  top: 25px;
+}
 
 
 .searchHeader {

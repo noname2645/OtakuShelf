@@ -617,7 +617,7 @@
 .bottom-button-bar {
   --col-orange: #ff6608;
   --col-dark: #05213c;
-  --col-darkGray: #52555a;
+  --col-darkGray: #a5a5a5;
 
   position: fixed;
   bottom: 20px;
