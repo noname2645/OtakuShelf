@@ -649,8 +649,6 @@
     .header {
         padding: 0.8rem 1rem;
         height: auto;
-        /* min-height: 55px; */
-        /* flex-direction: column; */
         gap: 0.8rem;
     }
 
