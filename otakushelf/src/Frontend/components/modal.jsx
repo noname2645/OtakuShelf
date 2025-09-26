@@ -1,5 +1,5 @@
-// Enhanced Modal Component - AniList GraphQL Compatible
-import React, { useState, useEffect, useRef, useCallback } from "react";
+// Enhanced Modal Component - Fixed Hooks Order Issue
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "../Stylesheets/modal.css";
 import RelatedTab from "./relatedsection.jsx";
 import Trailer from "./trailer";
@@ -9,6 +9,7 @@ import { useAuth } from "../components/AuthContext.jsx";
 import axios from "axios";
 
 const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
+    // ALL STATE AND REFS FIRST - ALWAYS CALLED
     const [synopsisModalOpen, setSynopsisModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("info");
     const [trailerVideoId, setTrailerVideoId] = useState(null);
@@ -18,25 +19,97 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [userListStatus, setUserListStatus] = useState(null);
     const { user } = useAuth();
 
-    // Define checkIfInList function with useCallback to prevent recreation on every render
+    // ALL CALLBACKS - ALWAYS CALLED, NO CONDITIONS
+    const formatAniListDate = useCallback((dateObj) => {
+        if (!dateObj) return "TBA";
+        
+        if (typeof dateObj === 'string') {
+            const date = new Date(dateObj);
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = months[date.getMonth()];
+            return `${day} ${month} ${date.getFullYear()}`;
+        }
+
+        if (!dateObj.year) return "TBA";
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const day = dateObj.day ? String(dateObj.day).padStart(2, "0") : "??";
+        const month = dateObj.month ? months[dateObj.month - 1] : "??";
+        return `${day} ${month} ${dateObj.year}`;
+    }, []);
+
+    const getScoreColor = useCallback((score) => {
+        const numScore = parseFloat(score);
+        if (numScore >= 80) return "#4ade80";
+        if (numScore >= 70) return "#fbbf24";
+        if (numScore >= 60) return "#fb923c";
+        return "#ef4444";
+    }, []);
+
+    const getStatusColor = useCallback((status) => {
+        if (!status) return "#6b7280";
+        const normalizedStatus = status.toString().toUpperCase().replace(/\s+/g, '_');
+        const statusColors = {
+            "FINISHED": "#22c55e",
+            "RELEASING": "#3b82f6",
+            "NOT_YET_RELEASED": "#f59e0b",
+            "CANCELLED": "#ef4444",
+            "HIATUS": "#f59e0b"
+        };
+        return statusColors[normalizedStatus] || "#6b7280";
+    }, []);
+
+    const truncateSynopsis = useCallback((text, maxLength = 800) => {
+        if (!text) return "No description available.";
+        const cleanText = text.replace(/<[^>]*>/g, '');
+        return cleanText.length > maxLength ? cleanText.substring(0, maxLength) + "..." : cleanText;
+    }, []);
+
+    const handleSynopsisClick = useCallback(() => {
+        setSynopsisModalOpen(true);
+    }, []);
+
+    const closeSynopsisModal = useCallback(() => {
+        setSynopsisModalOpen(false);
+    }, []);
+
+    const getAiredRange = useCallback(() => {
+        if (!anime) return "TBA";
+        if (anime.format === "MOVIE") {
+            return anime.startDate ? formatAniListDate(anime.startDate) : "TBA";
+        }
+        if (anime.startDate && anime.endDate) {
+            return `${formatAniListDate(anime.startDate)} - ${formatAniListDate(anime.endDate)}`;
+        }
+        if (anime.startDate) {
+            const startDate = formatAniListDate(anime.startDate);
+            return `${startDate} - ${anime.status === 'RELEASING' ? 'Ongoing' : 'TBA'}`;
+        }
+        return "TBA";
+    }, [anime, formatAniListDate]);
+
     const checkIfInList = useCallback(async () => {
         if (!user || !anime) return;
 
         try {
             const response = await axios.get(`http://localhost:5000/api/list/${user._id || user.id}`);
             const userList = response.data;
-
-            // Get the anime title from AniList structure
-            const animeTitle = getAnimeTitle();
-
-            // Check if anime is in any category with better matching
             const categories = ['watching', 'completed', 'planned', 'dropped'];
             let foundStatus = null;
+
+            // Get the anime title
+            let animeTitle = "Untitled";
+            if (anime) {
+                if (typeof anime.title === 'string') {
+                    animeTitle = anime.title;
+                } else if (anime.title && typeof anime.title === 'object') {
+                    animeTitle = anime.title.english || anime.title.romaji || anime.title.native || "Untitled";
+                }
+            }
 
             for (const category of categories) {
                 const animeInCategory = userList[category] || [];
                 const foundAnime = animeInCategory.find(item => {
-                    // Multiple matching strategies for AniList data
                     return (
                         item.title === animeTitle ||
                         item.animeId === anime.id ||
@@ -62,173 +135,101 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         }
     }, [user, anime]);
 
-    // Check if anime is in user's list
-    useEffect(() => {
-        let isMounted = true;
-
-        const checkListStatus = async () => {
-            if (user && anime) {
-                await checkIfInList();
-            }
-        };
-
-        checkListStatus();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [user, anime, checkIfInList]);
-
-    useEffect(() => {
-        setSynopsisModalOpen(false);
-        setActiveTab("info");
-        setTrailerVideoId(null);
-    }, [anime?.id]);
-
-    // Dynamic title class assignment based on length
-    useEffect(() => {
-        if (titleRef.current && anime) {
-            const title = getAnimeTitle();
-            const titleElement = titleRef.current;
-
-            // Remove existing title classes
-            titleElement.classList.remove('long-title', 'very-long-title');
-
-            // Apply classes based on title length
-            if (title.length > 60) {
-                titleElement.classList.add('very-long-title');
-            } else if (title.length > 35) {
-                titleElement.classList.add('long-title');
-            }
-
-            // Alternative: Check actual rendered height
-            const timer = setTimeout(() => {
-                const titleHeight = titleElement.scrollHeight;
-                if (titleHeight > 80) {
-                    titleElement.classList.add('very-long-title');
-                } else if (titleHeight > 60) {
-                    titleElement.classList.add('long-title');
-                }
-            }, 100);
-
-            return () => clearTimeout(timer);
+    // ALL MEMOS - ALWAYS CALLED
+    const animeData = useMemo(() => {
+        if (!anime) {
+            return {
+                title: "Untitled",
+                image: "/placeholder-anime.jpg",
+                trailerVideoId: null,
+                genres: [],
+                score: null,
+                episodes: "?",
+                studio: "N/A",
+                status: "Unknown",
+                format: "Unknown",
+                rating: "PG-13",
+                synopsis: "No description available."
+            };
         }
+        
+        return {
+            title: (() => {
+                if (typeof anime.title === 'string') return anime.title;
+                if (anime.title && typeof anime.title === 'object') {
+                    return anime.title.english || anime.title.romaji || anime.title.native || "Untitled";
+                }
+                return "Untitled";
+            })(),
+            image: (() => {
+                if (anime.coverImage) {
+                    return anime.coverImage.extraLarge ||
+                           anime.coverImage.large ||
+                           anime.coverImage.medium ||
+                           anime.bannerImage ||
+                           "/placeholder-anime.jpg";
+                }
+                return anime.bannerImage || "/placeholder-anime.jpg";
+            })(),
+            trailerVideoId: anime.trailer?.site === "youtube" && anime.trailer?.id ? anime.trailer.id : null,
+            genres: (() => {
+                if (!anime.genres || !Array.isArray(anime.genres)) return [];
+                return anime.genres.map(g => {
+                    if (typeof g === 'string') return g;
+                    if (typeof g === 'object' && g.name) return g.name;
+                    return g;
+                }).filter(Boolean);
+            })(),
+            score: (() => {
+                if (anime.score && anime.score !== "N/A") return (anime.score / 10).toFixed(1);
+                if (anime.averageScore) return (anime.averageScore / 10).toFixed(1);
+                return null;
+            })(),
+            episodes: anime.episodes || anime.episodeCount || "?",
+            studio: (() => {
+                if (!anime.studios) return "N/A";
+                if (anime.studios.edges && Array.isArray(anime.studios.edges)) {
+                    return anime.studios.edges
+                        .filter(edge => edge.node && edge.node.name)
+                        .map(edge => edge.node.name)
+                        .join(", ") || "N/A";
+                }
+                if (anime.studios.nodes && Array.isArray(anime.studios.nodes)) {
+                    return anime.studios.nodes
+                        .filter(node => node && node.name)
+                        .map(node => node.name)
+                        .join(", ") || "N/A";
+                }
+                if (Array.isArray(anime.studios)) {
+                    return anime.studios.map(s => s.name || s).filter(Boolean).join(", ") || "N/A";
+                }
+                return "N/A";
+            })(),
+            status: anime.status || "Unknown",
+            format: (() => {
+                if (!anime.format) return anime.type || "Unknown";
+                const formatMap = {
+                    "TV": "TV", "TV_SHORT": "Short", "MOVIE": "Movie",
+                    "SPECIAL": "Special", "OVA": "OVA", "ONA": "ONA", "MUSIC": "Music"
+                };
+                return formatMap[anime.format] || anime.format;
+            })(),
+            rating: (() => {
+                if (anime.isAdult) return "R - 17+ (violence & profanity)";
+                if (anime.rating) return anime.rating;
+                return "PG-13";
+            })(),
+            synopsis: (() => {
+                const stripHTML = (html) => {
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    return doc.body.textContent || "";
+                };
+                return stripHTML(anime.description || "No description available.");
+            })()
+        };
     }, [anime]);
 
-    // Fetch trailer data when component mounts or anime changes
-    useEffect(() => {
-        if (anime && isOpen) {
-            const videoId = getTrailerVideoId();
-            setTrailerVideoId(videoId);
-        }
-    }, [anime, isOpen]);
-
-    // Prevent background scrolling when modal is open
-    useEffect(() => {
-        if (isOpen || synopsisModalOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isOpen, synopsisModalOpen]);
-
-    if (!isOpen || !anime) return null;
-    console.log("Modal received AniList anime data:", anime);
-
-    const addToList = async (status) => {
-        if (!user) {
-            alert("Please log in to add anime to your list");
-            return;
-        }
-
-        setIsAddingToList(true);
-        try {
-            const animeTitle = getAnimeTitle();
-
-            const response = await axios.post(`http://localhost:5000/api/list/${user._id || user.id}`, {
-                category: status,
-                animeTitle: animeTitle,
-                animeData: anime
-            });
-
-            // Immediately update the local state
-            setIsInList(true);
-            setUserListStatus(status);
-
-            // Re-fetch the actual list status to ensure consistency
-            setTimeout(() => {
-                checkIfInList();
-            }, 100);
-
-        } catch (error) {
-            console.error("Error adding to list:", error);
-            alert("Failed to add to list");
-        } finally {
-            setIsAddingToList(false);
-        }
-    };
-
-    // AniList title fetch - prioritize English, fallback to Romaji, then Native
-    const getAnimeTitle = () => {
-        if (!anime) return "Untitled";
-        if (typeof anime.title === 'string') {
-            return anime.title;
-        }
-        if (anime.title && typeof anime.title === 'object') {
-            return anime.title.english ||
-                anime.title.romaji ||
-                anime.title.native ||
-                "Untitled";
-        }
-        return "Untitled";
-    };
-
-    // AniList image fetch - prioritize extraLarge, fallback to large, then banner
-    const getAnimeImage = () => {
-        if (!anime) return "/placeholder-anime.jpg";
-        if (anime.coverImage) {
-            return anime.coverImage.extraLarge ||
-                anime.coverImage.large ||
-                anime.coverImage.medium ||
-                anime.bannerImage ||
-                "/placeholder-anime.jpg";
-        }
-        return anime.bannerImage || "/placeholder-anime.jpg";
-    };
-
-    // Enhanced trailer video ID extraction for AniList data
-    const getTrailerVideoId = () => {
-        if (anime.trailer?.site === "youtube" && anime.trailer?.id) {
-            return anime.trailer.id;
-        }
-        return null;
-    };
-
-    // AniList date formatting
-    const formatAniListDate = (dateObj) => {
-        if (!dateObj) return "TBA";
-
-        if (typeof dateObj === 'string') {
-            const date = new Date(dateObj);
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            const day = String(date.getDate()).padStart(2, "0");
-            const month = months[date.getMonth()];
-            return `${day} ${month} ${date.getFullYear()}`;
-        }
-
-        // AniList date object format: { year: 2023, month: 4, day: 5 }
-        if (!dateObj.year) return "TBA";
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const day = dateObj.day ? String(dateObj.day).padStart(2, "0") : "??";
-        const month = dateObj.month ? months[dateObj.month - 1] : "??";
-        return `${day} ${month} ${dateObj.year}`;
-    };
-
-    const genreColors = {
+    const genreColors = useMemo(() => ({
         Action: "linear-gradient(135deg, #ff4b2b, #ff416c)",
         Adventure: "linear-gradient(135deg, #ff8c00, #ffdb58)",
         Comedy: "linear-gradient(135deg, #ffcc00, #ffd700)",
@@ -242,160 +243,149 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         Thriller: "linear-gradient(135deg, #ff4500, #ff6347)",
         "Slice of Life": "linear-gradient(135deg, #20b2aa, #008080)",
         Supernatural: "linear-gradient(135deg, #9932cc, #4b0082)"
-    };
+    }), []);
 
-    const getScoreColor = (score) => {
-        const numScore = parseFloat(score);
-        if (numScore >= 80) return "#4ade80";
-        if (numScore >= 70) return "#fbbf24";
-        if (numScore >= 60) return "#fb923c";
-        return "#ef4444";
-    };
+    // Enhanced background scroll prevention
+    useEffect(() => {
+        if (isOpen || synopsisModalOpen) {
+            // Store original values
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalBodyPaddingRight = document.body.style.paddingRight;
+            const originalBodyPosition = document.body.style.position;
+            const originalBodyTop = document.body.style.top;
+            const originalBodyWidth = document.body.style.width;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
 
-    // AniList status color mapping
-    const getStatusColor = (status) => {
-        if (!status) return "#6b7280";
+            // Get current scroll position
+            const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
 
-        const normalizedStatus = status.toString().toUpperCase().replace(/\s+/g, '_');
+            // Calculate scrollbar width to prevent layout shift
+            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
-        const statusColors = {
-            "FINISHED": "#22c55e",
-            "RELEASING": "#3b82f6",
-            "NOT_YET_RELEASED": "#f59e0b",
-            "CANCELLED": "#ef4444",
-            "HIATUS": "#f59e0b"
-        };
+            // Apply styles to prevent scrolling and layout shift
+            document.body.style.overflow = 'hidden';
+            document.body.style.paddingRight = `${scrollbarWidth}px`;
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.left = `-${scrollX}px`;
+            document.body.style.width = '100%';
+            document.documentElement.style.overflow = 'hidden';
 
-        return statusColors[normalizedStatus] || "#6b7280";
-    };
+            // Prevent touch scrolling on mobile
+            const preventTouchMove = (e) => {
+                // Allow scrolling within modal content
+                let element = e.target;
+                while (element && element !== document.body) {
+                    if (element.scrollHeight > element.clientHeight || 
+                        element.scrollWidth > element.clientWidth) {
+                        return; // Allow scrolling within scrollable elements
+                    }
+                    element = element.parentElement;
+                }
+                e.preventDefault();
+            };
 
-    // AniList studio extraction
-    const getStudioInfo = () => {
-        if (!anime.studios) return "N/A";
+            // Add touch event listeners for mobile
+            document.addEventListener('touchmove', preventTouchMove, { passive: false });
+            document.addEventListener('wheel', preventTouchMove, { passive: false });
 
-        if (anime.studios.edges && Array.isArray(anime.studios.edges)) {
-            return anime.studios.edges
-                .filter(edge => edge.node && edge.node.name)
-                .map(edge => edge.node.name)
-                .join(", ") || "N/A";
+            return () => {
+                // Restore original styles
+                document.body.style.overflow = originalBodyOverflow;
+                document.body.style.paddingRight = originalBodyPaddingRight;
+                document.body.style.position = originalBodyPosition;
+                document.body.style.top = originalBodyTop;
+                document.body.style.left = '';
+                document.body.style.width = originalBodyWidth;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+
+                // Remove event listeners
+                document.removeEventListener('touchmove', preventTouchMove);
+                document.removeEventListener('wheel', preventTouchMove);
+
+                // Restore scroll position
+                if (scrollY > 0 || scrollX > 0) {
+                    window.scrollTo(scrollX, scrollY);
+                }
+            };
+        }
+    }, [isOpen, synopsisModalOpen]);
+
+    useEffect(() => {
+        if (titleRef.current && animeData && isOpen) {
+            const updateTitleClasses = () => {
+                requestAnimationFrame(() => {
+                    const titleElement = titleRef.current;
+                    if (!titleElement) return;
+
+                    titleElement.classList.remove('long-title', 'very-long-title');
+                    
+                    const titleLength = animeData.title.length;
+                    if (titleLength > 60) {
+                        titleElement.classList.add('very-long-title');
+                    } else if (titleLength > 35) {
+                        titleElement.classList.add('long-title');
+                    }
+                });
+            };
+
+            updateTitleClasses();
+        }
+    }, [animeData, isOpen]);
+
+    useEffect(() => {
+        if (isOpen && user && animeData && anime) {
+            const timeoutId = setTimeout(() => {
+                checkIfInList();
+            }, 100);
+            
+            return () => clearTimeout(timeoutId);
+        }
+    }, [isOpen, user, animeData, anime, checkIfInList]);
+
+    useEffect(() => {
+        if (anime?.id) {
+            setSynopsisModalOpen(false);
+            setActiveTab("info");
+            setTrailerVideoId(animeData?.trailerVideoId || null);
+        }
+    }, [anime?.id, animeData?.trailerVideoId]);
+
+    // NOW EARLY RETURN - AFTER ALL HOOKS
+    if (!isOpen || !anime) return null;
+
+    console.log("Modal received AniList anime data:", anime);
+
+    // REGULAR FUNCTIONS - NOT HOOKS
+    const addToList = async (status) => {
+        if (!user) {
+            alert("Please log in to add anime to your list");
+            return;
         }
 
-        if (anime.studios.nodes && Array.isArray(anime.studios.nodes)) {
-            return anime.studios.nodes
-                .filter(node => node && node.name)
-                .map(node => node.name)
-                .join(", ") || "N/A";
+        setIsAddingToList(true);
+        try {
+            await axios.post(`http://localhost:5000/api/list/${user._id || user.id}`, {
+                category: status,
+                animeTitle: animeData.title,
+                animeData: anime
+            });
+
+            setIsInList(true);
+            setUserListStatus(status);
+
+            setTimeout(() => checkIfInList(), 100);
+
+        } catch (error) {
+            console.error("Error adding to list:", error);
+            alert("Failed to add to list");
+        } finally {
+            setIsAddingToList(false);
         }
-
-        if (Array.isArray(anime.studios)) {
-            return anime.studios
-                .map(s => s.name || s)
-                .filter(Boolean)
-                .join(", ") || "N/A";
-        }
-
-        return "N/A";
     };
 
-    // AniList genres extraction
-    const getGenres = () => {
-        if (!anime.genres || !Array.isArray(anime.genres)) return [];
-
-        // Handle both string arrays and object arrays
-        return anime.genres.map(g => {
-            if (typeof g === 'string') return g;
-            if (typeof g === 'object' && g.name) return g.name;
-            return g;
-        }).filter(Boolean);
-    };
-
-    // AniList score - averageScore is out of 100
-    const getScore = () => {
-        // Prefer normalized score if present
-        if (anime.score && anime.score !== "N/A") {
-            return (anime.score / 10).toFixed(1);
-        }
-        // Fallback to raw AniList averageScore
-        if (anime.averageScore) {
-            return (anime.averageScore / 10).toFixed(1);
-        }
-        return null;
-    };
-
-
-    // AniList episodes
-    const getEpisodes = () => {
-        return anime.episodes || anime.episodeCount || "?";
-    };
-
-    // AniList rating
-    const getRating = () => {
-        if (anime.isAdult) return "R - 17+ (violence & profanity)";
-        if (anime.rating) return anime.rating;
-        // Default based on common AniList patterns
-        return "PG-13";
-    };
-
-    // AniList aired info
-    const getAiredInfo = () => {
-        return anime.startDate ? formatAniListDate(anime.startDate) : "TBA";
-    };
-
-    // AniList aired range
-    const getAiredRange = () => {
-        if (anime.format === "MOVIE") {
-            return getAiredInfo();
-        }
-        if (anime.startDate && anime.endDate) {
-            return `${formatAniListDate(anime.startDate)} - ${formatAniListDate(anime.endDate)}`;
-        }
-        if (anime.startDate) {
-            return `${getAiredInfo()} - ${anime.status === 'RELEASING' ? 'Ongoing' : 'TBA'}`;
-        }
-        return "TBA";
-    };
-
-    // AniList format display
-    const getFormatDisplay = () => {
-        if (!anime.format) return anime.type || "Unknown";
-
-        const formatMap = {
-            "TV": "TV",
-            "TV_SHORT": "Short",
-            "MOVIE": "Movie",
-            "SPECIAL": "Special",
-            "OVA": "OVA",
-            "ONA": "ONA",
-            "MUSIC": "Music"
-        };
-
-        return formatMap[anime.format] || anime.format;
-    };
-
-    const truncateSynopsis = (text, maxLength = 800) => {
-        if (!text) return "No description available.";
-        const cleanText = text.replace(/<[^>]*>/g, '');
-        return cleanText.length > maxLength ? cleanText.substring(0, maxLength) + "..." : cleanText;
-    };
-
-    function stripHTML(html) {
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        return doc.body.textContent || "";
-    }
-
-    const fullSynopsis = stripHTML(anime.description || "No description available.");
-
-    const handleSynopsisClick = () => {
-        setSynopsisModalOpen(true);
-    };
-
-    const closeSynopsisModal = () => {
-        setSynopsisModalOpen(false);
-    };
-
-    const currentTrailerVideoId = trailerVideoId || getTrailerVideoId();
-    const animeTitle = getAnimeTitle();
-    const animeImage = getAnimeImage();
+    const currentTrailerVideoId = trailerVideoId || animeData.trailerVideoId;
 
     return (
         <>
@@ -405,7 +395,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                     <div
                         className="modal-background"
                         style={{
-                            backgroundImage: `url(${anime?.bannerImage || animeImage})`,
+                            backgroundImage: `url(${anime?.bannerImage || animeData.image})`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
                             backgroundRepeat: 'no-repeat',
@@ -426,8 +416,8 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
                     {/* Enhanced Title with dynamic sizing */}
                     <div className="modal-title">
-                        <h2 ref={titleRef} title={animeTitle}>
-                            {animeTitle}
+                        <h2 ref={titleRef} title={animeData.title}>
+                            {animeData.title}
                         </h2>
                     </div>
 
@@ -435,7 +425,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                     <div className="modal-body">
                         <div className="modal-image-wrapper">
                             <div className="image-container">
-                                <img src={animeImage} alt={animeTitle} />
+                                <img src={animeData.image} alt={animeData.title} loading="eager" />
                                 <div className="image-overlay"></div>
 
                                 {/* add-to-list-buttons */}
@@ -473,11 +463,11 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                 </div>
                             </div>
 
-                            {(getFormatDisplay() || getAiredInfo()) && (
+                            {(animeData.format || getAiredRange()) && (
                                 <div className="anime-type-badge">
                                     <div className="badge-content">
                                         <div className="badge-row">
-                                            <span className="badge-type">{getFormatDisplay()}</span>
+                                            <span className="badge-type">{animeData.format}</span>
                                             <span className="badge-date">{getAiredRange()}</span>
                                         </div>
                                     </div>
@@ -526,29 +516,28 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                             <div className="stats-grid">
                                                 <div className="stat-item">
                                                     <span className="stat-label">Episodes :</span>
-                                                    <span className="stat-value">{getEpisodes()}</span>
+                                                    <span className="stat-value">{animeData.episodes}</span>
                                                 </div>
                                                 <div className="stat-item">
                                                     <span className="stat-label">Score :</span>
                                                     <span
                                                         className="stat-value score"
-                                                        style={{ color: getScoreColor(anime.score !== "N/A" ? anime.score : anime.averageScore) }}
+                                                        style={{ color: getScoreColor(animeData.score || 0) }}
                                                     >
-                                                        ⭐ {getScore() || "N/A"}
+                                                        ⭐ {animeData.score || "N/A"}
                                                     </span>
-
                                                 </div>
                                                 <div className="stat-item">
                                                     <span className="stat-label">Age Rating :</span>
-                                                    <span className="stat-value age-rating">{getRating()}</span>
+                                                    <span className="stat-value age-rating">{animeData.rating}</span>
                                                 </div>
                                             </div>
 
                                             <div className="synopsis-section">
                                                 <p className="synopsis-text">
-                                                    {truncateSynopsis(fullSynopsis, 600)}
+                                                    {truncateSynopsis(animeData.synopsis, 600)}
                                                 </p>
-                                                {fullSynopsis.length > 600 && (
+                                                {animeData.synopsis.length > 600 && (
                                                     <button className="read-more-btn" onClick={handleSynopsisClick}>
                                                         Read More
                                                     </button>
@@ -563,16 +552,16 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                                     </strong>
                                                     <span
                                                         className="info-value status-value"
-                                                        style={{ color: getStatusColor(anime.status) }}
+                                                        style={{ color: getStatusColor(animeData.status) }}
                                                     >
                                                         <span
                                                             className="status-indicator"
                                                             style={{
-                                                                backgroundColor: getStatusColor(anime.status),
-                                                                boxShadow: `0 0 10px ${getStatusColor(anime.status)}`
+                                                                backgroundColor: getStatusColor(animeData.status),
+                                                                boxShadow: `0 0 10px ${getStatusColor(animeData.status)}`
                                                             }}
                                                         ></span>
-                                                        {anime.status || "Unknown"}
+                                                        {animeData.status}
                                                     </span>
                                                 </div>
 
@@ -582,8 +571,8 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                                         Genres :
                                                     </strong>
                                                     <div className="genre-tags">
-                                                        {getGenres().length > 0 ? (
-                                                            getGenres().map((genre, i) => {
+                                                        {animeData.genres.length > 0 ? (
+                                                            animeData.genres.map((genre, i) => {
                                                                 const bgColor = genreColors[genre] || "linear-gradient(135deg, #666, #888)";
                                                                 return (
                                                                     <span
@@ -607,7 +596,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                                         Studio :
                                                     </strong>
                                                     <span className="info-value studio-value">
-                                                        {getStudioInfo()}
+                                                        {animeData.studio}
                                                     </span>
                                                 </div>
                                             </div>
@@ -677,11 +666,11 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                         </button>
 
                         <div className="synopsis-modal-header">
-                            <h3>{animeTitle} - Synopsis</h3>
+                            <h3>{animeData.title} - Synopsis</h3>
                         </div>
 
                         <div className="synopsis-modal-body">
-                            <p className="full-synopsis-text">{fullSynopsis}</p>
+                            <p className="full-synopsis-text">{animeData.synopsis}</p>
                         </div>
                     </div>
                 </div>

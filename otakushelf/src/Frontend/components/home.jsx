@@ -26,7 +26,7 @@ const useInView = (options = {}) => {
         const observer = new IntersectionObserver(([entry]) => {
             // console.log("IntersectionObserver triggered:", entry.isIntersecting, entry.target);
             if (entry.isIntersecting && !isVisible) {
-                console.log("Setting visible TRUE for:", entry.target);
+                // console.log("Setting visible TRUE for:", entry.target);
                 setIsVisible(true);
             }
         }, { threshold: 0.1, rootMargin: '20px', ...options });
@@ -132,7 +132,7 @@ const AnimeHomepage = () => {
 
     // Enhanced normalize grid anime data with comprehensive field mapping
     const normalizeGridAnime = (anime) => {
-        console.log("Normalizing anime data:", anime);
+        // console.log("Normalizing anime data:", anime);
 
         const normalized = {
             id: anime.id,
@@ -168,7 +168,7 @@ const AnimeHomepage = () => {
             _originalData: anime
         };
 
-        console.log("Normalized anime:", normalized); // Debug log
+        // console.log("Normalized anime:", normalized); 
         return normalized;
     };
 
@@ -194,16 +194,16 @@ const AnimeHomepage = () => {
                 // Use fetchWithRetry for better reliability
                 const data = await fetchWithRetry(`${API_BASE}/api/anime/anime-sections`);
 
-                console.log("Raw API Response:", data); // Debug log
-                console.log("Sample topAiring item:", data.topAiring?.[0]); // Debug log
-                console.log("Sample mostWatched item:", data.mostWatched?.[0]); // Debug log
+                // console.log("Raw API Response:", data); 
+                // console.log("Sample topAiring item:", data.topAiring?.[0]); 
+                // console.log("Sample mostWatched item:", data.mostWatched?.[0]); 
 
                 const normalizedTopAiring = data.topAiring?.map(normalizeGridAnime) || [];
                 const normalizedMostWatched = data.mostWatched?.map(normalizeGridAnime) || [];
                 const normalizedTopMovies = data.topMovies?.map(normalizeGridAnime) || [];
 
-                console.log("Normalized topAiring:", normalizedTopAiring); // Debug log
-                console.log("Normalized mostWatched:", normalizedMostWatched); // Debug log
+                // console.log("Normalized topAiring:", normalizedTopAiring); 
+                // console.log("Normalized mostWatched:", normalizedMostWatched); 
 
                 setTopAiring(normalizedTopAiring);
                 setMostWatched(normalizedMostWatched);
@@ -223,7 +223,7 @@ const AnimeHomepage = () => {
                 if (cachedSections) {
                     try {
                         const parsed = JSON.parse(cachedSections);
-                        console.log("Using cached data:", parsed); // Debug log
+                        // console.log("Using cached data:", parsed); 
 
                         if (parsed?.topAiring?.length) setTopAiring(parsed.topAiring.map(normalizeGridAnime));
                         if (parsed?.mostWatched?.length) setMostWatched(parsed.mostWatched.map(normalizeGridAnime));
@@ -256,7 +256,7 @@ const AnimeHomepage = () => {
         if (cachedSections) {
             try {
                 const parsed = JSON.parse(cachedSections);
-                console.log("Loading cached data on mount:", parsed); // Debug log
+                // console.log("Loading cached data on mount:", parsed);
 
                 if (parsed?.topAiring?.length) setTopAiring(parsed.topAiring.map(normalizeGridAnime));
                 if (parsed?.mostWatched?.length) setMostWatched(parsed.mostWatched.map(normalizeGridAnime));
@@ -271,34 +271,34 @@ const AnimeHomepage = () => {
 
     // Enhanced search functionality with better normalization
     useEffect(() => {
-        console.log("Search useEffect triggered:", { searchQuery, trim: searchQuery.trim() });
+        // console.log("Search useEffect triggered:", { searchQuery, trim: searchQuery.trim() });
 
         if (!searchQuery.trim()) {
-            console.log("Empty search query, clearing results");
+            // console.log("Empty search query, clearing results");
             setIsSearching(false);
             setSearchResults([]);
             setSearchLoading(false);
             return;
         }
 
-        console.log("Starting search for:", searchQuery);
+        // console.log("Starting search for:", searchQuery);
         setSearchLoading(true);
         setIsSearching(true);
 
         // Cancel previous request if exists
         if (controllerRef.current) {
-            console.log("Cancelling previous search request");
+            // console.log("Cancelling previous search request");
             controllerRef.current.abort();
         }
         controllerRef.current = new AbortController();
 
         const fetchSearch = async () => {
-            console.log("Fetching search results for:", searchQuery);
+            // console.log("Fetching search results for:", searchQuery);
             setSearchLoading(true);
 
             try {
                 const searchUrl = `${API_BASE}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=12`;
-                console.log("Search URL:", searchUrl);
+                // console.log("Search URL:", searchUrl);
 
                 const res = await axios.get(searchUrl, {
                     signal: controllerRef.current.signal,
@@ -311,16 +311,16 @@ const AnimeHomepage = () => {
                 // console.log("Search API Response Length:", res.data?.length);
 
                 if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-                    console.log("Processing search results:", res.data.length, "items");
-                    console.log("First search result:", res.data[0]);
+                    // console.log("Processing search results:", res.data.length, "items");
+                    // console.log("First search result:", res.data[0]);
 
                     const normalized = res.data.map((anime, index) => {
-                        console.log(`Normalizing search result ${index}:`, anime);
+                        // console.log(`Normalizing search result ${index}:`, anime);
                         return normalizeGridAnime(anime);
                     });
 
-                    console.log("Normalized search results:", normalized);
-                    console.log("First normalized result:", normalized[0]);
+                    // console.log("Normalized search results:", normalized);
+                    // console.log("First normalized result:", normalized[0]);
                     setSearchResults(normalized);
                 } else {
                     console.log("No search results found or invalid response format");

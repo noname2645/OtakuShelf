@@ -316,7 +316,7 @@ router.get('/search', async (req, res) => {
         trailer: processTrailer(anime.trailer)
       }));
 
-    console.log('Search Results Sample:', safeResults[0]);
+    // console.log('Search Results Sample:', safeResults[0]);
 
     res.json(safeResults);
   } catch (error) {
