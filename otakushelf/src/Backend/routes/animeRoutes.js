@@ -26,161 +26,178 @@ router.get('/anime-sections', async (req, res) => {
 
   try {
     const query = `
-      query {
-        airing: Page(page: 1, perPage: 50) {
-          media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC) {
-            id
-            idMal
-            title { 
-              english 
-              romaji 
-              native 
-            }
-            description
-            coverImage { 
-              large 
-              extraLarge 
-              medium
-            }
-            bannerImage
-            episodes
-            averageScore
-            status
-            genres
-            season
-            seasonYear
-            format
-            duration
-            popularity
-            startDate {
-              year
-              month
-              day
-            }
-            endDate {
-              year
-              month
-              day
-            }
-            studios {
-              edges {
-                node {
-                  name
-                }
-              }
-            }
-            trailer {
-              id
-              site
-              thumbnail
-            }
-            isAdult
-            source
-          }
-        }
-        mostWatched: Page(page: 1, perPage: 50) {
-          media(type: ANIME, sort: POPULARITY_DESC) {
-            id
-            idMal
-            title { 
-              english 
-              romaji 
-              native 
-            }
-            description
-            coverImage { 
-              large 
-              extraLarge 
-              medium
-            }
-            bannerImage
-            episodes
-            averageScore
-            status
-            genres
-            season
-            seasonYear
-            format
-            duration
-            popularity
-            startDate {
-              year
-              month
-              day
-            }
-            endDate {
-              year
-              month
-              day
-            }
-            studios {
-              edges {
-                node {
-                  name
-                }
-              }
-            }
-            trailer {
-              id
-              site
-              thumbnail
-            }
-            isAdult
-            source
-          }
-        }
-        movies: Page(page: 1, perPage: 50) {
-          media(type: ANIME, format: MOVIE, sort: POPULARITY_DESC) {
-            id
-            idMal
-            title { 
-              english 
-              romaji 
-              native 
-            }
-            description
-            coverImage { 
-              large 
-              extraLarge 
-              medium
-            }
-            bannerImage
-            episodes
-            averageScore
-            status
-            genres
-            season
-            seasonYear
-            format
-            duration
-            popularity
-            startDate {
-              year
-              month
-              day
-            }
-            endDate {
-              year
-              month
-              day
-            }
-            studios {
-              edges {
-                node {
-                  name
-                }
-              }
-            }
-            trailer {
-              id
-              site
-              thumbnail
-            }
-            isAdult
-            source
+query {
+  airing: Page(page: 1, perPage: 50) {
+    media(
+      type: ANIME
+      status: RELEASING
+      sort: POPULARITY_DESC
+      isAdult: false
+    ) {
+      id
+      idMal
+      title { 
+        english 
+        romaji 
+        native 
+      }
+      description
+      coverImage { 
+        large 
+        extraLarge 
+        medium
+      }
+      bannerImage
+      episodes
+      averageScore
+      status
+      genres
+      season
+      seasonYear
+      format
+      duration
+      popularity
+      startDate {
+        year
+        month
+        day
+      }
+      endDate {
+        year
+        month
+        day
+      }
+      studios {
+        edges {
+          node {
+            name
           }
         }
       }
+      trailer {
+        id
+        site
+        thumbnail
+      }
+      isAdult
+      source
+    }
+  }
+
+  mostWatched: Page(page: 1, perPage: 50) {
+    media(
+      type: ANIME
+      sort: POPULARITY_DESC
+      isAdult: false
+    ) {
+      id
+      idMal
+      title { 
+        english 
+        romaji 
+        native 
+      }
+      description
+      coverImage { 
+        large 
+        extraLarge 
+        medium
+      }
+      bannerImage
+      episodes
+      averageScore
+      status
+      genres
+      season
+      seasonYear
+      format
+      duration
+      popularity
+      startDate {
+        year
+        month
+        day
+      }
+      endDate {
+        year
+        month
+        day
+      }
+      studios {
+        edges {
+          node {
+            name
+          }
+        }
+      }
+      trailer {
+        id
+        site
+        thumbnail
+      }
+      isAdult
+      source
+    }
+  }
+
+  movies: Page(page: 1, perPage: 50) {
+    media(
+      type: ANIME
+      format: MOVIE
+      sort: POPULARITY_DESC
+      isAdult: false
+    ) {
+      id
+      idMal
+      title { 
+        english 
+        romaji 
+        native 
+      }
+      description
+      coverImage { 
+        large 
+        extraLarge 
+        medium
+      }
+      bannerImage
+      episodes
+      averageScore
+      status
+      genres
+      season
+      seasonYear
+      format
+      duration
+      popularity
+      startDate {
+        year
+        month
+        day
+      }
+      endDate {
+        year
+        month
+        day
+      }
+      studios {
+        edges {
+          node {
+            name
+          }
+        }
+      }
+      trailer {
+        id
+        site
+        thumbnail
+      }
+      isAdult
+      source
+    }
+  }
+}
+
     `;
 
     const data = await fetchAniList(query);
@@ -325,7 +342,7 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// ----------- Get Single Anime Details -----------
+// Get Single Anime Details 
 router.get('/anime/:id', async (req, res) => {
   const { id } = req.params;
   

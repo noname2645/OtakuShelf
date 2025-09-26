@@ -20,6 +20,21 @@
   src: url('../Frontend/public/Dynamix.ttf') format('truetype');
 }
 
+@font-face {
+  font-family: 'Ostrichsans';
+  src: url('../Frontend/public/OstrichSans-Heavy.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Papernotesb';
+  src: url('../Frontend/public/Papernotes-Bold.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Papernotes';
+  src: url('../Frontend/public/Papernotes.ttf') format('opentype');
+}
+
 body {
   margin: 0 !important;
   padding: 0 !important;

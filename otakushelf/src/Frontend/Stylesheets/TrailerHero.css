@@ -1,0 +1,341 @@
+/* TrailerHero.css */
+
+/* Main Section */
+.trailer-hero-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 3;
+}
+
+
+/* YouTube Container */
+.youtube-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: auto;
+    aspect-ratio: 16/9;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+}
+
+.youtube-container.active {
+    display: block;
+}
+
+.youtube-container.hidden {
+    display: none;
+}
+
+/* Fallback Image */
+.fallback-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    z-index: -1;
+}
+
+/* No Trailer Indicator */
+.no-trailer-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    z-index: 2;
+    backdrop-filter: blur(10px);
+}
+
+/* User Interaction Prompt */
+.user-interaction-prompt {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    z-index: 3;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Mute/Unmute Button */
+.mute-button {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.mute-button:hover {
+    background-color: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+}
+
+/* Gradient Overlay */
+.gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 20%, rgba(0, 0, 0, 0) 80%);
+    z-index: 1;
+}
+
+/* Content Overlay */
+.content-overlay {
+    position: absolute;
+    bottom: 20%;
+    left: 10%;
+    right: 10%;
+    color: white;
+    z-index: 2;
+    max-width: 600px;
+}
+
+/* Anime Title */
+.anime-title {
+    font-family: "Misrow";
+    font-size: 3rem;
+    font-weight: 900;
+    margin-bottom: 1rem;
+    line-height: 1.1;
+    background-image: linear-gradient(90deg, #fd2600ff, #ff003cff);
+    letter-spacing: 1.5px;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    height: auto;
+    padding: 5px;
+    width: 20em;
+}
+
+/* Anime Meta Information */
+.anime-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    flex-wrap: wrap;
+}
+
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.score {
+    color: #FFD700;
+}
+
+.trailer-availability {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Anime Description */
+.anime-description {
+    font-family: "Coolvetica";
+    font-optical-sizing: auto;
+    font-size: 1.9em;
+    line-height: 1;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    letter-spacing: 0.5px;
+}
+
+/* Genres */
+.genres {
+    margin-bottom: 2rem;
+    font-size: 1rem;
+    color: #ddd;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+/* Details Button */
+.details-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 2.5rem;
+    background-color: rgb(255, 115, 0);
+    color: #000;
+    border: none;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.details-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Navigation Arrows */
+.slider-btns {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 4;
+    pointer-events: none;
+}
+
+.slider-btns button {
+    pointer-events: auto;
+    background: none;
+    border: none;
+    width: 100px;
+    height: 100px;
+    font-size: 5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: wheat;
+}
+
+.left-arrow {
+    margin-left: 20px;
+    transform: rotate(180deg);
+}
+
+.right-arrow {
+    margin-right: 20px;
+}
+
+
+/* Trailer Spacer */
+.trailer-spacer {
+    height: 100vh;
+    position: relative;
+    z-index: 2;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .anime-title {
+        font-size: 2rem;
+        width: 100%;
+    }
+
+    .anime-meta {
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 1rem;
+    }
+
+    .anime-description {
+        font-size: 1.5em;
+    }
+
+    .content-overlay {
+        bottom: 10%;
+        left: 5%;
+        right: 5%;
+    }
+
+    .nav-arrow {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+    }
+
+    .left-arrow {
+        left: 10px;
+    }
+
+    .right-arrow {
+        right: 10px;
+    }
+
+    .mute-button {
+        bottom: 10px;
+        left: 10px;
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+
+    .scroll-hint {
+        font-size: 0.8rem;
+        bottom: 70px;
+    }
+}
+
+@media (max-width: 480px) {
+    .anime-title {
+        font-size: 1.5rem;
+    }
+
+    .anime-description {
+        font-size: 1.2em;
+    }
+
+    .details-button {
+        padding: 0.8rem 2rem;
+        font-size: 1rem;
+    }
+
+    .user-interaction-prompt {
+        font-size: 0.9rem;
+        padding: 12px 20px;
+    }
+
+    .nav-arrow {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+
+    .slide-indicator {
+        width: 10px;
+        height: 10px;
+    }
+}

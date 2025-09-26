@@ -126,7 +126,7 @@ export const Header = ({ showSearch = true, onSearchChange }) => {
                 {showSearch && (
                     <div className={`InputContainer ${onSearchChange ? "active" : ""}`}>
                         <input
-                            placeholder="Quick Search"
+                            placeholder="Quick Search (Title Only)"
                             id="input"
                             className="input"
                             type="text"

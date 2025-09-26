@@ -52,14 +52,14 @@
     border-radius: 25px;
     padding: 0 20px 0 50px;
     background: rgba(30, 30, 30, 0.8);
-    backdrop-filter: blur(10px);
-    color: white;
-    font-size: 16px;
-    font-weight: 500;
+    color: #ff9f00 ;
+    font-family: "Papernotes";
+    letter-spacing: 3px;
+    font-size: 15px;
     transition: all 0.3s ease;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     border: 2px solid transparent;
-
+    text-decoration: none;
 }
 
 .input::placeholder {
