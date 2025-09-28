@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import AnimeCard from "./animecard.jsx";
 import "../Stylesheets/relatedsection.css";
+import { motion } from "framer-motion";
 
 const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
   const [related, setRelated] = useState([]);
@@ -451,7 +452,31 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
   }
 
   // Show nothing if no results
-  if (!related.length) return "Sequel or Prequel is not available for this anime";
+  if (!related.length) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}   // starts invisible + slightly up
+        animate={{ opacity: 1, y: 0 }}     // fades in + slides down
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        style={{
+          marginTop: "50px",
+          padding: "12px",
+          width: "90%",
+          border: "1px solid #ddd",
+          backdropFilter: "blur(10px)",
+          borderRadius: "15px",
+          textAlign: "center",
+          fontSize: "20px",
+          fontStyle: "Roboto",
+          color: "#ffffffff",
+          letterSpacing: "1px"
+        }}
+      >
+        Sequel or Prequel is not available for this anime
+      </motion.div>
+    );
+  }
+
 
   // Group related anime by relation type
   const groupedRelated = related.reduce((acc, anime) => {

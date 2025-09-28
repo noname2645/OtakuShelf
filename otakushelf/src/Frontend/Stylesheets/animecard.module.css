@@ -4,14 +4,15 @@
   width: 160px;
   aspect-ratio: 2/3;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 14px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   transition: all 0.1s ease;
-  margin-top: 10px;
+  /* margin-top: 10px; */
   text-align: center;
 }
 
 .anime-card:hover {
+  border-radius: 14px;
   transform: translateY(-2px) scale(1.02);
 }
 
@@ -29,7 +30,6 @@
 
 .card-image img:hover {
   transform: scale(1.1);
-  transition: 0.1s;
   transition: transform 0.3s ease-in-out;
 }
 

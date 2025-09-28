@@ -137,7 +137,7 @@ export const Header = ({ showSearch = true, onSearchChange }) => {
                 )}
             </div>
             <div className="logo">
-                <img src={logo} alt="Logo" />
+                <span>OtakuShelf</span>
             </div>
             <div className="auth-buttons">
                 {user ? (

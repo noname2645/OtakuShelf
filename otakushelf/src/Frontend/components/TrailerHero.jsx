@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, memo } from 'react';
 import axios from 'axios';
 import { motion } from "framer-motion";
 import '../Stylesheets/TrailerHero.css';
-import arrow from "../images/arrow.png"
 
 // API base URL
 const API_BASE = import.meta.env.MODE === "development"

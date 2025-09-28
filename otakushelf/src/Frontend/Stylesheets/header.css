@@ -357,14 +357,24 @@
 }
 
 /* Logo */
-.logo img {
-    height: 250px;
-    width: 250px;
+.logo span {
+    font-family: "Hoshiko";
+    font-size: 50px;
     border-radius: 20px;
     cursor: pointer;
+    letter-spacing: 5px;
+    background: linear-gradient(45deg, #ff6a00, #ffcc00, #ff0066, #ff33cc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
 }
 
-/* Header Mobile Responsive Media Queries */
+.logo span:hover {
+    transform: scale(1.1);
+    text-shadow: 2px 2px 15px rgba(255, 102, 0, 0.8), 0 0 10px rgba(255, 204, 0, 0.7);
+}
+
 
 /* Extra Large Screens - 1200px and above */
 @media (min-width: 1200px) {
