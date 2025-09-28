@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext.jsx';
-import logo from "../images/logo.png";
 import "../Stylesheets/header.css";
 
 // ProfileDropdown Component (copied from home.jsx)
@@ -137,7 +136,9 @@ export const Header = ({ showSearch = true, onSearchChange }) => {
                 )}
             </div>
             <div className="logo">
+                <Link to="/">
                 <span>OtakuShelf</span>
+                </Link>
             </div>
             <div className="auth-buttons">
                 {user ? (

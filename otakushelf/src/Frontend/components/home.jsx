@@ -1,7 +1,6 @@
 import { React, useState, useEffect, useRef } from 'react';
 import "../Stylesheets/home.css";
 import axios from "axios";
-import logo from "../images/logo.png"
 import Lenis from '@studio-freight/lenis'
 import Modal from "../components/modal.jsx";
 import search from "../images/search.png"

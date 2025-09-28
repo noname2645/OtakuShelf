@@ -19,11 +19,11 @@ const TrailerHero = ({ onOpenModal }) => {
     const [playerError, setPlayerError] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
     const [announcements, setAnnouncements] = useState([]);
-    
+
     // Horizontal scroll functionality for main hero
     const isDragging = useRef(false);
     const autoScrollRef = useRef(null);
-    
+
     // YouTube player refs
     const playerRef = useRef(null);
     const youtubeContainerRef = useRef(null);
@@ -35,14 +35,14 @@ const TrailerHero = ({ onOpenModal }) => {
         if (autoScrollRef.current) {
             clearInterval(autoScrollRef.current);
         }
-        
+
         if (announcements.length <= 1) return;
-        
+
         autoScrollRef.current = setInterval(() => {
             if (!isDragging.current) {
                 setCurrentAnime(prev => (prev + 1) % announcements.length);
             }
-        }, 30000); 
+        }, 30000);
     };
 
 
@@ -102,7 +102,7 @@ const TrailerHero = ({ onOpenModal }) => {
         }
         playerRef.current = null;
         setIsPlayerReady(false);
-        
+
         if (youtubeContainerRef.current) {
             youtubeContainerRef.current.innerHTML = '';
         }
@@ -335,6 +335,10 @@ const TrailerHero = ({ onOpenModal }) => {
         const currentAnimeData = announcements[currentAnime];
         if (!currentAnimeData) return;
 
+        // Reset player error and retry count when switching anime
+        setPlayerError(false);
+        setRetryCount(0);
+
         const videoId = getVideoId(currentAnimeData);
         const currentAnimeHasTrailer = hasTrailer(currentAnimeData);
 
@@ -387,7 +391,7 @@ const TrailerHero = ({ onOpenModal }) => {
     const currentAnimeData = announcements[currentAnime];
     if (!currentAnimeData) return null;
 
-    const videoId = getVideoId(currentAnimeData);
+
     const currentAnimeHasTrailer = hasTrailer(currentAnimeData);
 
     // Helper functions
@@ -428,7 +432,7 @@ const TrailerHero = ({ onOpenModal }) => {
                 style={{ opacity: opacity }}
             >
                 {/* YouTube Player Container */}
-                <div 
+                <div
                     ref={youtubeContainerRef}
                     className={`youtube-container ${currentAnimeHasTrailer && !playerError ? 'active' : 'hidden'}`}
                 />
@@ -484,8 +488,8 @@ const TrailerHero = ({ onOpenModal }) => {
                         <span>{currentAnimeData.seasonYear || 'TBA'}</span>
                         {currentAnimeData.episodes && <>•<span>{currentAnimeData.episodes} Episodes</span></>}
                         {currentAnimeData.averageScore && <>•<span className="score">⭐ {(currentAnimeData.averageScore) / 10}/10</span></>}
- 
-             
+
+
                     </div>
 
                     <p className="anime-description">
@@ -507,19 +511,19 @@ const TrailerHero = ({ onOpenModal }) => {
                 {/* Navigation Arrows */}
                 {announcements.length > 1 && (
                     <>
-                    <div className="slider-btns">
-                        <button 
-                            className="left-arrow"
-                            onClick={() => setCurrentAnime(prev => prev === 0 ? announcements.length - 1 : prev - 1)}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="#ff5900ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m10 17l5-5m0 0l-5-5"/></svg>
-                        </button>
-                        <button 
-                            className="right-arrow"
-                            onClick={() => setCurrentAnime(prev => (prev + 1) % announcements.length)}
-                        >
-                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="#ff5900ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m10 17l5-5m0 0l-5-5"/></svg>
-                        </button>
+                        <div className="slider-btns">
+                            <button
+                                className="left-arrow"
+                                onClick={() => setCurrentAnime(prev => prev === 0 ? announcements.length - 1 : prev - 1)}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="#ff5900ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m10 17l5-5m0 0l-5-5" /></svg>
+                            </button>
+                            <button
+                                className="right-arrow"
+                                onClick={() => setCurrentAnime(prev => (prev + 1) % announcements.length)}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="#ff5900ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m10 17l5-5m0 0l-5-5" /></svg>
+                            </button>
                         </div>
                     </>
                 )}
