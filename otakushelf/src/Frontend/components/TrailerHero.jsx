@@ -527,19 +527,6 @@ const TrailerHero = ({ onOpenModal }) => {
                         </div>
                     </>
                 )}
-
-                {/* Slide Indicators */}
-                {announcements.length > 1 && (
-                    <div className="slide-indicators">
-                        {announcements.map((_, index) => (
-                            <button
-                                key={index}
-                                onClick={() => setCurrentAnime(index)}
-                                className={`slide-indicator ${index === currentAnime ? 'active' : ''}`}
-                            />
-                        ))}
-                    </div>
-                )}
             </section>
 
             {/* Spacer to push content down */}
