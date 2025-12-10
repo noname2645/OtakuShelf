@@ -539,7 +539,7 @@ function AdvancedSearch() {
 
           {!isSearching && searchResults.length > 0 && (
             <div className={styles.resultsCount}>
-              Showing {searchResults.length} of {totalResultsCount} results
+              Your query matched with {totalResultsCount} results
             </div>
           )}
 

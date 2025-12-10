@@ -1,20 +1,27 @@
 .header {
     position: fixed;
-    height: 75px;
-    width: 100%;
+    height: 50px;              
+    width: 95%;
+    max-width: 1400px;     
+    margin: 5px auto;            
+    left: 0;
+    right: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.5rem 2rem;
+    padding: 0 2rem;             
     z-index: 1100;
     transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 25px;
 }
+
 
 /* Default transparent background */
 .header:not(.scrolled) {
     background: transparent;
     backdrop-filter: none;
     box-shadow: none;
+    border-radius: 25px;
 }
 
 /* When scrolled */
@@ -22,6 +29,7 @@
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border-radius: 25px;
 }
 
 .header-center {
@@ -52,10 +60,11 @@
     border-radius: 25px;
     padding: 0 20px 0 50px;
     background: rgba(30, 30, 30, 0.8);
-    color: #ff9f00 ;
-    font-family: "Papernotes";
-    letter-spacing: 3px;
+    color: #ff9f00;
+    font-family: 'Bricolage Grotesque', sans-serif;
     font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 2px;
     transition: all 0.3s ease;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     border: 2px solid transparent;
@@ -359,7 +368,7 @@
 /* Logo */
 .logo span {
     font-family: "Hoshiko";
-    font-size: 50px;
+    font-size: 45px;
     border-radius: 20px;
     cursor: pointer;
     letter-spacing: 5px;

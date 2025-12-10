@@ -1,12 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
 
+body {
+  font-family: 'Bricolage Grotesque', sans-serif;
+}
+
 .advancedSearchContainer {
   padding: 20px;
   margin: 0 auto;
-  font-family: 'Robot', Tahoma, Geneva, Verdana, sans-serif;
-  background: #061e4c;
+  background: url(D:\OtakuShelf\otakushelf\src\Frontend\images\comic-book-page-template\panel.jpg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   min-height: 100vh;
   padding-top: 120px;
+  font-family: 'Bricolage Grotesque', sans-serif;
 }
 
 .bottom-button-bar {
@@ -191,6 +199,7 @@
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -254,7 +263,7 @@
   accent-color: #3498db;
 }
 
-.checkboxLabel input:checked + span {
+.checkboxLabel input:checked+span {
   color: #2980b9;
   font-weight: 600;
 }
@@ -324,35 +333,45 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.loadingMore, .endOfResults, .noResults {
+.loadingMore,
+.endOfResults,
+.noResults {
   text-align: center;
   padding: 30px;
   color: #95a5a6;
 }
 
 .resultsCount {
-  margin-bottom: 15px;
   font-weight: 600;
-  color: #7f8c8d;
+  color: #2a2a2a;
   text-align: center;
+  font-size: 18px;
+  border: 2px solid #000000;
+  width: fit-content;
+  margin: 20px auto;
+  padding: 6px;
+  border-radius: 20px;
 }
 
 /* Anime Grid - Optimized */
 .animeGrid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 2em;
+  gap: 1.5em;
   justify-items: center;
-  width: 100%;
+  width: 93%;
   box-sizing: border-box;
+  margin: 0 auto;
 }
 
 .animeCard {
-  height: 350px;
-  width: 250px;
+  height: 320px;
+  width: 220px;
   position: relative;
   border-radius: 20px;
   overflow: hidden;
@@ -415,7 +434,8 @@
     gap: 12px;
   }
 
-  .optionsGrid, .genresGrid {
+  .optionsGrid,
+  .genresGrid {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 6px;
   }

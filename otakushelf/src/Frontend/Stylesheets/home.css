@@ -8,8 +8,13 @@
 
 
 .homepage {
-  font-family: "Roboto";
-  background: #061e4c;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  /* background: #061e4c; */
+  background:url(D:\OtakuShelf\otakushelf\src\Frontend\images\comic-book-page-template\panel.jpg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 
@@ -661,15 +666,16 @@ width: fit-content;
 .anime-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 2em;
+  gap: 1.5em;
   justify-items: center;
-  width: 100%;
+  width: 93%;
   box-sizing: border-box;
+  margin: 0 auto;
 }
 
 .anime-card {
-  height: 350px;
-  width: 250px;
+  height: 320px;
+  width: 220px;
   position: relative;
   border-radius: 20px;
   overflow: hidden;

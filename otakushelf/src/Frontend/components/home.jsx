@@ -1,35 +1,28 @@
-import { React, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import "../Stylesheets/home.css";
 import axios from "axios";
 import Lenis from '@studio-freight/lenis'
 import Modal from "../components/modal.jsx";
-import search from "../images/search.png"
 import { Link } from 'react-router-dom';
-import { useAuth } from './AuthContext';
 import TrailerHero from './TrailerHero.jsx';
 import { Header } from '../components/header.jsx';
-
 
 // API base URL
 const API_BASE = import.meta.env.MODE === "development"
     ? "http://localhost:5000"
     : "https://otakushelf-uuvw.onrender.com";
 
-
-
 const useInView = (options = {}) => {
     const ref = useRef(null);
-    const [isVisible, setIsVisible] = useState(false); // This was correct
+    const [isVisible, setIsVisible] = useState(false);
+    const optionsRef = useRef(options);
 
     useEffect(() => {
         const observer = new IntersectionObserver(([entry]) => {
-            // console.log("IntersectionObserver triggered:", entry.isIntersecting, entry.target);
             if (entry.isIntersecting && !isVisible) {
-                // console.log("Setting visible TRUE for:", entry.target);
                 setIsVisible(true);
             }
-        }, { threshold: 0.1, rootMargin: '20px', ...options });
-
+        }, { threshold: 0.1, rootMargin: '20px', ...optionsRef.current });
 
         const currentRef = ref.current;
         if (currentRef) {
@@ -41,21 +34,19 @@ const useInView = (options = {}) => {
                 observer.unobserve(currentRef);
             }
         };
-    }, [ref, isVisible, options]);
+    }, [isVisible]);
 
     return [ref, isVisible];
 };
 
-
 const AnimeHomepage = () => {
     const [loading, setLoading] = useState(true);
     const [mostWatched, setMostWatched] = useState([]);
-    const [topmovies, settopMovies] = useState([]);
+    const [topMovies, setTopMovies] = useState([]);
     const [topAiring, setTopAiring] = useState([]);
     const lenisRef = useRef(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAnime, setSelectedAnime] = useState(null);
-    const [isScrolled, setIsScrolled] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -72,35 +63,120 @@ const AnimeHomepage = () => {
         return cached ? JSON.parse(cached) : [];
     });
 
-    const getActivePage = () => {
+    const getActivePage = useCallback(() => {
         const path = location.pathname;
         if (path === '/home' || path === '/') return 'home';
         if (path === '/list') return 'list';
         if (path === '/advance') return 'search';
         if (path === '/ai') return 'AI';
         return '';
-    };
+    }, []);
 
+    // Memoized normalize function
+    const normalizeGridAnime = useCallback((anime) => {
+        return {
+            id: anime.id,
+            idMal: anime.idMal || anime.mal_id,
+            title: anime.title?.english || anime.title?.romaji || anime.title?.native || anime.title,
+            coverImage: {
+                large: anime.coverImage?.large || anime.image_url || anime.images?.jpg?.large_image_url,
+                extraLarge: anime.coverImage?.extraLarge || anime.images?.jpg?.large_image_url,
+                medium: anime.coverImage?.medium || anime.images?.jpg?.image_url
+            },
+            bannerImage: anime.bannerImage || anime.images?.jpg?.large_image_url,
+            description: anime.description || anime.synopsis || null,
+            episodes: anime.episodes || anime.episodes_count || anime.totalEpisodes || null,
+            averageScore: anime.averageScore || anime.score || anime.rating || null,
+            status: anime.status || anime.airing_status || null,
+            genres: anime.genres || [],
+            studios: anime.studios?.edges?.map(e => e.node.name) ||
+                anime.studios?.map(s => s.name) ||
+                anime.studios || [],
+            startDate: anime.startDate || anime.aired?.from || null,
+            endDate: anime.endDate || anime.aired?.to || null,
+            isAdult: anime.isAdult || false,
+            trailer: anime.trailer || null,
+            format: anime.format || null,
+            duration: anime.duration || null,
+            popularity: anime.popularity || null,
+            year: anime.year || anime.startDate?.year || null,
+            season: anime.season || null,
+            type: anime.type || anime.format || null,
+            source: anime.source || null,
+        };
+    }, []);
+
+    // Memoized fetch with retry
+    const fetchWithRetry = useCallback(async (url, retries = 3, delay = 1000) => {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await axios.get(url, { timeout: 10000 });
+                return response.data;
+            } catch (error) {
+                if (i === retries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }, []);
+
+    // Memoized remove duplicates
+    const removeDuplicates = useCallback((animeArray) => {
+        const seen = new Set();
+        return animeArray.filter((anime) => {
+            if (seen.has(anime.id)) return false;
+            seen.add(anime.id);
+            return true;
+        });
+    }, []);
+
+    // Consolidated data fetching with cache
+    useEffect(() => {
+        const fetchAnimeSections = async () => {
+            // Try cache first
+            const cachedSections = localStorage.getItem('animeSections');
+            if (cachedSections) {
+                try {
+                    const parsed = JSON.parse(cachedSections);
+                    if (parsed?.topAiring?.length) setTopAiring(parsed.topAiring.map(normalizeGridAnime));
+                    if (parsed?.mostWatched?.length) setMostWatched(parsed.mostWatched.map(normalizeGridAnime));
+                    if (parsed?.topMovies?.length) setTopMovies(parsed.topMovies.map(normalizeGridAnime));
+                    setLoading(false);
+                } catch (error) {
+                    console.error("Error loading cached data:", error);
+                }
+            }
+
+            // Fetch fresh data
+            try {
+                const data = await fetchWithRetry(`${API_BASE}/api/anime/anime-sections`);
+                const normalizedTopAiring = data.topAiring?.map(normalizeGridAnime) || [];
+                const normalizedMostWatched = data.mostWatched?.map(normalizeGridAnime) || [];
+                const normalizedTopMovies = data.topMovies?.map(normalizeGridAnime) || [];
+
+                setTopAiring(normalizedTopAiring);
+                setMostWatched(normalizedMostWatched);
+                setTopMovies(normalizedTopMovies);
+
+                localStorage.setItem('animeSections', JSON.stringify({
+                    topAiring: data.topAiring || [],
+                    mostWatched: data.mostWatched || [],
+                    topMovies: data.topMovies || []
+                }));
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching anime sections:", error);
+            }
+        };
+
+        fetchAnimeSections();
+    }, [fetchWithRetry, normalizeGridAnime]);
 
     // Rendering homepage cards
     useEffect(() => {
-        if (!loading && (topAiring.length > 0 || mostWatched.length > 0 || topmovies.length > 0)) {
+        if (!loading && (topAiring.length > 0 || mostWatched.length > 0 || topMovies.length > 0)) {
             setAnimateCards(true);
         }
-    }, [loading, topAiring.length, mostWatched.length, topmovies.length]);
-
-    // Handle scroll events
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 600);
-        };
-
-        window.addEventListener("scroll", handleScroll);
-
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
-    }, []);
+    }, [loading, topAiring.length, mostWatched.length, topMovies.length]);
 
 
     // Initialize smooth scrolling
@@ -127,283 +203,74 @@ const AnimeHomepage = () => {
         };
     }, []);
 
-
-
-    // Enhanced normalize grid anime data with comprehensive field mapping
-    const normalizeGridAnime = (anime) => {
-        // console.log("Normalizing anime data:", anime);
-
-        const normalized = {
-            id: anime.id,
-            idMal: anime.idMal || anime.mal_id,
-            title: anime.title?.english || anime.title?.romaji || anime.title?.native || anime.title,
-            coverImage: {
-                large: anime.coverImage?.large || anime.image_url || anime.images?.jpg?.large_image_url,
-                extraLarge: anime.coverImage?.extraLarge || anime.images?.jpg?.large_image_url,
-                medium: anime.coverImage?.medium || anime.images?.jpg?.image_url
-            },
-            bannerImage: anime.bannerImage || anime.images?.jpg?.large_image_url,
-            description: anime.description || anime.synopsis || null,
-            episodes: anime.episodes || anime.episodes_count || anime.totalEpisodes || null,
-            averageScore: anime.averageScore || anime.score || anime.rating || null,
-            status: anime.status || anime.airing_status || null,
-            genres: anime.genres || [],
-            studios: anime.studios?.edges?.map(e => e.node.name) ||
-                anime.studios?.map(s => s.name) ||
-                anime.studios || [],
-            startDate: anime.startDate || anime.aired?.from || null,
-            endDate: anime.endDate || anime.aired?.to || null,
-            isAdult: anime.isAdult || false,
-            // Additional fields that might be needed by the modal
-            trailer: anime.trailer || null,
-            format: anime.format || null,
-            duration: anime.duration || null,
-            popularity: anime.popularity || null,
-            year: anime.year || anime.startDate?.year || null,
-            season: anime.season || null,
-            type: anime.type || anime.format || null,
-            source: anime.source || null,
-            // Preserve original data for debugging
-            _originalData: anime
-        };
-
-        // console.log("Normalized anime:", normalized); 
-        return normalized;
-    };
-
-
-    // Fetch with retry logic for home component
-    const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
-        for (let i = 0; i < retries; i++) {
-            try {
-                const response = await axios.get(url, { timeout: 10000 });
-                return response.data;
-            } catch (error) {
-                if (i === retries - 1) throw error;
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-    };
-
-
-    // Enhanced fetch anime sections 
+    // Enhanced search functionality
     useEffect(() => {
-        const fetchAnimeSections = async () => {
-            try {
-                // Use fetchWithRetry for better reliability
-                const data = await fetchWithRetry(`${API_BASE}/api/anime/anime-sections`);
-
-                // console.log("Raw API Response:", data); 
-                // console.log("Sample topAiring item:", data.topAiring?.[0]); 
-                // console.log("Sample mostWatched item:", data.mostWatched?.[0]); 
-
-                const normalizedTopAiring = data.topAiring?.map(normalizeGridAnime) || [];
-                const normalizedMostWatched = data.mostWatched?.map(normalizeGridAnime) || [];
-                const normalizedTopMovies = data.topMovies?.map(normalizeGridAnime) || [];
-
-                // console.log("Normalized topAiring:", normalizedTopAiring); 
-                // console.log("Normalized mostWatched:", normalizedMostWatched); 
-
-                setTopAiring(normalizedTopAiring);
-                setMostWatched(normalizedMostWatched);
-                settopMovies(normalizedTopMovies);
-
-                // Cache the original data, not normalized
-                localStorage.setItem('animeSections', JSON.stringify({
-                    topAiring: data.topAiring || [],
-                    mostWatched: data.mostWatched || [],
-                    topMovies: data.topMovies || []
-                }));
-            } catch (error) {
-                console.error("Error fetching anime sections:", error);
-
-                // Try to use cached data as fallback
-                const cachedSections = localStorage.getItem('animeSections');
-                if (cachedSections) {
-                    try {
-                        const parsed = JSON.parse(cachedSections);
-                        // console.log("Using cached data:", parsed); 
-
-                        if (parsed?.topAiring?.length) setTopAiring(parsed.topAiring.map(normalizeGridAnime));
-                        if (parsed?.mostWatched?.length) setMostWatched(parsed.mostWatched.map(normalizeGridAnime));
-                        if (parsed?.topMovies?.length) settopMovies(parsed.topMovies.map(normalizeGridAnime));
-                    } catch (parseError) {
-                        console.error("Error parsing cached sections:", parseError);
-                    }
-                }
-            }
-        };
-
-        fetchAnimeSections();
-    }, []);
-
-
-
-    // Check if all sections are ready for trailer and home section
-    useEffect(() => {
-        const sectionsReady = topAiring.length || mostWatched.length || topmovies.length;
-        if (sectionsReady) {
-            setLoading(false);
-        }
-    }, [topAiring.length, mostWatched.length, topmovies.length]);
-
-
-    // Try cached data for trailer section on initial load
-    useEffect(() => {
-        // Try cached sections immediately on load
-        const cachedSections = localStorage.getItem('animeSections');
-        if (cachedSections) {
-            try {
-                const parsed = JSON.parse(cachedSections);
-                // console.log("Loading cached data on mount:", parsed);
-
-                if (parsed?.topAiring?.length) setTopAiring(parsed.topAiring.map(normalizeGridAnime));
-                if (parsed?.mostWatched?.length) setMostWatched(parsed.mostWatched.map(normalizeGridAnime));
-                if (parsed?.topMovies?.length) settopMovies(parsed.topMovies.map(normalizeGridAnime));
-                setLoading(false);
-            } catch (error) {
-                console.error("Error loading cached data:", error);
-            }
-        }
-    }, []);
-
-
-    // Enhanced search functionality with better normalization
-    useEffect(() => {
-        // console.log("Search useEffect triggered:", { searchQuery, trim: searchQuery.trim() });
-
         if (!searchQuery.trim()) {
-            // console.log("Empty search query, clearing results");
             setIsSearching(false);
             setSearchResults([]);
             setSearchLoading(false);
             return;
         }
 
-        // console.log("Starting search for:", searchQuery);
         setSearchLoading(true);
         setIsSearching(true);
 
-        // Cancel previous request if exists
         if (controllerRef.current) {
-            // console.log("Cancelling previous search request");
             controllerRef.current.abort();
         }
         controllerRef.current = new AbortController();
 
         const fetchSearch = async () => {
-            // console.log("Fetching search results for:", searchQuery);
-            setSearchLoading(true);
-
             try {
                 const searchUrl = `${API_BASE}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=12`;
-                // console.log("Search URL:", searchUrl);
-
                 const res = await axios.get(searchUrl, {
                     signal: controllerRef.current.signal,
-                    timeout: 10000 // 10 second timeout
+                    timeout: 10000
                 });
 
-                // console.log("Search API Response Status:", res.status);
-                // console.log("Search API Response Data:", res.data);
-                // console.log("Search API Response Type:", typeof res.data);
-                // console.log("Search API Response Length:", res.data?.length);
-
                 if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-                    // console.log("Processing search results:", res.data.length, "items");
-                    // console.log("First search result:", res.data[0]);
-
-                    const normalized = res.data.map((anime, index) => {
-                        // console.log(`Normalizing search result ${index}:`, anime);
-                        return normalizeGridAnime(anime);
-                    });
-
-                    // console.log("Normalized search results:", normalized);
-                    // console.log("First normalized result:", normalized[0]);
+                    const normalized = res.data.map(normalizeGridAnime);
                     setSearchResults(normalized);
                 } else {
-                    console.log("No search results found or invalid response format");
                     setSearchResults([]);
                 }
             } catch (err) {
-                if (axios.isCancel(err)) {
-                    console.log("Search request cancelled for:", searchQuery);
-                } else {
-                    console.error("Search failed with error:", err);
-                    console.error("Error response:", err.response?.data);
-                    console.error("Error status:", err.response?.status);
-                    console.error("Error message:", err.message);
+                if (!axios.isCancel(err)) {
+                    console.error("Search failed:", err);
                     setSearchResults([]);
                 }
             } finally {
-                console.log("Search completed, setting loading to false");
                 setSearchLoading(false);
             }
         };
 
-        const debounce = setTimeout(() => {
-            console.log("Debounce timeout reached, executing search");
-            fetchSearch();
-        }, 400);
+        const debounce = setTimeout(fetchSearch, 400);
 
         return () => {
-            console.log("Cleaning up search effect");
             clearTimeout(debounce);
             if (controllerRef.current) {
                 controllerRef.current.abort();
             }
         };
-    }, [searchQuery]);
+    }, [searchQuery, normalizeGridAnime]);
 
-    // Remove duplicate anime entries
-    const removeDuplicates = (animeArray) => {
-        const seen = new Set();
-        return animeArray.filter((anime) => {
-            if (seen.has(anime.id)) return false;
-            seen.add(anime.id);
-            return true;
-        });
-    };
-
-
-
-    // Enhanced modal opening with comprehensive debugging
-    const openModal = (anime) => {
-        // console.log("=== OPENING MODAL DEBUG INFO ===");
-        // console.log("Raw anime object:", anime);
-        // console.log("Title:", anime.title);
-        // console.log("Description:", anime.description);
-        // console.log("Synopsis:", anime.synopsis);
-        // console.log("Trailer:", anime.trailer);
-        // console.log("Episodes:", anime.episodes);
-        // console.log("Score:", anime.averageScore);
-        // console.log("Status:", anime.status);
-        // console.log("Genres:", anime.genres);
-        // console.log("Studios:", anime.studios);
-        // console.log("All anime properties:", Object.keys(anime));
-        // console.log("Original data:", anime._originalData);
-
+    // Modal handlers
+    const openModal = useCallback((anime) => {
         setSelectedAnime(anime);
         setIsModalOpen(true);
-    };
+    }, []);
 
-    // Open modal for related anime
-    const handleOpenRelatedAnime = (relatedAnime) => {
-        console.log("Opening related anime:", relatedAnime);
+    const handleOpenRelatedAnime = useCallback((relatedAnime) => {
         setSelectedAnime(relatedAnime);
-    };
+    }, []);
 
-    // Close modal
-    const closeModal = () => {
+    const closeModal = useCallback(() => {
         setSelectedAnime(null);
         setIsModalOpen(false);
-    };
+    }, []);
 
-
-
-    //go to view
-    const scrollToView = () => {
-        console.log("Scrolling to search results");
+    // Scroll to search results
+    const scrollToView = useCallback(() => {
         if (searchRef.current) {
             const headerHeight = 100;
             const elementTop = searchRef.current.getBoundingClientRect().top;
@@ -414,37 +281,24 @@ const AnimeHomepage = () => {
                 top: targetPosition,
                 behavior: "smooth"
             });
-        } else {
-            console.log("Search ref not found");
         }
-    };
+    }, []);
 
-    //useEffect to scroll when search results are ready:
     useEffect(() => {
-        console.log("Scroll effect triggered:", {
-            isSearching,
-            searchResultsLength: searchResults.length,
-            searchLoading
-        });
-
         if (isSearching && (searchResults.length > 0 || !searchLoading)) {
-            console.log("Scrolling to search results after delay");
-            setTimeout(() => {
-                scrollToView();
-            }, 100);
+            setTimeout(scrollToView, 100);
         }
-    }, [searchResults, searchLoading, isSearching]);
-
+    }, [searchResults, searchLoading, isSearching, scrollToView]);
 
     useEffect(() => {
         if ('scrollRestoration' in history) {
             history.scrollRestoration = 'manual';
         }
         window.scrollTo(0, 0);
-    }, [])
+    }, []);
 
-    // Enhanced render anime grid with better error handling
-    const renderAnimeGrid = (data) => (
+    // Memoized render anime grid
+    const renderAnimeGrid = useCallback((data) => (
         <div className="anime-section-container">
             <h2 className="section-title"></h2>
             <div className="anime-grid">
@@ -455,8 +309,6 @@ const AnimeHomepage = () => {
                         onClick={() => openModal(anime)}
                         style={{ cursor: "pointer", "--card-index": index, zIndex: '5' }}
                     >
-                        {/* {console.log("Rendering card:", anime.title, "Animate:", animateCards)} */}
-
                         <div className="home-card-image">
                             <img
                                 src={
@@ -480,7 +332,12 @@ const AnimeHomepage = () => {
                 ))}
             </div>
         </div>
-    );
+    ), [animateCards, openModal]);
+
+    // Memoized processed data
+    const processedTopAiring = useMemo(() => removeDuplicates(topAiring), [topAiring, removeDuplicates]);
+    const processedMostWatched = useMemo(() => removeDuplicates(mostWatched), [mostWatched, removeDuplicates]);
+    const processedTopMovies = useMemo(() => removeDuplicates(topMovies), [topMovies, removeDuplicates]);
 
     return (
         <div className="homepage">
@@ -520,7 +377,6 @@ const AnimeHomepage = () => {
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-
                             viewBox="0 0 26 26">
                             <path fill="inherit"
                                 d="M10 .188A9.812 9.812 0 0 0 .187 10A9.812 9.812 0 0 0 10 19.813c2.29 0 4.393-.811 6.063-2.125l.875.875a1.845 1.845 0 0 0 .343 2.156l4.594 4.625c.713.714 1.88.714 2.594 0l.875-.875a1.84 1.84 0 0 0 0-2.594l-4.625-4.594a1.824 1.824 0 0 0-2.157-.312l-.875-.875A9.812 9.812 0 0 0 10 .188zM10 2a8 8 0 1 1 0 16a8 8 0 0 1 0-16zM4.937 7.469a5.446 5.446 0 0 0-.812 2.875a5.46 5.46 0 0 0 5.469 5.469a5.516 5.516 0 0 0 3.156-1a7.166 7.166 0 0 1-.75.03a7.045 7.045 0 0 1-7.063-7.062c0-.104-.005-.208 0-.312z" />
@@ -535,7 +391,7 @@ const AnimeHomepage = () => {
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 512 512">
-                            <path fill="inherit" fill-rule="evenodd" d="M384 128v256H128V128zm-148.25 64h-24.932l-47.334 128h22.493l8.936-25.023h56.662L260.32 320h23.847zm88.344 0h-22.402v128h22.402zm-101 21.475l22.315 63.858h-44.274zM405.335 320H448v42.667h-42.667zm-256 85.333H192V448h-42.667zm85.333 0h42.666V448h-42.666zM149.333 64H192v42.667h-42.667zM320 405.333h42.667V448H320zM234.667 64h42.666v42.667h-42.666zM320 64h42.667v42.667H320zm85.333 170.667H448v42.666h-42.667zM64 320h42.667v42.667H64zm341.333-170.667H448V192h-42.667zM64 234.667h42.667v42.666H64zm0-85.334h42.667V192H64z" />
+                            <path fill="inherit" fillRule="evenodd" d="M384 128v256H128V128zm-148.25 64h-24.932l-47.334 128h22.493l8.936-25.023h56.662L260.32 320h23.847zm88.344 0h-22.402v128h22.402zm-101 21.475l22.315 63.858h-44.274zM405.335 320H448v42.667h-42.667zm-256 85.333H192V448h-42.667zm85.333 0h42.666V448h-42.666zM149.333 64H192v42.667h-42.667zM320 405.333h42.667V448H320zM234.667 64h42.666v42.667h-42.666zM320 64h42.667v42.667H320zm85.333 170.667H448v42.666h-42.667zM64 320h42.667v42.667H64zm341.333-170.667H448V192h-42.667zM64 234.667h42.667v42.666H64zm0-85.334h42.667V192H64z" />
                         </svg>
                     </Link>
                 </div>
@@ -554,16 +410,16 @@ const AnimeHomepage = () => {
                                     {searchResults.map((anime, index) => (
                                         <div
                                             key={anime.id || anime.mal_id || index}
-                                            className={`anime-card animate-in`} // Added animate-in class
+                                            className={`anime-card animate-in`}
                                             onClick={() => openModal(anime)}
                                             style={{
-                                                cursor: "pointer", // Added cursor pointer
+                                                cursor: "pointer",
                                                 "--card-index": index,
                                                 zIndex: '5',
-                                                animationDelay: `${index * 0.1}s` // Optional: stagger animation
+                                                animationDelay: `${index * 0.1}s`
                                             }}
                                         >
-                                            <div className="home-card-image"> {/* Added missing wrapper div */}
+                                            <div className="home-card-image">
                                                 <img
                                                     src={
                                                         anime.coverImage?.extraLarge ||
@@ -600,7 +456,7 @@ const AnimeHomepage = () => {
                                 ref={airingRef}
                                 className={`anime-section ${airingVisible ? "show" : ""}`}
                             >
-                                {airingVisible && renderAnimeGrid(removeDuplicates(topAiring))}
+                                {airingVisible && renderAnimeGrid(processedTopAiring)}
                             </section>
 
                             <div className="divider">
@@ -610,7 +466,7 @@ const AnimeHomepage = () => {
                                 ref={watchedRef}
                                 className={`anime-section ${watchedVisible ? "show" : ""}`}
                             >
-                                {watchedVisible && renderAnimeGrid(removeDuplicates(mostWatched))}
+                                {watchedVisible && renderAnimeGrid(processedMostWatched)}
                             </section>
 
                             <div className="divider">
@@ -620,7 +476,7 @@ const AnimeHomepage = () => {
                                 ref={moviesRef}
                                 className={`anime-section ${moviesVisible ? "show" : ""}`}
                             >
-                                {moviesVisible && renderAnimeGrid(removeDuplicates(topmovies))}
+                                {moviesVisible && renderAnimeGrid(processedTopMovies)}
                             </section>
                         </>
                     )}
@@ -636,4 +492,5 @@ const AnimeHomepage = () => {
         </div>
     );
 };
+
 export default AnimeHomepage;
