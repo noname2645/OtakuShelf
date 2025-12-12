@@ -1,0 +1,456 @@
+/* Profile Page Styles - Updated to match image */
+.profile-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%);
+  color: white;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  padding: 20px;
+}
+
+.profile-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Profile Header */
+.profile-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  margin-bottom: 50px;
+  position: relative;
+}
+
+.profile-avatar-section {
+  flex-shrink: 0;
+}
+
+.profile-avatar-large {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid rgba(255, 107, 107, 0.4);
+  box-shadow: 0 0 40px rgba(255, 107, 107, 0.3);
+  margin-bottom: 20px;
+}
+
+.profile-avatar-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  font-weight: bold;
+  color: white;
+}
+
+.profile-name-section {
+  flex-grow: 1;
+  padding-top: 20px;
+}
+
+.profile-name-section h1 {
+  font-size: 48px;
+  margin-bottom: 8px;
+  color: white;
+  font-weight: 700;
+}
+
+.username-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.username {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+  color: white;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-edit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+}
+
+.btn-share {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 25px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-share:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.profile-bio {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  margin-bottom: 15px;
+  max-width: 600px;
+}
+
+.join-date {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.divider-line {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 40px 0;
+  width: 100%;
+}
+
+/* Overview Section */
+.overview-header {
+  font-size: 28px;
+  color: white;
+  margin-bottom: 30px;
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255, 107, 107, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.stat-number {
+  display: block;
+  font-size: 42px;
+  font-weight: 700;
+  color: #ff6b6b;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+/* Recently Watched Section */
+.recently-watched-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-size: 24px;
+  color: white;
+  margin-bottom: 25px;
+  font-weight: 600;
+}
+
+.recently-watched-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.watched-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.watched-item:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.watched-item img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.watched-info {
+  padding: 20px;
+}
+
+.watched-info h3 {
+  font-size: 18px;
+  margin: 0;
+  color: white;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Favorite Anime Grid */
+.favorite-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.favorite-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.favorite-item:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.favorite-item img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.favorite-info {
+  padding: 20px;
+}
+
+.favorite-info h3 {
+  font-size: 18px;
+  margin: 0;
+  color: white;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Badges Section */
+.badges-section {
+  margin-bottom: 40px;
+}
+
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.badge-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.badge-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255, 107, 107, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.badge-icon {
+  font-size: 36px;
+  color: #ff6b6b;
+  margin-bottom: 15px;
+}
+
+.badge-title {
+  font-size: 16px;
+  color: white;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.badge-desc {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+/* Genre Breakdown Section */
+.genre-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.genre-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.genre-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.genre-item:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.genre-name {
+  font-size: 16px;
+  color: white;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.genre-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.genre-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b6b, #ffa726);
+  border-radius: 4px;
+}
+
+.genre-percentage {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 30px;
+  }
+  
+  .profile-name-section {
+    text-align: center;
+  }
+  
+  .username-section {
+    justify-content: center;
+  }
+  
+  .profile-actions {
+    justify-content: center;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .recently-watched-section {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .badges-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .genre-section {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+}
+
+@media (max-width: 600px) {
+  .profile-container {
+    padding: 10px;
+  }
+  
+  .profile-avatar-large {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .profile-name-section h1 {
+    font-size: 36px;
+  }
+  
+  .username {
+    font-size: 18px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .recently-watched-grid,
+  .favorite-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .badges-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .genre-grid {
+    grid-template-columns: 1fr;
+  }
+}
