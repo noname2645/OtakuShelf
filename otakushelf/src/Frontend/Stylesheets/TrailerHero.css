@@ -6,7 +6,25 @@
     width: 100vw;
     height: 100vh;
     z-index: 3;
+    pointer-events: none;
 }
+
+
+/* Interactive UI */
+.details-button,
+.mute-button,
+.user-interaction-prompt,
+.slider-btns,
+.slider-btns button {
+    pointer-events: auto;
+}
+
+
+.trailer-hero button,
+.trailer-hero a {
+  pointer-events: auto;
+}
+
 
 /* YouTube Container */
 .youtube-container {

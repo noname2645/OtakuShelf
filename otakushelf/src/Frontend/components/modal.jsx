@@ -21,6 +21,13 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const isMobile = window.innerWidth <= 480;
     const synopsisLimit = isMobile ? 70 : 600;
 
+    const prefersReducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)'
+    ).matches;
+
+    const isLowEndMobile = window.innerWidth <= 480;
+
+
 
     // ALL CALLBACKS - ALWAYS CALLED, NO CONDITIONS
     const formatAniListDate = useCallback((dateObj) => {
@@ -365,7 +372,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                     <div className="modal-body">
                         <div className="modal-image-wrapper">
                             <div className="image-container">
-                                <img src={animeData.image} alt={animeData.title} loading="eager" />
+                                <img src={animeData.image} alt={animeData.title} loading="lazy" decoding="async" />
                                 <div className="image-overlay"></div>
 
                                 {/* add-to-list-buttons */}
@@ -448,10 +455,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                     {activeTab === "info" && (
                                         <motion.div
                                             key="info"
-                                            initial={{ opacity: 0, y: 30 }}
+                                            initial={isLowEndMobile ? false : { opacity: 0, y: 30 }}
                                             animate={{ opacity: 1, y: 0 }}
+                                            transition={isLowEndMobile ? { duration: 0 } : { duration: 0.25 }}
                                             exit={{ opacity: 0, x: -30 }}
-                                            transition={{ duration: 0.25, ease: "easeInOut" }}
                                         >
                                             <div className="stats-grid2">
                                                 <div className="stat-item">
@@ -546,10 +553,11 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                     {activeTab === 'related' && (
                                         <motion.div
                                             key="related"
-                                            initial={{ opacity: 0, x: 0 }}
+                                            initial={isLowEndMobile ? false : { opacity: 0, y: 30 }}
                                             animate={{ opacity: 1, y: 0 }}
+                                            transition={isLowEndMobile ? { duration: 0 } : { duration: 0.25 }}
                                             exit={{ opacity: 0, x: -30 }}
-                                            transition={{ duration: 0.25, ease: "easeInOut" }}
+
                                             className="related-tab-wrapper"
                                         >
                                             <RelatedTab
@@ -572,10 +580,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                     {activeTab === 'trailer' && (
                                         <motion.div
                                             key="trailer"
-                                            initial={{ opacity: 0, x: 0 }}
+                                            initial={isLowEndMobile ? false : { opacity: 0, y: 30 }}
                                             animate={{ opacity: 1, y: 0 }}
+                                            transition={isLowEndMobile ? { duration: 0 } : { duration: 0.25 }}
                                             exit={{ opacity: 0, x: -30 }}
-                                            transition={{ duration: 0.25, ease: "easeInOut" }}
                                             className="trailer-tab-wrapper"
                                         >
                                             {currentTrailerVideoId ? (
