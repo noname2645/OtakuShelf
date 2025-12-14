@@ -38,7 +38,7 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -106,30 +106,32 @@ const animeListSchema = new mongoose.Schema({
     animeId: String,
     malId: String,
     image: String,
+    totalEpisodes: Number,  // ← ADD THIS
+    episodes: Number,       // ← ALSO ADD THIS FOR COMPATIBILITY
     addedDate: { type: Date, default: Date.now },
-    startDate: Date,
     finishDate: Date,
     userRating: Number,
     episodesWatched: Number,
-    notes: String
   }],
   completed: [{
     title: String,
     animeId: String,
     malId: String,
     image: String,
+    totalEpisodes: Number,  // ← ADD THIS
+    episodes: Number,       // ← ADD THIS
     addedDate: { type: Date, default: Date.now },
-    startDate: Date,
     finishDate: Date,
     userRating: Number,
     episodesWatched: Number,
-    notes: String
   }],
   planned: [{
     title: String,
     animeId: String,
     malId: String,
     image: String,
+    totalEpisodes: Number,  // ← ADD THIS
+    episodes: Number,       // ← ADD THIS
     addedDate: { type: Date, default: Date.now },
     plannedDate: Date,
     notes: String
@@ -139,6 +141,8 @@ const animeListSchema = new mongoose.Schema({
     animeId: String,
     malId: String,
     image: String,
+    totalEpisodes: Number,  // ← ADD THIS
+    episodes: Number,       // ← ADD THIS
     addedDate: { type: Date, default: Date.now },
     droppedDate: Date,
     reason: String,
@@ -206,7 +210,7 @@ app.get('/healthz', (req, res) => res.send('ok'));
 app.post("/auth/register", async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
     }
@@ -223,7 +227,7 @@ app.post("/auth/register", async (req, res) => {
       authType: "local",
     });
     await newUser.save();
-    
+
     console.log('User registered successfully:', email);
     res.json({ message: "Registration successful!" });
   } catch (err) {
@@ -235,7 +239,7 @@ app.post("/auth/register", async (req, res) => {
 app.post("/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
     }
@@ -244,11 +248,11 @@ app.post("/auth/login", async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-    
+
     if (user.authType !== "local") {
       return res.status(400).json({ message: "This account uses Google login only" });
     }
-    
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -260,12 +264,12 @@ app.post("/auth/login", async (req, res) => {
         console.error("Session login error:", err);
         return res.status(500).json({ message: "Session error" });
       }
-      
+
       const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "24h" });
-      
+
       console.log('User logged in successfully:', email);
       console.log('Session ID:', req.sessionID);
-      
+
       res.json({
         message: "Login successful!",
         user: {
@@ -335,19 +339,19 @@ app.get("/auth/me", (req, res) => {
 // Enhanced logout endpoint
 app.get("/auth/logout", (req, res) => {
   const userEmail = req.user ? req.user.email : 'unknown';
-  
+
   req.logout((err) => {
     if (err) {
       console.error("Logout error:", err);
       return res.status(500).json({ message: "Logout error" });
     }
-    
+
     req.session.destroy((err) => {
       if (err) {
         console.error("Session destroy error:", err);
         return res.status(500).json({ message: "Session destroy error" });
       }
-      
+
       res.clearCookie('sessionId');
       res.clearCookie('connect.sid'); // Fallback for default name
       console.log('User logged out successfully:', userEmail);
@@ -357,31 +361,21 @@ app.get("/auth/logout", (req, res) => {
 });
 
 // Anime list routes 
-app.get("/api/list/:userId", async (req, res) => {
-  try {
-    const list = await AnimeList.findOne({ userId: req.params.userId });
-    if (!list) return res.json({ watching: [], completed: [], planned: [], dropped: [] });
-    res.json(list);
-  } catch (err) {
-    console.error('Fetch list error:', err);
-    res.status(500).json({ message: "Error fetching list", error: err.message });
-  }
-});
-
 app.post("/api/list/:userId", async (req, res) => {
   try {
     const { category, animeTitle, animeData } = req.body;
     const userId = req.params.userId;
-    
+
     if (!["watching", "completed", "planned", "dropped"].includes(category)) {
       return res.status(400).json({ message: "Invalid category" });
     }
-    
+
     let list = await AnimeList.findOne({ userId });
     if (!list) {
       list = new AnimeList({ userId, watching: [], completed: [], planned: [], dropped: [] });
     }
-    
+
+    // Remove from all categories first
     const allCategories = ['watching', 'completed', 'planned', 'dropped'];
     for (const cat of allCategories) {
       const index = list[cat].findIndex(item => item.title === animeTitle);
@@ -389,24 +383,37 @@ app.post("/api/list/:userId", async (req, res) => {
         list[cat].splice(index, 1);
       }
     }
-    
+
+    // FIXED: Create anime entry WITH episode data
     const animeEntry = {
       title: animeTitle,
-      animeId: animeData?.id || animeData?.mal_id || null,
-      malId: animeData?.mal_id || animeData?.id || null,
-      image: animeData?.images?.jpg?.large_image_url || animeData?.coverImage?.large || animeData?.image_url || null,
+      animeId: animeData?.id || animeData?.mal_id || animeData?.malId || null,
+      malId: animeData?.mal_id || animeData?.id || animeData?.malId || null,
+      image: animeData?.images?.jpg?.large_image_url ||
+        animeData?.coverImage?.large ||
+        animeData?.coverImage?.extraLarge ||
+        animeData?.image_url ||
+        animeData?.image ||
+        null,
+      totalEpisodes: animeData?.totalEpisodes || animeData?.episodes || animeData?.episodeCount || 24,
+      episodes: animeData?.totalEpisodes || animeData?.episodes || animeData?.episodeCount || 24,
       addedDate: new Date()
     };
-    
+
+    // Add status-specific fields
     if (category === 'watching' || category === 'completed') {
       animeEntry.startDate = new Date();
       animeEntry.episodesWatched = 0;
     }
-    
+
     if (category === 'completed') {
       animeEntry.finishDate = new Date();
     }
-    
+
+    // Add other possible fields
+    if (animeData?.userRating) animeEntry.userRating = animeData.userRating;
+    if (animeData?.notes) animeEntry.notes = animeData.notes;
+
     list[category].push(animeEntry);
     await list.save();
     res.json({ message: "Anime list updated", list });
@@ -420,7 +427,7 @@ app.post("/api/list/:userId", async (req, res) => {
 app.get("/api/list/:userId", async (req, res) => {
   try {
     let list = await AnimeList.findOne({ userId: req.params.userId });
-    
+
     if (!list) {
       // Create empty list if it doesn't exist
       list = new AnimeList({
@@ -432,7 +439,7 @@ app.get("/api/list/:userId", async (req, res) => {
       });
       await list.save();
     }
-    
+
     res.json(list);
   } catch (err) {
     console.error('Fetch list error:', err);
@@ -504,7 +511,7 @@ app.use("/api/list/:userId", async (req, res, next) => {
   try {
     const userId = req.params.userId;
     const list = await AnimeList.findOne({ userId });
-    
+
     if (!list) {
       // Create empty list if it doesn't exist
       const newList = new AnimeList({
@@ -516,7 +523,7 @@ app.use("/api/list/:userId", async (req, res, next) => {
       });
       await newList.save();
     }
-    
+
     next();
   } catch (err) {
     console.error('List middleware error:', err);
@@ -532,7 +539,7 @@ app.use('/api/anime', animeRoutes);
 app.use('/api/anilist', anilistRoutes);
 
 
-app.use("/auth", (req, res, next) => next());  
+app.use("/auth", (req, res, next) => next());
 app.use("/api", (req, res, next) => next());
 
 // Server

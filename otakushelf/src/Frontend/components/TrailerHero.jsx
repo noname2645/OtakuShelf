@@ -19,6 +19,9 @@ const TrailerHero = ({ onOpenModal }) => {
     const [playerError, setPlayerError] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
     const [announcements, setAnnouncements] = useState([]);
+    const [isMobile, setIsMobile] = useState(false);
+    const [safeAreaTop, setSafeAreaTop] = useState('0px');
+    const [safeAreaBottom, setSafeAreaBottom] = useState('0px');
 
     // Horizontal scroll functionality for main hero
     const isDragging = useRef(false);
@@ -29,6 +32,28 @@ const TrailerHero = ({ onOpenModal }) => {
     const youtubeContainerRef = useRef(null);
     const isYouTubeAPILoaded = useRef(false);
 
+    // Detect mobile and safe areas
+    useEffect(() => {
+        const checkMobile = () => {
+            const mobile = window.innerWidth <= 768;
+            setIsMobile(mobile);
+            
+            // Get safe area insets for modern phones (notch, home indicator)
+            if (CSS.supports('padding-top: env(safe-area-inset-top)')) {
+                setSafeAreaTop('env(safe-area-inset-top)');
+                setSafeAreaBottom('env(safe-area-inset-bottom)');
+            }
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        window.addEventListener('orientationchange', checkMobile);
+        
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+            window.removeEventListener('orientationchange', checkMobile);
+        };
+    }, []);
 
     // Auto-scroll function
     const startAutoScroll = () => {
@@ -44,7 +69,6 @@ const TrailerHero = ({ onOpenModal }) => {
             }
         }, 30000);
     };
-
 
     const getAnimeTitle = (anime) => {
         if (anime.title?.english) return anime.title.english;
@@ -142,28 +166,43 @@ const TrailerHero = ({ onOpenModal }) => {
         }
 
         try {
+            // Mobile-specific player vars
+            const playerVars = {
+                autoplay: hasUserInteracted ? 1 : 0,
+                mute: 1,
+                loop: 1,
+                controls: 0,
+                modestbranding: 1,
+                rel: 0,
+                enablejsapi: 1,
+                origin: window.location.origin,
+                playlist: videoId,
+                playsinline: 1,
+                disablekb: 1,
+                fs: 0,
+                iv_load_policy: 3,
+            };
+
+            // Add mobile-specific optimizations
+            if (isMobile) {
+                playerVars.autohide = 1;
+                playerVars.vq = 'hd720';
+            }
+
             playerRef.current = new window.YT.Player(youtubeContainerRef.current, {
                 height: '100%',
                 width: '100%',
                 videoId: videoId,
-                playerVars: {
-                    autoplay: hasUserInteracted ? 1 : 0,
-                    mute: 1,
-                    loop: 1,
-                    controls: 0,
-                    modestbranding: 1,
-                    rel: 0,
-                    enablejsapi: 1,
-                    origin: window.location.origin,
-                    playlist: videoId
-                },
+                playerVars: playerVars,
                 events: {
                     onReady: (event) => {
                         console.log('YouTube player ready');
                         setIsPlayerReady(true);
                         setPlayerError(false);
                         try {
-                            event.target.setPlaybackQuality('hd1080');
+                            const quality = isMobile ? 'hd720' : 'hd1080';
+                            event.target.setPlaybackQuality(quality);
+                            
                             if (hasUserInteracted) {
                                 event.target.playVideo();
                             }
@@ -175,6 +214,11 @@ const TrailerHero = ({ onOpenModal }) => {
                         console.error('YouTube Player Error:', event.data);
                         setIsPlayerReady(false);
                         setPlayerError(true);
+                    },
+                    onStateChange: (event) => {
+                        if (event.data === window.YT.PlayerState.ENDED) {
+                            event.target.playVideo();
+                        }
                     }
                 }
             });
@@ -238,7 +282,7 @@ const TrailerHero = ({ onOpenModal }) => {
         }
     };
 
-    // Normalize hero anime data
+    // Normalize hero anime data with mobile optimizations
     const normalizeHeroAnime = (anime) => {
         return {
             id: anime.id,
@@ -266,6 +310,7 @@ const TrailerHero = ({ onOpenModal }) => {
             format: anime.format || null,
             startDate: anime.startDate || null,
             endDate: anime.endDate || null,
+            shortDescription: anime.description ? anime.description.substring(0, 200) + '...' : null,
             ...anime,
         };
     };
@@ -387,20 +432,14 @@ const TrailerHero = ({ onOpenModal }) => {
         }
     }, [hasUserInteracted, isPlayerReady]);
 
-    // If no announcements, don't render
-    const currentAnimeData = announcements[currentAnime];
-    if (!currentAnimeData) return null;
-
-
-    const currentAnimeHasTrailer = hasTrailer(currentAnimeData);
-
-    // Helper functions
+    // Mobile-optimized helper functions
     const formatGenres = (genres) => {
         if (!genres || genres.length === 0) return "Unknown";
-        return genres.slice(0, 3).map(g => g.name || g).join(" • ");
+        const maxGenres = isMobile ? 2 : 3;
+        return genres.slice(0, maxGenres).map(g => g.name || g).join(" • ");
     };
 
-    const truncateDescription = (description, maxLength = 150) => {
+    const truncateDescription = (description) => {
         if (!description) return "No description available.";
         const cleanText = description
             .replace(/<[^>]*>/g, '')
@@ -411,7 +450,11 @@ const TrailerHero = ({ onOpenModal }) => {
             .replace(/&#x27;/g, "'")
             .replace(/&nbsp;/g, ' ')
             .trim();
-        return cleanText.length > maxLength ? cleanText.substring(0, maxLength) + "..." : cleanText;
+        
+        const mobileMaxLength = isMobile ? 250 : 180;
+        return cleanText.length > mobileMaxLength 
+            ? cleanText.substring(0, mobileMaxLength) + "..." 
+            : cleanText;
     };
 
     const getStatusColor = (status) => {
@@ -423,13 +466,24 @@ const TrailerHero = ({ onOpenModal }) => {
         }
     };
 
+    // If no announcements, don't render
+    const currentAnimeData = announcements[currentAnime];
+    if (!currentAnimeData) return null;
+
+    const currentAnimeHasTrailer = hasTrailer(currentAnimeData);
+    const showNavigationArrows = announcements.length > 1 && !(isMobile && window.innerWidth < 400);
+
     return (
         <>
             {/* Trailer Section */}
             <section
                 ref={heroRef}
                 className="trailer-hero-section"
-                style={{ opacity: opacity }}
+                style={{ 
+                    opacity: opacity,
+                    paddingTop: safeAreaTop,
+                    paddingBottom: safeAreaBottom
+                }}
             >
                 {/* YouTube Player Container */}
                 <div
@@ -442,29 +496,44 @@ const TrailerHero = ({ onOpenModal }) => {
                     <div
                         className="fallback-image"
                         style={{
-                            backgroundImage: `url(${currentAnimeData.bannerImage || currentAnimeData.coverImage?.extraLarge || '/fallback-image.jpg'})`
+                            backgroundImage: `url(${currentAnimeData.bannerImage || currentAnimeData.coverImage?.extraLarge || '/fallback-image.jpg'})`,
+                            backgroundSize: isMobile ? 'cover' : 'cover',
+                            backgroundPosition: isMobile ? 'center center' : 'center center'
                         }}
                     />
                 )}
 
                 {/* User Interaction Prompt */}
                 {currentAnimeHasTrailer && !hasUserInteracted && !playerError && (
-                    <div className="user-interaction-prompt" onClick={() => setHasUserInteracted(true)}>
-                        Click anywhere to enable video
+                    <div 
+                        className="user-interaction-prompt" 
+                        onClick={() => setHasUserInteracted(true)}
+                        style={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }}
+                    >
+                        {isMobile ? 'Tap to play video' : 'Click anywhere to enable video'}
                     </div>
                 )}
 
                 {/* Mute/Unmute Button */}
                 {currentAnimeHasTrailer && isPlayerReady && !playerError && (
-                    <button onClick={toggleMute} className="mute-button">
+                    <button 
+                        onClick={toggleMute} 
+                        className="mute-button"
+                    >
                         {isMuted ? '🔇' : '🔊'}
                     </button>
                 )}
 
                 {/* No Trailer Indicator */}
                 {!currentAnimeHasTrailer && (
-                    <div className="no-trailer-indicator">
-                        🎬 No trailer available - displaying banner image
+                    <div 
+                        className="no-trailer-indicator"
+                        style={{
+                            top: `calc(${safeAreaTop} + 10px)`,
+                            right: `calc(${safeAreaTop} + 10px)`
+                        }}
+                    >
+                        🎬 {isMobile ? 'No trailer' : 'No trailer available - displaying banner image'}
                     </div>
                 )}
 
@@ -474,12 +543,20 @@ const TrailerHero = ({ onOpenModal }) => {
                 {/* Content Overlay */}
                 <motion.div
                     key={currentAnime}
-                    initial={{ x: 100, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
+                    initial={{ y: isMobile ? 50 : 100, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
                     className="content-overlay"
+                    style={{
+                        bottom: isMobile ? '35%' : '20%',
+                        left: isMobile ? '3%' : '10%',
+                        right: isMobile ? '3%' : '10%',
+                        maxWidth: isMobile ? '100%' : '600px'
+                    }}
                 >
-                    <h1 className="anime-title">{getAnimeTitle(currentAnimeData)}</h1>
+                    <h1 className="anime-title">
+                        {getAnimeTitle(currentAnimeData)}
+                    </h1>
 
                     <div className="anime-meta">
                         <span className="status-badge" style={{ backgroundColor: getStatusColor(currentAnimeData.status) }}>
@@ -487,9 +564,9 @@ const TrailerHero = ({ onOpenModal }) => {
                         </span>
                         <span>{currentAnimeData.seasonYear || 'TBA'}</span>
                         {currentAnimeData.episodes && <>•<span>{currentAnimeData.episodes} Episodes</span></>}
-                        {currentAnimeData.averageScore && <>•<span className="score">⭐ {(currentAnimeData.averageScore) / 10}/10</span></>}
-
-
+                        {currentAnimeData.averageScore && (
+                            <>•<span className="score">⭐ {(currentAnimeData.averageScore) / 10}/10</span></>
+                        )}
                     </div>
 
                     <p className="anime-description">
@@ -500,8 +577,15 @@ const TrailerHero = ({ onOpenModal }) => {
                         <strong>Genres:</strong> {formatGenres(currentAnimeData.genres)}
                     </div>
 
-                    <button onClick={() => onOpenModal(currentAnimeData)} className="details-button">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <button 
+                        onClick={() => onOpenModal(currentAnimeData)} 
+                        className="details-button"
+                        style={{
+                            width: isMobile ? '100%' : 'auto',
+                            maxWidth: isMobile ? '250px' : 'none'
+                        }}
+                    >
+                        <svg width={isMobile ? "18" : "20"} height={isMobile ? "18" : "20"} viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
                         </svg>
                         More Details
@@ -509,28 +593,36 @@ const TrailerHero = ({ onOpenModal }) => {
                 </motion.div>
 
                 {/* Navigation Arrows */}
-                {announcements.length > 1 && (
-                    <>
-                        <div className="slider-btns">
-                            <button
-                                className="left-arrow"
-                                onClick={() => setCurrentAnime(prev => prev === 0 ? announcements.length - 1 : prev - 1)}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="#ff5900ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m10 17l5-5m0 0l-5-5" /></svg>
-                            </button>
-                            <button
-                                className="right-arrow"
-                                onClick={() => setCurrentAnime(prev => (prev + 1) % announcements.length)}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="#ff5900ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m10 17l5-5m0 0l-5-5" /></svg>
-                            </button>
-                        </div>
-                    </>
+                {showNavigationArrows && (
+                    <div className="slider-btns">
+                        <button
+                            className="left-arrow"
+                            onClick={() => setCurrentAnime(prev => prev === 0 ? announcements.length - 1 : prev - 1)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path fill="none" stroke="#ff5900ff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="m10 17l5-5m0 0l-5-5" />
+                            </svg>
+                        </button>
+                        <button
+                            className="right-arrow"
+                            onClick={() => setCurrentAnime(prev => (prev + 1) % announcements.length)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path fill="none" stroke="#ff5900ff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="m10 17l5-5m0 0l-5-5" />
+                            </svg>
+                        </button>
+                    </div>
                 )}
             </section>
 
-            {/* Spacer to push content down */}
-            <div className="trailer-spacer" />
+            {/* Trailer Spacer */}
+            <div 
+                className="trailer-spacer" 
+                style={{ 
+                    height: `calc(100vh - ${safeAreaTop} - ${safeAreaBottom})`,
+                    marginTop: safeAreaTop
+                }}
+            />
         </>
     );
 };

@@ -44,4 +44,65 @@
   border-radius: 4px;
 }
 
+@media (max-width: 991px) {
+  .related-grid {
+    gap: 10px;
+    padding-bottom: 8px;
+  }
+
+  .card-skeleton {
+    width: 140px;
+    height: 200px;
+  }
+}
+
+@media (max-width: 767px) {
+  .related-grid {
+    gap: 10px;
+    padding-bottom: 6px;
+    scroll-snap-type: x proximity;
+  }
+
+  .anime-card,
+  .anime-item {
+    scroll-snap-align: center;
+  }
+
+  .card-skeleton {
+    width: 130px;
+    height: 190px;
+  }
+}
+
+@media (max-width: 480px) {
+  .related-grid {
+    gap: 10px;
+    padding-bottom: 4px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .anime-card,
+  .anime-item {
+    scroll-snap-align: center;
+    height: 200px;
+  }
+
+  .card-skeleton {
+    width: 150px;     /* ⬅ slightly bigger for thumb browsing */
+    height: 225px;
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .related-grid {
+    gap: 8px;
+  }
+
+  .card-skeleton {
+    width: 130px;
+    height: 195px;
+  }
+}
 

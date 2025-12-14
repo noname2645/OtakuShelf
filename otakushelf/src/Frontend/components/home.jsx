@@ -57,11 +57,14 @@ const AnimeHomepage = () => {
     const [airingRef, airingVisible] = useInView({ threshold: 0.1 });
     const [watchedRef, watchedVisible] = useInView({ threshold: 0.1 });
     const [moviesRef, moviesVisible] = useInView({ threshold: 0.1 });
+    const [isMobile, setIsMobile] = useState(false);
 
     const [announcements, setAnnouncements] = useState(() => {
         const cached = localStorage.getItem('announcements');
         return cached ? JSON.parse(cached) : [];
     });
+
+
 
     const getActivePage = useCallback(() => {
         const path = location.pathname;
@@ -127,6 +130,63 @@ const AnimeHomepage = () => {
             seen.add(anime.id);
             return true;
         });
+    }, []);
+
+    // Add this useEffect to detect mobile
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Update grid rendering based on mobile
+    const gridColumns = useMemo(() => {
+        if (isMobile) {
+            return window.innerWidth <= 480 ? 2 : 3;
+        }
+        return 5;
+    }, [isMobile]);
+
+
+    // Add safe area inset for modern phones
+    const safeAreaBottom = useMemo(() => {
+        if (CSS.supports('padding-bottom: env(safe-area-inset-bottom)')) {
+            return 'env(safe-area-inset-bottom)';
+        }
+        return '20px';
+    }, []);
+
+    // Add this to a useEffect in home.jsx
+    useEffect(() => {
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        const handleTouchEnd = (event) => {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        };
+
+        // Prevent pull-to-refresh on mobile
+        const preventPullToRefresh = (e) => {
+            if (window.scrollY === 0) {
+                e.preventDefault();
+            }
+        };
+
+        document.addEventListener('touchend', handleTouchEnd, { passive: false });
+        document.addEventListener('touchmove', preventPullToRefresh, { passive: false });
+
+        return () => {
+            document.removeEventListener('touchend', handleTouchEnd);
+            document.removeEventListener('touchmove', preventPullToRefresh);
+        };
     }, []);
 
     // Consolidated data fetching with cache
@@ -399,6 +459,7 @@ const AnimeHomepage = () => {
                 <TrailerHero
                     announcements={announcements}
                     onOpenModal={openModal}
+                    isMobile={isMobile}
                 />
                 <main className="anime-sections" style={{ backgroundColor: "linear-gradient(180deg, #050814 0%, #0a1124 100%" }}>
                     {isSearching ? (
@@ -416,7 +477,8 @@ const AnimeHomepage = () => {
                                                 cursor: "pointer",
                                                 "--card-index": index,
                                                 zIndex: '5',
-                                                animationDelay: `${index * 0.1}s`
+                                                height: isMobile ? '240px' : '320px',
+                                                width: isMobile ? '160px' : '220px'
                                             }}
                                         >
                                             <div className="home-card-image">

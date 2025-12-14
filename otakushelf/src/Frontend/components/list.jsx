@@ -103,13 +103,20 @@ const EnhancedAnimeList = () => {
       try {
         const userId = user?._id || user?.id;
         const response = await axios.delete(`http://localhost:5000/api/list/${userId}/${animeId}`);
-        setAnimeList(response.data.list || response.data);
+        // Update state with the returned list
+        if (response.data.list) {
+          setAnimeList(response.data.list);
+        } else if (response.data) {
+          setAnimeList(response.data);
+        }
+        // Also refetch to be safe
+        fetchAnimeList();
       } catch (error) {
         console.error("Error removing anime:", error);
         alert('Failed to remove anime. Please try again.');
       }
     }
-  }, [user]);
+  }, [user, fetchAnimeList]); // Add fetchAnimeList to dependencies
 
   const getStatusBadgeClass = useCallback((status) => {
     switch (status) {
@@ -181,14 +188,14 @@ const EnhancedAnimeList = () => {
         <div className="anime-list-container">
           {currentAnimeList.length > 0 ? (
             currentAnimeList.map(anime => {
-              const totalEpisodes = anime.totalEpisodes || 24;
+              const totalEpisodes = anime.totalEpisodes || anime.episodes || anime.episodeCount || 24;
               const episodesWatched = anime.episodesWatched || 0;
               const progress = calculateProgress(episodesWatched, totalEpisodes);
               const userRating = anime.userRating || 0;
 
               return (
                 <div key={anime._id || anime.animeId || anime.title} className="anime-card2">
-                  <div className={`status-badge ${getStatusBadgeClass(activeTab)}`}>
+                  <div className={`status-badge2 ${getStatusBadgeClass(activeTab)}`}>
                     {activeTab}
                   </div>
 

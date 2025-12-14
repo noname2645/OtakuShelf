@@ -1,18 +1,19 @@
 .header {
     position: fixed;
-    height: 40px;              /* Reduced from 50px */
-    width: 90%;                /* Reduced from 95% */
-    max-width: 1200px;         /* Reduced from 1400px */
-    margin: 5px auto;            
+    height: 40px;
+    width: 90%;
+    max-width: 1200px;
+    margin: 5px auto;
+    top: 10px;
     left: 0;
     right: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 1.5rem;         /* Reduced from 2rem */
+    padding: 0 2rem;
     z-index: 1100;
     transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
-    border-radius: 20px;       /* Reduced from 25px */
+    border-radius: 20px;
 }
 
 
@@ -30,6 +31,7 @@
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     border-radius: 20px;
+    height: 65px;
 }
 
 .header-center {
@@ -41,7 +43,8 @@
 
 /* Enhanced Search Input Styles */
 .InputContainer {
-    width: 180px;              /* Reduced from 200px */
+    width: 180px;
+    /* Reduced from 200px */
     position: relative;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -49,20 +52,25 @@
 .InputContainer.active {
     transform: scale(1.05);
     z-index: 1200;
-    width: 450px;              /* Reduced from 500px */
+    width: 450px;
+    /* Reduced from 500px */
 }
 
 .input {
     width: 100%;
-    height: 40px;              /* Reduced from 50px */
+    height: 40px;
+    /* Reduced from 50px */
     border: none;
     outline: none;
-    border-radius: 20px;       /* Reduced from 25px */
-    padding: 0 18px 0 45px;    /* Adjusted padding */
+    border-radius: 20px;
+    /* Reduced from 25px */
+    padding: 0 18px 0 45px;
+    /* Adjusted padding */
     background: rgba(30, 30, 30, 0.8);
     color: #ff9f00;
     font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: 14px;           /* Reduced from 15px */
+    font-size: 14px;
+    /* Reduced from 15px */
     font-weight: 600;
     letter-spacing: 2px;
     transition: all 0.3s ease;
@@ -89,7 +97,8 @@
     left: 16px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 16px;           /* Reduced from 18px */
+    font-size: 16px;
+    /* Reduced from 18px */
     color: rgba(255, 255, 255, 0.6);
     z-index: 10;
     transition: all 0.3s ease;
@@ -108,24 +117,43 @@
 
 .profile-button {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;                 /* Reduced from 12px */
-    padding: 8px 16px;         /* Reduced from 10px 20px */
-    background: linear-gradient(135deg, rgba(48, 34, 34, 0.759) 0%, rgba(35, 25, 25, 0.452) 100%) !important;
+    gap: 0.6rem;
+
+    padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2vw, 16px);
+
+    background: linear-gradient(
+        135deg,
+        rgba(48, 34, 34, 0.75) 0%,
+        rgba(35, 25, 25, 0.45) 100%
+    );
+
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 14px;       /* Reduced from 16px */
+    border-radius: 14px;
+
     cursor: pointer;
-    font-size: 13px;           /* Reduced from 14px */
+    font-size: clamp(11px, 2.5vw, 13px);
     color: #ffffff;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(255, 255, 255, 0.05) inset;
+
+    box-shadow:
+        0 8px 32px rgba(54, 54, 54, 0.2),
+        0 2px 8px rgba(255, 255, 255, 0.05) inset;
+
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     letter-spacing: 0.3px;
+
     position: relative;
     overflow: hidden;
+
     animation: subtle-pulse 4s infinite;
+
+    width: fit-content;
+    max-width: 100%;
+    min-height: 44px; /* touch-friendly */
 }
+
 
 .profile-button:hover {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.15) 100%);
@@ -151,8 +179,10 @@
 
 .profile-avatar {
     position: relative;
-    width: 36px;               /* Reduced from 42px */
-    height: 36px;              /* Reduced from 42px */
+    width: 36px;
+    /* Reduced from 42px */
+    height: 36px;
+    /* Reduced from 42px */
     border-radius: 50%;
     overflow: hidden;
     border: 2px solid rgba(255, 255, 255, 0.25);
@@ -175,7 +205,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;           /* Reduced from 16px */
+    font-size: 14px;
+    /* Reduced from 16px */
     font-weight: 700;
     border: 2px solid rgba(255, 255, 255, 0.25);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -184,13 +215,15 @@
 
 .profile-info {
     text-align: left;
-    max-width: 120px;          /* Reduced from 140px */
+    max-width: 120px;
+    /* Reduced from 140px */
     overflow: hidden;
 }
 
 .welcome-text {
     font-weight: 600;
-    font-size: 12px;           /* Reduced from 14px */
+    font-size: 12px;
+    /* Reduced from 14px */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -203,7 +236,8 @@
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    font-size: 13px;           /* Reduced from 15px */
+    font-size: 13px;
+    /* Reduced from 15px */
     font-weight: 700;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     white-space: nowrap;
@@ -212,8 +246,10 @@
 }
 
 .dropdown-arrow {
-    width: 14px;               /* Reduced from 16px */
-    height: 14px;              /* Reduced from 16px */
+    width: 14px;
+    /* Reduced from 16px */
+    height: 14px;
+    /* Reduced from 16px */
     transition: transform 0.3s ease;
     flex-shrink: 0;
     color: rgba(255, 255, 255, 0.7);
@@ -298,9 +334,12 @@
 
 /* Animation for the profile button */
 @keyframes subtle-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(255, 255, 255, 0.05) inset;
     }
+
     50% {
         box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3), 0 2px 12px rgba(255, 255, 255, 0.08) inset;
     }
@@ -309,16 +348,19 @@
 /* Auth Buttons */
 .auth-buttons {
     display: flex;
-    gap: 0.8rem;               /* Reduced from 1rem */
+    gap: 0.8rem;
+    /* Reduced from 1rem */
     align-items: center;
 }
 
 .auth-buttons button {
-    font-size: 15px;           /* Reduced from 17px */
+    font-size: 15px;
+    /* Reduced from 17px */
     font-weight: bold;
     border: none;
     cursor: pointer;
-    border-radius: 25px;       /* Reduced from 30px */
+    border-radius: 25px;
+    /* Reduced from 30px */
     background: #000000;
 }
 
@@ -327,7 +369,8 @@
     box-sizing: border-box;
     border: 2px solid #000000;
     border-radius: 25px;
-    padding: 0.6em 1.3em;      /* Reduced from 0.75em 1.5em */
+    padding: 0.6em 1.3em;
+    /* Reduced from 0.75em 1.5em */
     background: #04d42a;
     color: #000000;
     transform: translateY(-0.2em);
@@ -347,7 +390,8 @@
     box-sizing: border-box;
     border: 1px solid #04d42a;
     border-radius: 25px;
-    padding: 0.6em 1.3em;      /* Reduced from 0.75em 1.5em */
+    padding: 0.6em 1.3em;
+    /* Reduced from 0.75em 1.5em */
     background: #000000;
     color: #04d42a;
     transform: translateY(-0.2em);
@@ -365,10 +409,12 @@
 /* Logo */
 .logo span {
     font-family: "Hoshiko";
-    font-size: 38px;           /* Reduced from 45px */
+    font-size: 38px;
+    /* Reduced from 45px */
     border-radius: 20px;
     cursor: pointer;
-    letter-spacing: 4px;       /* Reduced from 5px */
+    letter-spacing: 4px;
+    /* Reduced from 5px */
     background: linear-gradient(45deg, #ff6a00, #ffcc00, #ff0066, #ff33cc);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -382,227 +428,210 @@
 }
 
 
-/* Extra Large Screens - 1200px and above */
-@media (min-width: 1200px) {
+/* Tablets (768px and below) */
+@media (max-width: 768px) {
     .header {
-        padding: 1.2rem 2.5rem;  /* Reduced from 1.5rem 3rem */
-        height: 65px;            /* Reduced from 80px */
+        width: 95% !important;
+        height: 35px !important;
+        padding: 0 0.8rem !important;
+        border-radius: 15px !important;
     }
 
-    .logo img {
-        height: 240px;           /* Reduced from 280px */
-        width: 240px;
+    .logo span {
+        font-size: 26px !important;
+        letter-spacing: 2px !important;
     }
 
     .InputContainer {
-        width: 220px;            /* Reduced from 250px */
+        width: 140px !important;
     }
 
     .InputContainer.active {
-        width: 550px;            /* Reduced from 600px */
+        width: 300px !important;
+        transform: scale(1.02) !important;
     }
 
     .input {
-        height: 48px;            /* Reduced from 55px */
-        font-size: 16px;         /* Reduced from 18px */
+        height: 32px !important;
+        font-size: 12px !important;
+        padding: 0 15px 0 35px !important;
+        border-radius: 15px !important;
     }
 
+    .InputContainer::before {
+        left: 12px !important;
+        font-size: 14px !important;
+    }
+
+    /* Profile adjustments */
     .profile-button {
-        padding: 10px 20px;      /* Reduced from 12px 24px */
-        gap: 12px;               /* Reduced from 14px */
+        padding: 6px 12px !important;
+        gap: 6px !important;
+        font-size: 11px !important;
+        border-radius: 12px !important;
     }
 
     .profile-avatar,
     .profile-initials {
-        width: 40px;             /* Reduced from 46px */
-        height: 40px;
+        width: 28px !important;
+        height: 28px !important;
     }
 
     .profile-avatar img {
-        width: 40px;
-        height: 40px;
+        width: 28px;
+        height: 28px;
+    }
+
+    .profile-initials {
+        font-size: 12px !important;
     }
 
     .welcome-text {
-        font-size: 13px;         /* Reduced from 15px */
+        display: none;
+        /* Hide welcome text on mobile */
     }
 
     .username {
-        font-size: 14px;         /* Reduced from 16px */
+        font-size: 11px !important;
+        max-width: 80px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
+    .dropdown-arrow {
+        width: 12px !important;
+        height: 12px !important;
+    }
+
+    /* Profile dropdown mobile */
+    .profile-dropdown {
+        min-width: 180px !important;
+        right: 0;
+        left: auto;
+        transform: translateX(0);
+        position: fixed !important;
+        top: 50px !important;
+        margin: 0;
+        max-width: calc(100vw - 20px);
+    }
+
+    /* Auth buttons */
     .auth-buttons button {
-        font-size: 16px;         /* Reduced from 18px */
+        font-size: 13px !important;
+    }
+
+    .auth-buttons .button_login,
+    .auth-buttons .button_register {
+        padding: 0.4em 0.8em !important;
+        border-radius: 15px !important;
     }
 }
 
-/* Large Screens - 992px to 1199px */
-@media (max-width: 1199px) and (min-width: 992px) {
+/* Mobile (576px and below) */
+@media (max-width: 576px) {
     .header {
-        padding: 1.2rem 2rem;    /* Reduced from 1.5rem 2.5rem */
-        height: 60px;            /* Reduced from 75px */
+        height: 30px !important;
+        padding: 0 0.6rem !important;
     }
 
-    .logo img {
-        height: 220px;           /* Reduced from 250px */
-        width: 220px;
+    .logo span {
+        font-size: 22px !important;
+        letter-spacing: 1px !important;
     }
 
     .InputContainer {
-        width: 200px;            /* Reduced from 220px */
+        width: 120px !important;
     }
 
     .InputContainer.active {
-        width: 500px;            /* Reduced from 550px */
+        width: 120px !important;
     }
 
-    .input {
-        height: 45px;            /* Reduced from 50px */
-        font-size: 15px;         /* Reduced from 16px */
+    /* Hide logo text on very small screens */
+    @media (max-width: 400px) {
+        .logo span {
+            font-size: 18px !important;
+        }
     }
 
-    .profile-button {
-        padding: 8px 18px;       /* Reduced from 10px 20px */
-        gap: 10px;               /* Reduced from 12px */
-    }
+    /* Stack auth buttons if needed */
+    @media (max-width: 350px) {
+        .auth-buttons {
+            gap: 0.3rem !important;
+        }
 
-    .auth-buttons button {
-        font-size: 15px;         /* Reduced from 17px */
+        .auth-buttons button {
+            font-size: 11px !important;
+        }
+
+        .auth-buttons .button_login,
+        .auth-buttons .button_register {
+            padding: 0.3em 0.6em !important;
+        }
     }
 }
 
-/* Medium Screens - 768px to 991px */
-@media (max-width: 991px) and (min-width: 768px) {
+/* Small Mobile (375px and below) */
+@media (max-width: 375px) {
     .header {
-        padding: 1rem 1.5rem;    /* Reduced from 1.2rem 2rem */
-        gap: 0.8rem;             /* Reduced from 1rem */
-    }
-
-    .header-center {
-        position: static;
-        transform: none;
-        order: 2;
-        width: 100%;
+        justify-content: space-between !important;
+        padding: 0 0.4rem !important;
     }
 
     .logo {
-        order: 1;
+        flex: 1;
     }
 
-    .logo img {
-        height: 220px;           /* Reduced from 250px */
-        width: 400px;            /* Reduced from 450px */
+    .header-center {
+        flex: 2;
+        display: flex;
+        justify-content: center;
     }
 
     .auth-buttons {
-        order: 3;
+        flex: 1;
+        justify-content: flex-end;
     }
 
     .InputContainer {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        max-width: 360px;        /* Reduced from 400px */
-        margin: 0 auto;
-    }
-
-    .InputContainer.active {
-        width: 100%;
-        max-width: 360px;
-    }
-
-    .input {
-        height: 42px;            /* Reduced from 45px */
-        font-size: 14px;         /* Reduced from 15px */
-    }
-
-    .profile-button {
-        padding: 7px 14px;       /* Reduced from 8px 16px */
-        gap: 8px;                /* Reduced from 10px */
-    }
-
-    .profile-avatar,
-    .profile-initials {
-        width: 34px;             /* Reduced from 38px */
-        height: 34px;
-    }
-
-    .profile-avatar img {
-        width: 34px;
-        height: 34px;
-    }
-
-    .profile-initials {
-        font-size: 12px;         /* Reduced from 14px */
-    }
-
-    .welcome-text {
-        font-size: 12px;         /* Reduced from 13px */
-    }
-
-    .username {
-        font-size: 13px;         /* Reduced from 14px */
-    }
-
-    .auth-buttons button {
-        font-size: 14px;         /* Reduced from 16px */
-    }
-
-    .auth-buttons .button_login,
-    .auth-buttons .button_register {
-        padding: 0.55em 1.2em;   /* Reduced from 0.6em 1.3em */
+        width: 100px !important;
     }
 }
 
-/* Continue with remaining media queries maintaining the same reduction ratio... */
-/* (I'll skip the rest to keep the response concise, but all values should be reduced proportionally) */
-
-/* Small Tablets - 576px to 767px */
-@media (max-width: 767px) and (min-width: 576px) {
-    .header {
-        height: 65px;
-        padding: 1.2rem 1.5rem;
-    }
-
-    .input {
-        height: 38px;
-        font-size: 13px;
-    }
-}
-
-/* Mobile devices - continue with reduced dimensions */
-@media (max-width: 575px) {
-    .header {
-        height: auto;
-        padding: 0.6rem 0.8rem;
-    }
-}
-
-/* Landscape orientation adjustments for mobile */
+/* Landscape Mode */
 @media (max-height: 500px) and (orientation: landscape) {
     .header {
-        height: 45px;
-        padding: 0.4rem 0.8rem;
+        height: 28px !important;
+        padding: 0 0.5rem !important;
+    }
+
+    .logo span {
+        font-size: 18px !important;
     }
 }
 
-/* Reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-    .header,
-    .input,
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+
     .profile-button,
-    .dropdown-arrow,
-    .InputContainer {
-        transition: none;
+    .auth-buttons button,
+    .input {
+        min-height: 44px;
+        /* Minimum touch target size */
     }
 
-    .auth-buttons .button_login,
-    .auth-buttons .button_register {
-        transition: none;
+    .dot {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 10px;
     }
+}
 
-    .profile-button {
-        animation: none;
+/* High-resolution displays */
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+    .header.scrolled {
+        backdrop-filter: blur(20px);
     }
 }

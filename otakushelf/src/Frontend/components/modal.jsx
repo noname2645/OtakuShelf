@@ -18,11 +18,14 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [isInList, setIsInList] = useState(false);
     const [userListStatus, setUserListStatus] = useState(null);
     const { user } = useAuth();
+    const isMobile = window.innerWidth <= 480;
+    const synopsisLimit = isMobile ? 220 : 600;
+
 
     // ALL CALLBACKS - ALWAYS CALLED, NO CONDITIONS
     const formatAniListDate = useCallback((dateObj) => {
         if (!dateObj) return "TBA";
-        
+
         if (typeof dateObj === 'string') {
             const date = new Date(dateObj);
             const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -152,7 +155,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                 synopsis: "No description available."
             };
         }
-        
+
         return {
             title: (() => {
                 if (typeof anime.title === 'string') return anime.title;
@@ -164,10 +167,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             image: (() => {
                 if (anime.coverImage) {
                     return anime.coverImage.extraLarge ||
-                           anime.coverImage.large ||
-                           anime.coverImage.medium ||
-                           anime.bannerImage ||
-                           "/placeholder-anime.jpg";
+                        anime.coverImage.large ||
+                        anime.coverImage.medium ||
+                        anime.bannerImage ||
+                        "/placeholder-anime.jpg";
                 }
                 return anime.bannerImage || "/placeholder-anime.jpg";
             })(),
@@ -277,7 +280,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                 // Allow scrolling within modal content
                 let element = e.target;
                 while (element && element !== document.body) {
-                    if (element.scrollHeight > element.clientHeight || 
+                    if (element.scrollHeight > element.clientHeight ||
                         element.scrollWidth > element.clientWidth) {
                         return; // Allow scrolling within scrollable elements
                     }
@@ -320,7 +323,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                     if (!titleElement) return;
 
                     titleElement.classList.remove('long-title', 'very-long-title');
-                    
+
                     const titleLength = animeData.title.length;
                     if (titleLength > 60) {
                         titleElement.classList.add('very-long-title');
@@ -339,7 +342,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             const timeoutId = setTimeout(() => {
                 checkIfInList();
             }, 100);
-            
+
             return () => clearTimeout(timeoutId);
         }
     }, [isOpen, user, animeData, anime, checkIfInList]);
@@ -396,18 +399,9 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                         className="modal-background"
                         style={{
                             backgroundImage: `url(${anime?.bannerImage || animeData.image})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            backgroundRepeat: 'no-repeat',
-                            filter: 'brightness(0.4)',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '1350px',
-                            height: '690px',
-                            zIndex: 0,
                         }}
                     ></div>
+
 
                     {/* Close button */}
                     <button className="modal-close" onClick={onClose}>
@@ -513,35 +507,35 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                             exit={{ opacity: 0, x: -30 }}
                                             transition={{ duration: 0.25, ease: "easeInOut" }}
                                         >
-                                            <div className="stats-grid">
+                                            <div className="stats-grid2">
                                                 <div className="stat-item">
-                                                    <span className="stat-label">Episodes :</span>
-                                                    <span className="stat-value">{animeData.episodes}</span>
+                                                    <span className="stat-label desktop-only">Episodes :</span>
+                                                    <span className="stat-value">{animeData.episodes} Episodes</span>
+
                                                 </div>
                                                 <div className="stat-item">
-                                                    <span className="stat-label">Score :</span>
-                                                    <span
-                                                        className="stat-value score"
-                                                        style={{ color: getScoreColor(animeData.score || 0) }}
-                                                    >
-                                                        ⭐ {animeData.score || "N/A"}
-                                                    </span>
+                                                    <span className="stat-label desktop-only">Score :</span>
+                                                    <span className="stat-value score">⭐ {animeData.score || "N/A"}</span>
+
                                                 </div>
                                                 <div className="stat-item">
-                                                    <span className="stat-label">Age Rating :</span>
+                                                    <span className="stat-label desktop-only">Age Rating :</span>
                                                     <span className="stat-value age-rating">{animeData.rating}</span>
+
                                                 </div>
                                             </div>
 
                                             <div className="synopsis-section">
                                                 <p className="synopsis-text">
-                                                    {truncateSynopsis(animeData.synopsis, 600)}
+                                                    {truncateSynopsis(animeData.synopsis, synopsisLimit)}
                                                 </p>
-                                                {animeData.synopsis.length > 600 && (
+
+                                                {animeData.synopsis.length > synopsisLimit && (
                                                     <button className="read-more-btn" onClick={handleSynopsisClick}>
                                                         Read More
                                                     </button>
                                                 )}
+
                                             </div>
 
                                             <div className="anime-info-vertical">
@@ -568,7 +562,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                                 <div className="info-row genre-row">
                                                     <strong className="info-label">
                                                         <span className="label-icon"></span>
-                                                        Genres :
+                                                        Genre:
                                                     </strong>
                                                     <div className="genre-tags">
                                                         {animeData.genres.length > 0 ? (
