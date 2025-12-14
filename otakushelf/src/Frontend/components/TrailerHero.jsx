@@ -548,7 +548,7 @@ const TrailerHero = ({ onOpenModal }) => {
                     transition={{ duration: 0.5, ease: "easeOut" }}
                     className="content-overlay"
                     style={{
-                        bottom: isMobile ? '35%' : '20%',
+                        bottom: isMobile ? '22%' : '20%',
                         left: isMobile ? '3%' : '10%',
                         right: isMobile ? '3%' : '10%',
                         maxWidth: isMobile ? '100%' : '600px'

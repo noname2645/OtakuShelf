@@ -346,7 +346,7 @@
 /* Tablet (768px and below) */
 @media (max-width: 768px) {
     .content-overlay {
-        bottom: 50%;
+        bottom: 30%;
         left: 3%;
         right: 3%;
         padding: 1rem;
@@ -434,8 +434,8 @@
 
 /* Mobile (480px and below) */
 @media (max-width: 480px) {
-   .content-overlay {
-        bottom: 50%;
+    .content-overlay {
+        bottom: 30%;
         left: 3%;
         right: 3%;
         padding: 1rem;
@@ -481,7 +481,7 @@
     }
 
     .mute-button {
-        bottom: 26%;
+        bottom: 16%;
         left: 10px;
         width: 40px;
         height: 40px;
@@ -500,13 +500,13 @@
 
     .youtube-container {
         position: absolute;
-        top: 50%;
+        /* top: 50%; */
         left: 50%;
         width: 100vw;
-        height: auto;
         aspect-ratio: 16/9;
-        transform: translate(-50%, -200%);
+        transform: translate(-50%, -175%);
         z-index: -1;
+
     }
 }
 
@@ -540,7 +540,7 @@
         padding: 0 2%;
     }
 
-        .youtube-container {
+    .youtube-container {
         position: absolute;
         top: 50%;
         left: 50%;

@@ -19,7 +19,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [userListStatus, setUserListStatus] = useState(null);
     const { user } = useAuth();
     const isMobile = window.innerWidth <= 480;
-    const synopsisLimit = isMobile ? 220 : 600;
+    const synopsisLimit = isMobile ? 70 : 600;
 
 
     // ALL CALLBACKS - ALWAYS CALLED, NO CONDITIONS
@@ -275,23 +275,11 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             document.body.style.width = '100%';
             document.documentElement.style.overflow = 'hidden';
 
-            // Prevent touch scrolling on mobile
-            const preventTouchMove = (e) => {
-                // Allow scrolling within modal content
-                let element = e.target;
-                while (element && element !== document.body) {
-                    if (element.scrollHeight > element.clientHeight ||
-                        element.scrollWidth > element.clientWidth) {
-                        return; // Allow scrolling within scrollable elements
-                    }
-                    element = element.parentElement;
-                }
-                e.preventDefault();
-            };
 
-            // Add touch event listeners for mobile
-            document.addEventListener('touchmove', preventTouchMove, { passive: false });
-            document.addEventListener('wheel', preventTouchMove, { passive: false });
+            document.body.classList.add('modal-open');
+            // on close
+            document.body.classList.remove('modal-open');
+
 
             return () => {
                 // Restore original styles

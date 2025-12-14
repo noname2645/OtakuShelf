@@ -150,7 +150,14 @@
     z-index: 10;
     min-height: 0;
     height: calc(100% - 140px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
+
+body.modal-open {
+  overflow: hidden;
+}
+
 
 /* Image Section */
 .modal-image-wrapper {
@@ -1051,11 +1058,11 @@
     }
 
     .modal-image-wrapper {
-        height: 250px;
+        height: 200px;
     }
 
     .image-container {
-        height: 250px;
+        height: 200px;
         width: 100%;
         max-width: 350px;
         margin: 0 auto;
@@ -1095,7 +1102,7 @@
     }
 
     .info-btn {
-        padding: 10px;
+        padding: 5px;
     }
 
     .stats-grid2 {
@@ -1163,6 +1170,11 @@
     }
 
     .badge-content {
+        margin: 0 auto;
+    }
+
+    .anime-type-badge {
+        width: 70%;
         margin: 0 auto;
     }
 
