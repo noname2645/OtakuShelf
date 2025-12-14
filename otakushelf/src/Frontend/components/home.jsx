@@ -161,33 +161,6 @@ const AnimeHomepage = () => {
         return '20px';
     }, []);
 
-    // Add this to a useEffect in home.jsx
-    useEffect(() => {
-        // Prevent zoom on double tap
-        let lastTouchEnd = 0;
-        const handleTouchEnd = (event) => {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
-            }
-            lastTouchEnd = now;
-        };
-
-        // Prevent pull-to-refresh on mobile
-        const preventPullToRefresh = (e) => {
-            if (window.scrollY === 0) {
-                e.preventDefault();
-            }
-        };
-
-        document.addEventListener('touchend', handleTouchEnd, { passive: false });
-        document.addEventListener('touchmove', preventPullToRefresh, { passive: false });
-
-        return () => {
-            document.removeEventListener('touchend', handleTouchEnd);
-            document.removeEventListener('touchmove', preventPullToRefresh);
-        };
-    }, []);
 
     // Consolidated data fetching with cache
     useEffect(() => {

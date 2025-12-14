@@ -266,14 +266,18 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             // Calculate scrollbar width to prevent layout shift
             const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
-            // Apply styles to prevent scrolling and layout shift
-            document.body.style.overflow = 'hidden';
-            document.body.style.paddingRight = `${scrollbarWidth}px`;
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${scrollY}px`;
-            document.body.style.left = `-${scrollX}px`;
-            document.body.style.width = '100%';
-            document.documentElement.style.overflow = 'hidden';
+            useEffect(() => {
+                if (isOpen || synopsisModalOpen) {
+                    document.body.classList.add('modal-open');
+                } else {
+                    document.body.classList.remove('modal-open');
+                }
+
+                return () => {
+                    document.body.classList.remove('modal-open');
+                };
+            }, [isOpen, synopsisModalOpen]);
+
 
 
             document.body.classList.add('modal-open');
@@ -290,10 +294,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                 document.body.style.left = '';
                 document.body.style.width = originalBodyWidth;
                 document.documentElement.style.overflow = originalHtmlOverflow;
-
-                // Remove event listeners
-                document.removeEventListener('touchmove', preventTouchMove);
-                document.removeEventListener('wheel', preventTouchMove);
 
                 // Restore scroll position
                 if (scrollY > 0 || scrollX > 0) {
