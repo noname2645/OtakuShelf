@@ -248,60 +248,18 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         Supernatural: "linear-gradient(135deg, #9932cc, #4b0082)"
     }), []);
 
-    // Enhanced background scroll prevention
     useEffect(() => {
         if (isOpen || synopsisModalOpen) {
-            // Store original values
-            const originalBodyOverflow = document.body.style.overflow;
-            const originalBodyPaddingRight = document.body.style.paddingRight;
-            const originalBodyPosition = document.body.style.position;
-            const originalBodyTop = document.body.style.top;
-            const originalBodyWidth = document.body.style.width;
-            const originalHtmlOverflow = document.documentElement.style.overflow;
-
-            // Get current scroll position
-            const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-            const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-
-            // Calculate scrollbar width to prevent layout shift
-            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-            useEffect(() => {
-                if (isOpen || synopsisModalOpen) {
-                    document.body.classList.add('modal-open');
-                } else {
-                    document.body.classList.remove('modal-open');
-                }
-
-                return () => {
-                    document.body.classList.remove('modal-open');
-                };
-            }, [isOpen, synopsisModalOpen]);
-
-
-
             document.body.classList.add('modal-open');
-            // on close
+        } else {
             document.body.classList.remove('modal-open');
-
-
-            return () => {
-                // Restore original styles
-                document.body.style.overflow = originalBodyOverflow;
-                document.body.style.paddingRight = originalBodyPaddingRight;
-                document.body.style.position = originalBodyPosition;
-                document.body.style.top = originalBodyTop;
-                document.body.style.left = '';
-                document.body.style.width = originalBodyWidth;
-                document.documentElement.style.overflow = originalHtmlOverflow;
-
-                // Restore scroll position
-                if (scrollY > 0 || scrollX > 0) {
-                    window.scrollTo(scrollX, scrollY);
-                }
-            };
         }
+
+        return () => {
+            document.body.classList.remove('modal-open');
+        };
     }, [isOpen, synopsisModalOpen]);
+
 
     useEffect(() => {
         if (titleRef.current && animeData && isOpen) {
