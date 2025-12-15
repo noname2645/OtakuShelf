@@ -7,7 +7,7 @@ body {
 .advancedSearchContainer {
   padding: 20px;
   margin: 0 auto;
-  background: url(D:\OtakuShelf\otakushelf\src\Frontend\images\comic-book-page-template\panel.jpg);
+  background: #0a1124;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -317,9 +317,14 @@ body {
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
+/* ... existing code above remains the same ... */
+
 /* Results Section */
 .resultsSection {
   margin-top: 20px;
+  max-width: 1450px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 .loader {
@@ -344,6 +349,7 @@ body {
   text-align: center;
   padding: 30px;
   color: #95a5a6;
+  font-size: 1.1rem;
 }
 
 .resultsCount {
@@ -354,104 +360,607 @@ body {
   border: 2px solid #000000;
   width: fit-content;
   margin: 20px auto;
-  padding: 6px;
+  padding: 6px 15px;
   border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
 }
 
-/* Anime Grid - Optimized */
+/* Anime Grid - Matching Home Page Styles */
 .animeGrid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1.5em;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   justify-items: center;
-  width: 93%;
+  width: 100%;
   box-sizing: border-box;
+  row-gap: 25px;
+  column-gap: 25px;
   margin: 0 auto;
 }
 
 .animeCard {
   height: 320px;
-  width: 220px;
+  width: 100%;
+  max-width: 220px;
   position: relative;
-  border-radius: 20px;
-  overflow: hidden;
+  border-radius: 15px;
   transition: all 0.3s ease;
-  will-change: transform;
-  transform: translateZ(0);
   cursor: pointer;
-  box-shadow: 2px 3px 20px 1px black;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.animeCard.loaded {
+  opacity: 1;
+  transform: translateY(0);
+  animation: fadeInUp 0.3s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animeCard:hover {
-  transform: translateY(-4px);
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+}
+
+.homeCardImage2 {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .homeCardImage2 img {
-  height: 350px;
-  width: 250px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: center;
   transition: transform 0.4s ease;
-  border-radius: 20px;
+  border-radius: 12px;
   display: block;
 }
 
+.animeCard:hover img {
+  transform: scale(1.05);
+}
+
 .cardTitleBottom {
-  font-family: "Misrow", sans-serif;
-  letter-spacing: 2px;
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 12px 8px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
-  color: #ff6a00;
+  padding: 15px 10px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent);
+  color: #c25100;
   z-index: 1;
-  text-shadow: 0 0 10px rgba(255, 102, 0, 0.4), 2px 2px 6px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(7px);
+  border-radius: 15px;
 }
 
 .cardTitleBottom h3 {
-  font-size: 1.2rem;
-  font-weight: 300;
+  font-family: "Misrow", sans-serif;
+  letter-spacing: 1px;
+  font-size: 1.1rem;
   text-align: center;
   line-height: 1.4;
-  backdrop-filter: blur(7px);
-  border: 2px solid rgb(255, 60, 0);
-  transition: all 0.3s ease;
-  border-radius: 20px;
-  padding: 5px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  color: #ff6a00;
+  text-shadow: 0 0 8px rgba(190, 79, 0, 0.5);
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .advancedSearchContainer {
-    padding: 15px;
-    padding-top: 100px;
-  }
+/* Performance optimizations */
+.animeCard {
+  contain: content;
+  transform: translateZ(0);
+}
 
+.homeCardImage2 img {
+  aspect-ratio: 2/3;
+  object-fit: cover;
+}
+
+/* Remove old anime card styles */
+.animeCard:hover {
+  transform: translateY(-8px) !important;
+}
+
+/* Mobile Responsiveness - Enhanced */
+@media (max-width: 1200px) {
+  .animeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    row-gap: 20px;
+    column-gap: 20px;
+  }
+  
+  .animeCard {
+    height: 300px;
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 992px) {
   .dropdownFilters {
-    grid-template-columns: 1fr;
+    flex-wrap: wrap;
+    justify-content: flex-start;
     gap: 12px;
   }
-
-  .optionsGrid,
-  .genresGrid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 6px;
+  
+  .dropdown {
+    flex: 0 0 calc(33.333% - 12px);
+    min-width: 150px;
   }
-
+  
   .animeGrid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 15px;
   }
-
+  
   .animeCard {
     height: 280px;
-    width: 180px;
+    max-width: 180px;
   }
+  
+  .genresMenu {
+    width: 400px;
+  }
+  
+  .dropdownContent .genresGrid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
 
+@media (max-width: 768px) {
+  .advancedSearchContainer {
+    padding: 15px;
+    padding-top: 100px;
+    background-attachment: scroll;
+  }
+  
+  .dropdownFilters {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 100%;
+  }
+  
+  .dropdown {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+  
+  .dropdownToggle {
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 13px;
+  }
+  
+  .dropdownMenu {
+    width: 100%;
+    max-width: 100vw;
+    left: 0;
+    right: 0;
+  }
+  
+  .genresMenu {
+    width: calc(100vw - 40px);
+    max-width: 100%;
+  }
+  
+  .dropdownContent .genresGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .animeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
+    padding: 0 10px;
+  }
+  
+  .animeCard {
+    height: 280px;
+    max-width: 160px;
+    margin: 0 auto;
+  }
+  
+  .cardTitleBottom h3 {
+    font-size: 0.9rem;
+  }
+  
+  .resultsCount {
+    font-size: 16px;
+    padding: 5px 12px;
+    margin: 15px auto;
+  }
+  
+  .resetBtn, .searchBtn {
+    padding: 10px 20px;
+    font-size: 12px;
+    width: 100%;
+    grid-column: span 2;
+    order: 1;
+    margin-top: 5px;
+  }
+  
   .checkboxLabel {
     font-size: 12px;
-    padding: 6px 10px;
+    padding: 6px 8px;
+  }
+  
+  .checkboxLabel input {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .headerControls {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .advancedSearchContainer {
+    padding: 12px;
+    padding-top: 90px;
+  }
+  
+  .dropdownFilters {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .dropdown {
+    width: 100%;
+  }
+  
+  .dropdownToggle {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+  
+  .animeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    padding: 0 8px;
+  }
+  
+  .animeCard {
+    height: 240px;
+    max-width: 140px;
+  }
+  
+  .dropdownContent .genresGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .optionsGrid, .seasonGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .resultsCount {
+    font-size: 14px;
+    text-align: center;
+    width: 90%;
+    padding: 4px 10px;
+  }
+  
+  .cardTitleBottom {
+    padding: 10px 8px;
+  }
+  
+  .cardTitleBottom h3 {
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    -webkit-line-clamp: 2;
+  }
+  
+  .resetBtn {
+    font-size: 11px;
+    padding: 8px 16px;
+  }
+  
+  /* Bottom Navigation for Mobile */
+  .bottom-button-bar {
+    bottom: 10px;
+    padding: 8px 15px;
+    border-radius: 25px;
+    width: 90%;
+    max-width: 400px;
+  }
+  
+  .bottom-button-bar .nav-label {
+    padding: 6px 12px;
+  }
+  
+  .bottom-button-bar .nav-label svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .bottom-button-bar .nav-label.active::before {
+    top: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .animeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  
+  .animeCard {
+    height: 220px;
+    max-width: 130px;
+  }
+  
+  .cardTitleBottom {
+    padding: 8px 6px;
+  }
+  
+  .cardTitleBottom h3 {
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+  }
+}
+
+@media (max-width: 375px) {
+  .animeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+    gap: 8px;
+  }
+  
+  .animeCard {
+    height: 200px;
+    max-width: 115px;
+  }
+  
+  .dropdownFilters {
+    gap: 6px;
+  }
+  
+  .dropdownToggle {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  
+  .resetBtn {
+    padding: 7px 14px;
+    font-size: 10px;
+  }
+  
+  .resultsCount {
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+  
+  .cardTitleBottom h3 {
+    font-size: 0.75rem;
+  }
+}
+
+/* Landscape Mode Optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+  .advancedSearchContainer {
+    padding-top: 80px;
+  }
+  
+  .dropdownFilters {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    gap: 8px;
+  }
+  
+  .dropdown {
+    flex: 0 0 auto;
+    min-width: 140px;
+  }
+  
+  .animeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  
+  .animeCard {
+    height: 180px;
+    max-width: 140px;
+  }
+  
+  .cardTitleBottom h3 {
+    font-size: 0.8rem;
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* Tablet Landscape */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+  .animeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+  
+  .dropdownFilters {
+    flex-wrap: wrap;
+  }
+  
+  .dropdown {
+    flex: 0 0 calc(25% - 12px);
+  }
+}
+
+/* High-Density Screens */
+@media (min-resolution: 192dpi) and (max-width: 768px) {
+  .animeCard {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  }
+  
+  .dropdownToggle {
+    border-width: 1px;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .dropdownMenu {
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .checkboxLabel {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e0e0e0;
+  }
+  
+  .checkboxLabel:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .checkboxLabel input:checked + span {
+    color: #3498db;
+  }
+  
+  .textInput {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+  
+  .resultsCount {
+    color: #ffffff;
+    border-color: #ffffff;
+    background: rgba(30, 30, 30, 0.9);
+  }
+  
+  .animeCard {
+    background: rgba(15, 15, 25, 0.7);
+  }
+}
+
+/* Very small screens */
+@media (max-width: 320px) {
+  .advancedSearchContainer {
+    padding: 10px;
+    padding-top: 80px;
+  }
+  
+  .dropdownFilters {
+    gap: 5px;
+  }
+  
+  .animeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px;
+  }
+  
+  .animeCard {
+    height: 180px;
+    max-width: 100px;
+  }
+  
+  .cardTitleBottom h3 {
+    font-size: 0.7rem;
+  }
+  
+  .bottom-button-bar {
+    width: 95%;
+    padding: 6px 12px;
+  }
+  
+  .bottom-button-bar .nav-label {
+    padding: 4px 8px;
+  }
+  
+  .bottom-button-bar .nav-label svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .animeCard {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition-duration: 0.15s;
+  }
+  
+  /* Prevent accidental text selection */
+  * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Allow selection on text inputs */
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  
+  /* Remove hover effects on touch devices */
+  .animeCard:hover {
+    transform: translateY(0);
+  }
+  
+  .animeCard:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .animeCard,
+  .animeCard img,
+  .dropdownToggle,
+  .resetBtn {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+  
+  .animeCard.loaded {
+    opacity: 1;
+    transform: none;
+  }
+  
+  .animeCard:hover {
+    transform: none;
+  }
+  
+  .loader {
+    animation: none;
+  }
+}
+
+/* Safe area for modern phones */
+@supports (padding: max(0px)) {
+  .advancedSearchContainer {
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  
+  .bottom-button-bar {
+    bottom: max(20px, env(safe-area-inset-bottom));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 }

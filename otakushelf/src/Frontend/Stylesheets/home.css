@@ -451,11 +451,9 @@
 .anime-sections .divider::before,
 .anime-sections .divider::after {
   content: '';
-  position: absolute;
-  top: 50%;
-  width: 40%;
-  height: 2px;
+  height: 3px;
   background: linear-gradient(90deg, transparent, #ff5252);
+  border-radius: 20px;
 }
 
 .anime-sections .divider::before {
@@ -491,12 +489,13 @@
 /* Enhanced Anime Grid - Responsive */
 .anime-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   justify-items: center;
   width: 100%;
   box-sizing: border-box;
-  margin: 0 auto;
+  /* margin: 0 auto; */
+  row-gap: 25px;
+  column-gap: 25px;
 }
 
 .anime-card {
@@ -504,17 +503,9 @@
   width: 100%;
   max-width: 220px;
   position: relative;
-  border-radius: 12px;
-  overflow: hidden;
+  border-radius: 15px;
   transition: all 0.3s ease;
-  will-change: transform;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  background: rgba(20, 20, 30, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 107, 107, 0.1);
-  z-index: 10;
 }
 
 .anime-card:hover {
@@ -551,27 +542,26 @@
   right: 0;
   padding: 15px 10px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent);
-  color: #ff6a00;
+  color: #c25100;
   z-index: 1;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(7px);
+  border-radius: 15px;
 }
 
 .card-title-bottom h3 {
   font-family: "Misrow", sans-serif;
   letter-spacing: 1px;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.1rem;
   text-align: center;
   line-height: 1.4;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   color: #ff6a00;
-  text-shadow: 0 0 8px rgba(255, 106, 0, 0.5);
+  text-shadow: 0 0 8px rgba(190, 79, 0, 0.5);
 }
 
 /* Loading States */

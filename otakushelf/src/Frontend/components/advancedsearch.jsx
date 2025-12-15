@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import styles from "../Stylesheets/advancedsearch.module.css";
 import Modal from "./modal.jsx";
-import Lenis from '@studio-freight/lenis'
 import { Header } from '../components/header.jsx';
 import { Link } from 'react-router-dom';
 import "../Stylesheets/home.css";
@@ -47,26 +46,6 @@ function AdvancedSearch() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedAnimeForModal, setSelectedAnimeForModal] = useState(null);
 
-  // Optimized smooth scroll setup
-  useEffect(() => {
-    const smoothScroll = new Lenis({
-      lerp: 0.08,
-      smooth: true,
-      infinite: false,
-    });
-
-    let animationId;
-    function animate(time) {
-      smoothScroll.raf(time);
-      animationId = requestAnimationFrame(animate);
-    }
-    animationId = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationId) cancelAnimationFrame(animationId);
-      smoothScroll.destroy();
-    };
-  }, []);
 
   // Memoized navigation helper
   const getActivePage = useCallback(() => {
