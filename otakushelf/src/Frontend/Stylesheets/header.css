@@ -1,6 +1,6 @@
 .header {
     position: fixed;
-    height: 40px;
+    height: 65px;
     width: 90%;
     max-width: 1200px;
     margin: 5px auto;
@@ -44,7 +44,6 @@
 /* Enhanced Search Input Styles */
 .InputContainer {
     width: 180px;
-    /* Reduced from 200px */
     position: relative;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -53,24 +52,19 @@
     transform: scale(1.05);
     z-index: 1200;
     width: 450px;
-    /* Reduced from 500px */
 }
 
 .input {
     width: 100%;
     height: 40px;
-    /* Reduced from 50px */
     border: none;
     outline: none;
     border-radius: 20px;
-    /* Reduced from 25px */
     padding: 0 18px 0 45px;
-    /* Adjusted padding */
-    background: rgba(30, 30, 30, 0.8);
+    background: black;
     color: #ff9f00;
     font-family: 'Bricolage Grotesque', sans-serif;
     font-size: 14px;
-    /* Reduced from 15px */
     font-weight: 600;
     letter-spacing: 2px;
     transition: all 0.3s ease;
