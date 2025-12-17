@@ -8,10 +8,25 @@ import "../Stylesheets/home.css";
 
 // Memoized constants to prevent recreation - filtered for appropriate content
 const ANIME_GENRES = [
-  "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror",
-  "Mystery", "Romance", "Sci-Fi", "Sports", "Thriller", "Slice of Life",
-  "Supernatural", "Suspense", "Award Winning", "Boys Love", "Girls Love",
-  "Gourmet", "Avant Garde"
+  "Action",
+  "Adventure",
+  "Avant Garde",
+  "Award Winning",
+  "Boys Love",
+  "Comedy",
+  "Drama",
+  "Fantasy",
+  "Girls Love",
+  "Gourmet",
+  "Horror",
+  "Mystery",
+  "Romance",
+  "Sci-Fi",
+  "Slice of Life",
+  "Sports",
+  "Supernatural",
+  "Suspense",
+  "Thriller",
 ];
 
 const ANIME_SEASONS = ["WINTER", "SPRING", "SUMMER", "FALL"];
@@ -382,7 +397,7 @@ function AdvancedSearch() {
           </svg>
         </Link>
       </div>
-      
+
       <div className={styles.advancedSearchContainer}>
         {/* Optimized Filter Dropdowns */}
         <div className={styles.dropdownFilters}>

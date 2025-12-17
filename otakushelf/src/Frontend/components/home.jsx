@@ -11,41 +11,11 @@ const API_BASE = import.meta.env.MODE === "development"
     ? "http://localhost:5000"
     : "https://otakushelf-uuvw.onrender.com";
 
-// Simple intersection observer hook
-const useInView = (options = {}) => {
+// Simple useInView hook that always returns true
+const useInView = () => {
     const ref = useRef(null);
-    const [isVisible, setIsVisible] = useState(false);
-
-    useEffect(() => {
-        if (!('IntersectionObserver' in window)) {
-            setIsVisible(true);
-            return;
-        }
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsVisible(true);
-                }
-            },
-            { threshold: 0.01, rootMargin: '50px', ...options }
-        );
-
-        const currentRef = ref.current;
-        if (currentRef) {
-            observer.observe(currentRef);
-        }
-
-        return () => {
-            if (currentRef) {
-                observer.unobserve(currentRef);
-            }
-        };
-    }, [options]);
-
-    return [ref, isVisible];
+    return [ref, true]; // Always return true to show immediately
 };
-
 // Optimized Anime Card Component
 const AnimeCard = React.memo(({ anime, onClick, index }) => {
     const [isMobile, setIsMobile] = useState(false);
@@ -60,12 +30,12 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
     // Load image
     useEffect(() => {
         if (!anime) return;
-        
-        const imgUrl = anime.coverImage?.extraLarge || 
-                      anime.coverImage?.large || 
-                      anime.bannerImage || 
-                      "/placeholder-anime.jpg";
-        
+
+        const imgUrl = anime.coverImage?.extraLarge ||
+            anime.coverImage?.large ||
+            anime.bannerImage ||
+            "/placeholder-anime.jpg";
+
         const img = new Image();
         img.src = imgUrl;
         img.onload = () => {
@@ -128,7 +98,7 @@ const AnimeHomepage = () => {
     const [searchLoading, setSearchLoading] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    
+
     const controllerRef = useRef(null);
     const searchRef = useRef(null);
 
@@ -149,7 +119,7 @@ const AnimeHomepage = () => {
 
     const normalizeGridAnime = useCallback((anime) => {
         if (!anime) return null;
-        
+
         return {
             id: anime.id || anime.mal_id || Math.random().toString(36).substr(2, 9),
             idMal: anime.idMal || anime.mal_id,
@@ -187,12 +157,38 @@ const AnimeHomepage = () => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth <= 768);
         };
-        
+
         checkMobile();
         window.addEventListener('resize', checkMobile);
-        
+
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
+
+    // Add this useEffect hook near your other useEffect hooks in AnimeHomepage component:
+    useEffect(() => {
+        const checkAuth = async () => {
+            const activePage = getActivePage();
+
+            // Only protect the list page
+            if (activePage === 'list') {
+                try {
+                    const response = await axios.get(`${API_BASE}/api/auth/check`, {
+                        withCredentials: true
+                    });
+
+                    // If not authenticated, redirect to login or home
+                    if (!response.data.authenticated) {
+                        window.location.href = '/login'; // or '/home'
+                    }
+                } catch (error) {
+                    console.error("Auth check failed:", error);
+                    window.location.href = '/login'; // or '/home'
+                }
+            }
+        };
+
+        checkAuth();
+    }, [getActivePage]);
 
     // Load anime sections with caching
     useEffect(() => {
@@ -202,7 +198,7 @@ const AnimeHomepage = () => {
                 const cachedSections = localStorage.getItem('animeSections');
                 const cacheTime = localStorage.getItem('animeSections_time');
                 const isCacheValid = cacheTime && (Date.now() - parseInt(cacheTime)) < 30 * 60 * 1000;
-                
+
                 if (cachedSections && isCacheValid) {
                     const parsed = JSON.parse(cachedSections);
                     setTopAiring((parsed.topAiring || []).map(normalizeGridAnime).filter(Boolean));
@@ -216,7 +212,7 @@ const AnimeHomepage = () => {
                 const response = await axios.get(`${API_BASE}/api/anime/anime-sections`, {
                     timeout: 10000
                 });
-                
+
                 const data = response.data;
                 const normalizedTopAiring = (data.topAiring || []).map(normalizeGridAnime).filter(Boolean);
                 const normalizedMostWatched = (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean);
@@ -225,7 +221,7 @@ const AnimeHomepage = () => {
                 setTopAiring(normalizedTopAiring);
                 setMostWatched(normalizedMostWatched);
                 setTopMovies(normalizedTopMovies);
-                
+
                 // Cache the data
                 localStorage.setItem('animeSections', JSON.stringify({
                     topAiring: data.topAiring || [],
@@ -233,7 +229,7 @@ const AnimeHomepage = () => {
                     topMovies: data.topMovies || []
                 }));
                 localStorage.setItem('animeSections_time', Date.now().toString());
-                
+
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching anime sections:", error);
@@ -377,7 +373,7 @@ const AnimeHomepage = () => {
         <div className="homepage">
             <div className="main-content">
                 <Header showSearch={true} onSearchChange={setSearchQuery} />
-                
+
                 {/* Bottom Navigation */}
                 <div className="bottom-button-bar">
                     <Link
@@ -459,8 +455,8 @@ const AnimeHomepage = () => {
                                 <div className="no-results">
                                     <div className="no-results-icon">
                                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <circle cx="11" cy="11" r="8" strokeWidth="2"/>
-                                            <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round"/>
+                                            <circle cx="11" cy="11" r="8" strokeWidth="2" />
+                                            <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round" />
                                         </svg>
                                         <p>No anime found for "{searchQuery}"</p>
                                     </div>
@@ -469,14 +465,11 @@ const AnimeHomepage = () => {
                         </div>
                     ) : (
                         <>
-                            {/* Top Airing Section - Always visible */}
+                            {/* Top Airing Section */}
                             <div className="divider">
                                 <span className="divider-content">TOP AIRING</span>
                             </div>
-                            <section
-                                ref={airingRef}
-                                className="anime-section"
-                            >
+                            <section className="anime-section">
                                 {renderAnimeGrid(processedTopAiring, "Top Airing")}
                             </section>
 
@@ -484,22 +477,16 @@ const AnimeHomepage = () => {
                             <div className="divider">
                                 <span className="divider-content">MOST WATCHED</span>
                             </div>
-                            <section
-                                ref={watchedRef}
-                                className={`anime-section ${watchedVisible ? 'visible' : ''}`}
-                            >
-                                {watchedVisible && renderAnimeGrid(processedMostWatched, "Most Watched")}
+                            <section className="anime-section">
+                                {renderAnimeGrid(processedMostWatched, "Most Watched")}
                             </section>
 
                             {/* Top Movies Section */}
                             <div className="divider">
                                 <span className="divider-content">TOP MOVIES</span>
                             </div>
-                            <section
-                                ref={moviesRef}
-                                className={`anime-section ${moviesVisible ? 'visible' : ''}`}
-                            >
-                                {moviesVisible && renderAnimeGrid(processedTopMovies, "Top Movies")}
+                            <section className="anime-section">
+                                {renderAnimeGrid(processedTopMovies, "Top Movies")}
                             </section>
                         </>
                     )}
