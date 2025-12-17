@@ -401,14 +401,17 @@ app.post("/api/list/:userId", async (req, res) => {
     };
 
     // Add status-specific fields
-    if (category === 'watching' || category === 'completed') {
+    if (category === 'watching') {
       animeEntry.startDate = new Date();
       animeEntry.episodesWatched = 0;
     }
 
     if (category === 'completed') {
+      animeEntry.startDate = new Date();
       animeEntry.finishDate = new Date();
+      animeEntry.episodesWatched = animeEntry.totalEpisodes; // 🔥 FIX
     }
+
 
     // Add other possible fields
     if (animeData?.userRating) animeEntry.userRating = animeData.userRating;
@@ -446,35 +449,65 @@ app.get("/api/list/:userId", async (req, res) => {
     res.status(500).json({ message: "Error fetching list", error: err.message });
   }
 });
+
+
 // Update anime in list
 app.put("/api/list/:userId/:animeId", async (req, res) => {
   try {
-    const { startDate, finishDate, userRating, episodesWatched, notes, category } = req.body;
-    const list = await AnimeList.findOne({ userId: req.params.userId });
+    const { episodesWatched, status } = req.body;
+    const { userId, animeId } = req.params;
 
+    const list = await AnimeList.findOne({ userId });
     if (!list) return res.status(404).json({ message: "List not found" });
 
-    const animeIndex = list[category].findIndex(item => item._id.toString() === req.params.animeId);
-    if (animeIndex === -1) {
-      return res.status(404).json({ message: "Anime not found in specified category" });
+    const categories = ["watching", "completed", "planned", "dropped"];
+    let anime = null;
+    let currentCategory = null;
+
+    // 🔍 Find anime in ANY category
+    for (const cat of categories) {
+      const found = list[cat].id(animeId);
+      if (found) {
+        anime = found;
+        currentCategory = cat;
+        break;
+      }
     }
 
-    list[category][animeIndex] = {
-      ...list[category][animeIndex]._doc,
-      startDate: startDate ? new Date(startDate) : list[category][animeIndex].startDate,
-      finishDate: finishDate ? new Date(finishDate) : list[category][animeIndex].finishDate,
-      userRating: userRating ?? list[category][animeIndex].userRating,
-      episodesWatched: episodesWatched ?? list[category][animeIndex].episodesWatched,
-      notes: notes ?? list[category][animeIndex].notes,
-    };
+    if (!anime) {
+      return res.status(404).json({ message: "Anime not found" });
+    }
 
-    await list.save();
-    return res.json({ message: "Anime updated", list });
-  } catch (err) {
-    console.error("PUT error:", err);
-    return res.status(500).json({ message: "Error updating anime", error: err.message });
-  }
-});
+    // ✅ Safe updates
+    if (episodesWatched !== undefined) {
+      anime.episodesWatched = episodesWatched;
+    }
+
+    // 🔁 Handle status change
+    if (status && categories.includes(status) && status !== currentCategory) {
+      
+        // remove from old category
+        list[currentCategory] = list[currentCategory].filter(
+          a => a._id.toString() !== anime._id.toString()
+        );
+
+        // ensure episodesWatched exists when moving to completed
+        if (status === "completed" && anime.episodesWatched === undefined) {
+          anime.episodesWatched = anime.totalEpisodes || 24;
+        }
+
+        list[status].push(anime);
+      }
+
+      await list.save();
+      res.json({ message: "Anime updated", list });
+    } catch (err) {
+      console.error("PUT UPDATE ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+
 
 // Remove anime from list
 app.delete("/api/list/:userId/:animeId", async (req, res) => {

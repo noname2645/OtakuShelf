@@ -24,6 +24,7 @@ const EnhancedAnimeList = () => {
     }
   }, []);
 
+
   const fetchAnimeList = useCallback(async () => {
     try {
       setLoading(true);
@@ -97,7 +98,7 @@ const EnhancedAnimeList = () => {
     }
   }, [user, fetchAnimeList]);
 
-
+  // Remove anime from list
   const handleRemove = useCallback(async (animeId) => {
     if (window.confirm('Are you sure you want to remove this anime from your list?')) {
       try {
@@ -118,6 +119,7 @@ const EnhancedAnimeList = () => {
     }
   }, [user, fetchAnimeList]); // Add fetchAnimeList to dependencies
 
+  // Get CSS class for status badge
   const getStatusBadgeClass = useCallback((status) => {
     switch (status) {
       case 'watching': return 'watching-badge';
@@ -128,22 +130,98 @@ const EnhancedAnimeList = () => {
     }
   }, []);
 
+  // Calculate progress percentage  
   const calculateProgress = useCallback((episodesWatched, totalEpisodes = 24) => {
     if (!episodesWatched || episodesWatched === 0) return 0;
     return Math.min((episodesWatched / totalEpisodes) * 100, 100);
   }, []);
 
+  // Format episode text
   const formatEpisodeText = useCallback((episodesWatched, totalEpisodes) => {
     if (episodesWatched === 0) return `0 / ${totalEpisodes} episodes`;
     return `${episodesWatched} / ${totalEpisodes} episodes`;
   }, []);
 
+  // Memoized current anime list based on active tab
   const currentAnimeList = useMemo(() => {
     const list = animeList[activeTab] || [];
     console.log(`Current ${activeTab} list:`, list);
     return list;
   }, [animeList, activeTab]);
 
+  const handleIncrementEpisode = async (anime) => {
+    const userId = user._id || user.id;
+
+    const totalEpisodes =
+      anime.totalEpisodes || anime.episodes || anime.episodeCount || 24;
+
+    const currentEpisodes = anime.episodesWatched || 0;
+
+    // 🚫 STOP if already completed
+    if (currentEpisodes >= totalEpisodes) {
+      return; // do nothing
+    }
+
+    const updatedEpisodes = currentEpisodes + 1;
+
+    try {
+      await axios.put(
+        `http://localhost:5000/api/list/${userId}/${anime._id}`,
+        {
+          episodesWatched: updatedEpisodes,
+          category: activeTab
+        }
+      );
+
+      // auto-move to completed ONLY once
+      if (updatedEpisodes === totalEpisodes && activeTab !== "completed") {
+        await axios.put(
+          `http://localhost:5000/api/list/${userId}/${anime._id}`,
+          {
+            episodesWatched: updatedEpisodes,
+            category: activeTab,
+            status: "completed"
+          }
+        );
+      }
+
+      fetchAnimeList();
+    } catch (err) {
+      console.error("Failed to update episode count", err);
+    }
+  };
+
+
+  const handleStatusChange = async (anime, newStatus) => {
+    try {
+      const userId = user._id || user.id;
+
+      const totalEpisodes =
+        anime.totalEpisodes || anime.episodes || anime.episodeCount || 24;
+
+      const payload = {
+        status: newStatus,
+        fromCategory: activeTab // 👈 IMPORTANT rename
+      };
+
+      if (newStatus === "completed") {
+        payload.episodesWatched = totalEpisodes;
+      }
+
+      await axios.put(
+        `http://localhost:5000/api/list/${userId}/${anime._id}`,
+        payload
+      );
+
+      fetchAnimeList();
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
+  };
+
+
+
+  // Redirect to login if no user
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -194,10 +272,21 @@ const EnhancedAnimeList = () => {
               const userRating = anime.userRating || 0;
 
               return (
-                <div key={anime._id || anime.animeId || anime.title} className="anime-card2">
+                <div key={anime._id || anime.animeId || anime.title} className="anime-card3">
                   <div className={`status-badge2 ${getStatusBadgeClass(activeTab)}`}>
-                    {activeTab}
+                    <select
+                      className="status-badge-select"
+                      value={activeTab}
+                      onChange={(e) => handleStatusChange(anime, e.target.value)}
+                    >
+                      <option value="watching">Watching</option>
+                      <option value="completed">Completed</option>
+                      <option value="planned">Planned</option>
+                      <option value="dropped">Dropped</option>
+                    </select>
+
                   </div>
+
 
                   <div className="card-poster">
                     <img
@@ -215,6 +304,13 @@ const EnhancedAnimeList = () => {
                         <div className="episode-info">
                           <span className="episode-dot"></span>
                           <span>{formatEpisodeText(episodesWatched, totalEpisodes)}</span>
+                          <button
+                            className="epincbtn"
+                            onClick={() => handleIncrementEpisode(anime)}
+                            disabled={episodesWatched >= totalEpisodes}
+                          >
+                            +1 Ep
+                          </button>
                         </div>
 
                         <div className="progress-section">
@@ -231,18 +327,20 @@ const EnhancedAnimeList = () => {
                         </div>
                         <div className="rating-section">
                           <div className="rating-left">
-                            <Star size={16} className="star-icon" fill={userRating > 0 ? "#fbbf24" : "#d1d5db"} />
+                            <Star size={16} className="star-icon" />
                             <span>{userRating > 0 ? `${userRating}/10` : 'Not rated'}</span>
                           </div>
+
+
 
                           <button
                             className="action-btn remove-btn-card"
                             onClick={() => handleRemove(anime._id || anime.animeId)}
                           >
-                            <Trash2 size={16} />
                             Remove
                           </button>
                         </div>
+
 
                       </div>
                     </div>

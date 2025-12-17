@@ -57,7 +57,7 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
 
     return (
         <div
-            className={`anime-card ${loaded ? 'loaded' : ''}`}
+            className={`anime-card2 ${loaded ? 'loaded' : ''}`}
             onClick={handleClick}
             style={{
                 animationDelay: `${index * 0.03}s`,

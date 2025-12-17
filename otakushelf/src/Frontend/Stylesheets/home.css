@@ -23,7 +23,6 @@
   overflow-x: hidden;
   position: relative;
   padding-bottom: 80px;
-  /* Space for bottom nav */
 }
 
 ::-webkit-scrollbar {
@@ -130,7 +129,7 @@
 }
 
 /* Simplified Anime Card Animations */
-.anime-card {
+.anime-card2 {
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 0.3s ease, transform 0.3s ease;
@@ -138,15 +137,17 @@
   position: relative;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   z-index: 50;
   pointer-events: auto;
+  border: 1px solid beige;
+  height: 320px;
+  width: 100%;
+  max-width: 220px;
+  border-radius: 15px;
+  transition: all 0.3s ease;
 }
 
-.anime-card.loaded {
+.anime-card2.loaded {
   opacity: 1;
   transform: translateY(0);
   animation: fadeInUp 0.3s ease-out forwards;
@@ -165,14 +166,9 @@
   }
 }
 
-.anime-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  z-index: 10;
-}
 
 /* Loading state should not have animation */
-.anime-card.loading {
+.anime-card2.loading {
   opacity: 1;
   transform: none;
   animation: pulse-loading 2s ease-in-out infinite;
@@ -498,30 +494,21 @@
   column-gap: 25px;
 }
 
-.anime-card {
-  height: 320px;
-  width: 100%;
-  max-width: 220px;
-  position: relative;
-  border-radius: 15px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
 
-.anime-card:hover {
+.anime-card2:hover {
   transform: translateY(-8px);
   border-color: rgba(255, 107, 107, 0.3);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
 }
 
-.anime-card .home-card-image {
+.anime-card2 .home-card-image {
   position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
-.anime-card img {
+.anime-card2 img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -531,7 +518,7 @@
   display: block;
 }
 
-.anime-card:hover img {
+.anime-card2:hover img {
   transform: scale(1.05);
 }
 
@@ -640,7 +627,7 @@
     padding: 0 10px !important;
   }
 
-  .anime-card {
+  .anime-card2 {
     height: 280px !important;
     max-width: 180px !important;
     border-radius: 10px !important;
@@ -701,7 +688,7 @@
     padding: 0 8px !important;
   }
 
-  .anime-card {
+  .anime-card2 {
     height: 240px !important;
     max-width: 160px !important;
     border-radius: 8px !important;
@@ -769,7 +756,7 @@
     gap: 10px !important;
   }
 
-  .anime-card {
+  .anime-card2 {
     height: 220px !important;
     max-width: 145px !important;
     border-radius: 8px !important;
@@ -830,7 +817,7 @@
     gap: 8px !important;
   }
 
-  .anime-card {
+  .anime-card2 {
     height: 200px !important;
     max-width: 130px !important;
   }
@@ -870,7 +857,7 @@
     gap: 10px !important;
   }
 
-  .anime-card {
+  .anime-card2 {
     height: 180px !important;
     max-width: 140px !important;
   }
@@ -889,7 +876,7 @@
 @media (hover: none) and (pointer: coarse) {
 
   /* Larger touch targets */
-  .anime-card {
+  .anime-card2 {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition-duration: 0.15s;
@@ -918,7 +905,7 @@
   }
 
   /* Smoother transitions */
-  .anime-card {
+  .anime-card2 {
     transition-duration: 0.2s;
   }
 
@@ -927,7 +914,7 @@
     transform: translateY(0);
   }
 
-  .anime-card:active {
+  .anime-card2:active {
     transform: scale(0.98);
   }
 }
@@ -935,7 +922,7 @@
 /* High DPI Screens */
 @media (-webkit-min-device-pixel-ratio: 2),
 (min-resolution: 192dpi) {
-  .anime-card img {
+  .anime-card2 img {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
   }
@@ -944,8 +931,8 @@
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
 
-  .anime-card,
-  .anime-card img,
+  .anime-card2,
+  .anime-card2 img,
   .bottom-button-bar .nav-label,
   .nav-label svg,
   .spinner {
@@ -954,12 +941,12 @@
     transform: none !important;
   }
 
-  .anime-card.loaded {
+  .anime-card2.loaded {
     opacity: 1;
     transform: none;
   }
 
-  .anime-card:hover {
+  .anime-card2:hover {
     transform: none;
   }
 
@@ -980,7 +967,7 @@
     border-color: rgba(255, 255, 255, 0.1);
   }
 
-  .anime-card {
+  .anime-card2 {
     background: rgba(15, 15, 25, 0.7);
     border-color: rgba(255, 107, 107, 0.15);
   }
@@ -995,7 +982,7 @@
     display: none !important;
   }
 
-  .anime-card {
+  .anime-card2 {
     break-inside: avoid;
     box-shadow: none !important;
     border: 1px solid #ddd !important;
@@ -1006,22 +993,6 @@
   }
 }
 
-/* Performance optimizations */
-.anime-card {
-  contain: content;
-  will-change: transform;
-  transform: translateZ(0);
-}
-
-.anime-grid {
-  contain: layout style;
-}
-
-/* Prevent layout shifts */
-.anime-card img {
-  aspect-ratio: 2/3;
-  object-fit: cover;
-}
 
 /* Safe area for modern phones */
 @supports (padding: max(0px)) {
