@@ -13,7 +13,7 @@
     padding: 0 2rem;
     z-index: 1100;
     transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
-    border-radius: 20px;
+    border-radius: 30px;
 }
 
 
@@ -22,7 +22,7 @@
     background: transparent;
     backdrop-filter: none;
     box-shadow: none;
-    border-radius: 20px;
+    border-radius: 30px;
 }
 
 /* When scrolled */
@@ -30,7 +30,7 @@
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    border-radius: 20px;
+    border-radius: 30px;
     height: 65px;
 }
 
@@ -114,38 +114,31 @@
     display: inline-flex;
     align-items: center;
     gap: 0.6rem;
-
     padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2vw, 16px);
-
     background: linear-gradient(
         135deg,
         rgba(48, 34, 34, 0.75) 0%,
         rgba(35, 25, 25, 0.45) 100%
     );
-
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 14px;
-
+    border-radius: 20px;
     cursor: pointer;
     font-size: clamp(11px, 2.5vw, 13px);
     color: #ffffff;
-
     box-shadow:
         0 8px 32px rgba(54, 54, 54, 0.2),
         0 2px 8px rgba(255, 255, 255, 0.05) inset;
 
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     letter-spacing: 0.3px;
-
     position: relative;
     overflow: hidden;
-
     animation: subtle-pulse 4s infinite;
-
+    height: 55px;
     width: fit-content;
     max-width: 100%;
-    min-height: 44px; /* touch-friendly */
+    min-height: 44px; 
 }
 
 
@@ -174,9 +167,7 @@
 .profile-avatar {
     position: relative;
     width: 36px;
-    /* Reduced from 42px */
     height: 36px;
-    /* Reduced from 42px */
     border-radius: 50%;
     overflow: hidden;
     border: 2px solid rgba(255, 255, 255, 0.25);
@@ -200,7 +191,6 @@
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    /* Reduced from 16px */
     font-weight: 700;
     border: 2px solid rgba(255, 255, 255, 0.25);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -210,7 +200,6 @@
 .profile-info {
     text-align: left;
     max-width: 120px;
-    /* Reduced from 140px */
     overflow: hidden;
 }
 

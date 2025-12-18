@@ -6,6 +6,19 @@ import { Header } from '../components/header.jsx';
 import { Link } from 'react-router-dom';
 import "../Stylesheets/home.css";
 
+// Create a clean axios instance for AniList without auth headers
+const anilistClient = axios.create({
+  baseURL: "https://graphql.anilist.co",
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  },
+  withCredentials: false
+});
+
+// Ensure no auth headers are sent to AniList
+delete anilistClient.defaults.headers.common["Authorization"];
+
 // Memoized constants to prevent recreation - filtered for appropriate content
 const ANIME_GENRES = [
   "Action",
@@ -36,6 +49,79 @@ const FILTER_OPTIONS = {
   status: ["FINISHED", "RELEASING", "TBA"]
 };
 
+// Simple working GraphQL query
+const ANIME_SEARCH_QUERY = `
+  query AdvancedSearch(
+    $page: Int = 1,
+    $perPage: Int = 20,
+    $search: String,
+    $format_in: [MediaFormat],
+    $status_in: [MediaStatus],
+    $averageScore_greater: Int,
+    $season: MediaSeason,
+    $seasonYear: Int,
+    $genre_in: [String]
+  ) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo {
+        total
+        currentPage
+        lastPage
+        hasNextPage
+      }
+      media(
+        type: ANIME,
+        isAdult: false,
+        search: $search,
+        format_in: $format_in,
+        status_in: $status_in,
+        averageScore_greater: $averageScore_greater,
+        season: $season,
+        seasonYear: $seasonYear,
+        genre_in: $genre_in,
+        sort: POPULARITY_DESC
+      ) {
+        id
+        idMal
+        title {
+          romaji
+          english
+          native
+          userPreferred
+        }
+        coverImage {
+          large
+          extraLarge
+          medium
+          color
+        }
+        bannerImage
+        description
+        episodes
+        duration
+        format
+        status
+        genres
+        averageScore
+        meanScore
+        season
+        seasonYear
+        source
+        startDate {
+          year
+          month
+          day
+        }
+        endDate {
+          year
+          month
+          day
+        }
+      }
+    }
+  }
+`;
+
 function AdvancedSearch() {
   const [searchText, setSearchText] = useState("");
 
@@ -43,9 +129,9 @@ function AdvancedSearch() {
   const [filterOptions, setFilterOptions] = useState({
     type: [],
     status: ["RELEASING", "FINISHED"],
-    minimumScore: 7,
+    minimumScore: 0,
     season: "",
-    seasonYear: "2025",
+    seasonYear: "",
     genres: [],
   });
 
@@ -56,21 +142,21 @@ function AdvancedSearch() {
   const [currentPageNumber, setCurrentPageNumber] = useState(1);
   const [hasMorePages, setHasMorePages] = useState(true);
   const [totalResultsCount, setTotalResultsCount] = useState(0);
+  const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
 
   // Modal state
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedAnimeForModal, setSelectedAnimeForModal] = useState(null);
 
-
   // Memoized navigation helper
   const getActivePage = useCallback(() => {
-    const path = location.pathname;
+    const path = window.location.pathname;
     if (path === '/home' || path === '/') return 'home';
     if (path === '/list') return 'list';
     if (path === '/advance') return 'search';
     if (path === '/ai') return 'AI';
     return '';
-  }, [location.pathname]);
+  }, []);
 
   // Optimized dropdown toggle
   const toggleDropdown = useCallback((dropdownName) => {
@@ -92,42 +178,72 @@ function AdvancedSearch() {
   // Optimized input handler
   const handleInputChange = useCallback((event) => {
     const { name, value } = event.target;
-    setFilterOptions(prev => ({ ...prev, [name]: value }));
+    setFilterOptions(prev => ({
+      ...prev,
+      [name]: name === "minimumScore" ? parseFloat(value) : value
+    }));
   }, []);
 
   // Simplified anime data cleanup
   const cleanUpAnimeData = useCallback((rawAnime) => {
-    // Get the best title available
+    if (!rawAnime) {
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        title: "Unknown Title",
+        coverImage: {
+          large: '/placeholder-cover.png',
+          extraLarge: '/placeholder-cover.png',
+          medium: '/placeholder-cover.png',
+          color: null
+        },
+        bannerImage: '/placeholder-banner.png',
+        description: "No description available",
+        episodes: 0,
+        duration: 0,
+        format: "Unknown",
+        status: "Unknown",
+        genres: [],
+        startDate: "TBA",
+        endDate: "TBA",
+        season: "Unknown",
+        year: "Unknown",
+        score: "N/A",
+        averageScore: "N/A",
+        source: "Unknown",
+        _originalData: {}
+      };
+    }
+
+    // Safely extract title
     let bestTitle = "Untitled";
     if (typeof rawAnime.title === "string") {
       bestTitle = rawAnime.title;
-    } else if (rawAnime.title) {
-      bestTitle = rawAnime.title.romaji ||
+    } else if (rawAnime.title && typeof rawAnime.title === "object") {
+      bestTitle = rawAnime.title.userPreferred ||
+        rawAnime.title.romaji ||
         rawAnime.title.english ||
         rawAnime.title.native ||
         "Untitled";
     }
 
-    // Extract studio names from complex structure
-    let studioNames = ["Unknown"];
-    if (rawAnime.studios && rawAnime.studios.edges && rawAnime.studios.edges.length > 0) {
-      studioNames = rawAnime.studios.edges.map(edge => edge.node.name);
-    }
+    // Safely extract dates
+    const startDate = rawAnime.startDate ?
+      `${rawAnime.startDate.year || "?"}-${rawAnime.startDate.month || "?"}-${rawAnime.startDate.day || "?"}` :
+      "TBA";
 
-    // Make sure genres is always an array
-    let genreList = [];
-    if (rawAnime.genres && Array.isArray(rawAnime.genres)) {
-      genreList = rawAnime.genres;
-    }
+    const endDate = rawAnime.endDate ?
+      `${rawAnime.endDate.year || "?"}-${rawAnime.endDate.month || "?"}-${rawAnime.endDate.day || "?"}` :
+      "TBA";
 
     return {
-      id: rawAnime.id,
-      idMal: rawAnime.idMal || rawAnime.malId || undefined,
+      id: rawAnime.id || Math.random().toString(36).substr(2, 9),
+      idMal: rawAnime.idMal || undefined,
       title: bestTitle,
       coverImage: {
         large: rawAnime.coverImage?.large || '/placeholder-cover.png',
         extraLarge: rawAnime.coverImage?.extraLarge || '/placeholder-cover.png',
         medium: rawAnime.coverImage?.medium || '/placeholder-cover.png',
+        color: rawAnime.coverImage?.color || null
       },
       bannerImage: rawAnime.bannerImage || '/placeholder-banner.png',
       description: rawAnime.description || "No description available",
@@ -135,25 +251,24 @@ function AdvancedSearch() {
       duration: rawAnime.duration || 0,
       format: rawAnime.format || "Unknown",
       status: rawAnime.status || "Unknown",
-      genres: genreList,
-      studios: studioNames,
-      startDate: rawAnime.startDate || "TBA",
-      endDate: rawAnime.endDate || "TBA",
-      isAdult: rawAnime.isAdult || false,
-      popularity: rawAnime.popularity || 0,
-      trailer: rawAnime.trailer || null,
+      genres: Array.isArray(rawAnime.genres) ? rawAnime.genres : [],
+      startDate: startDate,
+      endDate: endDate,
       season: rawAnime.season || "Unknown",
-      year: rawAnime.seasonYear || rawAnime.year || "Unknown",
-      score: rawAnime.averageScore ?? "N/A",
-      seasonYear: rawAnime.seasonYear || rawAnime.year || "Unknown",
-      averageScore: rawAnime.averageScore ?? "N/A",
+      year: rawAnime.seasonYear || "Unknown",
+      score: rawAnime.averageScore ?? rawAnime.meanScore ?? "N/A",
+      seasonYear: rawAnime.seasonYear || "Unknown",
+      averageScore: rawAnime.averageScore ?? rawAnime.meanScore ?? "N/A",
       source: rawAnime.source || "Unknown",
       _originalData: rawAnime
     };
   }, []);
 
-  // Optimized search function
+  // Fixed search function using clean anilistClient
   const searchForAnime = useCallback(async (pageNumber = 1, isNewSearch = false, searchQuery = "") => {
+    console.log("=== SEARCH START ===");
+    console.log("Page:", pageNumber, "New search:", isNewSearch);
+
     if (isNewSearch) {
       setIsSearching(true);
     } else {
@@ -161,83 +276,86 @@ function AdvancedSearch() {
     }
 
     try {
-      const apiQuery = `
-        query (
-          $page: Int, 
-          $perPage: Int, 
-          $format_in: [MediaFormat], 
-          $status_in: [MediaStatus], 
-          $averageScore_greater: Int, 
-          $season: MediaSeason,
-          $seasonYear: Int, 
-          $genre_in: [String], 
-          $search: String,
-          $isAdult: Boolean
-        ) {
-          Page(page: $page, perPage: $perPage) {
-            pageInfo { total currentPage lastPage hasNextPage perPage }
-            media(
-              type: ANIME, 
-              format_in: $format_in, 
-              status_in: $status_in,
-              averageScore_greater: $averageScore_greater, 
-              season: $season, 
-              seasonYear: $seasonYear, 
-              genre_in: $genre_in, 
-              search: $search,
-              isAdult: $isAdult
-            ) {
-              id 
-              idMal 
-              title { english romaji native } 
-              description
-              coverImage { large extraLarge medium } 
-              bannerImage 
-              episodes 
-              averageScore  
-              status 
-              genres
-              season 
-              seasonYear 
-              format 
-              duration 
-              popularity 
-              startDate { year month day } 
-              endDate { year month day }
-              studios { edges { node { name } } } 
-              trailer { id site thumbnail } 
-              isAdult 
-              source
-            }
-          }
-        }
-      `;
-
+      // Build variables object
       const variables = {
         page: pageNumber,
-        perPage: 20,
-        isAdult: false, // Filter out adult content
-        ...(filterOptions.type.length && { format_in: filterOptions.type }),
-        ...(filterOptions.status.length && { status_in: filterOptions.status }),
-        averageScore_greater: filterOptions.minimumScore * 10,
-        ...(filterOptions.season && { season: filterOptions.season }),
-        ...(filterOptions.seasonYear && { seasonYear: parseInt(filterOptions.seasonYear) }),
-        ...(filterOptions.genres.length && { genre_in: filterOptions.genres }),
-        ...(searchQuery && { search: searchQuery })
+        perPage: 20
       };
 
-      const response = await axios.post("https://graphql.anilist.co", {
-        query: apiQuery,
-        variables
-      }, {
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
+      // Add search if present
+      if (searchQuery && searchQuery.trim().length > 0) {
+        variables.search = searchQuery.trim();
+      }
+
+      // Add filters only if they have values
+      if (filterOptions.type && filterOptions.type.length > 0) {
+        variables.format_in = filterOptions.type;
+      }
+
+      if (filterOptions.status && filterOptions.status.length > 0) {
+        variables.status_in = filterOptions.status;
+      }
+
+      // Handle minimum score
+      if (filterOptions.minimumScore > 0) {
+        variables.averageScore_greater = Math.floor(filterOptions.minimumScore * 10);
+      }
+
+      // Handle season
+      if (filterOptions.season) {
+        variables.season = filterOptions.season;
+      }
+
+      // Handle year
+      if (filterOptions.seasonYear && filterOptions.seasonYear.trim() !== "") {
+        const year = parseInt(filterOptions.seasonYear);
+        if (!isNaN(year) && year > 1900) {
+          variables.seasonYear = year;
+        }
+      }
+
+      // Handle genres
+      if (filterOptions.genres && filterOptions.genres.length > 0) {
+        variables.genre_in = filterOptions.genres;
+      }
+
+      // Remove undefined variables
+      Object.keys(variables).forEach(key => {
+        if (variables[key] === undefined ||
+          variables[key] === null ||
+          (Array.isArray(variables[key]) && variables[key].length === 0)) {
+          delete variables[key];
         }
       });
 
+      console.log("API Variables:", JSON.stringify(variables, null, 2));
+
+      // Use the clean anilistClient (no auth headers)
+      const response = await anilistClient.post("/", {
+        query: ANIME_SEARCH_QUERY,
+        variables
+      });
+
+      console.log("=== API RESPONSE ===");
+      console.log("Response status:", response.status);
+
+      if (response.data.errors) {
+        console.error("GraphQL Errors:", response.data.errors);
+        throw new Error(response.data.errors[0]?.message || "GraphQL error");
+      }
+
+      if (!response.data?.data?.Page) {
+        console.error("Invalid response structure:", response.data);
+        throw new Error("Invalid API response structure");
+      }
+
       const responseData = response.data.data.Page;
       const cleanedAnimeList = responseData.media.map(cleanUpAnimeData);
+
+      console.log("Cleaned anime list length:", cleanedAnimeList.length);
+      if (cleanedAnimeList.length > 0) {
+        console.log("First anime:", cleanedAnimeList[0].title);
+      }
 
       setHasMorePages(responseData.pageInfo.hasNextPage);
       setTotalResultsCount(responseData.pageInfo.total);
@@ -255,7 +373,21 @@ function AdvancedSearch() {
       }
 
     } catch (error) {
-      console.error("Search error:", error.message);
+      console.error("=== SEARCH ERROR ===");
+      console.error("Error message:", error.message);
+
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        console.error("Error status:", error.response.status);
+
+        if (error.response.data?.errors) {
+          console.error("GraphQL errors:", JSON.stringify(error.response.data.errors, null, 2));
+        }
+      }
+
+      if (isNewSearch) {
+        setSearchResults([]);
+      }
     } finally {
       setIsSearching(false);
       setIsLoadingMore(false);
@@ -264,13 +396,46 @@ function AdvancedSearch() {
   }, [filterOptions, cleanUpAnimeData]);
 
   // Debounced search effect
+  const hasActiveFilters = useMemo(() => {
+    return filterOptions.genres.length > 0 ||
+      filterOptions.type.length > 0 ||
+      filterOptions.season ||
+      filterOptions.minimumScore > 0;
+  }, [filterOptions]);
+
+  // Add this useEffect to trigger staggered animations
   useEffect(() => {
-    const searchDelay = setTimeout(() => {
-      searchForAnime(1, true, searchText.trim());
+    if (searchResults.length > 0) {
+      const timer = setTimeout(() => {
+        const cards = document.querySelectorAll(`.${styles.animeCard}`);
+        cards.forEach((card, index) => {
+          setTimeout(() => {
+            card.classList.add(styles.animateIn);
+          }, index * 50); // 50ms delay between each card
+        });
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchResults, styles.animeCard]);
+
+  useEffect(() => {
+    // Allow first fetch on mount
+    if (!hasFetchedOnce) {
+      setHasFetchedOnce(true);
+      searchForAnime(1, true);
+      return;
+    }
+
+    // After first fetch, require intent
+    if (!searchText && !hasActiveFilters) return;
+
+    const t = setTimeout(() => {
+      searchForAnime(1, true, searchText.trim() || undefined);
     }, 300);
 
-    return () => clearTimeout(searchDelay);
-  }, [searchText, filterOptions, searchForAnime]);
+    return () => clearTimeout(t);
+  }, [searchText, hasActiveFilters, hasFetchedOnce, searchForAnime]);
 
   // Optimized infinite scroll
   const handleScrollToBottom = useCallback(() => {
@@ -303,9 +468,9 @@ function AdvancedSearch() {
     setFilterOptions({
       type: [],
       status: ["FINISHED", "RELEASING"],
-      minimumScore: 7,
+      minimumScore: 0,
       season: "",
-      seasonYear: "2025",
+      seasonYear: "",
       genres: [],
     });
     setSearchResults([]);
@@ -313,6 +478,7 @@ function AdvancedSearch() {
     setHasMorePages(true);
     setTotalResultsCount(0);
     setSearchText("");
+    setHasFetchedOnce(false);
   }, []);
 
   // Memoized filter count
@@ -378,7 +544,6 @@ function AdvancedSearch() {
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-
             viewBox="0 0 26 26">
             <path fill="inherit"
               d="M10 .188A9.812 9.812 0 0 0 .187 10A9.812 9.812 0 0 0 10 19.813c2.29 0 4.393-.811 6.063-2.125l.875.875a1.845 1.845 0 0 0 .343 2.156l4.594 4.625c.713.714 1.88.714 2.594 0l.875-.875a1.84 1.84 0 0 0 0-2.594l-4.625-4.594a1.824 1.824 0 0 0-2.157-.312l-.875-.875A9.812 9.812 0 0 0 10 .188zM10 2a8 8 0 1 1 0 16a8 8 0 0 1 0-16zM4.937 7.469a5.446 5.446 0 0 0-.812 2.875a5.46 5.46 0 0 0 5.469 5.469a5.516 5.516 0 0 0 3.156-1a7.166 7.166 0 0 1-.75.03a7.045 7.045 0 0 1-7.063-7.062c0-.104-.005-.208 0-.312z" />
@@ -393,7 +558,7 @@ function AdvancedSearch() {
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 512 512">
-            <path fill="inherit" fill-rule="evenodd" d="M384 128v256H128V128zm-148.25 64h-24.932l-47.334 128h22.493l8.936-25.023h56.662L260.32 320h23.847zm88.344 0h-22.402v128h22.402zm-101 21.475l22.315 63.858h-44.274zM405.335 320H448v42.667h-42.667zm-256 85.333H192V448h-42.667zm85.333 0h42.666V448h-42.666zM149.333 64H192v42.667h-42.667zM320 405.333h42.667V448H320zM234.667 64h42.666v42.667h-42.666zM320 64h42.667v42.667H320zm85.333 170.667H448v42.666h-42.667zM64 320h42.667v42.667H64zm341.333-170.667H448V192h-42.667zM64 234.667h42.667v42.666H64zm0-85.334h42.667V192H64z" />
+            <path fill="inherit" fillRule="evenodd" d="M384 128v256H128V128zm-148.25 64h-24.932l-47.334 128h22.493l8.936-25.023h56.662L260.32 320h23.847zm88.344 64h-22.402v128h22.402zm-101 21.475l22.315 63.858h-44.274zM405.335 320H448v42.667h-42.667zm-256 85.333H192V448h-42.667zm85.333 0h42.666V448h-42.666zM149.333 64H192v42.667h-42.667zM320 405.333h42.667V448H320zM234.667 64h42.666v42.667h-42.666zM320 64h42.667v42.667H320zm85.333 170.667H448v42.666h-42.667zM64 320h42.667v42.667H64zm341.333-170.667H448V192h-42.667zM64 234.667h42.667v42.666H64zm0-85.334h42.667V192H64z" />
           </svg>
         </Link>
       </div>
@@ -445,8 +610,9 @@ function AdvancedSearch() {
                   <input
                     type="range"
                     name="minimumScore"
-                    min="1"
+                    min="0"
                     max="10"
+                    step="0.5"
                     value={filterOptions.minimumScore}
                     onChange={handleInputChange}
                   />
@@ -512,10 +678,12 @@ function AdvancedSearch() {
                 <input
                   type="number"
                   name="seasonYear"
-                  placeholder="Enter year"
+                  placeholder="Enter year (e.g., 2024)"
                   value={filterOptions.seasonYear}
                   onChange={handleInputChange}
                   className={styles.textInput}
+                  min="1960"
+                  max={new Date().getFullYear() + 5}
                 />
               </div>
             </div>
@@ -539,25 +707,34 @@ function AdvancedSearch() {
 
           {/* Optimized Anime Grid */}
           <div className={styles.animeGrid}>
-            {searchResults.map(anime => (
-              <div
-                key={anime.id}
-                className={styles.animeCard}
-                onClick={() => showAnimeDetails(anime)}
-              >
-                <div className={styles.homeCardImage2}>
-                  <img
-                    src={anime.coverImage?.extraLarge || anime.coverImage?.large || "/placeholder-anime.jpg"}
-                    alt={anime.title || "Anime"}
-                    loading="lazy"
-                    onError={(e) => (e.currentTarget.src = "/placeholder-anime.jpg")}
-                  />
-                  <div className={styles.cardTitleBottom}>
-                    <h3>{anime.title}</h3>
+            {searchResults.map(anime => {
+              const imageUrl = anime.coverImage?.extraLarge ||
+                anime.coverImage?.large ||
+                "/placeholder-anime.jpg";
+
+              return (
+                <div
+                  key={anime.id}
+                  className={styles.animeCard}
+                  onClick={() => showAnimeDetails(anime)}
+                >
+                  <div className={styles.homeCardImage2}>
+                    <img
+                      src={imageUrl}
+                      alt={anime.title || "Anime"}
+                      loading="lazy"
+                      onError={(e) => {
+                        console.log("Image failed to load:", imageUrl);
+                        e.currentTarget.src = "/placeholder-anime.jpg";
+                      }}
+                    />
+                    <div className={styles.cardTitleBottom}>
+                      <h3>{anime.title || "Untitled Anime"}</h3>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Loading States */}

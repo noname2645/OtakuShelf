@@ -145,12 +145,50 @@
   max-width: 220px;
   border-radius: 15px;
   transition: all 0.3s ease;
+  animation: fadeInUp 0.5s ease-out forwards;
+  transform: translateY(20px);
 }
+
+/* Staggered delays */
+.anime-grid .anime-card2:nth-child(1) { animation-delay: 0.05s; }
+.anime-grid .anime-card2:nth-child(2) { animation-delay: 0.1s; }
+.anime-grid .anime-card2:nth-child(3) { animation-delay: 0.15s; }
+.anime-grid .anime-card2:nth-child(4) { animation-delay: 0.2s; }
+.anime-grid .anime-card2:nth-child(5) { animation-delay: 0.25s; }
+.anime-grid .anime-card2:nth-child(6) { animation-delay: 0.3s; }
+.anime-grid .anime-card2:nth-child(7) { animation-delay: 0.35s; }
+.anime-grid .anime-card2:nth-child(8) { animation-delay: 0.4s; }
+.anime-grid .anime-card2:nth-child(9) { animation-delay: 0.45s; }
+.anime-grid .anime-card2:nth-child(10) { animation-delay: 0.5s; }
+.anime-grid .anime-card2:nth-child(11) { animation-delay: 0.55s; }
+.anime-grid .anime-card2:nth-child(12) { animation-delay: 0.6s; }
+.anime-grid .anime-card2:nth-child(13) { animation-delay: 0.65s; }
+.anime-grid .anime-card2:nth-child(14) { animation-delay: 0.7s; }
+.anime-grid .anime-card2:nth-child(15) { animation-delay: 0.75s; }
+.anime-grid .anime-card2:nth-child(16) { animation-delay: 0.8s; }
+.anime-grid .anime-card2:nth-child(17) { animation-delay: 0.85s; }
+.anime-grid .anime-card2:nth-child(18) { animation-delay: 0.9s; }
+.anime-grid .anime-card2:nth-child(19) { animation-delay: 0.95s; }
+.anime-grid .anime-card2:nth-child(20) { animation-delay: 1s; }
+.anime-grid .anime-card2:nth-child(n+21) { animation-delay: 1s; }
+
+/* Simple fade-in-up animation - ensure this exists */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 
 .anime-card2.loaded {
   opacity: 1;
   transform: translateY(0);
-  animation: fadeInUp 0.3s ease-out forwards;
+  animation: fadeInUp 0.5s ease-out forwards !important;
   z-index: 20;
 }
 
@@ -619,6 +657,24 @@
 }
 
 /* Responsive Design */
+
+/* Add to existing mobile responsive styles in home.css */
+
+@media (max-width: 992px) {
+  /* Adjust animation delays for mobile */
+  .anime-grid .anime-card2:nth-child(n) {
+    animation-delay: calc(var(--index, 0) * 0.03s);
+  }
+}
+
+/* Add to reduce-motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .anime-card2 {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
 /* Tablet (768px and below) */
 @media (max-width: 768px) {
   .anime-grid {

@@ -385,25 +385,51 @@ body {
   border-radius: 15px;
   transition: all 0.3s ease;
   cursor: pointer;
-  transform: translateY(20px);
+  opacity: 1; /* CHANGED: Start visible */
+  transform: translateY(0); /* CHANGED: Start at normal position */
   transition: opacity 0.3s ease, transform 0.3s ease;
   will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+  animation: none; /* Remove initial animation */
 }
 
-.animeCard.loaded {
-  opacity: 1;
-  transform: translateY(0);
-  animation: fadeInUp 0.3s ease-out forwards;
+/* NEW: Simple staggered animation that triggers automatically */
+.animeCard {
+  animation: fadeInUp 0.5s ease-out forwards;
+  opacity: 0; /* Start invisible but animation makes it visible */
+  transform: translateY(20px);
 }
 
+/* Staggered delays */
+.animeGrid .animeCard:nth-child(1) { animation-delay: 0.05s; }
+.animeGrid .animeCard:nth-child(2) { animation-delay: 0.1s; }
+.animeGrid .animeCard:nth-child(3) { animation-delay: 0.15s; }
+.animeGrid .animeCard:nth-child(4) { animation-delay: 0.2s; }
+.animeGrid .animeCard:nth-child(5) { animation-delay: 0.25s; }
+.animeGrid .animeCard:nth-child(6) { animation-delay: 0.3s; }
+.animeGrid .animeCard:nth-child(7) { animation-delay: 0.35s; }
+.animeGrid .animeCard:nth-child(8) { animation-delay: 0.4s; }
+.animeGrid .animeCard:nth-child(9) { animation-delay: 0.45s; }
+.animeGrid .animeCard:nth-child(10) { animation-delay: 0.5s; }
+.animeGrid .animeCard:nth-child(11) { animation-delay: 0.55s; }
+.animeGrid .animeCard:nth-child(12) { animation-delay: 0.6s; }
+.animeGrid .animeCard:nth-child(13) { animation-delay: 0.65s; }
+.animeGrid .animeCard:nth-child(14) { animation-delay: 0.7s; }
+.animeGrid .animeCard:nth-child(15) { animation-delay: 0.75s; }
+.animeGrid .animeCard:nth-child(16) { animation-delay: 0.8s; }
+.animeGrid .animeCard:nth-child(17) { animation-delay: 0.85s; }
+.animeGrid .animeCard:nth-child(18) { animation-delay: 0.9s; }
+.animeGrid .animeCard:nth-child(19) { animation-delay: 0.95s; }
+.animeGrid .animeCard:nth-child(20) { animation-delay: 1s; }
+
+/* Simple fade-in-up animation */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -412,7 +438,6 @@ body {
 }
 
 .animeCard:hover {
-  transform: translateY(-8px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
 }
 
@@ -477,10 +502,6 @@ body {
   object-fit: cover;
 }
 
-/* Remove old anime card styles */
-.animeCard:hover {
-  transform: translateY(-8px) !important;
-}
 
 /* Mobile Responsiveness - Enhanced */
 @media (max-width: 1200px) {
@@ -524,6 +545,11 @@ body {
   
   .dropdownContent .genresGrid {
     grid-template-columns: 1fr 1fr 1fr;
+  }
+  
+  /* Adjust animation delays for mobile */
+  .animeGrid .animeCard:nth-child(n) {
+    animation-delay: calc(var(--index, 0) * 0.05s);
   }
 }
 
@@ -937,9 +963,9 @@ body {
     transform: none !important;
   }
   
-  .animeCard.loaded {
-    opacity: 1;
-    transform: none;
+  .animeCard {
+    opacity: 1 !important;
+    transform: none !important;
   }
   
   .animeCard:hover {

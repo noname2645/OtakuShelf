@@ -17,10 +17,11 @@ const useInView = () => {
     return [ref, true]; // Always return true to show immediately
 };
 // Optimized Anime Card Component
+// Updated AnimeCard component in home.jsx
 const AnimeCard = React.memo(({ anime, onClick, index }) => {
     const [isMobile, setIsMobile] = useState(false);
     const [imageSrc, setImageSrc] = useState('/placeholder-anime.jpg');
-    const [loaded, setLoaded] = useState(false);
+    // Remove the loaded state since animation is automatic now
 
     // Check mobile on mount
     useEffect(() => {
@@ -40,11 +41,11 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
         img.src = imgUrl;
         img.onload = () => {
             setImageSrc(imgUrl);
-            setLoaded(true);
+            // Remove setLoaded(true) since we don't need it
         };
         img.onerror = () => {
             setImageSrc('/placeholder-anime.jpg');
-            setLoaded(true);
+            // Remove setLoaded(true) since we don't need it
         };
     }, [anime]);
 
@@ -57,10 +58,10 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
 
     return (
         <div
-            className={`anime-card2 ${loaded ? 'loaded' : ''}`}
+            className={`anime-card2`} // Remove 'loaded' class
             onClick={handleClick}
             style={{
-                animationDelay: `${index * 0.03}s`,
+                animationDelay: `${index * 0.03}s`, // Keep this for initial load
                 height: cardHeight,
                 width: cardWidth,
                 minHeight: cardHeight,
@@ -82,7 +83,6 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
         </div>
     );
 });
-
 AnimeCard.displayName = 'AnimeCard';
 
 const AnimeHomepage = () => {
@@ -151,6 +151,7 @@ const AnimeHomepage = () => {
             source: anime.source || null,
         };
     }, []);
+
 
     // Check mobile on mount and resize
     useEffect(() => {
@@ -351,6 +352,27 @@ const AnimeHomepage = () => {
     const processedTopAiring = useMemo(() => topAiring.filter(Boolean), [topAiring]);
     const processedMostWatched = useMemo(() => mostWatched.filter(Boolean), [mostWatched]);
     const processedTopMovies = useMemo(() => topMovies.filter(Boolean), [topMovies]);
+
+        // Add this useEffect in AnimeHomepage component (around line where you have other useEffects)
+    useEffect(() => {
+        // Trigger staggered animations when search results or sections load
+        if (processedTopAiring.length > 0 || processedMostWatched.length > 0 || processedTopMovies.length > 0 || searchResults.length > 0) {
+            const timer = setTimeout(() => {
+                const cards = document.querySelectorAll('.anime-card2');
+                cards.forEach((card, index) => {
+                    // Reset animation to trigger it
+                    card.style.animation = 'none';
+                    setTimeout(() => {
+                        card.style.animation = '';
+                        card.style.animationDelay = `${(index % 20) * 0.05}s`;
+                    }, 10);
+                });
+            }, 100);
+
+            return () => clearTimeout(timer);
+        }
+    }, [processedTopAiring, processedMostWatched, processedTopMovies, searchResults, isSearching]);
+
 
     // Loading state
     if (loading && !isSearching) {

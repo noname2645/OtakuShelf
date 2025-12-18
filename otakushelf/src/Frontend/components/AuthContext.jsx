@@ -16,12 +16,11 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Set axios authorization header if token exists
-  const token = localStorage.getItem("token");
-  if (token) {
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  }
-
+  // REMOVED: Don't set global axios headers here
+  // const token = localStorage.getItem("token");
+  // if (token) {
+  //   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  // }
 
   // FIXED: Handle token from URL parameters first, before checking auth status
   useEffect(() => {
@@ -32,7 +31,7 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         console.log('Token found in URL:', token);
         localStorage.setItem("token", token);
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        // Don't set global header, set per request instead
 
         // Clean URL immediately
         window.history.replaceState({}, document.title, "/");
@@ -101,7 +100,6 @@ export const AuthProvider = ({ children }) => {
         withCredentials: true,
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
-
 
       if (response.data.user) {
         console.log('User authenticated:', response.data.user);
