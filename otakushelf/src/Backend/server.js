@@ -12,9 +12,17 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import session from "express-session";
 import MongoStore from 'connect-mongo';
 import dotenv from "dotenv";
-import path from 'path';
-import { fileURLToPath } from 'url';
+import xml2js from 'xml2js';
+import fileUpload from 'express-fileupload';
+import axios from 'axios';
 dotenv.config();
+
+const parseMALDate = (dateStr) => {
+  if (!dateStr || dateStr === '0000-00-00') return null;
+
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+};
 
 
 const app = express();
@@ -24,6 +32,13 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // CRITICAL: Trust proxy for Render deployment
 app.set('trust proxy', 1);
+
+// FIXED: File upload middleware MUST come first
+app.use(fileUpload({
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  useTempFiles: false,
+  createParentPath: true
+}));
 
 // Middleware
 const allowedOrigins = [
@@ -96,6 +111,52 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", userSchema);
 
+const jikanImageCache = new Map();
+
+const fetchJikanImage = async (malId) => {
+  // 1️⃣ Return from cache if exists
+  if (jikanImageCache.has(malId)) {
+    return jikanImageCache.get(malId);
+  }
+
+  try {
+    const res = await axios.get(
+      `https://api.jikan.moe/v4/anime/${malId}`,
+      {
+        headers: {
+          "User-Agent": "OtakuShelf/1.0 (contact: dev@otakushelf.app)",
+          "Accept": "application/json"
+        },
+        timeout: 15000
+      }
+    );
+
+    const image =
+      res.data?.data?.images?.jpg?.large_image_url || null;
+
+    // 2️⃣ Cache result (even if null)
+    jikanImageCache.set(malId, image);
+
+    return image;
+  } catch (err) {
+    // 3️⃣ If rate limited → STOP hammering
+    if (err.response?.status === 429) {
+      console.warn("Jikan rate limit hit. Skipping further image fetches.");
+      return null;
+    }
+
+    console.error(
+      `Jikan fetch failed for MAL ID ${malId}`,
+      err.response?.status,
+      err.response?.data || err.message
+    );
+    return null;
+  }
+};
+
+
+
+
 // =======================
 // Anime List Schema
 // =======================
@@ -106,47 +167,51 @@ const animeListSchema = new mongoose.Schema({
     animeId: String,
     malId: String,
     image: String,
-    totalEpisodes: Number,  // ← ADD THIS
-    episodes: Number,       // ← ALSO ADD THIS FOR COMPATIBILITY
+    totalEpisodes: Number,
+    episodes: Number,
     addedDate: { type: Date, default: Date.now },
     finishDate: Date,
     userRating: Number,
-    episodesWatched: Number,
+    episodesWatched: { type: Number, default: 0 },
+    status: { type: String, default: 'watching' }
   }],
   completed: [{
     title: String,
     animeId: String,
     malId: String,
     image: String,
-    totalEpisodes: Number,  // ← ADD THIS
-    episodes: Number,       // ← ADD THIS
+    totalEpisodes: Number,
+    episodes: Number,
     addedDate: { type: Date, default: Date.now },
     finishDate: Date,
     userRating: Number,
-    episodesWatched: Number,
+    episodesWatched: { type: Number, default: 0 },
+    status: { type: String, default: 'completed' }
   }],
   planned: [{
     title: String,
     animeId: String,
     malId: String,
     image: String,
-    totalEpisodes: Number,  // ← ADD THIS
-    episodes: Number,       // ← ADD THIS
+    totalEpisodes: Number,
+    episodes: Number,
     addedDate: { type: Date, default: Date.now },
     plannedDate: Date,
-    notes: String
+    notes: String,
+    status: { type: String, default: 'planned' }
   }],
   dropped: [{
     title: String,
     animeId: String,
     malId: String,
     image: String,
-    totalEpisodes: Number,  // ← ADD THIS
-    episodes: Number,       // ← ADD THIS
+    totalEpisodes: Number,
+    episodes: Number,
     addedDate: { type: Date, default: Date.now },
     droppedDate: Date,
     reason: String,
-    episodesWatched: Number
+    episodesWatched: { type: Number, default: 0 },
+    status: { type: String, default: 'dropped' }
   }]
 });
 const AnimeList = mongoose.model("AnimeList", animeListSchema);
@@ -220,7 +285,7 @@ app.post("/auth/register", async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const hashed = await bcrypt.hash(password, 12); // Increased salt rounds
+    const hashed = await bcrypt.hash(password, 12);
     const newUser = new User({
       email,
       password: hashed,
@@ -258,7 +323,6 @@ app.post("/auth/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // FIXED: Better session handling
     req.login(user, (err) => {
       if (err) {
         console.error("Session login error:", err);
@@ -328,7 +392,6 @@ app.get("/auth/me", (req, res) => {
     }
   }
 
-  // fallback: session-based auth
   if (req.isAuthenticated() && req.user) {
     return res.json({ user: req.user });
   } else {
@@ -353,7 +416,7 @@ app.get("/auth/logout", (req, res) => {
       }
 
       res.clearCookie('sessionId');
-      res.clearCookie('connect.sid'); // Fallback for default name
+      res.clearCookie('connect.sid');
       console.log('User logged out successfully:', userEmail);
       res.json({ message: "Logged out successfully" });
     });
@@ -375,7 +438,6 @@ app.post("/api/list/:userId", async (req, res) => {
       list = new AnimeList({ userId, watching: [], completed: [], planned: [], dropped: [] });
     }
 
-    // Remove from all categories first
     const allCategories = ['watching', 'completed', 'planned', 'dropped'];
     for (const cat of allCategories) {
       const index = list[cat].findIndex(item => item.title === animeTitle);
@@ -384,7 +446,6 @@ app.post("/api/list/:userId", async (req, res) => {
       }
     }
 
-    // FIXED: Create anime entry WITH episode data
     const animeEntry = {
       title: animeTitle,
       animeId: animeData?.id || animeData?.mal_id || animeData?.malId || null,
@@ -397,10 +458,10 @@ app.post("/api/list/:userId", async (req, res) => {
         null,
       totalEpisodes: animeData?.totalEpisodes || animeData?.episodes || animeData?.episodeCount || 24,
       episodes: animeData?.totalEpisodes || animeData?.episodes || animeData?.episodeCount || 24,
-      addedDate: new Date()
+      addedDate: new Date(),
+      status: category
     };
 
-    // Add status-specific fields
     if (category === 'watching') {
       animeEntry.startDate = new Date();
       animeEntry.episodesWatched = 0;
@@ -409,11 +470,9 @@ app.post("/api/list/:userId", async (req, res) => {
     if (category === 'completed') {
       animeEntry.startDate = new Date();
       animeEntry.finishDate = new Date();
-      animeEntry.episodesWatched = animeEntry.totalEpisodes; // 🔥 FIX
+      animeEntry.episodesWatched = animeEntry.totalEpisodes;
     }
 
-
-    // Add other possible fields
     if (animeData?.userRating) animeEntry.userRating = animeData.userRating;
     if (animeData?.notes) animeEntry.notes = animeData.notes;
 
@@ -426,22 +485,267 @@ app.post("/api/list/:userId", async (req, res) => {
   }
 });
 
-// Get specific anime list with details
+// FIXED: MAL Import Route
+app.post('/api/list/import/mal', async (req, res) => {
+  try {
+    console.log('=== MAL IMPORT STARTED ===');
+
+    if (!req.files || !req.files.malFile) {
+      console.log('ERROR: No file in request');
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please select an XML file.'
+      });
+    }
+
+    const malFile = req.files.malFile;
+    const userId = req.body.userId;
+
+    console.log('User ID:', userId);
+    console.log('File name:', malFile.name);
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    // Parse XML
+    const parser = new xml2js.Parser();
+    const xmlText = malFile.data.toString('utf8');
+
+    const xmlData = await parser.parseStringPromise(xmlText);
+
+    if (!xmlData.myanimelist || !xmlData.myanimelist.anime) {
+      return res.status(400).json({
+        success: false,
+        message: 'No anime data found in XML file'
+      });
+    }
+
+    const animeEntries = xmlData.myanimelist.anime;
+    console.log(`Found ${animeEntries.length} anime entries`);
+
+    // Debug first entry to see structure
+    if (animeEntries.length > 0) {
+      console.log('=== FIRST ENTRY STRUCTURE ===');
+      const firstEntry = animeEntries[0];
+      Object.keys(firstEntry).forEach(key => {
+        console.log(`${key}:`, firstEntry[key]?.[0]);
+      });
+    }
+
+    let importedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    // Get or create user list
+    let userList = await AnimeList.findOne({ userId });
+    if (!userList) {
+      userList = new AnimeList({
+        userId,
+        watching: [],
+        completed: [],
+        planned: [],
+        dropped: []
+      });
+      await userList.save();
+      console.log('Created new list for user');
+    }
+
+    // Process each anime entry
+    for (let i = 0; i < animeEntries.length; i++) {
+      try {
+        const entry = animeEntries[i];
+
+        // Extract all possible fields
+        const malId = entry.series_animedb_id?.[0];
+        const title = entry.series_title?.[0];
+        const malStatus = entry.my_status?.[0];
+        const episodesWatched = parseInt(entry.my_watched_episodes?.[0]) || 0;
+        const totalEpisodes = parseInt(entry.series_episodes?.[0]) || 24;
+        const userRating = parseInt(entry.my_score?.[0]) || 0;
+        const startDate = parseMALDate(entry.my_start_date?.[0]);
+        const finishDate = parseMALDate(entry.my_finish_date?.[0]);
+
+
+        console.log(`Processing: ${title} | Status: ${malStatus} | Start: ${startDate} | Finish: ${finishDate}`);
+
+        // Validate required fields
+        if (!malId || !title || !malStatus) {
+          console.log(`Skipping: missing required fields`);
+          skippedCount++;
+          continue;
+        }
+
+        // Map MAL status to your categories
+        let category;
+        const status = malStatus.toString().toLowerCase();
+
+        if (status === '1' || status === 'watching') {
+          category = 'watching';
+        } else if (status === '2' || status === 'completed') {
+          category = 'completed';
+        } else if (status === '3' || status === 'on-hold') {
+          category = 'planned';
+        } else if (status === '4' || status === 'dropped') {
+          category = 'dropped';
+        } else if (status === '6' || status === 'plan to watch') {
+          category = 'planned';
+        } else {
+          console.log(`Skipping: unknown status "${malStatus}"`);
+          skippedCount++;
+          continue;
+        }
+
+        // Determine the best date to use for grouping
+        let addedDate;
+
+        if (finishDate) {
+          addedDate = finishDate;
+          console.log(`Using finish date`);
+        } else if (startDate) {
+          addedDate = startDate;
+          console.log(`Using start date`);
+        } else {
+          addedDate = new Date();
+          console.log(`Using current date`);
+        }
+
+
+        // Validate date
+        if (isNaN(addedDate.getTime())) {
+          addedDate = new Date();
+          console.log(`Invalid date, using current date`);
+        }
+
+
+        const imageUrl = await fetchJikanImage(malId);
+        await new Promise(r => setTimeout(r, 800));
+
+
+        // Create anime object WITH PROPER DATE
+        const animeObj = {
+          title: title.trim(),
+          animeId: malId.toString(),
+          malId: malId.toString(),
+          image: imageUrl,
+
+          totalEpisodes,
+          episodes: totalEpisodes,
+          episodesWatched: Math.min(episodesWatched, totalEpisodes),
+          userRating: userRating > 0 ? Math.min(userRating / 2, 5) : 0,
+
+          addedDate,                 // always Date
+          startDate: startDate ?? undefined,
+          finishDate: finishDate ?? undefined,
+
+          status: category
+        };
+
+
+
+        // For completed anime, set episodes watched to total
+        if (category === 'completed') {
+          animeObj.episodesWatched = totalEpisodes;
+          animeObj.finishDate = addedDate; // Use the finish date
+        }
+
+        // Check if anime already exists in ANY category
+        let exists = false;
+        const categories = ['watching', 'completed', 'planned', 'dropped'];
+
+        for (const cat of categories) {
+          const existingIndex = userList[cat].findIndex(
+            anime => anime.malId === malId.toString() ||
+              anime.title.toLowerCase() === title.toLowerCase().trim()
+          );
+
+          if (existingIndex !== -1) {
+            // Update existing entry WITH NEW DATE
+            userList[cat][existingIndex] = {
+              ...userList[cat][existingIndex],
+              ...animeObj
+            };
+            updatedCount++;
+            exists = true;
+            console.log(`Updated: ${title.substring(0, 30)}...`);
+            break;
+          }
+        }
+
+        // If doesn't exist, add to appropriate category
+        if (!exists) {
+          userList[category].push(animeObj);
+          importedCount++;
+          console.log(`Added: ${title.substring(0, 30)}... to ${category}`);
+        }
+
+      } catch (entryError) {
+        console.error(`Error processing entry ${i}:`, entryError);
+        skippedCount++;
+      }
+    }
+
+    // Save the updated list
+    await userList.save();
+
+    console.log(`=== IMPORT COMPLETED ===`);
+    console.log(`Total found: ${animeEntries.length}`);
+    console.log(`Imported: ${importedCount}`);
+    console.log(`Updated: ${updatedCount}`);
+    console.log(`Skipped: ${skippedCount}`);
+
+    res.json({
+      success: true,
+      importedCount,
+      updatedCount,
+      skippedCount,
+      totalFound: animeEntries.length,
+      message: `Successfully imported ${importedCount} new anime and updated ${updatedCount} existing ones`
+    });
+
+  } catch (error) {
+    console.error('MAL Import error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Import failed',
+      error: error.message
+    });
+  }
+});
+
+// Get anime list with error handling
 app.get("/api/list/:userId", async (req, res) => {
   try {
-    let list = await AnimeList.findOne({ userId: req.params.userId });
+    const userId = req.params.userId;
+
+    // Validate userId
+    if (!userId || typeof userId !== 'string' || userId.length < 10) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    let list = await AnimeList.findOne({ userId });
 
     if (!list) {
       // Create empty list if it doesn't exist
       list = new AnimeList({
-        userId: req.params.userId,
+        userId: userId,
         watching: [],
         completed: [],
         planned: [],
         dropped: []
       });
       await list.save();
+      console.log('Created new empty list for user:', userId);
     }
+
+    // Ensure all arrays exist
+    if (!Array.isArray(list.watching)) list.watching = [];
+    if (!Array.isArray(list.completed)) list.completed = [];
+    if (!Array.isArray(list.planned)) list.planned = [];
+    if (!Array.isArray(list.dropped)) list.dropped = [];
 
     res.json(list);
   } catch (err) {
@@ -449,7 +753,6 @@ app.get("/api/list/:userId", async (req, res) => {
     res.status(500).json({ message: "Error fetching list", error: err.message });
   }
 });
-
 
 // Update anime in list
 app.put("/api/list/:userId/:animeId", async (req, res) => {
@@ -464,7 +767,6 @@ app.put("/api/list/:userId/:animeId", async (req, res) => {
     let anime = null;
     let currentCategory = null;
 
-    // 🔍 Find anime in ANY category
     for (const cat of categories) {
       const found = list[cat].id(animeId);
       if (found) {
@@ -478,36 +780,30 @@ app.put("/api/list/:userId/:animeId", async (req, res) => {
       return res.status(404).json({ message: "Anime not found" });
     }
 
-    // ✅ Safe updates
     if (episodesWatched !== undefined) {
       anime.episodesWatched = episodesWatched;
     }
 
-    // 🔁 Handle status change
     if (status && categories.includes(status) && status !== currentCategory) {
-      
-        // remove from old category
-        list[currentCategory] = list[currentCategory].filter(
-          a => a._id.toString() !== anime._id.toString()
-        );
+      list[currentCategory] = list[currentCategory].filter(
+        a => a._id.toString() !== anime._id.toString()
+      );
 
-        // ensure episodesWatched exists when moving to completed
-        if (status === "completed" && anime.episodesWatched === undefined) {
-          anime.episodesWatched = anime.totalEpisodes || 24;
-        }
-
-        list[status].push(anime);
+      if (status === "completed" && anime.episodesWatched === undefined) {
+        anime.episodesWatched = anime.totalEpisodes || 24;
       }
 
-      await list.save();
-      res.json({ message: "Anime updated", list });
-    } catch (err) {
-      console.error("PUT UPDATE ERROR:", err);
-      res.status(500).json({ error: err.message });
+      anime.status = status;
+      list[status].push(anime);
     }
-  });
 
-
+    await list.save();
+    res.json({ message: "Anime updated", list });
+  } catch (err) {
+    console.error("PUT UPDATE ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Remove anime from list
 app.delete("/api/list/:userId/:animeId", async (req, res) => {
@@ -540,13 +836,13 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
   }
 });
 
+// List middleware
 app.use("/api/list/:userId", async (req, res, next) => {
   try {
     const userId = req.params.userId;
     const list = await AnimeList.findOne({ userId });
 
     if (!list) {
-      // Create empty list if it doesn't exist
       const newList = new AnimeList({
         userId,
         watching: [],
@@ -564,16 +860,24 @@ app.use("/api/list/:userId", async (req, res, next) => {
   }
 });
 
-
 // =======================
 // Other Routes
 // =======================
 app.use('/api/anime', animeRoutes);
 app.use('/api/anilist', anilistRoutes);
 
-
 app.use("/auth", (req, res, next) => next());
 app.use("/api", (req, res, next) => next());
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
 
 // Server
 const server = http.createServer(app);

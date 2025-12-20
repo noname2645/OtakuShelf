@@ -137,6 +137,56 @@
   transform: translateY(-1px);
 }
 
+/* Import button styling */
+.import-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1rem 0 2rem;
+}
+
+.import-btn {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  display: inline-block;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+}
+
+.import-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+}
+
+.import-progress {
+  width: 300px;
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  padding: 8px;
+}
+
+.import-progress .progress-bar {
+  height: 8px;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.import-progress span {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
 .count-badge {
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;

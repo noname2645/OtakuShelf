@@ -6,7 +6,6 @@ import { Navigate } from "react-router-dom";
 import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
 
-
 const EnhancedAnimeList = () => {
   const [activeTab, setActiveTab] = useState('watching');
   const [animeList, setAnimeList] = useState({
@@ -17,37 +16,138 @@ const EnhancedAnimeList = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
 
+  const getFallbackImage = (animeTitle) => {
+    const encodedTitle = encodeURIComponent(animeTitle || 'Anime Poster');
+    return `https://placehold.co/300x180/667eea/ffffff?text=${encodedTitle}&font=roboto`;
+  };
+
+  // FIXED: Proper user extraction with debugging
   const user = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem("user"));
+      const userStr = localStorage.getItem("user");
+      console.log("Raw user from localStorage:", userStr);
+
+      if (!userStr) {
+        console.log("No user found in localStorage");
+        return null;
+      }
+
+      const storedUser = JSON.parse(userStr);
+      console.log("Parsed user:", storedUser);
+
+      // Normalize user object - ensure _id exists
+      const normalizedUser = {
+        ...storedUser,
+        _id: storedUser._id || storedUser.id,
+        id: storedUser._id || storedUser.id
+      };
+
+      console.log("Normalized user:", normalizedUser);
+
+      if (!normalizedUser._id) {
+        console.error("User object has no ID:", normalizedUser);
+        return null;
+      }
+
+      return normalizedUser;
     } catch (e) {
       console.error("Error parsing user from localStorage:", e);
       return null;
     }
   }, []);
 
+  const handleMALImport = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.name.endsWith('.xml') && file.type !== 'application/xml' && file.type !== 'text/xml') {
+      alert('Please select a valid XML file exported from MyAnimeList');
+      event.target.value = '';
+      return;
+    }
+
+    // Ask user if they want to clear existing data
+    const clearExisting = window.confirm(
+      'Clear existing anime list and import fresh from MAL?\n\n' +
+      'OK = Clear and import fresh\n' +
+      'Cancel = Add to existing list'
+    );
+
+    setImporting(true);
+    setImportProgress(0);
+
+    const formData = new FormData();
+    formData.append('malFile', file);
+
+    if (!user || !user._id) {
+      alert('User not found. Please log in again.');
+      setImporting(false);
+      return;
+    }
+
+    formData.append('userId', user._id);
+    formData.append('clearExisting', clearExisting.toString());
+
+    console.log("Sending import request with userId:", user._id, "clearExisting:", clearExisting);
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/list/import/mal', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        },
+        onUploadProgress: (progressEvent) => {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setImportProgress(percent);
+        }
+      });
+
+      console.log('Import response:', response.data);
+
+      if (response.data.success) {
+        alert(`Success! ${response.data.message}`);
+        fetchAnimeList();
+      } else {
+        alert(`Import failed: ${response.data.message}`);
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      alert(`Failed to import: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setImporting(false);
+      setImportProgress(0);
+      event.target.value = '';
+    }
+  };
   const fetchAnimeList = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      if (!user) {
-        console.error("No user found");
+      if (!user || !user._id) {
+        console.error("No user or user ID found");
+        setError("Please log in to view your list");
+        setLoading(false);
         return;
       }
 
-      const userId = user._id || user.id;
-      if (!userId) {
-        console.error("No user ID found");
-        return;
-      }
+      const userId = user._id;
+      console.log("Fetching list for user ID:", userId);
 
-      const response = await axios.get(`http://localhost:5000/api/list/${userId}`);
+      const response = await axios.get(`http://localhost:5000/api/list/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        }
+      });
+
+      console.log("List API response:", response.data);
 
       let listData = response.data;
 
-      // Ensure all categories are arrays
       const normalizedList = {
         watching: [],
         completed: [],
@@ -55,25 +155,27 @@ const EnhancedAnimeList = () => {
         dropped: [],
       };
 
-      if (listData.watching !== undefined || listData.completed !== undefined ||
-        listData.planned !== undefined || listData.dropped !== undefined) {
+      // Extract lists from response
+      if (listData) {
         normalizedList.watching = Array.isArray(listData.watching) ? listData.watching : [];
         normalizedList.completed = Array.isArray(listData.completed) ? listData.completed : [];
         normalizedList.planned = Array.isArray(listData.planned) ? listData.planned : [];
         normalizedList.dropped = Array.isArray(listData.dropped) ? listData.dropped : [];
-      } else if (listData.list) {
-        normalizedList.watching = Array.isArray(listData.list.watching) ? listData.list.watching : [];
-        normalizedList.completed = Array.isArray(listData.list.completed) ? listData.list.completed : [];
-        normalizedList.planned = Array.isArray(listData.list.planned) ? listData.list.planned : [];
-        normalizedList.dropped = Array.isArray(listData.list.dropped) ? listData.list.dropped : [];
-      } else if (Array.isArray(listData)) {
-        normalizedList.watching = listData;
       }
+
+      console.log("Normalized list counts:", {
+        watching: normalizedList.watching.length,
+        completed: normalizedList.completed.length,
+        planned: normalizedList.planned.length,
+        dropped: normalizedList.dropped.length
+      });
 
       setAnimeList(normalizedList);
     } catch (error) {
       console.error("Error fetching list:", error);
-      setError(error.message);
+      console.error("Error response:", error.response?.data);
+
+      setError(error.response?.data?.message || error.message || "Failed to load anime list");
       setAnimeList({
         watching: [],
         completed: [],
@@ -87,7 +189,11 @@ const EnhancedAnimeList = () => {
 
   useEffect(() => {
     if (user) {
+      console.log("User detected, fetching list...");
       fetchAnimeList();
+    } else {
+      console.log("No user, setting loading to false");
+      setLoading(false);
     }
   }, [user, fetchAnimeList]);
 
@@ -95,7 +201,6 @@ const EnhancedAnimeList = () => {
     setAnimeList(prev => {
       const newList = { ...prev };
 
-      // Update anime in ALL categories, not just active tab
       Object.keys(newList).forEach(category => {
         if (Array.isArray(newList[category])) {
           newList[category] = newList[category].map(anime => {
@@ -115,24 +220,17 @@ const EnhancedAnimeList = () => {
     setAnimeList(prev => {
       const newList = { ...prev };
 
-      // Ensure categories are arrays
       if (!Array.isArray(newList[fromCategory])) newList[fromCategory] = [];
       if (!Array.isArray(newList[toCategory])) newList[toCategory] = [];
 
-      // Find the anime in the source category
       const animeIndex = newList[fromCategory].findIndex(
         anime => anime._id === animeId || anime.animeId === animeId
       );
 
       if (animeIndex === -1) return prev;
 
-      // Get the anime
       const [anime] = newList[fromCategory].splice(animeIndex, 1);
-
-      // Update the anime with new status
       const updatedAnime = { ...anime, status: toCategory };
-
-      // Add to target category
       newList[toCategory].push(updatedAnime);
 
       return newList;
@@ -143,7 +241,28 @@ const EnhancedAnimeList = () => {
     const groups = {};
 
     animeList.forEach(anime => {
-      const date = new Date(anime.addedDate || anime.createdAt || Date.now());
+      // Debug the date
+      console.log(`Processing anime: ${anime.title}, addedDate: ${anime.addedDate}`);
+
+      let date;
+
+      // Try different date formats
+      if (anime.addedDate) {
+        date = new Date(anime.addedDate);
+      } else if (anime.createdAt) {
+        date = new Date(anime.createdAt);
+      } else if (anime.updatedAt) {
+        date = new Date(anime.updatedAt);
+      } else {
+        date = new Date();
+      }
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn(`Invalid date for anime: ${anime.title}, using current date`);
+        date = new Date();
+      }
+
       const month = date.toLocaleString('default', { month: 'long' });
       const year = date.getFullYear();
       const key = `${month} ${year}`;
@@ -151,7 +270,7 @@ const EnhancedAnimeList = () => {
       if (!groups[key]) {
         groups[key] = {
           title: `${month} ${year}`,
-          sortDate: date,
+          sortDate: new Date(year, date.getMonth(), 1), // Use first day of month for consistent sorting
           anime: []
         };
       }
@@ -159,17 +278,57 @@ const EnhancedAnimeList = () => {
       groups[key].anime.push(anime);
     });
 
-    // Convert to array and sort by date descending
-    return Object.values(groups).sort((a, b) => b.sortDate - a.sortDate);
+    // Debug groups
+    console.log('Groups created:', Object.keys(groups));
+
+    // Convert to array and sort by date descending (newest first)
+    const sortedGroups = Object.values(groups).sort((a, b) => b.sortDate - a.sortDate);
+
+    console.log('Sorted groups:', sortedGroups.map(g => ({
+      title: g.title,
+      count: g.anime.length,
+      sortDate: g.sortDate
+    })));
+
+    return sortedGroups;
   }, []);
+
+  // Utility function to parse dates safely - handle MAL date format
+  const parseDateSafe = (dateString) => {
+    if (!dateString) return new Date();
+
+    // Handle MAL date format (YYYY-MM-DD)
+    if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      return new Date(year, month - 1, day); // month is 0-indexed in JavaScript
+    }
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return new Date();
+      }
+      return date;
+    } catch (error) {
+      return new Date();
+    }
+  };
 
   const handleRemove = useCallback(async (animeId) => {
     if (window.confirm('Are you sure you want to remove this anime from your list?')) {
       try {
-        const userId = user?._id || user?.id;
-        await axios.delete(`http://localhost:5000/api/list/${userId}/${animeId}`);
+        if (!user || !user._id) {
+          alert('User not found');
+          return;
+        }
 
-        // Update local state immediately
+        const userId = user._id;
+        await axios.delete(`http://localhost:5000/api/list/${userId}/${animeId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          }
+        });
+
         setAnimeList(prev => {
           const newList = { ...prev };
           Object.keys(newList).forEach(category => {
@@ -199,29 +358,31 @@ const EnhancedAnimeList = () => {
   }, []);
 
   const calculateProgress = useCallback((episodesWatched, totalEpisodes = 24) => {
-    if (!episodesWatched || episodesWatched === 0) return 0;
+    if (!episodesWatched || episodesWatched === 0 || !totalEpisodes || totalEpisodes === 0) return 0;
     return Math.min((episodesWatched / totalEpisodes) * 100, 100);
   }, []);
 
   const formatEpisodeText = useCallback((episodesWatched, totalEpisodes) => {
     if (episodesWatched === 0) return `0 / ${totalEpisodes} episodes`;
-    return `${episodesWatched} / ${totalEpisodes} episodes`;
+    return `${episodesWatched || 0} / ${totalEpisodes} episodes`;
   }, []);
 
   const handleIncrementEpisode = async (anime) => {
-    const userId = user._id || user.id;
+    if (!user || !user._id) {
+      alert('User not found');
+      return;
+    }
+
+    const userId = user._id;
     const animeId = anime._id || anime.animeId;
     const totalEpisodes = anime.totalEpisodes || anime.episodes || anime.episodeCount || 24;
     const currentEpisodes = anime.episodesWatched || 0;
 
-    // Don't increment if already completed
     if (currentEpisodes >= totalEpisodes) {
       return;
     }
 
     const updatedEpisodes = currentEpisodes + 1;
-
-    // Optimistically update UI - update in all categories
     updateAnimeInList(animeId, { episodesWatched: updatedEpisodes });
 
     try {
@@ -230,52 +391,51 @@ const EnhancedAnimeList = () => {
         {
           episodesWatched: updatedEpisodes,
           category: activeTab
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          }
         }
       );
 
-      // AUTO-SHIFT TO COMPLETED: Check if all episodes are watched
       if (updatedEpisodes >= totalEpisodes) {
-        // Get the current status from the anime object
         const currentStatus = anime.status || activeTab;
 
-        // Only move if not already in completed tab
         if (currentStatus !== "completed") {
-          // Update local state immediately - move to completed
           moveAnimeBetweenCategories(animeId, currentStatus, "completed");
 
-          // Update server with new status
           await axios.put(
             `http://localhost:5000/api/list/${userId}/${animeId}`,
             {
               episodesWatched: totalEpisodes,
               status: "completed",
               fromCategory: currentStatus
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+              }
             }
           );
-        } else {
-          // If already in completed tab, just update episodes
-          updateAnimeInList(animeId, {
-            episodesWatched: totalEpisodes,
-            status: "completed"
-          });
         }
       }
     } catch (err) {
       console.error("Failed to update episode count", err);
-      // Revert on error
       updateAnimeInList(animeId, { episodesWatched: currentEpisodes });
     }
   };
 
   const handleStatusChange = async (anime, newStatus) => {
-    const userId = user._id || user.id;
+    if (!user || !user._id) {
+      alert('User not found');
+      return;
+    }
+
+    const userId = user._id;
     const animeId = anime._id || anime.animeId;
     const totalEpisodes = anime.totalEpisodes || anime.episodes || anime.episodeCount || 24;
-
-    // Get current status from anime object
     const currentStatus = anime.status || activeTab;
-
-    // Get current episodes watched
     const currentEpisodes = anime.episodesWatched || 0;
 
     try {
@@ -283,20 +443,17 @@ const EnhancedAnimeList = () => {
         status: newStatus,
         fromCategory: currentStatus
       };
+
       if (newStatus === "completed") {
         payload.episodesWatched = totalEpisodes;
-      }
-      else if (currentStatus === "completed") {
+      } else if (currentStatus === "completed") {
         payload.episodesWatched = currentEpisodes;
       }
 
-      // Update local state optimistically
       let episodeUpdate = {};
-
       if (newStatus === "completed") {
         episodeUpdate = { episodesWatched: totalEpisodes };
       } else if (currentStatus === "completed") {
-        // Keep current
         episodeUpdate = { episodesWatched: currentEpisodes };
       }
 
@@ -305,18 +462,21 @@ const EnhancedAnimeList = () => {
         ...episodeUpdate
       });
 
-      // Move between categories in local state
       if (currentStatus !== newStatus) {
         moveAnimeBetweenCategories(animeId, currentStatus, newStatus);
       }
 
       await axios.put(
         `http://localhost:5000/api/list/${userId}/${animeId}`,
-        payload
+        payload,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          }
+        }
       );
     } catch (err) {
       console.error("Failed to update status", err);
-      // On error, refetch to sync with server
       fetchAnimeList();
     }
   };
@@ -325,18 +485,17 @@ const EnhancedAnimeList = () => {
     const list = animeList[activeTab];
     if (!Array.isArray(list)) return [];
 
-    // First sort the list by addedDate
     const sortedList = [...list].sort((a, b) => {
       const dateA = new Date(a.addedDate || a.createdAt || a.updatedAt || 0);
       const dateB = new Date(b.addedDate || b.createdAt || b.updatedAt || 0);
       return dateB - dateA;
     });
 
-    // Then group by month/year
     return groupAnimeByMonthYear(sortedList);
   }, [animeList, activeTab, groupAnimeByMonthYear]);
 
   if (!user) {
+    console.log("No user, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
@@ -359,6 +518,25 @@ const EnhancedAnimeList = () => {
                 </span>
               </button>
             ))}
+          </div>
+
+          <div className="import-section">
+            <label className="import-btn">
+              <input
+                type="file"
+                accept=".xml"
+                onChange={handleMALImport}
+                style={{ display: 'none' }}
+                disabled={importing}
+              />
+              {importing ? '⏳ Importing...' : '📥 Import MAL List'}
+            </label>
+            {importing && (
+              <div className="import-progress">
+                <div className="progress-bar" style={{ width: `${importProgress}%` }}></div>
+                <span>Importing... {importProgress}%</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -403,7 +581,6 @@ const EnhancedAnimeList = () => {
                               value={animeStatus}
                               onChange={(e) => handleStatusChange(anime, e.target.value)}
                             >
-                        
                               <option value="watching">Watching</option>
                               <option value="completed">Completed</option>
                               <option value="planned">Planned</option>
@@ -413,10 +590,10 @@ const EnhancedAnimeList = () => {
 
                           <div className="card-poster">
                             <img
-                              src={anime.image || anime.poster || 'https://via.placeholder.com/300x180/667eea/ffffff?text=Anime+Poster'}
+                              src={anime.image || anime.poster || getFallbackImage(anime.title)}
                               alt={anime.title}
                               onError={(e) => {
-                                e.target.src = 'https://via.placeholder.com/300x180/667eea/ffffff?text=Anime+Poster';
+                                e.target.src = getFallbackImage(anime.title);
                               }}
                             />
 
@@ -472,6 +649,9 @@ const EnhancedAnimeList = () => {
               <div className="empty-state-cards">
                 <h3>No anime in this category yet</h3>
                 <p>Start adding anime to your {activeTab} list!</p>
+                <p style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                  Or import your MyAnimeList using the button above.
+                </p>
               </div>
             )}
           </div>
