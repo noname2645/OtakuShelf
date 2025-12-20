@@ -266,6 +266,7 @@
   margin: 0;
   text-align: center;
   letter-spacing: 0.6px;
+  margin-bottom: 3px;
 }
 
 .episode-info {
@@ -275,8 +276,8 @@
   color: #ffffff;
   font-size: 0.9rem;
   font-weight: 500;
-  margin-bottom: 8px;
   font-family: 'Inter', sans-serif;
+  margin-bottom: 8px;
 }
 
 .episode-dot {
@@ -332,6 +333,19 @@
 .epincbtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.epincbtn {
+  padding: 2px 12px 2px 12px;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  margin-left: 8%;
 }
 
 .rating-section {
@@ -545,6 +559,40 @@
   font-family: 'Poppins', sans-serif;
   color: #667eea;
   font-size: 1.1rem;
+}
+.status-badge-select {
+  background: transparent;
+  border: none;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  cursor: pointer;
+  outline: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge-select option {
+  color: black;
+  background: white;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+/* Ensure the dropdown arrow is visible */
+.status-badge-select::-ms-expand {
+  display: none;
+}
+
+.status-badge2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-badge-select:focus {
+  outline: none;
 }
 
 /* Responsive Design */

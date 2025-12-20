@@ -17,73 +17,6 @@ body {
   font-family: 'Bricolage Grotesque', sans-serif;
 }
 
-.bottom-button-bar {
-  --col-orange: #ff6608;
-  --col-dark: #05213c;
-  --col-darkGray: #a5a5a5;
-
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-  background: var(--col-dark);
-  border-radius: 30px;
-  padding: 10px 20px;
-  width: fit-content;
-}
-
-.bottom-button-bar .nav-label {
-  padding: 8px 18px;
-  cursor: pointer;
-  transition: all 200ms;
-  display: inline-block;
-}
-
-.bottom-button-bar input[type="radio"] {
-  display: none;
-}
-
-.bottom-button-bar .nav-label svg {
-  width: 24px;
-  height: 24px;
-  fill: var(--col-darkGray);
-  transition: 0.2s;
-  display: block;
-}
-
-.bottom-button-bar .nav-label:hover:not(.active) svg {
-  fill: #d17842;
-  opacity: 0.6;
-}
-
-.bottom-button-bar .nav-label.active svg {
-  fill: var(--col-orange);
-  scale: 1.2;
-  margin-top: -5px;
-}
-
-.bottom-button-bar .nav-label::before {
-  content: "";
-  position: relative;
-  top: 20px;
-  left: 50%;
-  width: 0%;
-  height: 2px;
-  border-radius: 5px;
-  background: var(--col-orange);
-  transition: all 0.2s;
-}
-
-.bottom-button-bar .nav-label.active::before {
-  width: 100%;
-  left: 0;
-  top: 25px;
-}
-
 .headerControls {
   display: flex;
   gap: 15px;
@@ -317,8 +250,6 @@ body {
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
-/* ... existing code above remains the same ... */
-
 /* Results Section */
 .resultsSection {
   margin-top: 20px;
@@ -385,21 +316,21 @@ body {
   border-radius: 15px;
   transition: all 0.3s ease;
   cursor: pointer;
-  opacity: 1; /* CHANGED: Start visible */
-  transform: translateY(0); /* CHANGED: Start at normal position */
+  opacity: 1;
+  transform: translateY(0);
   transition: opacity 0.3s ease, transform 0.3s ease;
   will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   overflow: hidden;
-  animation: none; /* Remove initial animation */
+  animation: none;
 }
 
 /* NEW: Simple staggered animation that triggers automatically */
 .animeCard {
   animation: fadeInUp 0.5s ease-out forwards;
-  opacity: 0; /* Start invisible but animation makes it visible */
+  opacity: 0;
   transform: translateY(20px);
 }
 
@@ -502,7 +433,6 @@ body {
   object-fit: cover;
 }
 
-
 /* Mobile Responsiveness - Enhanced */
 @media (max-width: 1200px) {
   .animeGrid {
@@ -547,7 +477,6 @@ body {
     grid-template-columns: 1fr 1fr 1fr;
   }
   
-  /* Adjust animation delays for mobile */
   .animeGrid .animeCard:nth-child(n) {
     animation-delay: calc(var(--index, 0) * 0.05s);
   }
@@ -702,28 +631,6 @@ body {
     font-size: 11px;
     padding: 8px 16px;
   }
-  
-  /* Bottom Navigation for Mobile */
-  .bottom-button-bar {
-    bottom: 10px;
-    padding: 8px 15px;
-    border-radius: 25px;
-    width: 90%;
-    max-width: 400px;
-  }
-  
-  .bottom-button-bar .nav-label {
-    padding: 6px 12px;
-  }
-  
-  .bottom-button-bar .nav-label svg {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .bottom-button-bar .nav-label.active::before {
-    top: 22px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -779,6 +686,31 @@ body {
   
   .cardTitleBottom h3 {
     font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .advancedSearchContainer {
+    padding: 10px;
+    padding-top: 80px;
+  }
+  
+  .dropdownFilters {
+    gap: 5px;
+  }
+  
+  .animeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px;
+  }
+  
+  .animeCard {
+    height: 180px;
+    max-width: 100px;
+  }
+  
+  .cardTitleBottom h3 {
+    font-size: 0.7rem;
   }
 }
 
@@ -880,46 +812,6 @@ body {
   }
 }
 
-/* Very small screens */
-@media (max-width: 320px) {
-  .advancedSearchContainer {
-    padding: 10px;
-    padding-top: 80px;
-  }
-  
-  .dropdownFilters {
-    gap: 5px;
-  }
-  
-  .animeGrid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 6px;
-  }
-  
-  .animeCard {
-    height: 180px;
-    max-width: 100px;
-  }
-  
-  .cardTitleBottom h3 {
-    font-size: 0.7rem;
-  }
-  
-  .bottom-button-bar {
-    width: 95%;
-    padding: 6px 12px;
-  }
-  
-  .bottom-button-bar .nav-label {
-    padding: 4px 8px;
-  }
-  
-  .bottom-button-bar .nav-label svg {
-    width: 18px;
-    height: 18px;
-  }
-}
-
 /* Touch Device Optimizations */
 @media (hover: none) and (pointer: coarse) {
   .animeCard {
@@ -928,21 +820,18 @@ body {
     transition-duration: 0.15s;
   }
   
-  /* Prevent accidental text selection */
   * {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
   }
   
-  /* Allow selection on text inputs */
   input,
   textarea {
     -webkit-user-select: text;
     user-select: text;
   }
   
-  /* Remove hover effects on touch devices */
   .animeCard:hover {
     transform: translateY(0);
   }
@@ -983,10 +872,5 @@ body {
     padding-left: max(20px, env(safe-area-inset-left));
     padding-right: max(20px, env(safe-area-inset-right));
     padding-bottom: max(20px, env(safe-area-inset-bottom));
-  }
-  
-  .bottom-button-bar {
-    bottom: max(20px, env(safe-area-inset-bottom));
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 }
