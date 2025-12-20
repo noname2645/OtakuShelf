@@ -50,6 +50,7 @@ const FILTER_OPTIONS = {
 };
 
 // Simple working GraphQL query
+// Enhanced GraphQL query with related anime and trailer
 const ANIME_SEARCH_QUERY = `
   query AdvancedSearch(
     $page: Int = 1,
@@ -116,6 +117,44 @@ const ANIME_SEARCH_QUERY = `
           year
           month
           day
+        }
+        # Add trailer data
+        trailer {
+          id
+          site
+          thumbnail
+        }
+        # Add studio data
+        studios {
+          nodes {
+            name
+          }
+        }
+        # Add relations data
+        relations {
+          edges {
+            relationType
+            node {
+              id
+              idMal
+              title {
+                romaji
+                english
+                native
+                userPreferred
+              }
+              coverImage {
+                large
+                extraLarge
+                medium
+                color
+              }
+              format
+              status
+              episodes
+              averageScore
+            }
+          }
         }
       }
     }
@@ -210,6 +249,9 @@ function AdvancedSearch() {
         score: "N/A",
         averageScore: "N/A",
         source: "Unknown",
+        trailer: null,
+        studios: { nodes: [] },
+        relations: { edges: [] },
         _originalData: {}
       };
     }
@@ -234,6 +276,49 @@ function AdvancedSearch() {
     const endDate = rawAnime.endDate ?
       `${rawAnime.endDate.year || "?"}-${rawAnime.endDate.month || "?"}-${rawAnime.endDate.day || "?"}` :
       "TBA";
+
+    // Clean trailer data
+    const trailer = rawAnime.trailer ? {
+      id: rawAnime.trailer.id || null,
+      site: rawAnime.trailer.site || null,
+      thumbnail: rawAnime.trailer.thumbnail || null
+    } : null;
+
+    // Clean studios data
+    const studios = {
+      nodes: rawAnime.studios?.nodes?.map(node => ({
+        name: node.name || "Unknown Studio"
+      })) || []
+    };
+
+    // Clean relations data to prevent object rendering issues
+    const relations = {
+      edges: rawAnime.relations?.edges?.map(edge => ({
+        relationType: edge.relationType || "RELATED",
+        node: edge.node ? {
+          id: edge.node.id,
+          idMal: edge.node.idMal,
+          title: typeof edge.node.title === 'string'
+            ? edge.node.title
+            : {
+              romaji: edge.node.title?.romaji || "",
+              english: edge.node.title?.english || "",
+              native: edge.node.title?.native || "",
+              userPreferred: edge.node.title?.userPreferred || ""
+            },
+          coverImage: edge.node.coverImage || {
+            large: '/placeholder-cover.png',
+            extraLarge: '/placeholder-cover.png',
+            medium: '/placeholder-cover.png',
+            color: null
+          },
+          format: edge.node.format || "Unknown",
+          status: edge.node.status || "Unknown",
+          episodes: edge.node.episodes || 0,
+          averageScore: edge.node.averageScore || null
+        } : null
+      })).filter(edge => edge.node !== null) || []
+    };
 
     return {
       id: rawAnime.id || Math.random().toString(36).substr(2, 9),
@@ -260,10 +345,12 @@ function AdvancedSearch() {
       seasonYear: rawAnime.seasonYear || "Unknown",
       averageScore: rawAnime.averageScore ?? rawAnime.meanScore ?? "N/A",
       source: rawAnime.source || "Unknown",
+      trailer: trailer,
+      studios: studios,
+      relations: relations,
       _originalData: rawAnime
     };
   }, []);
-
   // Fixed search function using clean anilistClient
   const searchForAnime = useCallback(async (pageNumber = 1, isNewSearch = false, searchQuery = "") => {
     console.log("=== SEARCH START ===");

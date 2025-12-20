@@ -184,137 +184,109 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
     );
   };
 
-  // Normalize AniList node
+  // Normalize AniList node - SIMPLIFIED VERSION
   const normalizeAniListNode = (edge) => {
     const node = edge.node;
     const imageUrl = getBestImageUrl(node);
 
+    // SAFELY extract title as a STRING, not an object
+    const getTitleString = () => {
+      if (!node.title) return "Untitled";
+      if (typeof node.title === 'string') return node.title;
+      if (typeof node.title === 'object') {
+        return node.title.english || 
+               node.title.romaji || 
+               node.title.native || 
+               "Untitled";
+      }
+      return "Untitled";
+    };
+
     return {
       // IDs
       id: node.id,
-      animeId: node.id,
-      animeMalId: node.idMal,
       idMal: node.idMal,
-      mal_id: node.idMal,
-
-      // Title
-      title: {
-        english: node.title?.english,
-        romaji: node.title?.romaji,
-        native: node.title?.native
-      },
-      title_english: node.title?.english,
-      title_romaji: node.title?.romaji,
-
+      
+      // Title as STRING, not object
+      title: getTitleString(),
+      
       // Images
       coverImage: {
+        extraLarge: node.coverImage?.extraLarge || imageUrl,
         large: node.coverImage?.large || imageUrl,
         medium: node.coverImage?.medium || imageUrl,
-        extraLarge: node.coverImage?.extraLarge || imageUrl,
       },
-
+      bannerImage: node.bannerImage || null,
+      
       // Details
       status: node.status,
       description: node.description,
-      synopsis: node.description,
       episodes: node.episodes,
-      episodeCount: node.episodes,
       averageScore: node.averageScore,
-      score: node.averageScore,
       format: node.format,
-      type: node.format,
-      genres: node.genres?.map(g => ({ name: g })) || node.genres,
-      studios: node.studios,
-      startDate: node.startDate,
-      endDate: node.endDate,
-      season: node.season,
-      seasonYear: node.seasonYear,
-      popularity: node.popularity,
-      isAdult: node.isAdult,
-
+      genres: node.genres || [],
+      
       // Trailer data
-      trailer: node.trailer ? {
-        id: node.trailer.id,
-        site: node.trailer.site,
-        youtube_id: node.trailer.site === "youtube" ? node.trailer.id : null,
-      } : null,
-      trailer_video_id: node.trailer?.site === "youtube" ? node.trailer.id : null,
-
+      trailer: node.trailer,
+      
       // Meta
       relationType: edge.relationType,
       source: "anilist",
+      
+      // Original data for debugging
+      _originalData: node
     };
   };
 
-  // Normalize Jikan entry
+  // Normalize Jikan entry - SIMPLIFIED VERSION
   const normalizeJikanEntry = useCallback(async (entry, relationName, signal) => {
     const details = await fetchJikanAnimeDetails(entry.mal_id, signal);
     if (!details) return null;
 
+    // SAFELY extract title as a STRING
+    const getTitleString = () => {
+      return details.title_english || 
+             details.title || 
+             details.title_japanese || 
+             "Untitled";
+    };
+
     return {
       // IDs
       id: details.mal_id,
-      animeId: details.anilist_id || null,
-      animeMalId: details.mal_id,
       idMal: details.mal_id,
-      mal_id: details.mal_id,
-
-      // Title
-      title: {
-        english: details.title_english || details.title,
-        romaji: details.title || details.title_english,
-        native: details.title_japanese
-      },
-      title_english: details.title_english,
-      title_romaji: details.title,
-
+      
+      // Title as STRING
+      title: getTitleString(),
+      
       // Images
       coverImage: {
+        extraLarge: details.images?.jpg?.large_image_url,
         large: details.images?.jpg?.large_image_url,
-        medium: details.images?.jpg?.image_url,
-        extraLarge: details.images?.jpg?.large_image_url
+        medium: details.images?.jpg?.image_url
       },
-      images: details.images,
-      image_url: details.images?.jpg?.large_image_url,
-
+      bannerImage: null,
+      
       // Details
       status: details.status,
       description: details.synopsis,
-      synopsis: details.synopsis,
       episodes: details.episodes,
-      episodeCount: details.episodes,
       averageScore: details.score ? Math.round(details.score * 10) : null,
-      score: details.score,
       format: details.type,
-      type: details.type,
-      genres: details.genres?.map(g => ({ name: g.name })) || [],
-      studios: details.studios?.map(s => ({ name: s.name })) || [],
-      startDate: details.aired?.from ? {
-        year: new Date(details.aired.from).getFullYear(),
-        month: new Date(details.aired.from).getMonth() + 1,
-        day: new Date(details.aired.from).getDate()
-      } : null,
-      endDate: details.aired?.to ? {
-        year: new Date(details.aired.to).getFullYear(),
-        month: new Date(details.aired.to).getMonth() + 1,
-        day: new Date(details.aired.to).getDate()
-      } : null,
-      season: details.season,
-      seasonYear: details.year,
-      popularity: details.popularity,
-      isAdult: details.rating?.includes("R") || details.rating?.includes("R+"),
-
+      genres: details.genres?.map(g => g.name) || [],
+      
       // Trailer data
       trailer: details.trailer ? {
-        youtube_id: details.trailer.youtube_id,
-        url: details.trailer.url,
-        embed_url: details.trailer.embed_url,
+        id: details.trailer.youtube_id,
+        site: "youtube"
       } : null,
-      trailer_video_id: details.trailer?.youtube_id,
-
+      
       // Meta
       relationType: relationName.toUpperCase().replace(/ /g, "_"),
       source: "jikan",
+      
+      // Original data for debugging
+      _originalData: details
     };
   }, [fetchJikanAnimeDetails]);
 
@@ -380,7 +352,9 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         }
 
         if (isMounted && !controller.signal.aborted) {
-          setRelated(normalized);
+          // Filter out any null entries and log the data
+          console.log("Related anime data:", normalized.filter(Boolean));
+          setRelated(normalized.filter(Boolean));
         }
       } catch (err) {
         if (isMounted && !controller.signal.aborted) {
@@ -455,8 +429,8 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
   if (!related.length) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: -10 }}   // starts invisible + slightly up
-        animate={{ opacity: 1, y: 0 }}     // fades in + slides down
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
         style={{
           marginTop: "50px",
@@ -477,9 +451,9 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
     );
   }
 
-
   // Group related anime by relation type
   const groupedRelated = related.reduce((acc, anime) => {
+    if (!anime) return acc;
     const relType = anime.relationType || "RELATED";
     if (!acc[relType]) acc[relType] = [];
     acc[relType].push(anime);
@@ -492,14 +466,15 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         <div key={relationType} className="relation-group">
           <h4 style={{ marginTop: "4px" }}>{formatRelationType(relationType)}</h4>
           <div className="related-grid">
-            {animeList.map((node) => (
-              <div key={`${node.id}-${node.relationType}`} className="anime-item">
-                <AnimeCard
-                  anime={node}
-                  onClick={() => onSelect && onSelect(node)}
-                  lazy={true}
-                />
-              </div>
+            {animeList.map((anime, index) => (
+              anime && (
+                <div key={`${anime.id || index}-${anime.relationType || 'unknown'}`} className="anime-item">
+                  <AnimeCard
+                    anime={anime}
+                    onClick={() => onSelect && onSelect(anime)}
+                  />
+                </div>
+              )
             ))}
           </div>
         </div>

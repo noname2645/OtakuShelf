@@ -185,7 +185,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             };
             return solidColors[genre] || "#666";
         }
-        
+
         // Gradients for desktop
         const gradientColors = {
             Action: "linear-gradient(135deg, #ff4b2b, #ff416c)",
@@ -215,15 +215,15 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             const categories = ['watching', 'completed', 'planned', 'dropped'];
             let foundStatus = null;
 
-            const animeTitle = typeof anime.title === 'string' 
-                ? anime.title 
+            const animeTitle = typeof anime.title === 'string'
+                ? anime.title
                 : anime.title?.english || anime.title?.romaji || anime.title?.native || "Untitled";
 
             for (const category of categories) {
                 const animeInCategory = userList[category] || [];
                 for (const item of animeInCategory) {
-                    if (item.title === animeTitle || 
-                        item.animeId === anime.id?.toString() || 
+                    if (item.title === animeTitle ||
+                        item.animeId === anime.id?.toString() ||
                         item.malId === anime.idMal?.toString()) {
                         foundStatus = category;
                         break;
@@ -256,7 +256,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
                 const titleLength = animeData.title.length;
                 titleElement.classList.remove('long-title', 'very-long-title');
-                
+
                 if (titleLength > 60) {
                     titleElement.classList.add('very-long-title');
                 } else if (titleLength > 35) {
@@ -348,13 +348,13 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                     <div className="modal-body">
                         <div className="modal-image-wrapper">
                             <div className="image-container">
-                                <img 
-                                    src={animeData.image} 
-                                    alt={animeData.title} 
-                                    loading="lazy" 
+                                <img
+                                    src={animeData.image}
+                                    alt={animeData.title}
+                                    loading="lazy"
                                     decoding="async"
                                 />
-                                
+
                                 {/* add-to-list-buttons */}
                                 <div className="add-to-list-buttons">
                                     {!isInList ? (
@@ -452,8 +452,8 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                             </p>
 
                                             {animeData.synopsis.length > SYNOPSIS_LIMIT && (
-                                                <button 
-                                                    className="read-more-btn" 
+                                                <button
+                                                    className="read-more-btn"
                                                     onClick={() => setSynopsisModalOpen(true)}
                                                 >
                                                     Read More
@@ -521,9 +521,26 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                         <RelatedTab
                                             animeId={anime.id}
                                             animeMalId={anime.idMal}
-                                            onSelect={(selectedNormalizedAnime) => {
+                                            onSelect={(selectedAnime) => {
                                                 if (typeof onOpenAnime === "function") {
-                                                    onOpenAnime(selectedNormalizedAnime);
+                                                    // Ensure we're passing a properly structured anime object
+                                                    const normalizedAnime = {
+                                                        id: selectedAnime.id,
+                                                        idMal: selectedAnime.idMal,
+                                                        title: selectedAnime.title, // This should be a string now
+                                                        coverImage: selectedAnime.coverImage,
+                                                        bannerImage: selectedAnime.bannerImage,
+                                                        description: selectedAnime.description,
+                                                        episodes: selectedAnime.episodes,
+                                                        format: selectedAnime.format,
+                                                        status: selectedAnime.status,
+                                                        genres: selectedAnime.genres,
+                                                        averageScore: selectedAnime.averageScore,
+                                                        trailer: selectedAnime.trailer,
+                                                        studios: selectedAnime.studios,
+                                                        ...selectedAnime._originalData
+                                                    };
+                                                    onOpenAnime(normalizedAnime);
                                                     setActiveTab("info");
                                                     setTrailerVideoId(null);
                                                 }
