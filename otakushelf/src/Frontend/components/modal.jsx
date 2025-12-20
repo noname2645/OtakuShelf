@@ -1,15 +1,18 @@
-// Enhanced Modal Component - Fixed Hooks Order Issue
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+// Ultra-Performance Modal Component - Optimized for 4x CPU slowdown + 3G
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import "../Stylesheets/modal.css";
 import RelatedTab from "./relatedsection.jsx";
 import Trailer from "./trailer";
-import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Check } from 'lucide-react';
 import { useAuth } from "../components/AuthContext.jsx";
 import axios from "axios";
 
+// Performance constants - computed once
+const IS_MOBILE = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+const SYNOPSIS_LIMIT = IS_MOBILE ? 70 : 600;
+
 const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
-    // ALL STATE AND REFS FIRST - ALWAYS CALLED
+    // ALL STATE AND REFS
     const [synopsisModalOpen, setSynopsisModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("info");
     const [trailerVideoId, setTrailerVideoId] = useState(null);
@@ -18,21 +21,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [isInList, setIsInList] = useState(false);
     const [userListStatus, setUserListStatus] = useState(null);
     const { user } = useAuth();
-    const isMobile = window.innerWidth <= 480;
-    const synopsisLimit = isMobile ? 70 : 600;
 
-    const prefersReducedMotion = window.matchMedia(
-        '(prefers-reduced-motion: reduce)'
-    ).matches;
-
-    const isLowEndMobile = window.innerWidth <= 480;
-
-
-
-    // ALL CALLBACKS - ALWAYS CALLED, NO CONDITIONS
-    const formatAniListDate = useCallback((dateObj) => {
+    // HELPER FUNCTIONS - No hooks for simple functions
+    const formatAniListDate = (dateObj) => {
         if (!dateObj) return "TBA";
-
         if (typeof dateObj === 'string') {
             const date = new Date(dateObj);
             const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -40,23 +32,22 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             const month = months[date.getMonth()];
             return `${day} ${month} ${date.getFullYear()}`;
         }
-
         if (!dateObj.year) return "TBA";
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const day = dateObj.day ? String(dateObj.day).padStart(2, "0") : "??";
         const month = dateObj.month ? months[dateObj.month - 1] : "??";
         return `${day} ${month} ${dateObj.year}`;
-    }, []);
+    };
 
-    const getScoreColor = useCallback((score) => {
+    const getScoreColor = (score) => {
         const numScore = parseFloat(score);
         if (numScore >= 80) return "#4ade80";
         if (numScore >= 70) return "#fbbf24";
         if (numScore >= 60) return "#fb923c";
         return "#ef4444";
-    }, []);
+    };
 
-    const getStatusColor = useCallback((status) => {
+    const getStatusColor = (status) => {
         if (!status) return "#6b7280";
         const normalizedStatus = status.toString().toUpperCase().replace(/\s+/g, '_');
         const statusColors = {
@@ -67,23 +58,15 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             "HIATUS": "#f59e0b"
         };
         return statusColors[normalizedStatus] || "#6b7280";
-    }, []);
+    };
 
-    const truncateSynopsis = useCallback((text, maxLength = 800) => {
+    const truncateSynopsis = (text, maxLength = 800) => {
         if (!text) return "No description available.";
         const cleanText = text.replace(/<[^>]*>/g, '');
         return cleanText.length > maxLength ? cleanText.substring(0, maxLength) + "..." : cleanText;
-    }, []);
+    };
 
-    const handleSynopsisClick = useCallback(() => {
-        setSynopsisModalOpen(true);
-    }, []);
-
-    const closeSynopsisModal = useCallback(() => {
-        setSynopsisModalOpen(false);
-    }, []);
-
-    const getAiredRange = useCallback(() => {
+    const getAiredRange = () => {
         if (!anime) return "TBA";
         if (anime.format === "MOVIE") {
             return anime.startDate ? formatAniListDate(anime.startDate) : "TBA";
@@ -96,56 +79,9 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             return `${startDate} - ${anime.status === 'RELEASING' ? 'Ongoing' : 'TBA'}`;
         }
         return "TBA";
-    }, [anime, formatAniListDate]);
+    };
 
-    const checkIfInList = useCallback(async () => {
-        if (!user || !anime) return;
-
-        try {
-            const response = await axios.get(`http://localhost:5000/api/list/${user._id || user.id}`);
-            const userList = response.data;
-            const categories = ['watching', 'completed', 'planned', 'dropped'];
-            let foundStatus = null;
-
-            // Get the anime title
-            let animeTitle = "Untitled";
-            if (anime) {
-                if (typeof anime.title === 'string') {
-                    animeTitle = anime.title;
-                } else if (anime.title && typeof anime.title === 'object') {
-                    animeTitle = anime.title.english || anime.title.romaji || anime.title.native || "Untitled";
-                }
-            }
-
-            for (const category of categories) {
-                const animeInCategory = userList[category] || [];
-                const foundAnime = animeInCategory.find(item => {
-                    return (
-                        item.title === animeTitle ||
-                        item.animeId === anime.id ||
-                        item.malId === anime.idMal ||
-                        (anime.id && item.animeId === anime.id.toString()) ||
-                        (anime.idMal && item.malId === anime.idMal.toString())
-                    );
-                });
-
-                if (foundAnime) {
-                    foundStatus = category;
-                    break;
-                }
-            }
-
-            setIsInList(foundStatus !== null);
-            setUserListStatus(foundStatus);
-
-        } catch (error) {
-            console.error("Error checking if anime is in list:", error);
-            setIsInList(false);
-            setUserListStatus(null);
-        }
-    }, [user, anime]);
-
-    // ALL MEMOS - ALWAYS CALLED
+    // Optimized animeData memo - minimal computations
     const animeData = useMemo(() => {
         if (!anime) {
             return {
@@ -163,143 +99,186 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             };
         }
 
+        // Fast title extraction
+        let title = "Untitled";
+        if (typeof anime.title === 'string') {
+            title = anime.title;
+        } else if (anime.title) {
+            title = anime.title.english || anime.title.romaji || anime.title.native || "Untitled";
+        }
+
+        // Fast image extraction
+        let image = "/placeholder-anime.jpg";
+        if (anime.coverImage) {
+            image = anime.coverImage.extraLarge || anime.coverImage.large || anime.coverImage.medium || image;
+        }
+        if (!image || image === "/placeholder-anime.jpg") {
+            image = anime.bannerImage || image;
+        }
+
+        // Fast genre extraction
+        let genres = [];
+        if (Array.isArray(anime.genres)) {
+            genres = anime.genres.slice(0, 5); // Limit to 5 genres
+        }
+
+        // Fast score calculation
+        let score = null;
+        if (anime.averageScore) {
+            score = (anime.averageScore / 10).toFixed(1);
+        } else if (anime.score && anime.score !== "N/A") {
+            score = (anime.score / 10).toFixed(1);
+        }
+
+        // Fast studio extraction
+        let studio = "N/A";
+        if (anime.studios) {
+            if (anime.studios.edges) {
+                const edges = anime.studios.edges.slice(0, 2); // Limit to 2 studios
+                studio = edges.map(edge => edge?.node?.name).filter(Boolean).join(", ") || "N/A";
+            } else if (anime.studios.nodes) {
+                const nodes = anime.studios.nodes.slice(0, 2);
+                studio = nodes.map(node => node?.name).filter(Boolean).join(", ") || "N/A";
+            }
+        }
+
+        // Fast format mapping
+        const formatMap = {
+            "TV": "TV", "TV_SHORT": "Short", "MOVIE": "Movie",
+            "SPECIAL": "Special", "OVA": "OVA", "ONA": "ONA", "MUSIC": "Music"
+        };
+        const format = anime.format ? (formatMap[anime.format] || anime.format) : (anime.type || "Unknown");
+
         return {
-            title: (() => {
-                if (typeof anime.title === 'string') return anime.title;
-                if (anime.title && typeof anime.title === 'object') {
-                    return anime.title.english || anime.title.romaji || anime.title.native || "Untitled";
-                }
-                return "Untitled";
-            })(),
-            image: (() => {
-                if (anime.coverImage) {
-                    return anime.coverImage.extraLarge ||
-                        anime.coverImage.large ||
-                        anime.coverImage.medium ||
-                        anime.bannerImage ||
-                        "/placeholder-anime.jpg";
-                }
-                return anime.bannerImage || "/placeholder-anime.jpg";
-            })(),
+            title,
+            image,
             trailerVideoId: anime.trailer?.site === "youtube" && anime.trailer?.id ? anime.trailer.id : null,
-            genres: (() => {
-                if (!anime.genres || !Array.isArray(anime.genres)) return [];
-                return anime.genres.map(g => {
-                    if (typeof g === 'string') return g;
-                    if (typeof g === 'object' && g.name) return g.name;
-                    return g;
-                }).filter(Boolean);
-            })(),
-            score: (() => {
-                if (anime.score && anime.score !== "N/A") return (anime.score / 10).toFixed(1);
-                if (anime.averageScore) return (anime.averageScore / 10).toFixed(1);
-                return null;
-            })(),
+            genres,
+            score,
             episodes: anime.episodes || anime.episodeCount || "?",
-            studio: (() => {
-                if (!anime.studios) return "N/A";
-                if (anime.studios.edges && Array.isArray(anime.studios.edges)) {
-                    return anime.studios.edges
-                        .filter(edge => edge.node && edge.node.name)
-                        .map(edge => edge.node.name)
-                        .join(", ") || "N/A";
-                }
-                if (anime.studios.nodes && Array.isArray(anime.studios.nodes)) {
-                    return anime.studios.nodes
-                        .filter(node => node && node.name)
-                        .map(node => node.name)
-                        .join(", ") || "N/A";
-                }
-                if (Array.isArray(anime.studios)) {
-                    return anime.studios.map(s => s.name || s).filter(Boolean).join(", ") || "N/A";
-                }
-                return "N/A";
-            })(),
+            studio,
             status: anime.status || "Unknown",
-            format: (() => {
-                if (!anime.format) return anime.type || "Unknown";
-                const formatMap = {
-                    "TV": "TV", "TV_SHORT": "Short", "MOVIE": "Movie",
-                    "SPECIAL": "Special", "OVA": "OVA", "ONA": "ONA", "MUSIC": "Music"
-                };
-                return formatMap[anime.format] || anime.format;
-            })(),
-            rating: (() => {
-                if (anime.isAdult) return "R - 17+ (violence & profanity)";
-                if (anime.rating) return anime.rating;
-                return "PG-13";
-            })(),
-            synopsis: (() => {
-                const stripHTML = (html) => {
-                    const doc = new DOMParser().parseFromString(html, 'text/html');
-                    return doc.body.textContent || "";
-                };
-                return stripHTML(anime.description || "No description available.");
-            })()
+            format,
+            rating: anime.isAdult ? "R - 17+ (violence & profanity)" : (anime.rating || "PG-13"),
+            synopsis: anime.description?.replace(/<[^>]*>/g, '') || "No description available."
         };
     }, [anime]);
 
-    const genreColors = useMemo(() => ({
-        Action: "linear-gradient(135deg, #ff4b2b, #ff416c)",
-        Adventure: "linear-gradient(135deg, #ff8c00, #ffdb58)",
-        Comedy: "linear-gradient(135deg, #ffcc00, #ffd700)",
-        Drama: "linear-gradient(135deg, #ff69b4, #ff1493)",
-        Fantasy: "linear-gradient(135deg, #8a2be2, #4b0082)",
-        Horror: "linear-gradient(135deg, #ff0000, #8b0000)",
-        Mystery: "linear-gradient(135deg, #00ced1, #1e90ff)",
-        Romance: "linear-gradient(135deg, #ff1493, #ff69b4)",
-        "Sci-Fi": "linear-gradient(135deg, #00bfff, #1e3c72)",
-        Sports: "linear-gradient(135deg, #32cd32, #228b22)",
-        Thriller: "linear-gradient(135deg, #ff4500, #ff6347)",
-        "Slice of Life": "linear-gradient(135deg, #20b2aa, #008080)",
-        Supernatural: "linear-gradient(135deg, #9932cc, #4b0082)"
-    }), []);
+    // Static genre colors for mobile (solid), gradients for desktop
+    const getGenreColor = (genre) => {
+        if (IS_MOBILE) {
+            // Solid colors for mobile performance
+            const solidColors = {
+                Action: "#ff4b2b",
+                Adventure: "#ff8c00",
+                Comedy: "#ffcc00",
+                Drama: "#ff69b4",
+                Fantasy: "#8a2be2",
+                Horror: "#ff0000",
+                Mystery: "#00ced1",
+                Romance: "#ff1493",
+                "Sci-Fi": "#00bfff",
+                Sports: "#32cd32",
+                Thriller: "#ff4500",
+                "Slice of Life": "#20b2aa",
+                Supernatural: "#9932cc"
+            };
+            return solidColors[genre] || "#666";
+        }
+        
+        // Gradients for desktop
+        const gradientColors = {
+            Action: "linear-gradient(135deg, #ff4b2b, #ff416c)",
+            Adventure: "linear-gradient(135deg, #ff8c00, #ffdb58)",
+            Comedy: "linear-gradient(135deg, #ffcc00, #ffd700)",
+            Drama: "linear-gradient(135deg, #ff69b4, #ff1493)",
+            Fantasy: "linear-gradient(135deg, #8a2be2, #4b0082)",
+            Horror: "linear-gradient(135deg, #ff0000, #8b0000)",
+            Mystery: "linear-gradient(135deg, #00ced1, #1e90ff)",
+            Romance: "linear-gradient(135deg, #ff1493, #ff69b4)",
+            "Sci-Fi": "linear-gradient(135deg, #00bfff, #1e3c72)",
+            Sports: "linear-gradient(135deg, #32cd32, #228b22)",
+            Thriller: "linear-gradient(135deg, #ff4500, #ff6347)",
+            "Slice of Life": "linear-gradient(135deg, #20b2aa, #008080)",
+            Supernatural: "linear-gradient(135deg, #9932cc, #4b0082)"
+        };
+        return gradientColors[genre] || "linear-gradient(135deg, #666, #888)";
+    };
 
+    // Check if anime is in user's list
+    const checkIfInList = async () => {
+        if (!user || !anime) return;
+
+        try {
+            const response = await axios.get(`http://localhost:5000/api/list/${user._id || user.id}`);
+            const userList = response.data;
+            const categories = ['watching', 'completed', 'planned', 'dropped'];
+            let foundStatus = null;
+
+            const animeTitle = typeof anime.title === 'string' 
+                ? anime.title 
+                : anime.title?.english || anime.title?.romaji || anime.title?.native || "Untitled";
+
+            for (const category of categories) {
+                const animeInCategory = userList[category] || [];
+                for (const item of animeInCategory) {
+                    if (item.title === animeTitle || 
+                        item.animeId === anime.id?.toString() || 
+                        item.malId === anime.idMal?.toString()) {
+                        foundStatus = category;
+                        break;
+                    }
+                }
+                if (foundStatus) break;
+            }
+
+            setIsInList(foundStatus !== null);
+            setUserListStatus(foundStatus);
+        } catch (error) {
+            console.error("Error checking if anime is in list:", error);
+            setIsInList(false);
+            setUserListStatus(null);
+        }
+    };
+
+    // Single optimized useEffect
     useEffect(() => {
-        if (isOpen || synopsisModalOpen) {
-            document.body.classList.add('modal-open');
-        } else {
-            document.body.classList.remove('modal-open');
+        if (!isOpen || !anime) return;
+
+        // Add modal-open class
+        document.body.classList.add('modal-open');
+
+        // Update title classes (delayed for performance)
+        if (titleRef.current && animeData) {
+            setTimeout(() => {
+                const titleElement = titleRef.current;
+                if (!titleElement) return;
+
+                const titleLength = animeData.title.length;
+                titleElement.classList.remove('long-title', 'very-long-title');
+                
+                if (titleLength > 60) {
+                    titleElement.classList.add('very-long-title');
+                } else if (titleLength > 35) {
+                    titleElement.classList.add('long-title');
+                }
+            }, 50);
+        }
+
+        // Check if in list (debounced)
+        if (user) {
+            const timeoutId = setTimeout(() => {
+                checkIfInList();
+            }, 200);
+            return () => clearTimeout(timeoutId);
         }
 
         return () => {
             document.body.classList.remove('modal-open');
         };
-    }, [isOpen, synopsisModalOpen]);
+    }, [isOpen, anime, animeData, user]);
 
-
-    useEffect(() => {
-        if (titleRef.current && animeData && isOpen) {
-            const updateTitleClasses = () => {
-                requestAnimationFrame(() => {
-                    const titleElement = titleRef.current;
-                    if (!titleElement) return;
-
-                    titleElement.classList.remove('long-title', 'very-long-title');
-
-                    const titleLength = animeData.title.length;
-                    if (titleLength > 60) {
-                        titleElement.classList.add('very-long-title');
-                    } else if (titleLength > 35) {
-                        titleElement.classList.add('long-title');
-                    }
-                });
-            };
-
-            updateTitleClasses();
-        }
-    }, [animeData, isOpen]);
-
-    useEffect(() => {
-        if (isOpen && user && animeData && anime) {
-            const timeoutId = setTimeout(() => {
-                checkIfInList();
-            }, 100);
-
-            return () => clearTimeout(timeoutId);
-        }
-    }, [isOpen, user, animeData, anime, checkIfInList]);
-
+    // Reset effect for anime changes
     useEffect(() => {
         if (anime?.id) {
             setSynopsisModalOpen(false);
@@ -308,12 +287,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         }
     }, [anime?.id, animeData?.trailerVideoId]);
 
-    // NOW EARLY RETURN - AFTER ALL HOOKS
+    // EARLY RETURN
     if (!isOpen || !anime) return null;
 
-    console.log("Modal received AniList anime data:", anime);
-
-    // REGULAR FUNCTIONS - NOT HOOKS
+    // ACTION FUNCTIONS
     const addToList = async (status) => {
         if (!user) {
             alert("Please log in to add anime to your list");
@@ -331,8 +308,8 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             setIsInList(true);
             setUserListStatus(status);
 
+            // Re-check after adding
             setTimeout(() => checkIfInList(), 100);
-
         } catch (error) {
             console.error("Error adding to list:", error);
             alert("Failed to add to list");
@@ -355,7 +332,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                         }}
                     ></div>
 
-
                     {/* Close button */}
                     <button className="modal-close" onClick={onClose}>
                         <span className="close-icon">✖</span>
@@ -372,9 +348,13 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                     <div className="modal-body">
                         <div className="modal-image-wrapper">
                             <div className="image-container">
-                                <img src={animeData.image} alt={animeData.title} loading="lazy" decoding="async" />
-                                <div className="image-overlay"></div>
-
+                                <img 
+                                    src={animeData.image} 
+                                    alt={animeData.title} 
+                                    loading="lazy" 
+                                    decoding="async"
+                                />
+                                
                                 {/* add-to-list-buttons */}
                                 <div className="add-to-list-buttons">
                                     {!isInList ? (
@@ -430,7 +410,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                 >
                                     <span className="btn-icon"></span>
                                     <span className="btn-text">Synopsis</span>
-                                    <div className="btn-glow"></div>
                                 </button>
                                 <button
                                     className={`info-btn related-btn ${activeTab === 'related' ? 'active' : ''}`}
@@ -438,7 +417,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                 >
                                     <span className="btn-icon"></span>
                                     <span className="btn-text">Related</span>
-                                    <div className="btn-glow"></div>
                                 </button>
                                 <button
                                     className={`info-btn trailer-btn ${activeTab === 'trailer' ? 'active' : ''}`}
@@ -446,159 +424,128 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                 >
                                     <span className="btn-icon"></span>
                                     <span className="btn-text">Trailer</span>
-                                    <div className="btn-glow"></div>
                                 </button>
                             </div>
 
                             <div className="tab-content">
-                                <AnimatePresence mode="wait">
-                                    {activeTab === "info" && (
-                                        <motion.div
-                                            key="info"
-                                            initial={isLowEndMobile ? false : { opacity: 0, y: 30 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={isLowEndMobile ? { duration: 0 } : { duration: 0.25 }}
-                                            exit={{ opacity: 0, x: -30 }}
-                                        >
-                                            <div className="stats-grid2">
-                                                <div className="stat-item">
-                                                    <span className="stat-label desktop-only">Episodes :</span>
-                                                    <span className="stat-value">{animeData.episodes} Episodes</span>
-
-                                                </div>
-                                                <div className="stat-item">
-                                                    <span className="stat-label desktop-only">Score :</span>
-                                                    <span className="stat-value score">⭐ {animeData.score || "N/A"}</span>
-
-                                                </div>
-                                                <div className="stat-item">
-                                                    <span className="stat-label desktop-only">Age Rating :</span>
-                                                    <span className="stat-value age-rating">{animeData.rating}</span>
-
-                                                </div>
+                                {/* Direct rendering - no animations */}
+                                {activeTab === "info" && (
+                                    <div className="info-tab-content">
+                                        <div className="stats-grid2">
+                                            <div className="stat-item">
+                                                <span className="stat-label desktop-only">Episodes :</span>
+                                                <span className="stat-value">{animeData.episodes} Episodes</span>
                                             </div>
-
-                                            <div className="synopsis-section">
-                                                <p className="synopsis-text">
-                                                    {truncateSynopsis(animeData.synopsis, synopsisLimit)}
-                                                </p>
-
-                                                {animeData.synopsis.length > synopsisLimit && (
-                                                    <button className="read-more-btn" onClick={handleSynopsisClick}>
-                                                        Read More
-                                                    </button>
-                                                )}
-
+                                            <div className="stat-item">
+                                                <span className="stat-label desktop-only">Score :</span>
+                                                <span className="stat-value score">⭐ {animeData.score || "N/A"}</span>
                                             </div>
-
-                                            <div className="anime-info-vertical">
-                                                <div className="info-row status-row">
-                                                    <strong className="info-label">
-                                                        <span className="label-icon"></span>
-                                                        Status :
-                                                    </strong>
-                                                    <span
-                                                        className="info-value status-value"
-                                                        style={{ color: getStatusColor(animeData.status) }}
-                                                    >
-                                                        <span
-                                                            className="status-indicator"
-                                                            style={{
-                                                                backgroundColor: getStatusColor(animeData.status),
-                                                                boxShadow: `0 0 10px ${getStatusColor(animeData.status)}`
-                                                            }}
-                                                        ></span>
-                                                        {animeData.status}
-                                                    </span>
-                                                </div>
-
-                                                <div className="info-row genre-row">
-                                                    <strong className="info-label">
-                                                        <span className="label-icon"></span>
-                                                        Genre:
-                                                    </strong>
-                                                    <div className="genre-tags">
-                                                        {animeData.genres.length > 0 ? (
-                                                            animeData.genres.map((genre, i) => {
-                                                                const bgColor = genreColors[genre] || "linear-gradient(135deg, #666, #888)";
-                                                                return (
-                                                                    <span
-                                                                        key={i}
-                                                                        className="genre-pill"
-                                                                        style={{ background: bgColor }}
-                                                                    >
-                                                                        {genre}
-                                                                    </span>
-                                                                );
-                                                            })
-                                                        ) : (
-                                                            <span className="genre-pill no-genre">N/A</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="info-row studio-row">
-                                                    <strong className="info-label">
-                                                        <span className="label-icon"></span>
-                                                        Studio :
-                                                    </strong>
-                                                    <span className="info-value studio-value">
-                                                        {animeData.studio}
-                                                    </span>
-                                                </div>
+                                            <div className="stat-item">
+                                                <span className="stat-label desktop-only">Age Rating :</span>
+                                                <span className="stat-value age-rating">{animeData.rating}</span>
                                             </div>
-                                        </motion.div>
-                                    )}
+                                        </div>
 
-                                    {activeTab === 'related' && (
-                                        <motion.div
-                                            key="related"
-                                            initial={isLowEndMobile ? false : { opacity: 0, y: 30 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={isLowEndMobile ? { duration: 0 } : { duration: 0.25 }}
-                                            exit={{ opacity: 0, x: -30 }}
+                                        <div className="synopsis-section">
+                                            <p className="synopsis-text">
+                                                {truncateSynopsis(animeData.synopsis, SYNOPSIS_LIMIT)}
+                                            </p>
 
-                                            className="related-tab-wrapper"
-                                        >
-                                            <RelatedTab
-                                                animeId={anime.id}
-                                                animeMalId={anime.idMal}
-                                                onSelect={(selectedNormalizedAnime) => {
-                                                    console.log("Modal received related anime:", selectedNormalizedAnime);
-                                                    if (typeof onOpenAnime === "function") {
-                                                        onOpenAnime(selectedNormalizedAnime);
-                                                        setActiveTab("info");
-                                                        setTrailerVideoId(null);
-                                                    } else {
-                                                        console.warn("onOpenAnime not provided to Modal; selected:", selectedNormalizedAnime);
-                                                    }
-                                                }}
-                                            />
-                                        </motion.div>
-                                    )}
-
-                                    {activeTab === 'trailer' && (
-                                        <motion.div
-                                            key="trailer"
-                                            initial={isLowEndMobile ? false : { opacity: 0, y: 30 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={isLowEndMobile ? { duration: 0 } : { duration: 0.25 }}
-                                            exit={{ opacity: 0, x: -30 }}
-                                            className="trailer-tab-wrapper"
-                                        >
-                                            {currentTrailerVideoId ? (
-                                                <Trailer
-                                                    key={`trailer-${anime.id}-${currentTrailerVideoId}`}
-                                                    videoId={currentTrailerVideoId}
-                                                />
-                                            ) : (
-                                                <div className="no-trailer">
-                                                    <p>No trailer available for this anime.</p>
-                                                </div>
+                                            {animeData.synopsis.length > SYNOPSIS_LIMIT && (
+                                                <button 
+                                                    className="read-more-btn" 
+                                                    onClick={() => setSynopsisModalOpen(true)}
+                                                >
+                                                    Read More
+                                                </button>
                                             )}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                        </div>
+
+                                        <div className="anime-info-vertical">
+                                            <div className="info-row status-row">
+                                                <strong className="info-label">
+                                                    <span className="label-icon"></span>
+                                                    Status :
+                                                </strong>
+                                                <span
+                                                    className="info-value status-value"
+                                                    style={{ color: getStatusColor(animeData.status) }}
+                                                >
+                                                    <span
+                                                        className="status-indicator"
+                                                        style={{
+                                                            backgroundColor: getStatusColor(animeData.status)
+                                                        }}
+                                                    ></span>
+                                                    {animeData.status}
+                                                </span>
+                                            </div>
+
+                                            <div className="info-row genre-row">
+                                                <strong className="info-label">
+                                                    <span className="label-icon"></span>
+                                                    Genre:
+                                                </strong>
+                                                <div className="genre-tags">
+                                                    {animeData.genres.length > 0 ? (
+                                                        animeData.genres.map((genre, i) => (
+                                                            <span
+                                                                key={i}
+                                                                className="genre-pill"
+                                                                style={{ background: getGenreColor(genre) }}
+                                                            >
+                                                                {genre}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="genre-pill no-genre">N/A</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="info-row studio-row">
+                                                <strong className="info-label">
+                                                    <span className="label-icon"></span>
+                                                    Studio :
+                                                </strong>
+                                                <span className="info-value studio-value">
+                                                    {animeData.studio}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'related' && (
+                                    <div className="related-tab-wrapper">
+                                        <RelatedTab
+                                            animeId={anime.id}
+                                            animeMalId={anime.idMal}
+                                            onSelect={(selectedNormalizedAnime) => {
+                                                if (typeof onOpenAnime === "function") {
+                                                    onOpenAnime(selectedNormalizedAnime);
+                                                    setActiveTab("info");
+                                                    setTrailerVideoId(null);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                )}
+
+                                {activeTab === 'trailer' && (
+                                    <div className="trailer-tab-wrapper">
+                                        {currentTrailerVideoId ? (
+                                            <Trailer
+                                                key={`trailer-${anime.id}-${currentTrailerVideoId}`}
+                                                videoId={currentTrailerVideoId}
+                                            />
+                                        ) : (
+                                            <div className="no-trailer">
+                                                <p>No trailer available for this anime.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -607,9 +554,9 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
             {/* Synopsis Modal */}
             {synopsisModalOpen && (
-                <div className="synopsis-modal-overlay" onClick={closeSynopsisModal}>
+                <div className="synopsis-modal-overlay" onClick={() => setSynopsisModalOpen(false)}>
                     <div className="synopsis-modal-content" onClick={(e) => e.stopPropagation()}>
-                        <button className="synopsis-modal-close" onClick={closeSynopsisModal}>
+                        <button className="synopsis-modal-close" onClick={() => setSynopsisModalOpen(false)}>
                             <span className="close-icon">✖</span>
                         </button>
 
