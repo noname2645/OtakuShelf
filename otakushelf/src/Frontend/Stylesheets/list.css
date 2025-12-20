@@ -79,7 +79,7 @@
 }
 
 .list-header {
-  margin-bottom: 2rem;
+  margin-bottom: 0.5em;
   text-align: center;
   padding: 2rem 1rem 1rem;
 }
@@ -105,7 +105,7 @@
 .list-tabs {
   display: flex;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 50px;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -126,10 +126,10 @@
 }
 
 .list-tabs button.active {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: #FF5533;
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 25px rgba(255, 72, 0, 0.3);
 }
 
 .list-tabs button:hover:not(.active) {
@@ -153,17 +153,6 @@
   justify-content: center;
 }
 
-/* Anime List Card Styles - FIXED VERSION */
-.anime-list-container {
-  width: 1350px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2em;
-  margin: auto;
-  padding: 1rem;
-}
-
-/* FIXED CARD STRUCTURE - Image on top, content below */
 .anime-card3 {
   display: flex;
   flex-direction: column;
@@ -196,8 +185,8 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.status-badge2 .status-badge-select option{
-  color : black;
+.status-badge2 .status-badge-select option {
+  color: black;
   border-radius: 20px;
 }
 
@@ -327,7 +316,7 @@
   font-weight: 600;
   font-size: 0.9rem;
   color: #374151;
-  border-radius: 20px ;
+  border-radius: 20px;
 }
 
 .epincbtn:disabled {
@@ -394,25 +383,67 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Empty State for Cards */
+/* FIXED: Empty State for Cards - Visible on dark background */
 .empty-state-cards {
-  grid-column: 1 / -1;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 60px 20px;
-  color: #6b7280;
+  color: white;
   font-family: 'Poppins', sans-serif;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  margin: 4rem auto;
+  max-width: 500px;
+  width: 90%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .empty-state-cards h3 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #374151;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #FF775C, #ff5533);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .empty-state-cards p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin-bottom: 1.5rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.empty-state-cards .empty-state-subtext {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-top: 20px;
+}
+
+.empty-state-cards .action-btn {
+  margin-top: 20px;
+  max-width: 200px;
+  margin: 20px auto 0;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
   font-size: 1rem;
-  opacity: 0.8;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.empty-state-cards .action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 /* Enhanced Modal Styles */
@@ -560,6 +591,7 @@
   color: #667eea;
   font-size: 1.1rem;
 }
+
 .status-badge-select {
   background: transparent;
   border: none;
@@ -593,6 +625,54 @@
 
 .status-badge-select:focus {
   outline: none;
+}
+
+.month-group-cards {
+  margin-bottom: 2rem;
+  width: 1350px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2em;
+  margin: auto;
+  padding: 1rem;
+}
+
+.month-group-title-alt {
+  font-size: 3rem;
+  font-family: "Keepcalm", sans-serif;
+  color: #FF775C;
+  margin: 2rem 0 1.5rem 0;
+  text-align: center;
+  position: relative;
+  letter-spacing: 2px;
+  margin-bottom: 3rem;
+}
+
+.month-group-title-alt::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #4063fd, transparent);
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.month-group-title-alt span {
+  background: #0a1124;
+  padding: 0 1.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+
+/* For mobile responsiveness */
+@media (max-width: 768px) {
+  .month-group-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Responsive Design */

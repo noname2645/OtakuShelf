@@ -5,6 +5,8 @@ import { Star } from 'lucide-react';
 import { Navigate } from "react-router-dom";
 import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
+import MALImport from "./MALImport";
+
 
 const EnhancedAnimeList = () => {
   const [activeTab, setActiveTab] = useState('watching');
@@ -43,7 +45,7 @@ const EnhancedAnimeList = () => {
       }
 
       const response = await axios.get(`http://localhost:5000/api/list/${userId}`);
-      
+
       let listData = response.data;
 
       // Ensure all categories are arrays
@@ -55,7 +57,7 @@ const EnhancedAnimeList = () => {
       };
 
       if (listData.watching !== undefined || listData.completed !== undefined ||
-          listData.planned !== undefined || listData.dropped !== undefined) {
+        listData.planned !== undefined || listData.dropped !== undefined) {
         normalizedList.watching = Array.isArray(listData.watching) ? listData.watching : [];
         normalizedList.completed = Array.isArray(listData.completed) ? listData.completed : [];
         normalizedList.planned = Array.isArray(listData.planned) ? listData.planned : [];
@@ -68,7 +70,7 @@ const EnhancedAnimeList = () => {
       } else if (Array.isArray(listData)) {
         normalizedList.watching = listData;
       }
-      
+
       setAnimeList(normalizedList);
     } catch (error) {
       console.error("Error fetching list:", error);
@@ -93,47 +95,73 @@ const EnhancedAnimeList = () => {
   const updateAnimeInList = useCallback((animeId, updates) => {
     setAnimeList(prev => {
       const newList = { ...prev };
-      
-      // Update anime in the active category only
-      if (Array.isArray(newList[activeTab])) {
-        newList[activeTab] = newList[activeTab].map(anime => {
-          if (anime._id === animeId || anime.animeId === animeId) {
-            return { ...anime, ...updates };
-          }
-          return anime;
-        });
-      }
-      
+
+      // Update anime in ALL categories, not just active tab
+      Object.keys(newList).forEach(category => {
+        if (Array.isArray(newList[category])) {
+          newList[category] = newList[category].map(anime => {
+            if (anime._id === animeId || anime.animeId === animeId) {
+              return { ...anime, ...updates };
+            }
+            return anime;
+          });
+        }
+      });
+
       return newList;
     });
-  }, [activeTab]);
+  }, []);
 
   const moveAnimeBetweenCategories = useCallback((animeId, fromCategory, toCategory) => {
     setAnimeList(prev => {
       const newList = { ...prev };
-      
+
       // Ensure categories are arrays
       if (!Array.isArray(newList[fromCategory])) newList[fromCategory] = [];
       if (!Array.isArray(newList[toCategory])) newList[toCategory] = [];
-      
+
       // Find the anime in the source category
       const animeIndex = newList[fromCategory].findIndex(
         anime => anime._id === animeId || anime.animeId === animeId
       );
-      
+
       if (animeIndex === -1) return prev;
-      
+
       // Get the anime
       const [anime] = newList[fromCategory].splice(animeIndex, 1);
-      
+
       // Update the anime with new status
       const updatedAnime = { ...anime, status: toCategory };
-      
+
       // Add to target category
       newList[toCategory].push(updatedAnime);
-      
+
       return newList;
     });
+  }, []);
+
+  const groupAnimeByMonthYear = useCallback((animeList) => {
+    const groups = {};
+
+    animeList.forEach(anime => {
+      const date = new Date(anime.addedDate || anime.createdAt || Date.now());
+      const month = date.toLocaleString('default', { month: 'long' });
+      const year = date.getFullYear();
+      const key = `${month} ${year}`;
+
+      if (!groups[key]) {
+        groups[key] = {
+          title: `${month} ${year}`,
+          sortDate: date,
+          anime: []
+        };
+      }
+
+      groups[key].anime.push(anime);
+    });
+
+    // Convert to array and sort by date descending
+    return Object.values(groups).sort((a, b) => b.sortDate - a.sortDate);
   }, []);
 
   const handleRemove = useCallback(async (animeId) => {
@@ -141,7 +169,7 @@ const EnhancedAnimeList = () => {
       try {
         const userId = user?._id || user?.id;
         await axios.delete(`http://localhost:5000/api/list/${userId}/${animeId}`);
-        
+
         // Update local state immediately
         setAnimeList(prev => {
           const newList = { ...prev };
@@ -193,8 +221,8 @@ const EnhancedAnimeList = () => {
     }
 
     const updatedEpisodes = currentEpisodes + 1;
-    
-    // Optimistically update UI
+
+    // Optimistically update UI - update in all categories
     updateAnimeInList(animeId, { episodesWatched: updatedEpisodes });
 
     try {
@@ -207,26 +235,29 @@ const EnhancedAnimeList = () => {
       );
 
       // AUTO-SHIFT TO COMPLETED: Check if all episodes are watched
-      if (updatedEpisodes === totalEpisodes) {
+      if (updatedEpisodes >= totalEpisodes) {
+        // Get the current status from the anime object
+        const currentStatus = anime.status || activeTab;
+
         // Only move if not already in completed tab
-        if (activeTab !== "completed") {
+        if (currentStatus !== "completed") {
           // Update local state immediately - move to completed
-          moveAnimeBetweenCategories(animeId, activeTab, "completed");
-          
+          moveAnimeBetweenCategories(animeId, currentStatus, "completed");
+
           // Update server with new status
           await axios.put(
             `http://localhost:5000/api/list/${userId}/${animeId}`,
             {
-              episodesWatched: updatedEpisodes,
+              episodesWatched: totalEpisodes,
               status: "completed",
-              fromCategory: activeTab
+              fromCategory: currentStatus
             }
           );
         } else {
           // If already in completed tab, just update episodes
-          updateAnimeInList(animeId, { 
-            episodesWatched: updatedEpisodes,
-            status: "completed" 
+          updateAnimeInList(animeId, {
+            episodesWatched: totalEpisodes,
+            status: "completed"
           });
         }
       }
@@ -242,29 +273,42 @@ const EnhancedAnimeList = () => {
     const animeId = anime._id || anime.animeId;
     const totalEpisodes = anime.totalEpisodes || anime.episodes || anime.episodeCount || 24;
 
+    // Get current status from anime object
+    const currentStatus = anime.status || activeTab;
+
+    // Get current episodes watched
+    const currentEpisodes = anime.episodesWatched || 0;
+
     try {
       const payload = {
         status: newStatus,
-        fromCategory: activeTab
+        fromCategory: currentStatus
       };
-
-      // If moving to completed, set episodes watched to total episodes
       if (newStatus === "completed") {
         payload.episodesWatched = totalEpisodes;
       }
+      else if (currentStatus === "completed") {
+        payload.episodesWatched = currentEpisodes;
+      }
 
       // Update local state optimistically
+      let episodeUpdate = {};
+
       if (newStatus === "completed") {
-        // If moving to completed, update episodes
-        updateAnimeInList(animeId, { 
-          status: newStatus,
-          episodesWatched: totalEpisodes 
-        });
+        episodeUpdate = { episodesWatched: totalEpisodes };
+      } else if (currentStatus === "completed") {
+        // Keep current
+        episodeUpdate = { episodesWatched: currentEpisodes };
       }
-      
+
+      updateAnimeInList(animeId, {
+        status: newStatus,
+        ...episodeUpdate
+      });
+
       // Move between categories in local state
-      if (activeTab !== newStatus) {
-        moveAnimeBetweenCategories(animeId, activeTab, newStatus);
+      if (currentStatus !== newStatus) {
+        moveAnimeBetweenCategories(animeId, currentStatus, newStatus);
       }
 
       await axios.put(
@@ -278,10 +322,20 @@ const EnhancedAnimeList = () => {
     }
   };
 
-  const currentAnimeList = useMemo(() => {
+  const groupedAnimeList = useMemo(() => {
     const list = animeList[activeTab];
-    return Array.isArray(list) ? list : [];
-  }, [animeList, activeTab]);
+    if (!Array.isArray(list)) return [];
+
+    // First sort the list by addedDate
+    const sortedList = [...list].sort((a, b) => {
+      const dateA = new Date(a.addedDate || a.createdAt || a.updatedAt || 0);
+      const dateB = new Date(b.addedDate || b.createdAt || b.updatedAt || 0);
+      return dateB - dateA;
+    });
+
+    // Then group by month/year
+    return groupAnimeByMonthYear(sortedList);
+  }, [animeList, activeTab, groupAnimeByMonthYear]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -289,7 +343,7 @@ const EnhancedAnimeList = () => {
 
   return (
     <>
-      <Header showSearch={true} onSearchChange={() => {}} />
+      <Header showSearch={true} onSearchChange={() => { }} />
       <BottomNavBar />
       <div className="enhanced-anime-list">
         <div className="list-header">
@@ -327,91 +381,101 @@ const EnhancedAnimeList = () => {
           </div>
         ) : (
           <div className="anime-list-container">
-            {currentAnimeList.length > 0 ? (
-              currentAnimeList.map(anime => {
-                const totalEpisodes = anime.totalEpisodes || anime.episodes || anime.episodeCount || 24;
-                const episodesWatched = anime.episodesWatched || 0;
-                const progress = calculateProgress(episodesWatched, totalEpisodes);
-                const userRating = anime.userRating || 0;
-                const animeStatus = anime.status || activeTab;
-                const isCompleted = animeStatus === "completed";
+            {groupedAnimeList.length > 0 ? (
+              groupedAnimeList.map(group => (
+                <div key={group.title} className="month-group">
+                  <h3 className="month-group-title-alt">
+                    <span>{group.title}</span>
+                  </h3>
+                  <div className="month-group-cards">
+                    {group.anime.map(anime => {
+                      const totalEpisodes = anime.totalEpisodes || anime.episodes || anime.episodeCount || 24;
+                      const episodesWatched = anime.episodesWatched || 0;
+                      const progress = calculateProgress(episodesWatched, totalEpisodes);
+                      const userRating = anime.userRating || 0;
+                      const animeStatus = anime.status || activeTab;
+                      const isCompleted = animeStatus === "completed";
 
-                return (
-                  <div key={anime._id || anime.animeId || anime.title} className="anime-card3">
-                    <div className={`status-badge2 ${getStatusBadgeClass(animeStatus)}`}>
-                      <select
-                        className="status-badge-select"
-                        value={animeStatus}
-                        onChange={(e) => handleStatusChange(anime, e.target.value)}
-                      >
-                        <option value="watching">Watching</option>
-                        <option value="completed">Completed</option>
-                        <option value="planned">Planned</option>
-                        <option value="dropped">Dropped</option>
-                      </select>
-                    </div>
-
-                    <div className="card-poster">
-                      <img
-                        src={anime.image || anime.poster || 'https://via.placeholder.com/300x180/667eea/ffffff?text=Anime+Poster'}
-                        alt={anime.title}
-                        onError={(e) => {
-                          e.target.src = 'https://via.placeholder.com/300x180/667eea/ffffff?text=Anime+Poster';
-                        }}
-                      />
-
-                      <div className="poster-overlay">
-                        <h3 className="anime-title-card">{anime.title || 'Unknown Title'}</h3>
-                        <div className="card-content2">
-                          <div className="episode-info">
-                            <span className="episode-dot"></span>
-                            <span>{formatEpisodeText(episodesWatched, totalEpisodes)}</span>
-                            <button
-                              className="epincbtn"
-                              onClick={() => handleIncrementEpisode(anime)}
-                              disabled={episodesWatched >= totalEpisodes || isCompleted}
+                      return (
+                        <div key={anime._id || anime.animeId || anime.title} className="anime-card3">
+                          <div className={`status-badge2 ${getStatusBadgeClass(animeStatus)}`}>
+                            <select
+                              className="status-badge-select"
+                              value={animeStatus}
+                              onChange={(e) => handleStatusChange(anime, e.target.value)}
                             >
-                              +1 Ep
-                            </button>
+                              <MALImport
+                                userId={user._id || user.id}
+                                onSuccess={fetchAnimeList}
+                              />
+                              <option value="watching">Watching</option>
+                              <option value="completed">Completed</option>
+                              <option value="planned">Planned</option>
+                              <option value="dropped">Dropped</option>
+                            </select>
                           </div>
 
-                          <div className="progress-section">
-                            <div className="progress-bar-container">
-                              <div
-                                className="progress-bar-fill"
-                                style={{ width: `${progress}%` }}
-                              ></div>
+                          <div className="card-poster">
+                            <img
+                              src={anime.image || anime.poster || 'https://via.placeholder.com/300x180/667eea/ffffff?text=Anime+Poster'}
+                              alt={anime.title}
+                              onError={(e) => {
+                                e.target.src = 'https://via.placeholder.com/300x180/667eea/ffffff?text=Anime+Poster';
+                              }}
+                            />
+
+                            <div className="poster-overlay">
+                              <h3 className="anime-title-card">{anime.title || 'Unknown Title'}</h3>
+                              <div className="card-content2">
+                                <div className="episode-info">
+                                  <span className="episode-dot"></span>
+                                  <span>{formatEpisodeText(episodesWatched, totalEpisodes)}</span>
+                                  <button
+                                    className="epincbtn"
+                                    onClick={() => handleIncrementEpisode(anime)}
+                                    disabled={episodesWatched >= totalEpisodes || isCompleted}
+                                  >
+                                    +1 Ep
+                                  </button>
+                                </div>
+
+                                <div className="progress-section">
+                                  <div className="progress-bar-container">
+                                    <div
+                                      className="progress-bar-fill"
+                                      style={{ width: `${progress}%` }}
+                                    ></div>
+                                  </div>
+                                  <div className="progress-text">
+                                    <span>Progress</span>
+                                    <span>{Math.round(progress)}%</span>
+                                  </div>
+                                </div>
+                                <div className="rating-section">
+                                  <div className="rating-left">
+                                    <Star size={16} className="star-icon" />
+                                    <span>{userRating > 0 ? `${userRating}/10` : 'Not rated'}</span>
+                                  </div>
+                                  <button
+                                    className="action-btn remove-btn-card"
+                                    onClick={() => handleRemove(anime._id || anime.animeId)}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                            <div className="progress-text">
-                              <span>Progress</span>
-                              <span>{Math.round(progress)}%</span>
-                            </div>
-                          </div>
-                          <div className="rating-section">
-                            <div className="rating-left">
-                              <Star size={16} className="star-icon" />
-                              <span>{userRating > 0 ? `${userRating}/10` : 'Not rated'}</span>
-                            </div>
-                            <button
-                              className="action-btn remove-btn-card"
-                              onClick={() => handleRemove(anime._id || anime.animeId)}
-                            >
-                              Remove
-                            </button>
                           </div>
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })}
                   </div>
-                );
-              })
+                </div>
+              ))
             ) : (
               <div className="empty-state-cards">
                 <h3>No anime in this category yet</h3>
                 <p>Start adding anime to your {activeTab} list!</p>
-                <div style={{ marginTop: '20px', fontSize: '0.9rem', color: '#6b7280' }}>
-                  <p>Try adding anime from the search or browse page.</p>
-                </div>
               </div>
             )}
           </div>

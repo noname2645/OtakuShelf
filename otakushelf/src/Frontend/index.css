@@ -40,6 +40,12 @@
   src: url('../Frontend/public/Hoshiko-Satsuki.ttf') format('truetype');
 }
 
+@font-face {
+  font-family: 'Keepcalm';
+  src: url('../Frontend/public/KeepCalm-Medium.ttf') format('truetype');
+}
+
+
 body {
   margin: 0 !important;
   padding: 0 !important;
