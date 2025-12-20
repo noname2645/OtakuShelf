@@ -5,7 +5,6 @@ import { Star } from 'lucide-react';
 import { Navigate } from "react-router-dom";
 import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
-import MALImport from "./MALImport";
 
 
 const EnhancedAnimeList = () => {
@@ -404,10 +403,7 @@ const EnhancedAnimeList = () => {
                               value={animeStatus}
                               onChange={(e) => handleStatusChange(anime, e.target.value)}
                             >
-                              <MALImport
-                                userId={user._id || user.id}
-                                onSuccess={fetchAnimeList}
-                              />
+                        
                               <option value="watching">Watching</option>
                               <option value="completed">Completed</option>
                               <option value="planned">Planned</option>
