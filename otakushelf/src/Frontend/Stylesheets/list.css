@@ -104,7 +104,7 @@
 
 .list-tabs {
   display: flex;
-  gap: 8px;
+  gap: 15px;
   margin-top: 50px;
   justify-content: center;
   flex-wrap: wrap;
@@ -142,7 +142,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 1rem 0 2rem;
 }
 
 .import-btn {
@@ -631,15 +630,44 @@
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
-/* Loading Spinner */
-.loading-spinner {
+
+/* Circular Spinner Styles */
+.loading-spinner-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  min-height: 200px;
-  font-family: 'Poppins', sans-serif;
-  color: #667eea;
-  font-size: 1.1rem;
+  justify-content: center;
+  min-height: 400px;
+  width: 100%;
+}
+
+.circular-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(102, 126, 234, 0.2);
+  /* Light purple */
+  border-top: 5px solid #667eea;
+  /* Main purple */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+.circular-spinner+p {
+  color: #666;
+  font-size: 16px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .status-badge-select {

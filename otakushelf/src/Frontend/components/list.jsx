@@ -513,36 +513,33 @@ const EnhancedAnimeList = () => {
                 onClick={() => setActiveTab(tab)}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                <span className="count-badge">
-                  {Array.isArray(animeList[tab]) ? animeList[tab].length : 0}
-                </span>
               </button>
             ))}
-          </div>
-
-          <div className="import-section">
-            <label className="import-btn">
-              <input
-                type="file"
-                accept=".xml"
-                onChange={handleMALImport}
-                style={{ display: 'none' }}
-                disabled={importing}
-              />
-              {importing ? '⏳ Importing...' : '📥 Import MAL List'}
-            </label>
-            {importing && (
-              <div className="import-progress">
-                <div className="progress-bar" style={{ width: `${importProgress}%` }}></div>
-                <span>Importing... {importProgress}%</span>
-              </div>
-            )}
+            <div className="import-section">
+              <label className="import-btn">
+                <input
+                  type="file"
+                  accept=".xml"
+                  onChange={handleMALImport}
+                  style={{ display: 'none' }}
+                  disabled={importing}
+                />
+                {importing ? '⏳ Importing...' : '📥 Import MAL List'}
+              </label>
+              {importing && (
+                <div className="import-progress">
+                  <div className="progress-bar" style={{ width: `${importProgress}%` }}></div>
+                  <span>Importing... {importProgress}%</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="loading-spinner">
-            Loading your anime list...
+          <div className="loading-spinner-container">
+            <div className="circular-spinner"></div>
+            <p>Loading your anime list...</p>
           </div>
         ) : error ? (
           <div className="empty-state-cards">
