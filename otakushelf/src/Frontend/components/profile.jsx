@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import '../Stylesheets/profile.css';
-import {Header} from '../components/header';
+import { Header } from '../components/header';
+import BottomNavBar from "../components/bottom.jsx";
 
 const ProfilePage = () => {
   // Profile data
@@ -139,53 +140,58 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="profile-page">
-      <Header showSearch={false} />
-      
-      <div className="profile-container">
-        {/* Profile Header */}
-        <div className="profile-header">
-          <div className="profile-avatar-section">
-            <div className="profile-avatar-large">
-              {profileData.avatar ? (
-                <img src={profileData.avatar} alt="Profile" />
-              ) : (
-                <div className="profile-avatar-placeholder">
-                  {profileData.name.charAt(0)}
-                </div>
-              )}
+    <>
+      <BottomNavBar />
+      <div className="profile-page">
+        <Header showSearch={false} />
+        <div className="profile-container2">
+          {/* Profile Header */}
+          <div className="profile-header">
+            <div className="profile-avatar-section">
+              <div className="profile-avatar-large">
+                {profileData.avatar ? (
+                  <img src={profileData.avatar} alt="Profile" />
+                ) : (
+                  <div className="profile-avatar-placeholder">
+                    {profileData.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{
+                  display: 'none'
+                }}
+                id="avatar-upload"
+              />
+              <label
+                htmlFor="avatar-upload"
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  color: '#ff6b6b',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+              >
+                Change Photo
+              </label>
             </div>
-            <input 
-              type="file" 
-              accept="image/*" 
-              onChange={handleImageUpload}
-              style={{ 
-                display: 'none' 
-              }}
-              id="avatar-upload"
-            />
-            <label 
-              htmlFor="avatar-upload"
-              style={{
-                display: 'block',
-                textAlign: 'center',
-                color: '#ff6b6b',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}
-            >
-              Change Photo
-            </label>
-          </div>
-          
-          <div className="profile-name-section">
-            <h1>{profileData.name}</h1>
-            
-            <div className="username-section">
-              <span className="username">{profileData.username}</span>
+            <div className="profile-name-section">
+              <h1>{profileData.name}</h1>
+              <div className="username-section">
+                <span className="username">{profileData.username}</span>
+              </div>
+              <p className="profile-bio">
+                {profileData.bio}
+              </p>
+              <div className="join-date">
+                <span>Joined {profileData.joinDate}</span>
+              </div>
             </div>
-            
             <div className="profile-actions">
               <button className="btn-edit" onClick={handleEditProfile}>
                 Edit Profile
@@ -194,109 +200,136 @@ const ProfilePage = () => {
                 Share Profile
               </button>
             </div>
-            
-            <p className="profile-bio">
-              {profileData.bio}
-            </p>
-            
-            <div className="join-date">
-              <span>Joined {profileData.joinDate}</span>
-            </div>
           </div>
-        </div>
 
-        {/* Divider Line */}
-        <div className="divider-line"></div>
-
-        {/* Overview Section */}
-        <h2 className="overview-header">Overview</h2>
-        
-        <div className="stats-grid">
-          <div className="stat-card">
-            <span className="stat-number">{stats.animeWatched}</span>
-            <span className="stat-label">Anime Watched</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number">{stats.hoursWatched}</span>
-            <span className="stat-label">Hours Watched</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number">{stats.currentlyWatching}</span>
-            <span className="stat-label">Currently Watching</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number">{stats.favorites}</span>
-            <span className="stat-label">Favorites</span>
-          </div>
-        </div>
-
-        {/* Recently Watched & Favorite Anime Section */}
-        <div className="recently-watched-section">
-          <div>
-            <h3 className="section-title">Recently Watched</h3>
-            <div className="recently-watched-grid">
-              {recentlyWatched.map(anime => (
-                <div key={anime.id} className="watched-item">
-                  <img src={anime.image} alt={anime.title} />
-                  <div className="watched-info">
-                    <h3>{anime.title}</h3>
-                  </div>
+          {/* Divider Line */}
+          <div className="divider-line"></div>
+          <div className="initial">
+            <div className="overview">
+              <h2 className="overview-header">Overview</h2>
+              {/* Overview Section */}
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <span className="stat-number">{stats.currentlyWatching}</span>
+                  <span className="stat-label">Anime Watching</span>
                 </div>
-              ))}
-            </div>
-          </div>
-          
-          <div>
-            <h3 className="section-title">Favorite Anime</h3>
-            <div className="favorite-grid">
-              {favoriteAnime.map(anime => (
-                <div key={anime.id} className="favorite-item">
-                  <img src={anime.image} alt={anime.title} />
-                  <div className="favorite-info">
-                    <h3>{anime.title}</h3>
-                  </div>
+                <div className="stat-card">
+                  <span className="stat-number">{stats.animeWatched}</span>
+                  <span className="stat-label">Anime Watched</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Badges Section */}
-        <div className="badges-section">
-          <h3 className="section-title">Badges</h3>
-          <div className="badges-grid">
-            {badges.map(badge => (
-              <div key={badge.id} className="badge-card">
-                <div className="badge-icon">{badge.icon}</div>
-                <div className="badge-title">{badge.title}</div>
-                <div className="badge-desc">{badge.description}</div>
+                <div className="stat-card">
+                  <span className="stat-number">{stats.animeWatched}</span>
+                  <span className="stat-label">Anime Planned</span>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-number">{stats.animeWatched}</span>
+                  <span className="stat-label">Anime Dropped</span>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-number">{stats.hoursWatched}</span>
+                  <span className="stat-label">Total Hours</span>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-number">{stats.animeWatched}</span>
+                  <span className="stat-label">Total Episodes</span>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-number">{stats.animeWatched}</span>
+                  <span className="stat-label">Mean Score</span>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-number">{stats.favorites}</span>
+                  <span className="stat-label">Favorites</span>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* Genre Breakdown Section */}
-        <div className="genre-section">
-          <div>
-            <h3 className="section-title">Genre Breakdown</h3>
-            <div className="genre-grid">
-              {genres.map((genre, index) => (
-                <div key={index} className="genre-item">
-                  <div className="genre-name">{genre.name}</div>
-                  <div className="genre-bar">
-                    <div 
-                      className="genre-fill" 
-                      style={{ width: `${genre.percentage}%` }}
-                    ></div>
+
+            <div className="recent-activity-column">
+              <h2 className="overview-header">Recent Activity</h2>
+              <div className="recentact">
+                <div className="activity-placeholder">
+                  <div className="activity-icon">📊</div>
+                  <p className="activity-message">
+                    Recent activity tracking coming soon!
+                  </p>
+                  <p className="activity-subtext">
+                    Track your latest anime additions, episode progress, and ratings here.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Recently Watched & Favorite Anime Section */}
+          <div className="recently-watched-section">
+            <div>
+              <h3 className="section-title">Recently Watched</h3>
+              <div className="recently-watched-grid">
+                {recentlyWatched.map(anime => (
+                  <div key={anime.id} className="watched-item">
+                    <img src={anime.image} alt={anime.title} />
+                    <div className="watched-info">
+                      <h3>{anime.title}</h3>
+                    </div>
                   </div>
-                  <div className="genre-percentage">{genre.percentage}%</div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="section-title">Favorite Anime</h3>
+              <div className="favorite-grid">
+                {favoriteAnime.map(anime => (
+                  <div key={anime.id} className="favorite-item">
+                    <img src={anime.image} alt={anime.title} />
+                    <div className="favorite-info">
+                      <h3>{anime.title}</h3>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Badges Section */}
+          <div className="badges-section">
+            <h3 className="section-title">Badges</h3>
+            <div className="badges-grid">
+              {badges.map(badge => (
+                <div key={badge.id} className="badge-card">
+                  <div className="badge-icon">{badge.icon}</div>
+                  <div className="badge-title">{badge.title}</div>
+                  <div className="badge-desc">{badge.description}</div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Genre Breakdown Section */}
+          <div className="genre-section">
+            <div>
+              <h3 className="section-title">Genre Breakdown</h3>
+              <div className="genre-grid">
+                {genres.map((genre, index) => (
+                  <div key={index} className="genre-item">
+                    <div className="genre-name">{genre.name}</div>
+                    <div className="genre-bar">
+                      <div
+                        className="genre-fill"
+                        style={{ width: `${genre.percentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="genre-percentage">{genre.percentage}%</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

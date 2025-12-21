@@ -1,5 +1,8 @@
 /* Profile Page Styles - Updated to match image */
 .profile-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
   background: linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%);
   color: white;
@@ -7,13 +10,14 @@
   padding: 20px;
 }
 
-.profile-container {
-  max-width: 1200px;
+.profile-container2 {
+  max-width: 1300px;
   margin: 0 auto;
   padding: 20px;
+  margin-top: 60px;
 }
 
-/* Profile Header */
+/* Profile Header - FIXED: Center align actions */
 .profile-header {
   display: flex;
   align-items: flex-start;
@@ -81,8 +85,10 @@
 
 .profile-actions {
   display: flex;
+  flex-direction: column;
   gap: 15px;
-  margin-bottom: 25px;
+  margin-top: 22px;
+  align-items: center;
 }
 
 .btn-edit {
@@ -95,6 +101,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  width: 180px;
 }
 
 .btn-edit:hover {
@@ -112,6 +119,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  width: 180px;
 }
 
 .btn-share:hover {
@@ -150,11 +158,41 @@
   font-weight: 600;
 }
 
-.stats-grid {
+/* FIXED: Initial div layout */
+.initial {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 25px;
-  margin-bottom: 40px;
+  grid-template-columns: 2fr 1fr;
+  gap: 40px;
+  margin-bottom: 50px;
+  width: 100%;
+}
+
+.overview {
+  width: 100%;
+}
+
+.overview .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+}
+
+.recentact {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  height: fit-content;  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.recentact .stats-grid {
+  display: none; 
 }
 
 .stat-card {
@@ -378,7 +416,77 @@
   font-weight: 600;
 }
 
+/* Activity Placeholder Styles */
+.activity-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  height: 100%;
+}
+
+.activity-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.activity-message {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 10px;
+}
+
+.activity-subtext {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.5;
+  max-width: 300px;
+}
+
+/* Recent Activity Section */
+.recentact {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 400px;
+}
+
+.recentact h2.overview-header {
+  font-size: 28px;
+  color: white;
+  margin-bottom: 30px;
+  font-weight: 600;
+  text-align: center;
+  width: 100%;
+}
+
+.recentact .stats-grid {
+  display: none; /* Hide the duplicate stats grid */
+}
+
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .initial {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .recentact {
+    min-height: 200px;
+  }
+}
+
 @media (max-width: 900px) {
   .profile-header {
     flex-direction: column;
@@ -386,32 +494,33 @@
     text-align: center;
     gap: 30px;
   }
-  
+
   .profile-name-section {
     text-align: center;
   }
-  
+
   .username-section {
     justify-content: center;
   }
-  
+
   .profile-actions {
+    flex-direction: row;
     justify-content: center;
   }
-  
-  .stats-grid {
+
+  .overview .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .recently-watched-section {
     grid-template-columns: 1fr;
     gap: 30px;
   }
-  
+
   .badges-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .genre-section {
     grid-template-columns: 1fr;
     gap: 30px;
@@ -419,37 +528,47 @@
 }
 
 @media (max-width: 600px) {
-  .profile-container {
+  .profile-container2 {
     padding: 10px;
   }
-  
+
   .profile-avatar-large {
     width: 140px;
     height: 140px;
   }
-  
+
   .profile-name-section h1 {
     font-size: 36px;
   }
-  
+
   .username {
     font-size: 18px;
   }
+
+  .profile-actions {
+    flex-direction: column;
+    align-items: center;
+  }
   
-  .stats-grid {
+  .btn-edit, .btn-share {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .overview .stats-grid {
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .recently-watched-grid,
   .favorite-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .badges-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .genre-grid {
     grid-template-columns: 1fr;
   }
