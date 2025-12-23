@@ -475,6 +475,272 @@
   display: none; /* Hide the duplicate stats grid */
 }
 
+/* Loading spinner */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  gap: 20px;
+}
+
+.loading-spinner .spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #ff6b6b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Error message */
+.error-message {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.error-message h2 {
+  color: #ff6b6b;
+  margin-bottom: 1rem;
+}
+
+.error-message p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Upload label */
+.upload-label {
+  display: block;
+  text-align: center;
+  color: #ff6b6b;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 8px;
+  transition: color 0.3s;
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid #ff6b6b;
+  background: white;
+}
+
+.upload-label:hover {
+  color: #ff5252;
+  background: #fff5f5;
+}
+
+/* Email in username */
+.username-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.username-section .username {
+  font-weight: 600;
+  color: #333;
+}
+
+.username-section .email {
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+}
+
+/* Edit Profile Section */
+.profile-edit-section {
+  flex: 1;
+  margin: 0 30px;
+}
+
+.edit-form-group {
+  margin-bottom: 15px;
+}
+
+.edit-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+.edit-input, .edit-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.edit-input:focus, .edit-textarea:focus {
+  outline: none;
+  border-color: #ff6b6b;
+}
+
+.edit-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-save {
+  padding: 10px 20px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.btn-save:hover {
+  background: #45a049;
+}
+
+.btn-cancel {
+  padding: 10px 20px;
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-cancel:hover {
+  background: #e0e0e0;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.empty-state p:first-child {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.empty-state p:last-child {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+/* Anime rating */
+.anime-rating {
+  margin-top: 5px;
+  color: #ffc107;
+  font-weight: 600;
+}
+
+/* Profile header responsiveness */
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 20px;
+  }
+  
+  .profile-avatar-section {
+    margin-bottom: 10px;
+  }
+  
+  .profile-name-section,
+  .profile-edit-section {
+    margin: 0;
+  }
+  
+  .profile-actions {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  
+  .btn-edit, .btn-share, .btn-save, .btn-cancel {
+    width: 100%;
+  }
+  
+  .username-section {
+    justify-content: center;
+  }
+  
+  .edit-actions {
+    flex-direction: column;
+  }
+  
+  .recently-watched-section {
+    flex-direction: column;
+    gap: 30px;
+  }
+}
+
+/* Tablet adjustments */
+@media (max-width: 1024px) {
+  .initial {
+    flex-direction: column;
+  }
+  
+  .recent-activity-column {
+    margin-top: 30px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 480px) {
+  .profile-avatar-large {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .profile-name-section h1 {
+    font-size: 1.5rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .recently-watched-grid,
+  .favorite-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .badges-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .initial {
