@@ -1,8 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* Performance First CSS */
-/* Remove all animations by default, only enable for high-end devices */
-
 /* Modal Overlay - No blur on slow devices */
 .modal-overlay {
     position: fixed;

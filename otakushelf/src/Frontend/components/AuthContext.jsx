@@ -16,11 +16,19 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // REMOVED: Don't set global axios headers here
-  // const token = localStorage.getItem("token");
-  // if (token) {
-  //   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  // }
+  const fetchUserProfile = async (userId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE}/api/profile/${userId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Profile fetch error:', error);
+      return null;
+    }
+  };
 
   // FIXED: Handle token from URL parameters first, before checking auth status
   useEffect(() => {
@@ -103,8 +111,17 @@ export const AuthProvider = ({ children }) => {
 
       if (response.data.user) {
         console.log('User authenticated:', response.data.user);
-        setUser(response.data.user);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+
+        // Fetch full profile data
+        const profileData = await fetchUserProfile(response.data.user._id);
+
+        const userWithProfile = {
+          ...response.data.user,
+          profile: profileData || {}
+        };
+
+        setUser(userWithProfile);
+        localStorage.setItem("user", JSON.stringify(userWithProfile));
       } else {
         console.log('No authenticated user found');
         setUser(null);
@@ -112,15 +129,38 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Auth check failed:', error.response?.data || error.message);
-      // Only clear localStorage if it's a 401 (unauthorized) or 403 (forbidden)
       if (error.response?.status === 401 || error.response?.status === 403) {
         setUser(null);
         localStorage.removeItem("user");
         localStorage.removeItem("token");
       }
-      // For network errors or 500 errors, don't clear user data
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.put(`${API_BASE}/api/profile/${user._id}`, profileData, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      if (response.data.user) {
+        setUser(prev => ({
+          ...prev,
+          ...response.data.user
+        }));
+        localStorage.setItem("user", JSON.stringify({
+          ...user,
+          ...response.data.user
+        }));
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Profile update error:', error);
+      throw error;
     }
   };
 
@@ -154,7 +194,9 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    checkAuthStatus
+    checkAuthStatus,
+    updateProfile, // Add this
+    fetchUserProfile // Add this
   };
 
   return (

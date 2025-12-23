@@ -102,13 +102,48 @@ app.use(passport.session());
 // =======================
 // User Schema + Model
 // =======================
+// =======================
+// Enhanced User Schema with Profile
+// =======================
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String },
   authType: { type: String, enum: ["local", "google"], required: true },
   photo: { type: String },
   name: { type: String },
-});
+
+  // NEW: Profile Fields
+  profile: {
+    username: { type: String, unique: true, sparse: true },
+    bio: { type: String, default: "" },
+    joinDate: { type: Date, default: Date.now },
+    stats: {
+      animeWatched: { type: Number, default: 0 },
+      hoursWatched: { type: Number, default: 0 },
+      currentlyWatching: { type: Number, default: 0 },
+      favorites: { type: Number, default: 0 },
+      animePlanned: { type: Number, default: 0 },
+      animeDropped: { type: Number, default: 0 },
+      totalEpisodes: { type: Number, default: 0 },
+      meanScore: { type: Number, default: 0 }
+    },
+    badges: [{
+      title: String,
+      description: String,
+      icon: String,
+      earnedDate: Date
+    }],
+    favoriteGenres: [{
+      name: String,
+      percentage: Number
+    }],
+    preferences: {
+      theme: { type: String, default: "light" },
+      privacy: { type: String, default: "public" }
+    }
+  }
+}, { timestamps: true });
+
 const User = mongoose.model("User", userSchema);
 
 const jikanImageCache = new Map();
@@ -753,6 +788,286 @@ app.get("/api/list/:userId", async (req, res) => {
     res.status(500).json({ message: "Error fetching list", error: err.message });
   }
 });
+
+// =======================
+// PROFILE API ROUTES
+// =======================
+
+// Get user profile
+app.get("/api/profile/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Calculate dynamic stats from anime list
+    const animeList = await AnimeList.findOne({ userId });
+
+    let stats = {
+      animeWatched: 0,
+      hoursWatched: 0,
+      currentlyWatching: 0,
+      favorites: 0,
+      animePlanned: 0,
+      animeDropped: 0,
+      totalEpisodes: 0,
+      meanScore: 0
+    };
+
+    if (animeList) {
+      stats.currentlyWatching = animeList.watching?.length || 0;
+      stats.animeWatched = animeList.completed?.length || 0;
+      stats.animePlanned = animeList.planned?.length || 0;
+      stats.animeDropped = animeList.dropped?.length || 0;
+
+      // Calculate total episodes watched
+      let totalEpisodes = 0;
+      let totalRatings = 0;
+      let ratingCount = 0;
+
+      const allAnime = [
+        ...(animeList.watching || []),
+        ...(animeList.completed || []),
+        ...(animeList.dropped || [])
+      ];
+
+      allAnime.forEach(anime => {
+        totalEpisodes += anime.episodesWatched || 0;
+        if (anime.userRating && anime.userRating > 0) {
+          totalRatings += anime.userRating;
+          ratingCount++;
+        }
+      });
+
+      stats.totalEpisodes = totalEpisodes;
+      stats.hoursWatched = Math.round(totalEpisodes * 24); // Assuming 24 minutes per episode
+      stats.meanScore = ratingCount > 0 ? (totalRatings / ratingCount).toFixed(1) : 0;
+      stats.favorites = animeList.completed?.filter(a => a.userRating >= 4).length || 0;
+    }
+
+    // Calculate genre breakdown
+    const genres = await calculateGenreBreakdown(userId);
+
+    // Get recently watched (last 4 completed/watching anime)
+    const recentlyWatched = await getRecentlyWatched(userId, 4);
+
+    // Get favorite anime (highest rated)
+    const favoriteAnime = await getFavoriteAnime(userId, 4);
+
+    const profileData = {
+      _id: user._id,
+      email: user.email,
+      name: user.name || 'Anime Lover',
+      photo: user.photo || null,
+      profile: {
+        username: user.profile?.username || `@user_${user._id.toString().slice(-6)}`,
+        bio: user.profile?.bio || 'Anime enthusiast exploring new worlds through animation',
+        joinDate: user.profile?.joinDate || user.createdAt,
+        stats: { ...user.profile?.stats, ...stats },
+        badges: user.profile?.badges || [],
+        favoriteGenres: genres,
+        preferences: user.profile?.preferences || {}
+      },
+      recentlyWatched,
+      favoriteAnime
+    };
+
+    res.json(profileData);
+  } catch (err) {
+    console.error('Profile fetch error:', err);
+    res.status(500).json({ message: "Error fetching profile", error: err.message });
+  }
+});
+
+// Update profile
+app.put("/api/profile/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updateData = req.body;
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update profile fields
+    const update = {};
+
+    if (updateData.name) update.name = updateData.name;
+    if (updateData.photo) update.photo = updateData.photo;
+
+    if (updateData.profile) {
+      update.$set = update.$set || {};
+      if (updateData.profile.username) {
+        // Check if username is unique
+        const existingUser = await User.findOne({
+          'profile.username': updateData.profile.username,
+          _id: { $ne: userId }
+        });
+
+        if (existingUser) {
+          return res.status(400).json({ message: "Username already taken" });
+        }
+        update.$set['profile.username'] = updateData.profile.username;
+      }
+      if (updateData.profile.bio !== undefined) update.$set['profile.bio'] = updateData.profile.bio;
+      if (updateData.profile.preferences) update.$set['profile.preferences'] = updateData.profile.preferences;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      update,
+      { new: true, select: '-password' }
+    );
+
+    res.json({
+      message: "Profile updated successfully",
+      user: updatedUser
+    });
+  } catch (err) {
+    console.error('Profile update error:', err);
+    res.status(500).json({ message: "Error updating profile", error: err.message });
+  }
+});
+
+// Upload profile picture
+app.post("/api/profile/:userId/upload-photo", async (req, res) => {
+  try {
+    if (!req.files || !req.files.photo) {
+      return res.status(400).json({ message: "No photo uploaded" });
+    }
+
+    const photo = req.files.photo;
+    const { userId } = req.params;
+
+    // In production, you would upload to Cloudinary, AWS S3, etc.
+    // For now, we'll save as base64 (not recommended for production)
+    const base64Image = photo.data.toString('base64');
+    const dataUrl = `data:${photo.mimetype};base64,${base64Image}`;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { photo: dataUrl },
+      { new: true, select: '-password' }
+    );
+
+    res.json({
+      message: "Photo uploaded successfully",
+      photo: dataUrl,
+      user: updatedUser
+    });
+  } catch (err) {
+    console.error('Photo upload error:', err);
+    res.status(500).json({ message: "Error uploading photo", error: err.message });
+  }
+});
+
+// Helper functions
+async function calculateGenreBreakdown(userId) {
+  // This would connect to an external API to get genre data
+  // For now, return mock data or implement with your anime database
+  return [
+    { name: 'Action', percentage: 35 },
+    { name: 'Fantasy', percentage: 25 },
+    { name: 'Comedy', percentage: 20 },
+    { name: 'Romance', percentage: 15 },
+    { name: 'Sci-Fi', percentage: 5 }
+  ];
+}
+
+async function getRecentlyWatched(userId, limit = 4) {
+  const animeList = await AnimeList.findOne({ userId });
+  if (!animeList) return [];
+
+  const allAnime = [
+    ...(animeList.watching || []),
+    ...(animeList.completed || []),
+  ].sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate))
+    .slice(0, limit);
+
+  return allAnime.map(anime => ({
+    id: anime._id,
+    title: anime.title,
+    image: anime.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=250&fit=crop'
+  }));
+}
+
+async function getFavoriteAnime(userId, limit = 4) {
+  const animeList = await AnimeList.findOne({ userId });
+  if (!animeList) return [];
+
+  const allAnime = [
+    ...(animeList.completed || []),
+    ...(animeList.watching || []),
+  ].filter(anime => anime.userRating && anime.userRating >= 4)
+    .sort((a, b) => b.userRating - a.userRating)
+    .slice(0, limit);
+
+  return allAnime.map(anime => ({
+    id: anime._id,
+    title: anime.title,
+    image: anime.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=250&fit=crop',
+    rating: anime.userRating
+  }));
+}
+
+// Get user badges
+app.get("/api/profile/:userId/badges", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const animeList = await AnimeList.findOne({ userId });
+
+    const badges = [];
+
+    // Binge King - Watched 10+ episodes in a day
+    const bingeKing = await checkBingeKing(userId);
+    if (bingeKing) badges.push(bingeKing);
+
+    // Seasonal Hunter - Completed 5+ seasonal anime
+    const seasonalHunter = await checkSeasonalHunter(userId);
+    if (seasonalHunter) badges.push(seasonalHunter);
+
+    // Anime Veteran - Member for 2+ years
+    const user = await User.findById(userId);
+    if (user && new Date() - user.createdAt > 2 * 365 * 24 * 60 * 60 * 1000) {
+      badges.push({
+        title: 'Anime Veteran',
+        description: 'Member for 2+ years',
+        icon: '⚔️',
+        earnedDate: new Date()
+      });
+    }
+
+    // Completionist - Completed 50+ anime
+    if (animeList && animeList.completed && animeList.completed.length >= 50) {
+      badges.push({
+        title: 'Completionist',
+        description: 'Completed 50+ anime',
+        icon: '🏆',
+        earnedDate: new Date()
+      });
+    }
+
+    res.json(badges);
+  } catch (err) {
+    console.error('Badges fetch error:', err);
+    res.status(500).json({ message: "Error fetching badges", error: err.message });
+  }
+});
+
+async function checkBingeKing(userId) {
+  // Implement logic to check if user watched 10+ episodes in a day
+  return null; // Placeholder
+}
+
+async function checkSeasonalHunter(userId) {
+  // Implement logic to check seasonal anime completion
+  return null; // Placeholder
+}
 
 // Update anime in list
 app.put("/api/list/:userId/:animeId", async (req, res) => {
