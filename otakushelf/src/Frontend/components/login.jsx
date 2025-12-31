@@ -12,15 +12,15 @@ const Login = () => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
-  const API_BASE = import.meta.env.VITE_API_BASE_URL;
-    const navigate = useNavigate();
+  const API = import.meta.env.VITE_API_BASE_URL;
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => {
         setMessage("");
       }, 3000);
-      return () => clearTimeout(timer); 
+      return () => clearTimeout(timer);
     }
   }, [message]);
 
@@ -36,12 +36,12 @@ const Login = () => {
     }
 
     try {
-      const res = await axios.post(`${API_BASE}/auth/login`, {
+      const res = await axios.post(`${APIE}/auth/login`, {
         email,
         password,
       }, { withCredentials: true });
 
-      console.log("Login response:", res.data); 
+      console.log("Login response:", res.data);
 
       setMessage(res.data.message);
 
@@ -62,7 +62,7 @@ const Login = () => {
 
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_BASE}/auth/google`;
+    window.location.href = `${API}/auth/google`;
   };
 
   const getMessageClass = () => {

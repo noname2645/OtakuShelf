@@ -4,9 +4,7 @@ import { motion } from "framer-motion";
 import '../Stylesheets/TrailerHero.css';
 
 // API base URL
-const API_BASE = import.meta.env.MODE === "development"
-    ? "http://localhost:5000"
-    : "https://otakushelf-uuvw.onrender.com";
+const API = import.meta.env.VITE_API_BASE_URL;
 
 // TrailerHero Component
 const TrailerHero = ({ onOpenModal }) => {
@@ -321,7 +319,7 @@ const TrailerHero = ({ onOpenModal }) => {
             if (announcements.length > 0) return;
 
             try {
-                const data = await fetchWithRetry(`${API_BASE}/api/anilist/hero-trailers`);
+                const data = await fetchWithRetry(`${API}/api/anilist/hero-trailers`);
                 const sorted = data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
                 const normalizedAnnouncements = sorted

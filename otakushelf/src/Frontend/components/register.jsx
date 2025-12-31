@@ -14,7 +14,7 @@ const Register = ({ onRegisterSuccess}) => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
-  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const API = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     if (message) {
@@ -65,7 +65,7 @@ const Register = ({ onRegisterSuccess}) => {
 
 
     try {
-      const res = await axios.post(`${API_BASE}/auth/register`, {
+      const res = await axios.post(`${API}/auth/register`, {
         email,
         password,
       }, { withCredentials: true });
@@ -73,7 +73,7 @@ const Register = ({ onRegisterSuccess}) => {
       console.log("Register response:", res.data)
       setMessage(res.data.message);
 
-      const loginRes = await axios.post(`${API_BASE}/auth/login`, {
+      const loginRes = await axios.post(`${API}/auth/login`, {
         email,
         password,
       }, { withCredentials: true });
@@ -95,7 +95,7 @@ const Register = ({ onRegisterSuccess}) => {
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = `${API_BASE}/auth/google`;
+    window.location.href = `${API}/auth/google`;
   };
 
 

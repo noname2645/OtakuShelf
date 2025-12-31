@@ -8,9 +8,7 @@ import { Header } from '../components/header.jsx';
 import BottomNavBar from './bottom.jsx';
 
 // API base URL
-const API_BASE = import.meta.env.MODE === "development"
-    ? "http://localhost:5000"
-    : "https://otakushelf-uuvw.onrender.com";
+const API = import.meta.env.VITE_API_BASE_URL;
 
 // Simple useInView hook that always returns true
 const useInView = () => {
@@ -174,7 +172,7 @@ const AnimeHomepage = () => {
             // Only protect the list page
             if (activePage === 'list') {
                 try {
-                    const response = await axios.get(`${API_BASE}/api/auth/check`, {
+                    const response = await axios.get(`${API}/api/auth/check`, {
                         withCredentials: true
                     });
 
@@ -211,7 +209,7 @@ const AnimeHomepage = () => {
                 }
 
                 // Fetch fresh data
-                const response = await axios.get(`${API_BASE}/api/anime/anime-sections`, {
+                const response = await axios.get(`${API}/api/anime/anime-sections`, {
                     timeout: 10000
                 });
 
@@ -261,7 +259,7 @@ const AnimeHomepage = () => {
 
         const performSearch = async () => {
             try {
-                const searchUrl = `${API_BASE}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=12`;
+                const searchUrl = `${API}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=12`;
                 const res = await axios.get(searchUrl, {
                     signal: controllerRef.current.signal,
                     timeout: 10000

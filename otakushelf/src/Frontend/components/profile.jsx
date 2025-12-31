@@ -22,7 +22,7 @@ const ProfilePage = () => {
     username: ''
   });
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const API = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     if (user?._id) {
@@ -39,7 +39,7 @@ const ProfilePage = () => {
       const token = localStorage.getItem("token");
       
       // Fetch profile data
-      const response = await fetch(`${API_BASE}/api/profile/${user._id}`, {
+      const response = await fetch(`${API}/api/profile/${user._id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       
@@ -221,7 +221,7 @@ const ProfilePage = () => {
         }
       };
 
-      const response = await fetch(`${API_BASE}/api/profile/${user._id}`, {
+      const response = await fetch(`${API}/api/profile/${user._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -307,7 +307,7 @@ const ProfilePage = () => {
             const formData = new FormData();
             formData.append('photo', file);
             
-            const response = await fetch(`${API_BASE}/api/profile/${user._id}/upload-photo`, {
+            const response = await fetch(`${API}/api/profile/${user._id}/upload-photo`, {
               method: 'POST',
               headers: token ? { Authorization: `Bearer ${token}` } : {},
               body: formData

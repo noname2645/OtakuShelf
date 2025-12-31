@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const API = import.meta.env.VITE_API_BASE_URL;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -74,11 +74,11 @@ export const AuthProvider = ({ children }) => {
     const ensureAnimeListExists = async (userId) => {
       try {
         // Check if user has an anime list, create if not
-        await axios.get(`http://localhost:5000/api/list/${userId}`);
+        await axios.get(`${API}/api/list/${userId}`);
       } catch (error) {
         if (error.response?.status === 404) {
           // List doesn't exist, create empty one
-          await axios.post(`http://localhost:5000/api/list/${userId}`, {
+          await axios.post(`${API}/api/list/${userId}`, {
             category: "watching",
             animeTitle: "dummy",
             animeData: {}
