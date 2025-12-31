@@ -19,6 +19,8 @@ const EnhancedAnimeList = () => {
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
 
+  const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
   const getFallbackImage = (animeTitle) => {
     const encodedTitle = encodeURIComponent(animeTitle || 'Anime Poster');
     return `https://placehold.co/300x180/667eea/ffffff?text=${encodedTitle}&font=roboto`;
@@ -95,13 +97,15 @@ const EnhancedAnimeList = () => {
     console.log("Sending import request with userId:", user._id, "clearExisting:", clearExisting);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/list/import/mal', formData, {
+      const response = await axios.post(`${API}/api/list/import/mal`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         },
         onUploadProgress: (progressEvent) => {
-          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
           setImportProgress(percent);
         }
       });
@@ -138,7 +142,7 @@ const EnhancedAnimeList = () => {
       const userId = user._id;
       console.log("Fetching list for user ID:", userId);
 
-      const response = await axios.get(`http://localhost:5000/api/list/${userId}`, {
+      const response = await axios.get(`${API}/api/list/${userId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         }
@@ -323,7 +327,7 @@ const EnhancedAnimeList = () => {
         }
 
         const userId = user._id;
-        await axios.delete(`http://localhost:5000/api/list/${userId}/${animeId}`, {
+        await axios.delete(`${API}/api/list/${userId}/${animeId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
           }
@@ -387,7 +391,7 @@ const EnhancedAnimeList = () => {
 
     try {
       await axios.put(
-        `http://localhost:5000/api/list/${userId}/${animeId}`,
+        `${API}/api/list/${userId}/${animeId}`,
         {
           episodesWatched: updatedEpisodes,
           category: activeTab
@@ -406,7 +410,7 @@ const EnhancedAnimeList = () => {
           moveAnimeBetweenCategories(animeId, currentStatus, "completed");
 
           await axios.put(
-            `http://localhost:5000/api/list/${userId}/${animeId}`,
+            `${API}/api/list/${userId}/${animeId}`,
             {
               episodesWatched: totalEpisodes,
               status: "completed",
@@ -467,7 +471,7 @@ const EnhancedAnimeList = () => {
       }
 
       await axios.put(
-        `http://localhost:5000/api/list/${userId}/${animeId}`,
+        `${API}/api/list/${userId}/${animeId}`,
         payload,
         {
           headers: {

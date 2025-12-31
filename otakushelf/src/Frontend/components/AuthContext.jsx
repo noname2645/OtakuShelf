@@ -39,7 +39,6 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         console.log('Token found in URL:', token);
         localStorage.setItem("token", token);
-        // Don't set global header, set per request instead
 
         // Clean URL immediately
         window.history.replaceState({}, document.title, "/");
@@ -195,8 +194,8 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     checkAuthStatus,
-    updateProfile, // Add this
-    fetchUserProfile // Add this
+    updateProfile, 
+    fetchUserProfile 
   };
 
   return (
