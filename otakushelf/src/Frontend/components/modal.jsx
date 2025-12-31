@@ -21,6 +21,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [isInList, setIsInList] = useState(false);
     const [userListStatus, setUserListStatus] = useState(null);
     const { user } = useAuth();
+    const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
     // HELPER FUNCTIONS - No hooks for simple functions
     const formatAniListDate = (dateObj) => {
@@ -210,7 +211,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         if (!user || !anime) return;
 
         try {
-            const response = await axios.get(`http://localhost:5000/api/list/${user._id || user.id}`);
+            const response = await axios.get(`${API}/api/list/${user._id || user.id}`);
             const userList = response.data;
             const categories = ['watching', 'completed', 'planned', 'dropped'];
             let foundStatus = null;
@@ -299,7 +300,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
         setIsAddingToList(true);
         try {
-            await axios.post(`http://localhost:5000/api/list/${user._id || user.id}`, {
+            await axios.post(`${API}/api/list/${user._id || user.id}`, {
                 category: status,
                 animeTitle: animeData.title,
                 animeData: anime
