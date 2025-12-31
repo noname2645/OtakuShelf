@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
   const fetchUserProfile = async (userId) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_BASE}/api/profile/${userId}`, {
+      const response = await axios.get(`${API}/api/profile/${userId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
 
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
         window.history.replaceState({}, document.title, "/");
 
         try {
-          const response = await axios.get(`${API_BASE}/auth/me`, {
+          const response = await axios.get(`${API}/auth/me`, {
             withCredentials: true,
             headers: {
               Authorization: `Bearer ${token}`
@@ -103,7 +103,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('Checking auth status...');
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_BASE}/auth/me`, {
+      const response = await axios.get(`${API}/auth/me`, {
         withCredentials: true,
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (profileData) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.put(`${API_BASE}/api/profile/${user._id}`, profileData, {
+      const response = await axios.put(`${API}/api/profile/${user._id}`, profileData, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
 
@@ -172,7 +172,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       console.log('Logout initiated');
-      await axios.get(`${API_BASE}/auth/logout`, {
+      await axios.get(`${API}/auth/logout`, {
         withCredentials: true,
         timeout: 5000
       });
