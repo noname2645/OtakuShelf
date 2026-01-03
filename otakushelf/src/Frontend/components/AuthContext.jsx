@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      console.log('Checking auth status...');
+      // console.log('Checking auth status...');
       const token = localStorage.getItem("token");
       const response = await axios.get(`${API}/auth/me`, {
         withCredentials: true,
@@ -109,7 +109,7 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (response.data.user) {
-        console.log('User authenticated:', response.data.user);
+        // console.log('User authenticated:', response.data.user);
 
         // Fetch full profile data
         const profileData = await fetchUserProfile(response.data.user._id);

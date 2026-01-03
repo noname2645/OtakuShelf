@@ -521,6 +521,7 @@ app.post("/api/list/:userId", async (req, res) => {
 });
 
 // FIXED: MAL Import Route
+// FIXED: MAL Import Route
 app.post('/api/list/import/mal', async (req, res) => {
   try {
     console.log('=== MAL IMPORT STARTED ===');
@@ -535,15 +536,46 @@ app.post('/api/list/import/mal', async (req, res) => {
 
     const malFile = req.files.malFile;
     const userId = req.body.userId;
+    const clearExisting = req.body.clearExisting === 'true'; // Convert to boolean
 
     console.log('User ID:', userId);
     console.log('File name:', malFile.name);
+    console.log('Clear existing:', clearExisting);
+    console.log('Mode:', clearExisting ? 'REPLACE' : 'MERGE');
 
     if (!userId) {
       return res.status(400).json({
         success: false,
         message: 'User ID is required'
       });
+    }
+
+    // Check if we should clear existing list
+    if (clearExisting) {
+      console.log('🧹 Clearing existing anime list...');
+      await AnimeList.deleteOne({ userId });
+      console.log('✅ Existing list cleared');
+      userList = null; // Force creation of new list
+    }
+
+    // Get or create user list
+    let userList = await AnimeList.findOne({ userId });
+    if (!userList) {
+      userList = new AnimeList({
+        userId,
+        watching: [],
+        completed: [],
+        planned: [],
+        dropped: []
+      });
+      await userList.save();
+      console.log('📝 Created new list for user');
+    } else {
+      console.log('📋 Found existing list with:');
+      console.log(`   Watching: ${userList.watching?.length || 0}`);
+      console.log(`   Completed: ${userList.completed?.length || 0}`);
+      console.log(`   Planned: ${userList.planned?.length || 0}`);
+      console.log(`   Dropped: ${userList.dropped?.length || 0}`);
     }
 
     // Parse XML
@@ -560,33 +592,24 @@ app.post('/api/list/import/mal', async (req, res) => {
     }
 
     const animeEntries = xmlData.myanimelist.anime;
-    console.log(`Found ${animeEntries.length} anime entries`);
-
-    // Debug first entry to see structure
-    if (animeEntries.length > 0) {
-      console.log('=== FIRST ENTRY STRUCTURE ===');
-      const firstEntry = animeEntries[0];
-      Object.keys(firstEntry).forEach(key => {
-        console.log(`${key}:`, firstEntry[key]?.[0]);
-      });
-    }
+    console.log(`📊 Found ${animeEntries.length} anime entries in XML`);
 
     let importedCount = 0;
     let updatedCount = 0;
     let skippedCount = 0;
+    let cachedImagesUsed = 0;
+    let newImagesFetched = 0;
 
-    // Get or create user list
-    let userList = await AnimeList.findOne({ userId });
-    if (!userList) {
-      userList = new AnimeList({
-        userId,
-        watching: [],
-        completed: [],
-        planned: [],
-        dropped: []
-      });
-      await userList.save();
-      console.log('Created new list for user');
+    // Create combined array for quick lookups in MERGE mode
+    let allExistingAnime = [];
+    if (!clearExisting && userList) {
+      allExistingAnime = [
+        ...(userList.watching || []),
+        ...(userList.completed || []),
+        ...(userList.planned || []),
+        ...(userList.dropped || [])
+      ];
+      console.log(`🔍 ${allExistingAnime.length} existing anime for image lookup`);
     }
 
     // Process each anime entry
@@ -604,12 +627,9 @@ app.post('/api/list/import/mal', async (req, res) => {
         const startDate = parseMALDate(entry.my_start_date?.[0]);
         const finishDate = parseMALDate(entry.my_finish_date?.[0]);
 
-
-        console.log(`Processing: ${title} | Status: ${malStatus} | Start: ${startDate} | Finish: ${finishDate}`);
-
         // Validate required fields
         if (!malId || !title || !malStatus) {
-          console.log(`Skipping: missing required fields`);
+          console.log(`⏭️ Skipping: missing required fields`);
           skippedCount++;
           continue;
         }
@@ -629,7 +649,7 @@ app.post('/api/list/import/mal', async (req, res) => {
         } else if (status === '6' || status === 'plan to watch') {
           category = 'planned';
         } else {
-          console.log(`Skipping: unknown status "${malStatus}"`);
+          console.log(`⏭️ Skipping: unknown status "${malStatus}"`);
           skippedCount++;
           continue;
         }
@@ -639,52 +659,67 @@ app.post('/api/list/import/mal', async (req, res) => {
 
         if (finishDate) {
           addedDate = finishDate;
-          console.log(`Using finish date`);
         } else if (startDate) {
           addedDate = startDate;
-          console.log(`Using start date`);
         } else {
           addedDate = new Date();
-          console.log(`Using current date`);
         }
-
 
         // Validate date
         if (isNaN(addedDate.getTime())) {
           addedDate = new Date();
-          console.log(`Invalid date, using current date`);
         }
 
+        // ===== OPTIMIZED IMAGE FETCHING =====
+        let imageUrl = null;
 
-        const imageUrl = await fetchJikanImage(malId);
-        await new Promise(r => setTimeout(r, 800));
+        if (!clearExisting) {
+          // MERGE MODE: Try to reuse existing image first
+          const existingAnime = allExistingAnime.find(
+            anime => anime.malId === malId.toString() ||
+              anime.title.toLowerCase() === title.toLowerCase().trim()
+          );
 
+          if (existingAnime && existingAnime.image) {
+            // Use cached image - NO API CALL!
+            imageUrl = existingAnime.image;
+            cachedImagesUsed++;
+            console.log(`✅ [${i + 1}/${animeEntries.length}] Using cached image: ${title.substring(0, 30)}...`);
+          } else {
+            // New anime, fetch image
+            imageUrl = await fetchJikanImage(malId);
+            await new Promise(r => setTimeout(r, 800)); // Rate limiting
+            newImagesFetched++;
+            console.log(`🔄 [${i + 1}/${animeEntries.length}] Fetching image: ${title.substring(0, 30)}...`);
+          }
+        } else {
+          // REPLACE MODE: Always fetch fresh images
+          imageUrl = await fetchJikanImage(malId);
+          await new Promise(r => setTimeout(r, 800)); // Rate limiting
+          newImagesFetched++;
+          console.log(`🔄 [${i + 1}/${animeEntries.length}] Fetching (Replace mode): ${title.substring(0, 30)}...`);
+        }
 
-        // Create anime object WITH PROPER DATE
+        // Create anime object
         const animeObj = {
           title: title.trim(),
           animeId: malId.toString(),
           malId: malId.toString(),
           image: imageUrl,
-
           totalEpisodes,
           episodes: totalEpisodes,
           episodesWatched: Math.min(episodesWatched, totalEpisodes),
           userRating: userRating > 0 ? Math.min(userRating / 2, 5) : 0,
-
-          addedDate,                 // always Date
+          addedDate,
           startDate: startDate ?? undefined,
           finishDate: finishDate ?? undefined,
-
           status: category
         };
-
-
 
         // For completed anime, set episodes watched to total
         if (category === 'completed') {
           animeObj.episodesWatched = totalEpisodes;
-          animeObj.finishDate = addedDate; // Use the finish date
+          animeObj.finishDate = addedDate;
         }
 
         // Check if anime already exists in ANY category
@@ -698,14 +733,14 @@ app.post('/api/list/import/mal', async (req, res) => {
           );
 
           if (existingIndex !== -1) {
-            // Update existing entry WITH NEW DATE
+            // Update existing entry
             userList[cat][existingIndex] = {
               ...userList[cat][existingIndex],
               ...animeObj
             };
             updatedCount++;
             exists = true;
-            console.log(`Updated: ${title.substring(0, 30)}...`);
+            console.log(`📝 Updated: ${title.substring(0, 30)}...`);
             break;
           }
         }
@@ -714,11 +749,11 @@ app.post('/api/list/import/mal', async (req, res) => {
         if (!exists) {
           userList[category].push(animeObj);
           importedCount++;
-          console.log(`Added: ${title.substring(0, 30)}... to ${category}`);
+          console.log(`➕ Added: ${title.substring(0, 30)}... to ${category}`);
         }
 
       } catch (entryError) {
-        console.error(`Error processing entry ${i}:`, entryError);
+        console.error(`❌ Error processing entry ${i}:`, entryError.message);
         skippedCount++;
       }
     }
@@ -727,22 +762,29 @@ app.post('/api/list/import/mal', async (req, res) => {
     await userList.save();
 
     console.log(`=== IMPORT COMPLETED ===`);
-    console.log(`Total found: ${animeEntries.length}`);
-    console.log(`Imported: ${importedCount}`);
-    console.log(`Updated: ${updatedCount}`);
-    console.log(`Skipped: ${skippedCount}`);
+    console.log(`📊 Total found in XML: ${animeEntries.length}`);
+    console.log(`✅ Imported new: ${importedCount}`);
+    console.log(`📝 Updated existing: ${updatedCount}`);
+    console.log(`⏭️ Skipped: ${skippedCount}`);
+    console.log(`🖼️ Cached images reused: ${cachedImagesUsed}`);
+    console.log(`🔄 New images fetched: ${newImagesFetched}`);
+    console.log(`🎯 Mode: ${clearExisting ? 'REPLACE (fresh import)' : 'MERGE (update existing)'}`);
 
     res.json({
       success: true,
       importedCount,
       updatedCount,
       skippedCount,
+      cachedImagesUsed,
+      newImagesFetched,
       totalFound: animeEntries.length,
-      message: `Successfully imported ${importedCount} new anime and updated ${updatedCount} existing ones`
+      message: clearExisting
+        ? `Successfully imported ${importedCount} anime (Replace mode)`
+        : `Successfully merged ${importedCount} new anime and updated ${updatedCount} existing ones`
     });
 
   } catch (error) {
-    console.error('MAL Import error:', error);
+    console.error('❌ MAL Import error:', error);
     res.status(500).json({
       success: false,
       message: 'Import failed',
@@ -750,7 +792,6 @@ app.post('/api/list/import/mal', async (req, res) => {
     });
   }
 });
-
 // Get anime list with error handling
 app.get("/api/list/:userId", async (req, res) => {
   try {

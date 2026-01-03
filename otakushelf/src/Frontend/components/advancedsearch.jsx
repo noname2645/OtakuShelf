@@ -343,8 +343,8 @@ function AdvancedSearch() {
 
   // Fixed search function using clean anilistClient
   const searchForAnime = useCallback(async (pageNumber = 1, isNewSearch = false, searchQuery = "") => {
-    console.log("=== SEARCH START ===");
-    console.log("Page:", pageNumber, "New search:", isNewSearch);
+    // console.log("=== SEARCH START ===");
+    // console.log("Page:", pageNumber, "New search:", isNewSearch);
 
     if (isNewSearch) {
       setIsSearching(true);
@@ -405,7 +405,7 @@ function AdvancedSearch() {
         }
       });
 
-      console.log("API Variables:", JSON.stringify(variables, null, 2));
+      // console.log("API Variables:", JSON.stringify(variables, null, 2));
 
       // Use the clean anilistClient (no auth headers)
       const response = await anilistClient.post("/", {
@@ -413,8 +413,8 @@ function AdvancedSearch() {
         variables
       });
 
-      console.log("=== API RESPONSE ===");
-      console.log("Response status:", response.status);
+      // console.log("=== API RESPONSE ===");
+      // console.log("Response status:", response.status);
 
       if (response.data.errors) {
         console.error("GraphQL Errors:", response.data.errors);
@@ -429,9 +429,9 @@ function AdvancedSearch() {
       const responseData = response.data.data.Page;
       const cleanedAnimeList = responseData.media.map(cleanUpAnimeData);
 
-      console.log("Cleaned anime list length:", cleanedAnimeList.length);
+      // console.log("Cleaned anime list length:", cleanedAnimeList.length);
       if (cleanedAnimeList.length > 0) {
-        console.log("First anime:", cleanedAnimeList[0].title);
+        // console.log("First anime:", cleanedAnimeList[0].title);
       }
 
       setHasMorePages(responseData.pageInfo.hasNextPage);

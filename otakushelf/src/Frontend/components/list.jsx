@@ -17,7 +17,9 @@ const EnhancedAnimeList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [importing, setImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState(0);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [importOption, setImportOption] = useState('replace'); // 'replace' or 'merge'
 
   const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -30,7 +32,7 @@ const EnhancedAnimeList = () => {
   const user = useMemo(() => {
     try {
       const userStr = localStorage.getItem("user");
-      console.log("Raw user from localStorage:", userStr);
+      // console.log("Raw user from localStorage:", userStr);
 
       if (!userStr) {
         console.log("No user found in localStorage");
@@ -38,7 +40,7 @@ const EnhancedAnimeList = () => {
       }
 
       const storedUser = JSON.parse(userStr);
-      console.log("Parsed user:", storedUser);
+      // console.log("Parsed user:", storedUser);
 
       // Normalize user object - ensure _id exists
       const normalizedUser = {
@@ -47,7 +49,7 @@ const EnhancedAnimeList = () => {
         id: storedUser._id || storedUser.id
       };
 
-      console.log("Normalized user:", normalizedUser);
+      // console.log("Normalized user:", normalizedUser);
 
       if (!normalizedUser._id) {
         console.error("User object has no ID:", normalizedUser);
@@ -61,7 +63,7 @@ const EnhancedAnimeList = () => {
     }
   }, []);
 
-  const handleMALImport = async (event) => {
+  const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -72,41 +74,32 @@ const EnhancedAnimeList = () => {
       return;
     }
 
-    // Ask user if they want to clear existing data
-    const clearExisting = window.confirm(
-      'Clear existing anime list and import fresh from MAL?\n\n' +
-      'OK = Clear and import fresh\n' +
-      'Cancel = Add to existing list'
-    );
+    setSelectedFile(file);
+    setShowImportModal(true);
+    event.target.value = ''; // Reset file input
+  };
 
-    setImporting(true);
-    setImportProgress(0);
-
-    const formData = new FormData();
-    formData.append('malFile', file);
-
-    if (!user || !user._id) {
-      alert('User not found. Please log in again.');
-      setImporting(false);
+  const handleImportConfirm = async () => {
+    if (!selectedFile || !user || !user._id) {
+      alert('Please select a file and ensure you are logged in.');
       return;
     }
 
-    formData.append('userId', user._id);
-    formData.append('clearExisting', clearExisting.toString());
+    setShowImportModal(false);
+    setImporting(true);
 
-    console.log("Sending import request with userId:", user._id, "clearExisting:", clearExisting);
+    const formData = new FormData();
+    formData.append('malFile', selectedFile);
+    formData.append('userId', user._id);
+    formData.append('clearExisting', (importOption === 'replace').toString());
+
+    console.log("Sending import request with option:", importOption);
 
     try {
       const response = await axios.post(`${API}/api/list/import/mal`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        },
-        onUploadProgress: (progressEvent) => {
-          const percent = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setImportProgress(percent);
         }
       });
 
@@ -124,9 +117,16 @@ const EnhancedAnimeList = () => {
     } finally {
       setImporting(false);
       setImportProgress(0);
-      event.target.value = '';
+      setSelectedFile(null);
     }
   };
+
+  const handleImportCancel = () => {
+    setShowImportModal(false);
+    setSelectedFile(null);
+    setImportOption('replace'); // Reset to default
+  };
+
   const fetchAnimeList = useCallback(async () => {
     try {
       setLoading(true);
@@ -140,7 +140,7 @@ const EnhancedAnimeList = () => {
       }
 
       const userId = user._id;
-      console.log("Fetching list for user ID:", userId);
+      // console.log("Fetching list for user ID:", userId);
 
       const response = await axios.get(`${API}/api/list/${userId}`, {
         headers: {
@@ -148,7 +148,7 @@ const EnhancedAnimeList = () => {
         }
       });
 
-      console.log("List API response:", response.data);
+      // console.log("List API response:", response.data);
 
       let listData = response.data;
 
@@ -167,12 +167,12 @@ const EnhancedAnimeList = () => {
         normalizedList.dropped = Array.isArray(listData.dropped) ? listData.dropped : [];
       }
 
-      console.log("Normalized list counts:", {
-        watching: normalizedList.watching.length,
-        completed: normalizedList.completed.length,
-        planned: normalizedList.planned.length,
-        dropped: normalizedList.dropped.length
-      });
+      // console.log("Normalized list counts:", {
+      //   watching: normalizedList.watching.length,
+      //   completed: normalizedList.completed.length,
+      //   planned: normalizedList.planned.length,
+      //   dropped: normalizedList.dropped.length
+      // });
 
       setAnimeList(normalizedList);
     } catch (error) {
@@ -193,7 +193,7 @@ const EnhancedAnimeList = () => {
 
   useEffect(() => {
     if (user) {
-      console.log("User detected, fetching list...");
+      // console.log("User detected, fetching list...");
       fetchAnimeList();
     } else {
       console.log("No user, setting loading to false");
@@ -246,7 +246,7 @@ const EnhancedAnimeList = () => {
 
     animeList.forEach(anime => {
       // Debug the date
-      console.log(`Processing anime: ${anime.title}, addedDate: ${anime.addedDate}`);
+      // console.log(`Processing anime: ${anime.title}, addedDate: ${anime.addedDate}`);
 
       let date;
 
@@ -283,40 +283,21 @@ const EnhancedAnimeList = () => {
     });
 
     // Debug groups
-    console.log('Groups created:', Object.keys(groups));
+    // console.log('Groups created:', Object.keys(groups));
 
     // Convert to array and sort by date descending (newest first)
     const sortedGroups = Object.values(groups).sort((a, b) => b.sortDate - a.sortDate);
 
-    console.log('Sorted groups:', sortedGroups.map(g => ({
-      title: g.title,
-      count: g.anime.length,
-      sortDate: g.sortDate
-    })));
+    // console.log('Sorted groups:', sortedGroups.map(g => ({
+    //   title: g.title,
+    //   count: g.anime.length,
+    //   sortDate: g.sortDate
+    // })));
 
     return sortedGroups;
   }, []);
 
-  // Utility function to parse dates safely - handle MAL date format
-  const parseDateSafe = (dateString) => {
-    if (!dateString) return new Date();
 
-    // Handle MAL date format (YYYY-MM-DD)
-    if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = dateString.split('-').map(Number);
-      return new Date(year, month - 1, day); // month is 0-indexed in JavaScript
-    }
-
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return new Date();
-      }
-      return date;
-    } catch (error) {
-      return new Date();
-    }
-  };
 
   const handleRemove = useCallback(async (animeId) => {
     if (window.confirm('Are you sure you want to remove this anime from your list?')) {
@@ -520,22 +501,21 @@ const EnhancedAnimeList = () => {
               </button>
             ))}
             <div className="import-section">
-              <label className="import-btn">
+              <label className={`import-btn ${importing ? 'importing' : ''}`}>
                 <input
                   type="file"
                   accept=".xml"
-                  onChange={handleMALImport}
+                  onChange={handleFileSelect}
                   style={{ display: 'none' }}
                   disabled={importing}
                 />
-                {importing ? '⏳ Importing...' : '📥 Import MAL List'}
+                {importing && (
+                  <span className="spinnerlist">
+                    <span className="spinnerin"></span>
+                  </span>
+                )}
+                {importing ? ' Importing…' : '📥 Import MAL List'}
               </label>
-              {importing && (
-                <div className="import-progress">
-                  <div className="progress-bar" style={{ width: `${importProgress}%` }}></div>
-                  <span>Importing... {importProgress}%</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -658,6 +638,75 @@ const EnhancedAnimeList = () => {
           </div>
         )}
       </div>
+      {/* Import Confirmation Modal */}
+      {showImportModal && (
+        <div className="import-modal-overlay">
+          <div className="import-modal">
+            <div className="import-modal-header">
+              <h3>Import MAL List</h3>
+              <button className="modal-close-btn" onClick={handleImportCancel}>×</button>
+            </div>
+
+            <div className="import-modal-content">
+              <div className="import-file-info">
+                <div className="file-icon">📄</div>
+                <div className="file-details">
+                  <h4>{selectedFile?.name}</h4>
+                  <p>{(selectedFile?.size / 1024).toFixed(1)} KB</p>
+                </div>
+              </div>
+
+              <div className="import-options">
+                <h4>Import Options</h4>
+                <div className="option-item">
+                  <label className="option-radio">
+                    <input
+                      type="radio"
+                      name="importOption"
+                      value="replace"
+                      checked={importOption === 'replace'}
+                      onChange={(e) => setImportOption(e.target.value)}
+                    />
+                    <span className="radio-custom"></span>
+                    <div className="option-content">
+                      <strong>Replace existing list (Clean Import)</strong>
+                      <p>Clears your current list and re-imports everything from the XML file.
+                        Slower, but fixes inconsistencies.</p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="option-item">
+                  <label className="option-radio">
+                    <input
+                      type="radio"
+                      name="importOption"
+                      value="merge"
+                      checked={importOption === 'merge'}
+                      onChange={(e) => setImportOption(e.target.value)}
+                    />
+                    <span className="radio-custom"></span>
+                    <div className="option-content">
+                      <strong>Merge with existing list (Faster)</strong>
+                      <p>Adds new and updated entries from the XML file to your current list.
+                        Faster, but incorrect data may remain.</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button className="modal-btn cancel-btn" onClick={handleImportCancel}>
+                  Cancel
+                </button>
+                <button className="modal-btn confirm-btn" onClick={handleImportConfirm}>
+                  Start Import
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

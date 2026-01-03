@@ -194,7 +194,7 @@ const TrailerHero = ({ onOpenModal }) => {
                 playerVars: playerVars,
                 events: {
                     onReady: (event) => {
-                        console.log('YouTube player ready');
+                        // console.log('YouTube player ready');
                         setIsPlayerReady(true);
                         setPlayerError(false);
                         try {
