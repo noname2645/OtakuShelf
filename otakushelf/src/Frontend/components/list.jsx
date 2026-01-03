@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 import "../Stylesheets/list.css";
 import { Star } from 'lucide-react';
@@ -20,8 +20,10 @@ const EnhancedAnimeList = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [importOption, setImportOption] = useState('replace'); // 'replace' or 'merge'
+  const [importProgress, setImportProgress] = useState(''); // Store progress like "15/250"
 
   const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+  const wsRef = useRef(null);
 
   const getFallbackImage = (animeTitle) => {
     const encodedTitle = encodeURIComponent(animeTitle || 'Anime Poster');
@@ -63,6 +65,80 @@ const EnhancedAnimeList = () => {
     }
   }, []);
 
+  // WebSocket connection
+  useEffect(() => {
+    if (!user || !user._id) return;
+
+    const connectWebSocket = () => {
+      try {
+        // Get the correct backend URL
+        const backendUrl = API.replace('http://', 'ws://').replace('https://', 'wss://');
+        const wsUrl = `${backendUrl}/ws?userId=${user._id}`;
+
+        console.log('Connecting to WebSocket:', wsUrl);
+
+        wsRef.current = new WebSocket(wsUrl);
+
+        wsRef.current.onopen = () => {
+          console.log('✅ WebSocket connected');
+        };
+
+        wsRef.current.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            // console.log('WebSocket message:', data);
+
+            if (data.type === 'progress') {
+              // Extract [X/Y] pattern from message
+              const match = data.message.match(/\[(\d+)\/(\d+)\]/);
+              if (match) {
+                setImportProgress(`${match[1]}/${match[2]}`);
+                // console.log(`Progress: ${match[1]}/${match[2]}`);
+              } else if (data.message.includes('Starting') || data.message.includes('Clearing')) {
+                setImportProgress('0/?');
+              } else if (data.message.includes('completed') || data.message.includes('finished')) {
+                setImportProgress('');
+              }
+            } else if (data.type === 'error') {
+              console.error('WebSocket error:', data.message);
+            } else if (data.type === 'connected') {
+              console.log('WebSocket connection confirmed');
+            }
+          } catch (e) {
+            console.error('Failed to parse WebSocket message:', e);
+          }
+        };
+
+        wsRef.current.onerror = (error) => {
+          console.error('WebSocket connection error:', error);
+        };
+
+        wsRef.current.onclose = (event) => {
+          console.log('WebSocket disconnected, code:', event.code, 'reason:', event.reason);
+          // Attempt to reconnect after 3 seconds if not a normal closure
+          if (event.code !== 1000) {
+            setTimeout(() => {
+              console.log('Attempting to reconnect WebSocket...');
+              connectWebSocket();
+            }, 3000);
+          }
+        };
+
+      } catch (error) {
+        console.error('WebSocket setup error:', error);
+      }
+    };
+
+    connectWebSocket();
+
+    // Cleanup on unmount
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [user]);
+
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -87,6 +163,7 @@ const EnhancedAnimeList = () => {
 
     setShowImportModal(false);
     setImporting(true);
+    setImportProgress('0/?'); // Reset progress
 
     const formData = new FormData();
     formData.append('malFile', selectedFile);
@@ -116,7 +193,8 @@ const EnhancedAnimeList = () => {
       alert(`Failed to import: ${error.response?.data?.message || error.message}`);
     } finally {
       setImporting(false);
-      setImportProgress(0);
+      // Clear progress after a short delay
+      setTimeout(() => setImportProgress(''), 3000);
       setSelectedFile(null);
     }
   };
@@ -296,8 +374,6 @@ const EnhancedAnimeList = () => {
 
     return sortedGroups;
   }, []);
-
-
 
   const handleRemove = useCallback(async (animeId) => {
     if (window.confirm('Are you sure you want to remove this anime from your list?')) {
@@ -509,12 +585,16 @@ const EnhancedAnimeList = () => {
                   style={{ display: 'none' }}
                   disabled={importing}
                 />
-                {importing && (
-                  <span className="spinnerlist">
-                    <span className="spinnerin"></span>
-                  </span>
+                {importing ? (
+                  <>
+                    <span className="spinnerlist">
+                      <span className="spinnerin"></span>
+                    </span>
+                    {importProgress ? ` Importing [${importProgress}]` : ' Importing…'}
+                  </>
+                ) : (
+                  '📥 Import MAL List'
                 )}
-                {importing ? ' Importing…' : '📥 Import MAL List'}
               </label>
             </div>
           </div>
@@ -608,7 +688,7 @@ const EnhancedAnimeList = () => {
                                 <div className="rating-section">
                                   <div className="rating-left">
                                     <Star size={16} className="star-icon" />
-                                    <span>{userRating > 0 ? `${userRating}/10` : 'Not rated'}</span>
+                                    <span>{userRating > 0 ? `${userRating}/5` : 'Not rated'}</span>
                                   </div>
                                   <button
                                     className="action-btn remove-btn-card"

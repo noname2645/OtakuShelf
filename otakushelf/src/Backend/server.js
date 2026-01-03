@@ -15,6 +15,8 @@ import dotenv from "dotenv";
 import xml2js from 'xml2js';
 import fileUpload from 'express-fileupload';
 import axios from 'axios';
+import { WebSocketServer } from 'ws';
+import { parse } from 'url';
 dotenv.config();
 
 const parseMALDate = (dateStr) => {
@@ -23,7 +25,6 @@ const parseMALDate = (dateStr) => {
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? null : d;
 };
-
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -188,9 +189,6 @@ const fetchJikanImage = async (malId) => {
     return null;
   }
 };
-
-
-
 
 // =======================
 // Anime List Schema
@@ -520,8 +518,7 @@ app.post("/api/list/:userId", async (req, res) => {
   }
 });
 
-// FIXED: MAL Import Route
-// FIXED: MAL Import Route
+// FIXED: MAL Import Route with REAL-TIME WebSocket Progress
 app.post('/api/list/import/mal', async (req, res) => {
   try {
     console.log('=== MAL IMPORT STARTED ===');
@@ -536,7 +533,7 @@ app.post('/api/list/import/mal', async (req, res) => {
 
     const malFile = req.files.malFile;
     const userId = req.body.userId;
-    const clearExisting = req.body.clearExisting === 'true'; // Convert to boolean
+    const clearExisting = req.body.clearExisting === 'true';
 
     console.log('User ID:', userId);
     console.log('File name:', malFile.name);
@@ -550,17 +547,32 @@ app.post('/api/list/import/mal', async (req, res) => {
       });
     }
 
+    // Helper function to send WebSocket progress
+    const sendProgress = (current, total, message = '') => {
+      const ws = userConnections.get(userId);
+      if (ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({
+          type: 'progress',
+          current,
+          total,
+          message: total ? `[${current}/${total}] ${message}` : `[${current}] ${message}`
+        }));
+      }
+    };
+
+    // Send initial progress
+    sendProgress(0, 0, 'Starting MAL import...');
+
+    let userList;
+
     // Check if we should clear existing list
     if (clearExisting) {
+      sendProgress(0, 0, 'Clearing existing list...');
       console.log('🧹 Clearing existing anime list...');
       await AnimeList.deleteOne({ userId });
       console.log('✅ Existing list cleared');
-      userList = null; // Force creation of new list
-    }
 
-    // Get or create user list
-    let userList = await AnimeList.findOne({ userId });
-    if (!userList) {
+      // Create brand new list
       userList = new AnimeList({
         userId,
         watching: [],
@@ -569,13 +581,29 @@ app.post('/api/list/import/mal', async (req, res) => {
         dropped: []
       });
       await userList.save();
-      console.log('📝 Created new list for user');
+      console.log('📝 Created new list for user (after clear)');
+      sendProgress(0, 0, 'List cleared, ready to import...');
     } else {
-      console.log('📋 Found existing list with:');
-      console.log(`   Watching: ${userList.watching?.length || 0}`);
-      console.log(`   Completed: ${userList.completed?.length || 0}`);
-      console.log(`   Planned: ${userList.planned?.length || 0}`);
-      console.log(`   Dropped: ${userList.dropped?.length || 0}`);
+      // Get or create user list (merge mode)
+      userList = await AnimeList.findOne({ userId });
+      if (!userList) {
+        userList = new AnimeList({
+          userId,
+          watching: [],
+          completed: [],
+          planned: [],
+          dropped: []
+        });
+        await userList.save();
+        console.log('📝 Created new list for user');
+      } else {
+        console.log('📋 Found existing list with:');
+        console.log(`   Watching: ${userList.watching?.length || 0}`);
+        console.log(`   Completed: ${userList.completed?.length || 0}`);
+        console.log(`   Planned: ${userList.planned?.length || 0}`);
+        console.log(`   Dropped: ${userList.dropped?.length || 0}`);
+      }
+      sendProgress(0, 0, 'Merging with existing list...');
     }
 
     // Parse XML
@@ -585,6 +613,7 @@ app.post('/api/list/import/mal', async (req, res) => {
     const xmlData = await parser.parseStringPromise(xmlText);
 
     if (!xmlData.myanimelist || !xmlData.myanimelist.anime) {
+      sendProgress(0, 0, 'Error: No anime data found in XML');
       return res.status(400).json({
         success: false,
         message: 'No anime data found in XML file'
@@ -592,7 +621,10 @@ app.post('/api/list/import/mal', async (req, res) => {
     }
 
     const animeEntries = xmlData.myanimelist.anime;
-    console.log(`📊 Found ${animeEntries.length} anime entries in XML`);
+    const totalAnime = animeEntries.length;
+    
+    console.log(`📊 Found ${totalAnime} anime entries in XML`);
+    sendProgress(0, totalAnime, `Found ${totalAnime} anime, starting processing...`);
 
     let importedCount = 0;
     let updatedCount = 0;
@@ -612,7 +644,9 @@ app.post('/api/list/import/mal', async (req, res) => {
       console.log(`🔍 ${allExistingAnime.length} existing anime for image lookup`);
     }
 
-    // Process each anime entry
+    // ============================================
+    // PROCESS EACH ANIME WITH REAL-TIME UPDATES
+    // ============================================
     for (let i = 0; i < animeEntries.length; i++) {
       try {
         const entry = animeEntries[i];
@@ -626,6 +660,11 @@ app.post('/api/list/import/mal', async (req, res) => {
         const userRating = parseInt(entry.my_score?.[0]) || 0;
         const startDate = parseMALDate(entry.my_start_date?.[0]);
         const finishDate = parseMALDate(entry.my_finish_date?.[0]);
+
+        // ============================================
+        // REAL-TIME PROGRESS UPDATE FOR EACH ANIME
+        // ============================================
+        sendProgress(i + 1, totalAnime, 'Importing...');
 
         // Validate required fields
         if (!malId || !title || !malStatus) {
@@ -770,6 +809,9 @@ app.post('/api/list/import/mal', async (req, res) => {
     console.log(`🔄 New images fetched: ${newImagesFetched}`);
     console.log(`🎯 Mode: ${clearExisting ? 'REPLACE (fresh import)' : 'MERGE (update existing)'}`);
 
+    // Send final progress
+    sendProgress(totalAnime, totalAnime, 'Import completed!');
+
     res.json({
       success: true,
       importedCount,
@@ -785,6 +827,15 @@ app.post('/api/list/import/mal', async (req, res) => {
 
   } catch (error) {
     console.error('❌ MAL Import error:', error);
+    // Send error progress
+    const userId = req.body.userId;
+    const ws = userConnections.get(userId);
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: `Import failed: ${error.message}`
+      }));
+    }
     res.status(500).json({
       success: false,
       message: 'Import failed',
@@ -792,6 +843,7 @@ app.post('/api/list/import/mal', async (req, res) => {
     });
   }
 });
+
 // Get anime list with error handling
 app.get("/api/list/:userId", async (req, res) => {
   try {
@@ -1235,12 +1287,61 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Server
+// =======================
+// WebSocket Setup
+// =======================
+
+// Create HTTP server
 const server = http.createServer(app);
+
+// Create WebSocket server
+const wss = new WebSocketServer({ 
+  server, 
+  path: '/ws',
+  clientTracking: true
+});
+
+// Store WebSocket connections by userId
+const userConnections = new Map();
+
+wss.on('connection', (ws, req) => {
+  try {
+    const { query } = parse(req.url, true);
+    const userId = query.userId;
+    
+    if (userId) {
+      userConnections.set(userId, ws);
+      console.log(`🔗 WebSocket connected for user: ${userId}`);
+      
+      // Send connection confirmation
+      ws.send(JSON.stringify({ 
+        type: 'connected', 
+        message: 'WebSocket connected' 
+      }));
+    }
+
+    ws.on('close', () => {
+      if (userId) {
+        userConnections.delete(userId);
+        console.log(`🔌 WebSocket disconnected for user: ${userId}`);
+      }
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error for user:', userId, error);
+    });
+
+  } catch (error) {
+    console.error('WebSocket connection error:', error);
+  }
+});
+
+// Server settings
 server.keepAliveTimeout = 65 * 1000;
 server.headersTimeout = 66 * 1000;
 
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
   console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`);
+  console.log(`WebSocket server running on path: /ws`);
 });
