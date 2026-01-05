@@ -30,6 +30,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const storeMinimalUser = (user) => {
+    localStorage.setItem("user", JSON.stringify({
+      _id: user._id,
+      email: user.email,
+      name: user.name
+    }));
+  };
+
+
   // FIXED: Handle token from URL parameters first, before checking auth status
   useEffect(() => {
     const handleTokenFromUrl = async () => {
@@ -54,7 +63,9 @@ export const AuthProvider = ({ children }) => {
           if (response.data.user) {
             console.log('User authenticated via token:', response.data.user);
             setUser(response.data.user);
-            localStorage.setItem("user", JSON.stringify(response.data.user));
+            storeMinimalUser(userData);
+
+
 
             // Ensure anime list exists for Google users
             await ensureAnimeListExists(response.data.user._id);
@@ -120,7 +131,8 @@ export const AuthProvider = ({ children }) => {
         };
 
         setUser(userWithProfile);
-        localStorage.setItem("user", JSON.stringify(userWithProfile));
+        storeMinimalUser(response.data.user);
+
       } else {
         console.log('No authenticated user found');
         setUser(null);
@@ -150,10 +162,10 @@ export const AuthProvider = ({ children }) => {
           ...prev,
           ...response.data.user
         }));
-        localStorage.setItem("user", JSON.stringify({
+        storeMinimalUser({
           ...user,
           ...response.data.user
-        }));
+        });
       }
 
       return response.data;
@@ -166,7 +178,7 @@ export const AuthProvider = ({ children }) => {
   const login = (userData) => {
     console.log('Login called with user data:', userData);
     setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
+    storeMinimalUser(userData);
   };
 
   const logout = async () => {
@@ -194,8 +206,8 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     checkAuthStatus,
-    updateProfile, 
-    fetchUserProfile 
+    updateProfile,
+    fetchUserProfile
   };
 
   return (

@@ -80,24 +80,52 @@ const EnhancedAnimeList = () => {
         wsRef.current = new WebSocket(wsUrl);
 
         wsRef.current.onopen = () => {
-          console.log('✅ WebSocket connected');
+          console.log('✅ WebSocket connected to:', wsUrl);
+          console.log('User ID for connection:', user._id);
         };
 
         wsRef.current.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            // console.log('WebSocket message:', data);
+            console.log('WebSocket progress message:', data);
 
             if (data.type === 'progress') {
-              // Extract [X/Y] pattern from message
-              const match = data.message.match(/\[(\d+)\/(\d+)\]/);
-              if (match) {
-                setImportProgress(`${match[1]}/${match[2]}`);
-                // console.log(`Progress: ${match[1]}/${match[2]}`);
-              } else if (data.message.includes('Starting') || data.message.includes('Clearing')) {
-                setImportProgress('0/?');
-              } else if (data.message.includes('completed') || data.message.includes('finished')) {
-                setImportProgress('');
+              // Method 1: Use structured data from backend (current/total fields)
+              if (data.current !== undefined && data.total !== undefined) {
+                const progressStr = `${data.current}/${data.total}`;
+                setImportProgress(progressStr);
+                console.log(`Progress updated: ${progressStr}`);
+              }
+              // Method 2: Fallback - extract from message string
+              else if (data.message) {
+                // Try multiple patterns to extract [X/Y]
+                const patterns = [
+                  /\[(\d+)\s*\/\s*(\d+)\]/g,  // [X/Y] with spaces
+                  /\((\d+)\/(\d+)\)/g,         // (X/Y)
+                  /(\d+)\s*\/\s*(\d+)/g        // Just X/Y
+                ];
+
+                let match = null;
+                for (const pattern of patterns) {
+                  const matches = data.message.matchAll(pattern);
+                  for (const m of matches) {
+                    if (m[1] && m[2]) {
+                      match = m;
+                      break;
+                    }
+                  }
+                  if (match) break;
+                }
+
+                if (match && match[1] && match[2]) {
+                  const progressStr = `${match[1]}/${match[2]}`;
+                  setImportProgress(progressStr);
+                  console.log(`Progress from message: ${progressStr}`);
+                } else if (data.message.includes('Starting') || data.message.includes('Clearing')) {
+                  setImportProgress('0/?');
+                } else if (data.message.includes('completed') || data.message.includes('finished')) {
+                  setImportProgress('');
+                }
               }
             } else if (data.type === 'error') {
               console.error('WebSocket error:', data.message);
@@ -106,6 +134,7 @@ const EnhancedAnimeList = () => {
             }
           } catch (e) {
             console.error('Failed to parse WebSocket message:', e);
+            console.log('Raw WebSocket data:', event.data);
           }
         };
 
@@ -590,7 +619,7 @@ const EnhancedAnimeList = () => {
                     <span className="spinnerlist">
                       <span className="spinnerin"></span>
                     </span>
-                    {importProgress ? ` Importing [${importProgress}]` : ' Importing…'}
+                    {importProgress ? ` Importing ${importProgress}` : ' Importing…'}
                   </>
                 ) : (
                   '📥 Import MAL List'
