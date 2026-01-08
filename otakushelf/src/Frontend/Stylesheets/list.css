@@ -460,6 +460,141 @@
   box-shadow: 0 8px 25px rgba(255, 85, 51, 0.4);
 }
 
+.import-section {
+  display: flex;
+  align-items: center;
+}
+
+.import-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.import-help-tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background-color: #667eea;
+  color: white;
+  border-radius: 50%;
+  font-size: 14px;
+  cursor: help;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.help-icon:hover {
+  background-color: #5a67d8;
+}
+
+.help-content {
+  display: none;
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  width: 280px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 1000;
+  font-size: 12px;
+  line-height: 1.4;
+  top: 50%;
+  left: calc(100% + 12px);
+  transform: translateY(-50%);
+  margin-top: 0;
+}
+
+.help-content:before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -8px;
+  transform: translateY(-50%);
+  border-width: 8px 8px 8px 0;
+  border-style: solid;
+  border-color: transparent white transparent transparent;
+  filter: drop-shadow(-1px 0 1px rgba(0,0,0,0.1));
+}
+
+.help-content:after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -9px;
+  transform: translateY(-50%);
+  border-width: 9px 9px 9px 0;
+  border-style: solid;
+  border-color: transparent #ddd transparent transparent;
+  z-index: -1;
+}
+
+.import-help-tooltip:hover .help-content {
+  display: block;
+}
+
+.help-content ol {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+
+.help-content li {
+  margin-bottom: 4px;
+}
+
+.empty-list-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  color: #856404;
+}
+
+.warning-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  flex: 1;
+}
+
+.warning-text strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.warning-text p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* For better mobile responsiveness */
+@media (max-width: 768px) {
+  .help-content {
+    width: 250px;
+    left: calc(100% + 8px);
+  }
+  
+  .import-wrapper {
+    gap: 6px;
+  }
+}
+
 /* Responsive modal */
 @media (max-width: 768px) {
   .import-modal {

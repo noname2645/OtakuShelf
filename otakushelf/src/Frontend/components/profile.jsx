@@ -90,120 +90,6 @@ const ProfilePage = () => {
     }
   };
 
-  // Default data functions
-  const getDefaultRecentlyWatched = () => [
-    {
-      id: 1,
-      title: 'Jujutsu Kaisen',
-      image: 'https://images.unsplash.com/photo-1639322537228-f710d846310a?w=400&h=250&fit=crop'
-    },
-    {
-      id: 2,
-      title: 'Attack on Titan',
-      image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=250&fit=crop'
-    },
-    {
-      id: 3,
-      title: 'Demon Slayer',
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=250&fit=crop'
-    },
-    {
-      id: 4,
-      title: 'Favorite Anime',
-      image: 'https://images.unsplash.com/photo-1511988617509-a57c8a288659?w=400&h=250&fit=crop'
-    }
-  ];
-
-  const getDefaultFavoriteAnime = () => [
-    {
-      id: 1,
-      title: 'One Piece',
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=250&fit=crop'
-    },
-    {
-      id: 2,
-      title: 'Naruto',
-      image: 'https://images.unsplash.com/photo-1639322537506-86d2f06a43ff?w=400&h=250&fit=crop'
-    },
-    {
-      id: 3,
-      title: 'My Hero Academia',
-      image: 'https://images.unsplash.com/photo-1639322537228-f710d846310a?w=400&h=250&fit=crop'
-    },
-    {
-      id: 4,
-      title: 'Fullmetal Alchemist',
-      image: 'https://images.unsplash.com/photo-1511988617509-a57c8a288659?w=400&h=250&fit=crop'
-    }
-  ];
-
-  const getDefaultBadges = () => [
-    {
-      id: 1,
-      title: 'Binge King',
-      description: 'Watched 10+ episodes in a day',
-      icon: '🏆'
-    },
-    {
-      id: 2,
-      title: 'Seasonal Hunter',
-      description: 'Completed 5+ seasonal anime',
-      icon: '🎯'
-    },
-    {
-      id: 3,
-      title: 'Night Owl',
-      description: 'Watched anime after 2 am',
-      icon: '🦉'
-    },
-    {
-      id: 4,
-      title: 'Anime Veteran',
-      description: 'Member for 2+ years',
-      icon: '⚔️'
-    }
-  ];
-
-  const getDefaultGenres = () => [
-    { name: 'Action', percentage: 35 },
-    { name: 'Fantasy', percentage: 25 },
-    { name: 'Comedy', percentage: 20 },
-    { name: 'Romance', percentage: 15 },
-    { name: 'Sci-Fi', percentage: 5 }
-  ];
-
-  const setDefaultData = () => {
-    setProfileData({
-      name: user?.name || 'Anime Lover',
-      username: `@user_${user?._id?.toString().slice(-6) || 'unknown'}`,
-      bio: 'Anime enthusiast exploring new worlds through animation',
-      joinDate: 'April 2020',
-      avatar: user?.photo || null,
-      email: user?.email || ''
-    });
-    
-    setStats({
-      animeWatched: 324,
-      hoursWatched: 2564,
-      currentlyWatching: 18,
-      favorites: 56,
-      animePlanned: 42,
-      animeDropped: 12,
-      totalEpisodes: 1200,
-      meanScore: 8.2
-    });
-    
-    setRecentlyWatched(getDefaultRecentlyWatched());
-    setFavoriteAnime(getDefaultFavoriteAnime());
-    setBadges(getDefaultBadges());
-    setGenres(getDefaultGenres());
-    
-    setEditForm({
-      name: user?.name || '',
-      bio: 'Anime enthusiast exploring new worlds through animation',
-      username: `@user_${user?._id?.toString().slice(-6) || 'unknown'}`
-    });
-  };
 
   const handleEditProfile = () => {
     setIsEditing(true);
@@ -234,7 +120,6 @@ const ProfilePage = () => {
         throw new Error('Failed to update profile');
       }
 
-      const result = await response.json();
       
       if (updateProfile) {
         await updateProfile(updateData);
@@ -586,9 +471,6 @@ const ProfilePage = () => {
                       <img src={anime.image} alt={anime.title} />
                       <div className="favorite-info">
                         <h3>{anime.title}</h3>
-                        {anime.rating && (
-                          <div className="anime-rating">⭐ {anime.rating}/5</div>
-                        )}
                       </div>
                     </div>
                   ))

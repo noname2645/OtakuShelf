@@ -945,7 +945,7 @@ app.get("/api/profile/:userId", async (req, res) => {
     const genres = await calculateGenreBreakdown(userId);
 
     // Get recently watched (last 4 completed/watching anime)
-    const recentlyWatched = await getRecentlyWatched(userId, 4);
+    const recentlyWatched = await getRecentlyWatched(userId, 6);
 
     // Get favorite anime (highest rated)
     const favoriteAnime = await getFavoriteAnime(userId, 4);
