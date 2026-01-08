@@ -3,6 +3,14 @@ import '../Stylesheets/profile.css';
 import { Header } from '../components/header';
 import BottomNavBar from "../components/bottom.jsx";
 import { useAuth } from '../components/AuthContext';
+import { 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  Tooltip, 
+  Legend 
+} from 'recharts';
 
 const ProfilePage = () => {
   const { user, updateProfile } = useAuth();
@@ -23,6 +31,75 @@ const ProfilePage = () => {
   });
 
   const API = import.meta.env.VITE_API_BASE_URL;
+
+  // Add this function to prepare data for pie chart
+  const prepareChartData = (genres) => {
+    if (!genres || genres.length === 0) return [];
+
+    // Create chart data with colors
+    return genres.map((genre, index) => {
+      // Use a color palette
+      const colors = [
+        '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2',
+        '#EF476F', '#073B4C', '#7209B7', '#3A86FF', '#FB5607',
+        '#8338EC', '#FF006E', '#FFBE0B', '#3A86FF', '#FB5607'
+      ];
+
+      return {
+        name: genre.name,
+        value: genre.percentage,
+        count: genre.count,
+        color: colors[index % colors.length]
+      };
+    });
+  };
+
+  // Add chart data state
+  const [chartData, setChartData] = useState([]);
+
+  // Update the useEffect or loadProfileData to set chart data
+  useEffect(() => {
+    if (genres && genres.length > 0) {
+      setChartData(prepareChartData(genres));
+    } else {
+      setChartData([]);
+    }
+  }, [genres]);
+
+  // Custom tooltip component
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="custom-tooltip">
+          <div className="tooltip-content">
+            <p className="tooltip-genre">{data.name}</p>
+            <p className="tooltip-percentage">{data.value}%</p>
+            <p className="tooltip-count">({data.count} anime)</p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Custom legend component
+  const renderCustomizedLegend = (props) => {
+    const { payload } = props;
+    return (
+      <div className="custom-legend">
+        {payload.map((entry, index) => (
+          <div key={`item-${index}`} className="legend-item">
+            <div
+              className="legend-color"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="legend-text">{entry.value} ({entry.payload.count})</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   useEffect(() => {
     if (user?._id) {
@@ -505,53 +582,146 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Genre Breakdown Section */}
+        {/* Genre Breakdown Section - UPDATED WITH PIE CHART */}
           <div className="genre-section">
-            <div>
-              <h3 className="section-title">Genre Breakdown</h3>
-              <div className="genre-grid">
-                {genres.length > 0 ? (
-                  genres.map((genre, index) => (
-                    <div key={index} className="genre-item">
-                      <div className="genre-name">
-                        {genre.name}
-                        <span className="genre-count"> ({genre.count})</span>
+            <h3 className="section-title">Genre Breakdown</h3>
+            
+            <div className="genre-breakdown-container">
+              {/* Pie Chart Column */}
+              <div className="pie-chart-column">
+                {chartData.length > 0 ? (
+                  <div className="pie-chart-wrapper">
+                    <ResponsiveContainer width="100%" height={400}>
+                      <PieChart>
+                        <Pie
+                          data={chartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={150}
+                          innerRadius={60}
+                          fill="#8884d8"
+                          dataKey="value"
+                          nameKey="name"
+                          label={({
+                            cx,
+                            cy,
+                            midAngle,
+                            innerRadius,
+                            outerRadius,
+                            percent,
+                            index
+                          }) => {
+                            const RADIAN = Math.PI / 180;
+                            const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                            
+                            return (
+                              <text
+                                x={x}
+                                y={y}
+                                fill="white"
+                                textAnchor={x > cx ? 'start' : 'end'}
+                                dominantBaseline="central"
+                                fontSize={14}
+                                fontWeight="bold"
+                              >
+                                {percent > 0.1 ? `${(percent * 100).toFixed(0)}%` : ''}
+                              </text>
+                            );
+                          }}
+                        >
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend 
+                          content={renderCustomizedLegend}
+                          layout="vertical"
+                          verticalAlign="middle"
+                          align="right"
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    
+                    {/* Chart Stats Summary */}
+                    <div className="chart-summary">
+                      <div className="summary-item">
+                        <span className="summary-label">Total Genres:</span>
+                        <span className="summary-value">{genres.length}</span>
                       </div>
-                      <div className="genre-bar">
-                        <div
-                          className="genre-fill"
-                          style={{ width: `${genre.percentage}%` }}
-                          title={`${genre.percentage}% of watched anime`}
-                        ></div>
+                      <div className="summary-item">
+                        <span className="summary-label">Top Genre:</span>
+                        <span className="summary-value">
+                          {genres[0]?.name || 'N/A'} ({genres[0]?.percentage || 0}%)
+                        </span>
                       </div>
-                      <div className="genre-percentage">{genre.percentage}%</div>
                     </div>
-                  ))
+                  </div>
                 ) : (
-                  <div className="empty-state">
-                    <p>No genre data available.</p>
-                    <button
-                      className="btn-refresh"
-                      onClick={async () => {
-                        try {
-                          const token = localStorage.getItem("token");
-                          const response = await fetch(`${API}/api/list/${user._id}/refresh-genres`, {
-                            method: 'POST',
-                            headers: token ? { Authorization: `Bearer ${token}` } : {}
-                          });
-
-                          if (response.ok) {
-                            alert('Genres are being updated. Please refresh the page in a moment.');
-                          }
-                        } catch (error) {
-                          console.error('Refresh error:', error);
-                        }
-                      }}
-                    >
-                      Fetch Genre Data
-                    </button>
+                  <div className="empty-chart">
+                    <div className="chart-placeholder">
+                      <div className="placeholder-icon">📊</div>
+                      <p>No genre data available yet.</p>
+                      <p>Complete more anime to see your genre breakdown!</p>
+                    </div>
                   </div>
                 )}
+              </div>
+
+              {/* Genre List Column */}
+              <div className="genre-list-column">
+                <h4 className="genre-list-title">Genre Distribution</h4>
+                <div className="genre-grid">
+                  {genres.length > 0 ? (
+                    genres.map((genre, index) => (
+                      <div key={index} className="genre-item">
+                        <div className="genre-header">
+                          <div className="genre-name">{genre.name}</div>
+                          <div className="genre-percentage">{genre.percentage}%</div>
+                        </div>
+                        <div className="genre-bar">
+                          <div
+                            className="genre-fill"
+                            style={{ 
+                              width: `${genre.percentage}%`,
+                              backgroundColor: chartData[index]?.color || '#FF6B6B'
+                            }}
+                          ></div>
+                        </div>
+                        <div className="genre-count">
+                          {genre.count} {genre.count === 1 ? 'anime' : 'anime'}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="empty-state">
+                      <p>No genre data available.</p>
+                      <button
+                        className="btn-refresh"
+                        onClick={async () => {
+                          try {
+                            const token = localStorage.getItem("token");
+                            const response = await fetch(`${API}/api/list/${user._id}/refresh-genres`, {
+                              method: 'POST',
+                              headers: token ? { Authorization: `Bearer ${token}` } : {}
+                            });
+
+                            if (response.ok) {
+                              alert('Genres are being updated. Please refresh the page in a moment.');
+                            }
+                          } catch (error) {
+                            console.error('Refresh error:', error);
+                          }
+                        }}
+                      >
+                        Fetch Genre Data
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

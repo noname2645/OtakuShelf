@@ -682,6 +682,359 @@
   text-align: right;
 }
 
+/* profile.css - Add these styles at the end */
+
+/* ==================== */
+/* PIE CHART SECTION - MODERN LAYOUT */
+/* ==================== */
+
+.genre-breakdown-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 30px;
+}
+
+.pie-chart-column {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 24px;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.pie-chart-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.recharts-wrapper {
+  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+}
+
+.recharts-pie-label-text {
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Custom Tooltip */
+.custom-tooltip {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tooltip-genre {
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.tooltip-percentage {
+  font-size: 24px;
+  font-weight: 800;
+  color: #FF6B6B;
+  margin: 0;
+}
+
+.tooltip-count {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+/* Custom Legend */
+.custom-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px;
+  margin-left: 20px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.legend-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(5px);
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legend-text {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+/* Chart Summary */
+.chart-summary {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.summary-value {
+  font-size: 20px;
+  color: white;
+  font-weight: 700;
+}
+
+/* Empty Chart State */
+.empty-chart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+}
+
+.chart-placeholder {
+  text-align: center;
+  padding: 40px;
+}
+
+.placeholder-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+  opacity: 0.5;
+  animation: float 3s ease-in-out infinite;
+}
+
+.chart-placeholder p {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 10px;
+}
+
+.chart-placeholder p:last-child {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Genre List Column */
+.genre-list-column {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 24px;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.genre-list-title {
+  font-size: 22px;
+  color: white;
+  margin-bottom: 30px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.genre-list-title::before {
+  content: '📈';
+  font-size: 20px;
+}
+
+.genre-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 500px;
+  padding-right: 10px;
+}
+
+/* Custom scrollbar for genre grid */
+.genre-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.genre-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.genre-grid::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #FF6B6B, #FFA726);
+  border-radius: 3px;
+}
+
+/* Updated Genre Item */
+.genre-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.genre-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.genre-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.genre-name {
+  font-size: 18px;
+  color: white;
+  font-weight: 700;
+}
+
+.genre-percentage {
+  font-size: 24px;
+  color: #FF6B6B;
+  font-weight: 800;
+}
+
+.genre-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.genre-fill {
+  height: 100%;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  animation: fillAnimation 1s ease-out;
+}
+
+.genre-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+.genre-count {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: right;
+}
+
+/* Responsive Design for Pie Chart */
+@media (max-width: 1200px) {
+  .genre-breakdown-container {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .pie-chart-column {
+    min-height: 500px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-summary {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .custom-legend {
+    max-height: 200px;
+  }
+  
+  .recharts-responsive-container {
+    height: 350px !important;
+  }
+}
+
+/* Animation for pie chart entries */
+@keyframes pieSliceAppear {
+  from {
+    stroke-dasharray: 0 100;
+  }
+  to {
+    stroke-dasharray: var(--percentage, 0) 100;
+  }
+}
+
+.recharts-pie-sector {
+  animation: pieSliceAppear 1s ease-out forwards;
+}
+
+/* Donut chart hole style */
+.recharts-pie-sector:hover {
+  filter: brightness(1.2);
+}
+
+/* Legend scrollbar */
+.custom-legend::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-legend::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.custom-legend::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #FF6B6B, #FFA726);
+  border-radius: 2px;
+}
+
 /* ==================== */
 /* EDIT FORM - MODERN STYLING */
 /* ==================== */
