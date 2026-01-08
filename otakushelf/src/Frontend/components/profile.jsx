@@ -6,7 +6,7 @@ import { useAuth } from '../components/AuthContext';
 
 const ProfilePage = () => {
   const { user, updateProfile } = useAuth();
-  
+
   // Profile data
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,20 +35,20 @@ const ProfilePage = () => {
   const loadProfileData = async () => {
     try {
       setLoading(true);
-      
+
       const token = localStorage.getItem("token");
-      
+
       // Fetch profile data
       const response = await fetch(`${API}/api/profile/${user._id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch profile');
       }
-      
+
       const data = await response.json();
-      
+
       if (data) {
         setProfileData({
           name: data.name || 'Anime Lover',
@@ -58,7 +58,7 @@ const ProfilePage = () => {
           avatar: data.photo || null,
           email: data.email
         });
-        
+
         setStats(data.profile?.stats || {
           animeWatched: 0,
           hoursWatched: 0,
@@ -69,12 +69,12 @@ const ProfilePage = () => {
           totalEpisodes: 0,
           meanScore: 0
         });
-        
+
         setRecentlyWatched(data.recentlyWatched || getDefaultRecentlyWatched());
         setFavoriteAnime(data.favoriteAnime || getDefaultFavoriteAnime());
         setBadges(data.profile?.badges || getDefaultBadges());
         setGenres(data.profile?.favoriteGenres || getDefaultGenres());
-        
+
         // Initialize edit form
         setEditForm({
           name: data.name || '',
@@ -98,7 +98,7 @@ const ProfilePage = () => {
   const handleSaveProfile = async () => {
     try {
       const token = localStorage.getItem("token");
-      
+
       const updateData = {
         name: editForm.name,
         profile: {
@@ -120,11 +120,11 @@ const ProfilePage = () => {
         throw new Error('Failed to update profile');
       }
 
-      
+
       if (updateProfile) {
         await updateProfile(updateData);
       }
-      
+
       // Update local state
       setProfileData(prev => ({
         ...prev,
@@ -132,13 +132,13 @@ const ProfilePage = () => {
         bio: editForm.bio,
         username: editForm.username
       }));
-      
+
       setIsEditing(false);
       alert('Profile updated successfully!');
-      
+
       // Reload profile data to get fresh data from server
       await loadProfileData();
-      
+
     } catch (error) {
       console.error('Profile update error:', error);
       alert('Failed to update profile: ' + error.message);
@@ -172,12 +172,12 @@ const ProfilePage = () => {
           alert('Please select an image file');
           return;
         }
-        
+
         if (file.size > 5 * 1024 * 1024) {
           alert('Image size should be less than 5MB');
           return;
         }
-        
+
         const reader = new FileReader();
         reader.onloadend = async () => {
           try {
@@ -186,34 +186,34 @@ const ProfilePage = () => {
               ...prev,
               avatar: reader.result
             }));
-            
+
             // Upload to server
             const token = localStorage.getItem("token");
             const formData = new FormData();
             formData.append('photo', file);
-            
+
             const response = await fetch(`${API}/api/profile/${user._id}/upload-photo`, {
               method: 'POST',
               headers: token ? { Authorization: `Bearer ${token}` } : {},
               body: formData
             });
-            
+
             if (!response.ok) {
               throw new Error('Upload failed');
             }
-            
+
             const result = await response.json();
-            
+
             // Update user in context if needed
             if (updateProfile) {
               await updateProfile({ photo: result.photo });
             }
-            
+
             alert('Profile picture updated successfully!');
           } catch (error) {
             console.error('Upload error:', error);
             alert('Failed to upload image');
-            
+
             // Revert to previous image by reloading
             await loadProfileData();
           }
@@ -228,7 +228,7 @@ const ProfilePage = () => {
 
   const handleShareProfile = () => {
     const profileUrl = `${window.location.origin}/profile/${user?._id}`;
-    
+
     if (navigator.share) {
       navigator.share({
         title: `${profileData?.name}'s Anime Profile`,
@@ -304,7 +304,7 @@ const ProfilePage = () => {
                 Change Photo
               </label>
             </div>
-            
+
             {isEditing ? (
               <div className="profile-edit-section">
                 <div className="edit-form-group">
@@ -363,7 +363,7 @@ const ProfilePage = () => {
                 </div>
               </div>
             )}
-            
+
             <div className="profile-actions">
               {!isEditing && (
                 <>
@@ -380,7 +380,7 @@ const ProfilePage = () => {
 
           {/* Divider Line */}
           <div className="divider-line"></div>
-          
+
           <div className="initial">
             <div className="overview">
               <h2 className="overview-header">Overview</h2>
@@ -427,8 +427,8 @@ const ProfilePage = () => {
                 <div className="activity-placeholder">
                   <div className="activity-icon">📊</div>
                   <p className="activity-message">
-                    {recentlyWatched.length > 0 
-                      ? 'Check your recently watched anime below!' 
+                    {recentlyWatched.length > 0
+                      ? 'Check your recently watched anime below!'
                       : 'Start watching anime to see your activity here!'}
                   </p>
                   <p className="activity-subtext">
@@ -513,11 +513,15 @@ const ProfilePage = () => {
                 {genres.length > 0 ? (
                   genres.map((genre, index) => (
                     <div key={index} className="genre-item">
-                      <div className="genre-name">{genre.name}</div>
+                      <div className="genre-name">
+                        {genre.name}
+                        <span className="genre-count"> ({genre.count})</span>
+                      </div>
                       <div className="genre-bar">
                         <div
                           className="genre-fill"
                           style={{ width: `${genre.percentage}%` }}
+                          title={`${genre.percentage}% of watched anime`}
                         ></div>
                       </div>
                       <div className="genre-percentage">{genre.percentage}%</div>
@@ -526,7 +530,26 @@ const ProfilePage = () => {
                 ) : (
                   <div className="empty-state">
                     <p>No genre data available.</p>
-                    <p>Watch more anime to see your genre preferences!</p>
+                    <button
+                      className="btn-refresh"
+                      onClick={async () => {
+                        try {
+                          const token = localStorage.getItem("token");
+                          const response = await fetch(`${API}/api/list/${user._id}/refresh-genres`, {
+                            method: 'POST',
+                            headers: token ? { Authorization: `Bearer ${token}` } : {}
+                          });
+
+                          if (response.ok) {
+                            alert('Genres are being updated. Please refresh the page in a moment.');
+                          }
+                        } catch (error) {
+                          console.error('Refresh error:', error);
+                        }
+                      }}
+                    >
+                      Fetch Genre Data
+                    </button>
                   </div>
                 )}
               </div>

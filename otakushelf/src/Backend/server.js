@@ -148,6 +148,8 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 
 const jikanImageCache = new Map();
+const jikanGenreCache = new Map();
+
 
 const fetchJikanImage = async (malId) => {
   // 1️⃣ Return from cache if exists
@@ -190,6 +192,98 @@ const fetchJikanImage = async (malId) => {
   }
 };
 
+// server.js - Update the fetchAniListGenres function
+
+const fetchAniListGenres = async (malId) => {
+  if (!malId) return [];
+
+  // 1. Check cache first
+  if (jikanGenreCache.has(malId)) {
+    return jikanGenreCache.get(malId);
+  }
+
+  try {
+    const query = `
+      query ($idMal: Int) {
+        Media(idMal: $idMal, type: ANIME) {
+          genres
+        }
+      }
+    `;
+
+    const res = await axios.post(
+      "https://graphql.anilist.co",
+      {
+        query,
+        variables: { idMal: Number(malId) }
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        timeout: 15000
+      }
+    );
+
+    const genres = res.data?.data?.Media?.genres || [];
+
+    // cache by MAL ID
+    jikanGenreCache.set(malId, genres);
+    return genres;
+
+  } catch (err) {
+    // ===== RATE LIMIT HANDLING =====
+    if (err.response?.status === 429) {
+      console.warn("⚠️ AniList rate limit hit! Waiting 60 seconds...");
+
+      // Wait for 60 seconds (rate limit reset time)
+      await new Promise(resolve => setTimeout(resolve, 60000));
+
+      console.log("↻ Retrying after wait...");
+
+      // Try again once
+      try {
+        const retryRes = await axios.post(
+          "https://graphql.anilist.co",
+          {
+            query: `
+              query ($idMal: Int) {
+                Media(idMal: $idMal, type: ANIME) {
+                  genres
+                }
+              }
+            `,
+            variables: { idMal: Number(malId) }
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            timeout: 15000
+          }
+        );
+
+        const retryGenres = retryRes.data?.data?.Media?.genres || [];
+        jikanGenreCache.set(malId, retryGenres);
+        return retryGenres;
+      } catch (retryErr) {
+        console.error("❌ Retry also failed:", retryErr.message);
+        return [];
+      }
+    }
+    // ===== END RATE LIMIT HANDLING =====
+
+    console.error(
+      `AniList genre fetch failed for MAL ID ${malId}`,
+      err.response?.data || err.message
+    );
+    return [];
+  }
+};
+
+
 // =======================
 // Anime List Schema
 // =======================
@@ -206,7 +300,8 @@ const animeListSchema = new mongoose.Schema({
     finishDate: Date,
     userRating: Number,
     episodesWatched: { type: Number, default: 0 },
-    status: { type: String, default: 'watching' }
+    status: { type: String, default: 'watching' },
+    genres: [String]
   }],
   completed: [{
     title: String,
@@ -219,7 +314,8 @@ const animeListSchema = new mongoose.Schema({
     finishDate: Date,
     userRating: Number,
     episodesWatched: { type: Number, default: 0 },
-    status: { type: String, default: 'completed' }
+    status: { type: String, default: 'completed' },
+    genres: [String]  // ← ADD THIS LINE
   }],
   planned: [{
     title: String,
@@ -231,7 +327,8 @@ const animeListSchema = new mongoose.Schema({
     addedDate: { type: Date, default: Date.now },
     plannedDate: Date,
     notes: String,
-    status: { type: String, default: 'planned' }
+    status: { type: String, default: 'planned' },
+    genres: [String]  // ← ADD THIS LINE
   }],
   dropped: [{
     title: String,
@@ -244,7 +341,8 @@ const animeListSchema = new mongoose.Schema({
     droppedDate: Date,
     reason: String,
     episodesWatched: { type: Number, default: 0 },
-    status: { type: String, default: 'dropped' }
+    status: { type: String, default: 'dropped' },
+    genres: [String]  // ← ADD THIS LINE
   }]
 });
 const AnimeList = mongoose.model("AnimeList", animeListSchema);
@@ -492,8 +590,21 @@ app.post("/api/list/:userId", async (req, res) => {
       totalEpisodes: animeData?.totalEpisodes || animeData?.episodes || animeData?.episodeCount || 24,
       episodes: animeData?.totalEpisodes || animeData?.episodes || animeData?.episodeCount || 24,
       addedDate: new Date(),
-      status: category
+      status: category,
+      genres: animeData?.genres || []  // ← Extract genres from animeData
     };
+
+    // If genres not provided but we have malId, fetch them
+    if ((!animeEntry.genres || animeEntry.genres.length === 0) && animeEntry.malId) {
+      try {
+        const fetchedGenres = await fetchAniListGenres(animeEntry.malId);
+        if (fetchedGenres && fetchedGenres.length > 0) {
+          animeEntry.genres = fetchedGenres;
+        }
+      } catch (error) {
+        console.error(`Could not fetch genres for ${animeTitle}:`, error.message);
+      }
+    }
 
     if (category === 'watching') {
       animeEntry.startDate = new Date();
@@ -622,7 +733,7 @@ app.post('/api/list/import/mal', async (req, res) => {
 
     const animeEntries = xmlData.myanimelist.anime;
     const totalAnime = animeEntries.length;
-    
+
     console.log(`📊 Found ${totalAnime} anime entries in XML`);
     sendProgress(0, totalAnime, `Found ${totalAnime} anime, starting processing...`);
 
@@ -752,8 +863,24 @@ app.post('/api/list/import/mal', async (req, res) => {
           addedDate,
           startDate: startDate ?? undefined,
           finishDate: finishDate ?? undefined,
-          status: category
+          status: category,
+          genres: []
         };
+
+
+        // Only fetch genres if we have a MAL ID
+        if (malId) {
+          try {
+            const genres = await fetchAniListGenres(malId);
+            if (genres && genres.length > 0) {
+              animeObj.genres = genres;
+              console.log(`📊 [${i + 1}/${animeEntries.length}] Found ${genres.length} genres for ${title.substring(0, 30)}...`);
+            }
+            await new Promise(r => setTimeout(r, 500)); // Rate limiting
+          } catch (genreError) {
+            console.log(`⚠️ Could not fetch genres for ${title}:`, genreError.message);
+          }
+        }
 
         // For completed anime, set episodes watched to total
         if (category === 'completed') {
@@ -882,6 +1009,87 @@ app.get("/api/list/:userId", async (req, res) => {
   }
 });
 
+// server.js - Add a new endpoint to fetch genres for existing anime
+
+app.post("/api/list/:userId/refresh-genres", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const animeList = await AnimeList.findOne({ userId });
+    if (!animeList) {
+      return res.status(404).json({ message: "List not found" });
+    }
+
+    let updatedCount = 0;
+    let failedCount = 0;
+
+    // Combine all anime from all categories
+    const allAnime = [
+      ...(animeList.watching || []),
+      ...(animeList.completed || []),
+      ...(animeList.planned || []),
+      ...(animeList.dropped || [])
+    ];
+
+    // Filter anime without genres
+    const animeWithoutGenres = allAnime.filter(anime =>
+      (!anime.genres || anime.genres.length === 0) && anime.malId
+    );
+
+    console.log(`Found ${animeWithoutGenres.length} anime without genres to update`);
+
+    // Process in batches to avoid rate limiting
+    for (let i = 0; i < animeWithoutGenres.length; i++) {
+      const anime = animeWithoutGenres[i];
+
+      try {
+        const genres = await fetchAniListGenres(anime.malId);
+
+        if (genres && genres.length > 0) {
+          // Find which category this anime is in
+          const categories = ['watching', 'completed', 'planned', 'dropped'];
+
+          for (const category of categories) {
+            const animeIndex = animeList[category].findIndex(
+              a => a._id && a._id.toString() === anime._id.toString()
+            );
+
+            if (animeIndex !== -1) {
+              animeList[category][animeIndex].genres = genres;
+              updatedCount++;
+              break;
+            }
+          }
+
+          // Rate limiting
+          await new Promise(r => setTimeout(r, 600));
+        }
+      } catch (error) {
+        console.error(`Failed to fetch genres for ${anime.title}:`, error.message);
+        failedCount++;
+      }
+    }
+
+    await animeList.save();
+
+    res.json({
+      success: true,
+      message: `Genres refreshed for ${updatedCount} anime`,
+      updatedCount,
+      failedCount,
+      totalProcessed: animeWithoutGenres.length
+    });
+
+  } catch (error) {
+    console.error('Genre refresh error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to refresh genres',
+      error: error.message
+    });
+  }
+});
+
 // =======================
 // PROFILE API ROUTES
 // =======================
@@ -945,10 +1153,10 @@ app.get("/api/profile/:userId", async (req, res) => {
     const genres = await calculateGenreBreakdown(userId);
 
     // Get recently watched (last 4 completed/watching anime)
-    const recentlyWatched = await getRecentlyWatched(userId, 6);
+    const recentlyWatched = await getRecentlyWatched(userId, 4);
 
     // Get favorite anime (highest rated)
-    const favoriteAnime = await getFavoriteAnime(userId, 4);
+    const favoriteAnime = await getFavoriteAnime(userId, 6);
 
     const profileData = {
       _id: user._id,
@@ -1059,18 +1267,65 @@ app.post("/api/profile/:userId/upload-photo", async (req, res) => {
   }
 });
 
-// Helper functions
+
+// Calculate genre breakdown
+// server.js - Replace the calculateGenreBreakdown function
+
 async function calculateGenreBreakdown(userId) {
-  // This would connect to an external API to get genre data
-  // For now, return mock data or implement with your anime database
-  return [
-    { name: 'Action', percentage: 35 },
-    { name: 'Fantasy', percentage: 25 },
-    { name: 'Comedy', percentage: 20 },
-    { name: 'Romance', percentage: 15 },
-    { name: 'Sci-Fi', percentage: 5 }
-  ];
+  const animeList = await AnimeList.findOne({ userId });
+  if (!animeList || !animeList.completed.length) return [];
+
+  const genreCount = {};
+  let total = 0;
+
+  // Process all completed anime
+  for (const anime of animeList.completed) {
+    // Use locally stored genres if available
+    if (anime.genres && Array.isArray(anime.genres)) {
+      for (const genre of anime.genres) {
+        genreCount[genre] = (genreCount[genre] || 0) + 1;
+        total++;
+      }
+    }
+    // If genres not stored locally, try to fetch them ONCE and save
+    else if (anime.malId) {
+      try {
+        const genres = await fetchAniListGenres(anime.malId);
+        if (genres && genres.length > 0) {
+          // Update the anime document with genres for future use
+          await AnimeList.findOneAndUpdate(
+            { userId, "completed._id": anime._id },
+            { $set: { "completed.$.genres": genres } }
+          );
+
+          // Count the genres
+          for (const genre of genres) {
+            genreCount[genre] = (genreCount[genre] || 0) + 1;
+            total++;
+          }
+        }
+        await new Promise(r => setTimeout(r, 500)); // Rate limiting
+      } catch (error) {
+        console.error(`Could not fetch genres for ${anime.title}:`, error.message);
+      }
+    }
+  }
+
+  if (total === 0) return [];
+
+  // Calculate percentages
+  const genreBreakdown = Object.entries(genreCount)
+    .map(([name, count]) => ({
+      name,
+      count,
+      percentage: Math.round((count / total) * 100)
+    }))
+    .sort((a, b) => b.percentage - a.percentage)
+    .slice(0, 10); // Top 10 genres
+
+  return genreBreakdown;
 }
+
 
 async function getRecentlyWatched(userId, limit = 4) {
   const animeList = await AnimeList.findOne({ userId });
@@ -1295,8 +1550,8 @@ app.use((err, req, res, next) => {
 const server = http.createServer(app);
 
 // Create WebSocket server
-const wss = new WebSocketServer({ 
-  server, 
+const wss = new WebSocketServer({
+  server,
   path: '/ws',
   clientTracking: true
 });
@@ -1308,15 +1563,15 @@ wss.on('connection', (ws, req) => {
   try {
     const { query } = parse(req.url, true);
     const userId = query.userId;
-    
+
     if (userId) {
       userConnections.set(userId, ws);
       console.log(`🔗 WebSocket connected for user: ${userId}`);
-      
+
       // Send connection confirmation
-      ws.send(JSON.stringify({ 
-        type: 'connected', 
-        message: 'WebSocket connected' 
+      ws.send(JSON.stringify({
+        type: 'connected',
+        message: 'WebSocket connected'
       }));
     }
 
