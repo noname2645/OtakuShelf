@@ -3,13 +3,13 @@ import '../Stylesheets/profile.css';
 import { Header } from '../components/header';
 import BottomNavBar from "../components/bottom.jsx";
 import { useAuth } from '../components/AuthContext';
-import { 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  Tooltip, 
-  Legend 
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend
 } from 'recharts';
 
 const ProfilePage = () => {
@@ -32,23 +32,57 @@ const ProfilePage = () => {
 
   const API = import.meta.env.VITE_API_BASE_URL;
 
-  // Add this function to prepare data for pie chart
-  const prepareChartData = (genres) => {
-    if (!genres || genres.length === 0) return [];
+  // Anime Genres Array - All 19 genres
+  const ANIME_GENRES = [
+    "Action",
+    "Adventure",
+    "Avant Garde",
+    "Award Winning",
+    "Boys Love",
+    "Comedy",
+    "Drama",
+    "Fantasy",
+    "Girls Love",
+    "Gourmet",
+    "Horror",
+    "Mystery",
+    "Romance",
+    "Sci-Fi",
+    "Slice of Life",
+    "Sports",
+    "Supernatural",
+    "Suspense",
+    "Thriller",
+  ];
 
-    // Create chart data with colors
-    return genres.map((genre, index) => {
-      // Use a color palette
+  // Add this function to prepare data for pie chart - FIXED to show all genres
+  const prepareChartData = (userGenres) => {
+    if (!userGenres) userGenres = [];
+
+    const userGenreMap = {};
+    userGenres.forEach(genre => {
+      userGenreMap[genre.name] = {
+        percentage: genre.percentage || 0,
+        count: genre.count || 0
+      };
+    });
+
+    return ANIME_GENRES.map((genreName, index) => {
       const colors = [
         '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2',
         '#EF476F', '#073B4C', '#7209B7', '#3A86FF', '#FB5607',
-        '#8338EC', '#FF006E', '#FFBE0B', '#3A86FF', '#FB5607'
+        '#8338EC', '#FF006E', '#FFBE0B', '#3A86FF', '#FB5607',
+        '#FF595E', '#8AC926', '#1982C4', '#6A4C93'
       ];
 
+      const userGenre = userGenreMap[genreName];
+      const actualValue = userGenre ? userGenre.percentage : 0;
+
       return {
-        name: genre.name,
-        value: genre.percentage,
-        count: genre.count,
+        name: genreName,
+        value: actualValue,  // Actual percentage (0 for unwatched)
+        displayValue: actualValue > 0 ? actualValue : 0.001, // Tiny value for pie rendering
+        count: userGenre ? userGenre.count : 0,
         color: colors[index % colors.length]
       };
     });
@@ -59,11 +93,7 @@ const ProfilePage = () => {
 
   // Update the useEffect or loadProfileData to set chart data
   useEffect(() => {
-    if (genres && genres.length > 0) {
-      setChartData(prepareChartData(genres));
-    } else {
-      setChartData([]);
-    }
+    setChartData(prepareChartData(genres));
   }, [genres]);
 
   // Custom tooltip component
@@ -74,31 +104,13 @@ const ProfilePage = () => {
         <div className="custom-tooltip">
           <div className="tooltip-content">
             <p className="tooltip-genre">{data.name}</p>
-            <p className="tooltip-percentage">{data.value}%</p>
+            <p className="tooltip-percentage">{data.value.toFixed(1)}%</p>
             <p className="tooltip-count">({data.count} anime)</p>
           </div>
         </div>
       );
     }
     return null;
-  };
-
-  // Custom legend component
-  const renderCustomizedLegend = (props) => {
-    const { payload } = props;
-    return (
-      <div className="custom-legend">
-        {payload.map((entry, index) => (
-          <div key={`item-${index}`} className="legend-item">
-            <div
-              className="legend-color"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="legend-text">{entry.value} ({entry.payload.count})</span>
-          </div>
-        ))}
-      </div>
-    );
   };
 
   useEffect(() => {
@@ -147,10 +159,10 @@ const ProfilePage = () => {
           meanScore: 0
         });
 
-        setRecentlyWatched(data.recentlyWatched || getDefaultRecentlyWatched());
-        setFavoriteAnime(data.favoriteAnime || getDefaultFavoriteAnime());
-        setBadges(data.profile?.badges || getDefaultBadges());
-        setGenres(data.profile?.favoriteGenres || getDefaultGenres());
+        setRecentlyWatched(data.recentlyWatched || []);
+        setFavoriteAnime(data.favoriteAnime || []);
+        setBadges(data.profile?.badges || []);
+        setGenres(data.profile?.favoriteGenres || []);
 
         // Initialize edit form
         setEditForm({
@@ -161,12 +173,32 @@ const ProfilePage = () => {
       }
     } catch (error) {
       console.error('Error loading profile:', error);
-      setDefaultData();
+      setProfileData({
+        name: 'Anime Lover',
+        username: `@user_${user?._id.toString().slice(-6) || '000000'}`,
+        bio: 'Anime enthusiast exploring new worlds through animation',
+        joinDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        avatar: null,
+        email: ''
+      });
+      setStats({
+        animeWatched: 0,
+        hoursWatched: 0,
+        currentlyWatching: 0,
+        favorites: 0,
+        animePlanned: 0,
+        animeDropped: 0,
+        totalEpisodes: 0,
+        meanScore: 0
+      });
+      setRecentlyWatched([]);
+      setFavoriteAnime([]);
+      setBadges([]);
+      setGenres([]);
     } finally {
       setLoading(false);
     }
   };
-
 
   const handleEditProfile = () => {
     setIsEditing(true);
@@ -196,7 +228,6 @@ const ProfilePage = () => {
       if (!response.ok) {
         throw new Error('Failed to update profile');
       }
-
 
       if (updateProfile) {
         await updateProfile(updateData);
@@ -316,6 +347,49 @@ const ProfilePage = () => {
       navigator.clipboard.writeText(profileUrl);
       alert('Profile link copied to clipboard!');
     }
+  };
+
+  // Function to render custom label that shows 0% as empty
+  const renderCustomizedLabel = ({
+    cx,
+    cy,
+    midAngle,
+    innerRadius,
+    outerRadius,
+    percent,
+    index,
+    name,
+    value,
+    payload
+  }) => {
+    // Get the actual value from payload
+    const actualValue = payload.value;
+
+    // Only show label if actual value > 0
+    if (actualValue > 0) {
+      const RADIAN = Math.PI / 180;
+
+      // Calculate position in the MIDDLE of the slice (between inner and outer radius)
+      const middleRadius = (innerRadius + outerRadius) / 2;
+      const x = cx + middleRadius * Math.cos(-midAngle * RADIAN);
+      const y = cy + middleRadius * Math.sin(-midAngle * RADIAN);
+
+      return (
+        <text
+          x={x}
+          y={y}
+          fill="white"
+          textAnchor="middle"  // Always center the text
+          dominantBaseline="middle"  // Vertically center
+          fontSize={14}
+          fontWeight="bold"
+          textShadow="0 2px 4px rgba(0,0,0,0.8)"  
+        >
+          {`${actualValue.toFixed(1)}%`}
+        </text>
+      );
+    }
+    return null;
   };
 
   if (loading) {
@@ -505,12 +579,12 @@ const ProfilePage = () => {
                   <div className="activity-icon">📊</div>
                   <p className="activity-message">
                     {recentlyWatched.length > 0
-                      ? 'Check your recently watched anime below!'
+                      ? 'Feature coming soon'
                       : 'Start watching anime to see your activity here!'}
                   </p>
-                  <p className="activity-subtext">
+                  {/* <p className="activity-subtext">
                     Track your latest anime additions, episode progress, and ratings here.
-                  </p>
+                  </p> */}
                 </div>
               </div>
             </div>
@@ -582,84 +656,88 @@ const ProfilePage = () => {
             </div>
           </div>
 
-        {/* Genre Breakdown Section - UPDATED WITH PIE CHART */}
+          {/* Genre Breakdown Section - UPDATED WITH PIE CHART AND TOP GENRES */}
           <div className="genre-section">
             <h3 className="section-title">Genre Breakdown</h3>
-            
+
             <div className="genre-breakdown-container">
-              {/* Pie Chart Column */}
+              {/* Pie Chart Column with Legend Below */}
               <div className="pie-chart-column">
                 {chartData.length > 0 ? (
-                  <div className="pie-chart-wrapper">
-                    <ResponsiveContainer width="100%" height={400}>
-                      <PieChart>
-                        <Pie
-                          data={chartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={150}
-                          innerRadius={60}
-                          fill="#8884d8"
-                          dataKey="value"
-                          nameKey="name"
-                          label={({
-                            cx,
-                            cy,
-                            midAngle,
-                            innerRadius,
-                            outerRadius,
-                            percent,
-                            index
-                          }) => {
-                            const RADIAN = Math.PI / 180;
-                            const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                            
-                            return (
-                              <text
-                                x={x}
-                                y={y}
-                                fill="white"
-                                textAnchor={x > cx ? 'start' : 'end'}
-                                dominantBaseline="central"
-                                fontSize={14}
-                                fontWeight="bold"
-                              >
-                                {percent > 0.1 ? `${(percent * 100).toFixed(0)}%` : ''}
-                              </text>
-                            );
-                          }}
-                        >
-                          {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend 
-                          content={renderCustomizedLegend}
-                          layout="vertical"
-                          verticalAlign="middle"
-                          align="right"
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    
+                  <>
+                    <div className="pie-chart-wrapper">
+                      <ResponsiveContainer width="100%" height={400}>
+                        <PieChart>
+                          <Pie
+                            data={chartData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={180}
+                            innerRadius={70}
+                            fill="#8884d8"
+                            dataKey="displayValue"  // Use displayValue for sizing
+                            nameKey="name"
+                            label={renderCustomizedLabel}  // This will hide 0% labels
+                          >
+                            {chartData.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={entry.color}
+                                opacity={entry.value === 0 ? 0.3 : 1}
+                                stroke="rgba(0, 0, 0, 0.3)"
+                                strokeWidth={1}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<CustomTooltip />} />
+
+                          {/* Donut Center Text */}
+                          <text
+                            x="50%"
+                            y="50%"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="donut-total"
+                          >
+                            {ANIME_GENRES.length}
+                          </text>
+                          <text
+                            x="50%"
+                            y="57%"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="donut-label"
+                          >
+                            Total Genres
+                          </text>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+
                     {/* Chart Stats Summary */}
                     <div className="chart-summary">
                       <div className="summary-item">
                         <span className="summary-label">Total Genres:</span>
-                        <span className="summary-value">{genres.length}</span>
+                        <span className="summary-value">{ANIME_GENRES.length}</span>
                       </div>
                       <div className="summary-item">
-                        <span className="summary-label">Top Genre:</span>
+                        <span className="summary-label">Genres Watched:</span>
                         <span className="summary-value">
-                          {genres[0]?.name || 'N/A'} ({genres[0]?.percentage || 0}%)
+                          {chartData.filter(g => g.value > 0).length}
+                        </span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Top Percentage:</span>
+                        <span className="summary-value">
+                          {chartData.length > 0 ?
+                            `${Math.max(...chartData.map(g => g.value)).toFixed(1)}%` :
+                            '0%'
+                          }
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </>
                 ) : (
                   <div className="empty-chart">
                     <div className="chart-placeholder">
@@ -671,56 +749,29 @@ const ProfilePage = () => {
                 )}
               </div>
 
-              {/* Genre List Column */}
-              <div className="genre-list-column">
-                <h4 className="genre-list-title">Genre Distribution</h4>
-                <div className="genre-grid">
-                  {genres.length > 0 ? (
-                    genres.map((genre, index) => (
-                      <div key={index} className="genre-item">
-                        <div className="genre-header">
-                          <div className="genre-name">{genre.name}</div>
-                          <div className="genre-percentage">{genre.percentage}%</div>
-                        </div>
-                        <div className="genre-bar">
-                          <div
-                            className="genre-fill"
-                            style={{ 
-                              width: `${genre.percentage}%`,
-                              backgroundColor: chartData[index]?.color || '#FF6B6B'
-                            }}
-                          ></div>
-                        </div>
-                        <div className="genre-count">
-                          {genre.count} {genre.count === 1 ? 'anime' : 'anime'}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-state">
-                      <p>No genre data available.</p>
-                      <button
-                        className="btn-refresh"
-                        onClick={async () => {
-                          try {
-                            const token = localStorage.getItem("token");
-                            const response = await fetch(`${API}/api/list/${user._id}/refresh-genres`, {
-                              method: 'POST',
-                              headers: token ? { Authorization: `Bearer ${token}` } : {}
-                            });
-
-                            if (response.ok) {
-                              alert('Genres are being updated. Please refresh the page in a moment.');
-                            }
-                          } catch (error) {
-                            console.error('Refresh error:', error);
-                          }
+              {/* Custom Legend Below Pie Chart */}
+              <div className="legend-container">
+                <div className="custom-legend">
+                  {chartData.map((genre, index) => (
+                    <div
+                      key={`legend-${index}`}
+                      className={`legend-item ${genre.value === 0 ? 'inactive' : ''}`}
+                    >
+                      <div
+                        className="legend-color"
+                        style={{
+                          backgroundColor: genre.color,
+                          opacity: genre.value === 0 ? 0.5 : 1
                         }}
-                      >
-                        Fetch Genre Data
-                      </button>
+                      />
+                      <div className="legend-info">
+                        <p className="legend-text">{genre.name}</p>
+                        <p className="legend-percentage">
+                          {genre.value < 0.01 ? '0%' : `${genre.value.toFixed(1)}%`}
+                        </p>
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>
