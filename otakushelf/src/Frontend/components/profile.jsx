@@ -200,6 +200,37 @@ const ProfilePage = () => {
     }
   };
 
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !user?._id) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Invalid image");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("cover", file);
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${API}/api/profile/${user._id}/upload-cover`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (data.coverImage) {
+      setProfileData(prev => ({
+        ...prev,
+        coverImage: data.coverImage
+      }));
+    }
+  };
+
+
   const handleEditProfile = () => {
     setIsEditing(true);
   };
@@ -383,7 +414,7 @@ const ProfilePage = () => {
           dominantBaseline="middle"  // Vertically center
           fontSize={14}
           fontWeight="bold"
-          textShadow="0 2px 4px rgba(0,0,0,0.8)"  
+          textShadow="0 2px 4px rgba(0,0,0,0.8)"
         >
           {`${actualValue.toFixed(1)}%`}
         </text>
@@ -431,7 +462,33 @@ const ProfilePage = () => {
       <BottomNavBar />
       <div className="profile-page">
         <Header showSearch={false} />
-        <div className="profile-container2">
+        {/* PROFILE COVER */}
+        <div className="profile-cover">
+
+          {/* Hidden input */}
+          <input
+            type="file"
+            accept="image/*"
+            id="cover-upload"
+            style={{ display: "none" }}
+            onChange={handleCoverUpload}
+          />
+
+          {/* Change cover button */}
+          <label htmlFor="cover-upload" className="cover-upload-btn">
+            Change Cover
+          </label>
+
+          <img
+            src={
+              profileData?.coverImage ||
+              "https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=1600&q=80"
+            }
+            alt="Profile Cover"
+            className="profile-cover-img"
+          />
+
+          <div className="profile-cover-fade"></div>
           {/* Profile Header */}
           <div className="profile-header">
             <div className="profile-avatar-section">
@@ -528,9 +585,9 @@ const ProfilePage = () => {
               )}
             </div>
           </div>
+        </div>
+        <div className="profile-container2">
 
-          {/* Divider Line */}
-          <div className="divider-line"></div>
 
           <div className="initial">
             <div className="overview">

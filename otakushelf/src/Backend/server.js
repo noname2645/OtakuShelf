@@ -118,6 +118,7 @@ const userSchema = new mongoose.Schema({
     username: { type: String, unique: true, sparse: true },
     bio: { type: String, default: "" },
     joinDate: { type: Date, default: Date.now },
+    coverImage: { type: String, default: null },
     stats: {
       animeWatched: { type: Number, default: 0 },
       hoursWatched: { type: Number, default: 0 },
@@ -1167,6 +1168,7 @@ app.get("/api/profile/:userId", async (req, res) => {
         username: user.profile?.username || `@user_${user._id.toString().slice(-6)}`,
         bio: user.profile?.bio || 'Anime enthusiast exploring new worlds through animation',
         joinDate: user.profile?.joinDate || user.createdAt,
+        coverImage: user.profile?.coverImage || null,
         stats: { ...user.profile?.stats, ...stats },
         badges: user.profile?.badges || [],
         favoriteGenres: genres,
@@ -1182,6 +1184,48 @@ app.get("/api/profile/:userId", async (req, res) => {
     res.status(500).json({ message: "Error fetching profile", error: err.message });
   }
 });
+
+// Upload profile COVER image
+app.post("/api/profile/:userId/upload-cover", async (req, res) => {
+  try {
+    if (!req.files || !req.files.cover) {
+      return res.status(400).json({ message: "No cover image uploaded" });
+    }
+
+    const cover = req.files.cover;
+    const { userId } = req.params;
+
+    // Basic validation
+    if (!cover.mimetype.startsWith("image/")) {
+      return res.status(400).json({ message: "Invalid file type" });
+    }
+
+    if (cover.size > 5 * 1024 * 1024) {
+      return res.status(400).json({ message: "Cover image too large (max 5MB)" });
+    }
+
+    // ⚠️ TEMP approach (same as avatar)
+    const base64Image = cover.data.toString("base64");
+    const dataUrl = `data:${cover.mimetype};base64,${base64Image}`;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { "profile.coverImage": dataUrl } },
+      { new: true, select: "-password" }
+    );
+
+    res.json({
+      message: "Cover image uploaded successfully",
+      coverImage: dataUrl,
+      user: updatedUser
+    });
+
+  } catch (err) {
+    console.error("Cover upload error:", err);
+    res.status(500).json({ message: "Cover upload failed" });
+  }
+});
+
 
 // Update profile
 app.put("/api/profile/:userId", async (req, res) => {

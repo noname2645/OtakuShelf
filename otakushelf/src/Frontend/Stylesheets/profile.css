@@ -1,12 +1,9 @@
 .profile-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
   background: linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%);
   color: white;
-  font-family: 'Bricolage Grotesque', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  padding: 20px;
+  padding: 0;
+  /* cover needs edge-to-edge */
 }
 
 .profile-container2 {
@@ -21,27 +18,41 @@
 /* ==================== */
 
 .profile-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 40px;
-  margin-bottom: 50px;
-  position: relative;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1400px, 100%);
   padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  z-index: 10;
+  top: 40%;
 }
 
-.profile-header::before {
-  content: '';
+
+/* Cover upload button */
+.cover-upload-btn {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 107, 107, 0.4), transparent);
+  top: 20px;
+  right: 24px;
+  z-index: 20;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.45);
+  color: white;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.cover-upload-btn:hover {
+  background: rgba(0, 0, 0, 0.65);
+  transform: translateY(-2px);
 }
 
 .profile-avatar-section {
@@ -95,20 +106,16 @@
   color: white;
 }
 
-.profile-name-section {
-  flex-grow: 1;
-  padding-top: 10px;
-}
-
 .profile-name-section h1 {
   font-size: 52px;
   margin-bottom: 12px;
+  font-weight: 800;
   background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.9) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-weight: 800;
   letter-spacing: -0.5px;
+  z-index: 5;
 }
 
 .username-section {
@@ -219,14 +226,44 @@
 }
 
 /* ==================== */
-/* MAIN LAYOUT - MODERN GRID */
+/* PROFILE COVER */
 /* ==================== */
 
-.divider-line {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  margin: 60px 0;
+.profile-cover {
+  position: relative;
+  width: 100vw;
+  height: 420px;
+  margin-left: calc(50% - 50vw);
+  overflow: hidden;
 }
+
+
+.profile-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.05);
+  filter: saturate(1.1) contrast(1.05);
+}
+
+/* Dark fade at bottom */
+.profile-cover-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 65%;
+  background: linear-gradient(to bottom,
+      rgba(10, 15, 30, 0) 0%,
+      rgba(10, 15, 30, 0.4) 40%,
+      rgba(10, 15, 30, 0.85) 75%,
+      rgba(10, 15, 30, 1) 100%);
+}
+
+
+/* ==================== */
+/* MAIN LAYOUT - MODERN GRID */
+/* ==================== */
 
 .initial {
   display: grid;
@@ -789,9 +826,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.03) 0%,
-    rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0) 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -810,7 +847,7 @@
 .legend-item.active {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 107, 107, 0.3);
-  box-shadow: 
+  box-shadow:
     0 0 20px rgba(255, 107, 107, 0.1),
     inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
@@ -820,7 +857,7 @@
   height: 24px;
   border-radius: 8px;
   flex-shrink: 0;
-  box-shadow: 
+  box-shadow:
     0 0 15px currentColor,
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   position: relative;
@@ -882,12 +919,10 @@
   transform: translateY(-50%);
   width: 1px;
   height: 40px;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
+  background: linear-gradient(to bottom,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent);
 }
 
 .summary-label {
@@ -924,7 +959,7 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 
+  box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 255, 255, 0.05);
   transform-origin: center;
@@ -936,6 +971,7 @@
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -1006,6 +1042,7 @@
     stroke-dasharray: 0 100;
     opacity: 0;
   }
+
   to {
     stroke-dasharray: var(--percentage, 0) 100;
     opacity: 1;
@@ -1065,9 +1102,11 @@
   0% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.05);
   }
+
   100% {
     transform: scale(1);
   }
@@ -1089,11 +1128,11 @@
     grid-template-columns: 1fr;
     gap: 30px;
   }
-  
+
   .pie-chart-column {
     min-height: 500px;
   }
-  
+
   .custom-legend {
     grid-template-columns: repeat(5, 1fr);
   }
@@ -1103,17 +1142,17 @@
   .custom-legend {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .chart-summary {
     flex-direction: column;
     gap: 25px;
     padding: 20px;
   }
-  
+
   .summary-item:not(:last-child)::after {
     display: none;
   }
-  
+
   .summary-item {
     padding: 0;
   }
@@ -1125,15 +1164,15 @@
     gap: 10px;
     padding: 15px;
   }
-  
+
   .recharts-responsive-container {
     height: 350px !important;
   }
-  
+
   .donut-center {
     transform: translate(-50%, -50%) scale(0.9);
   }
-  
+
   .donut-total {
     font-size: 24px;
   }
@@ -1143,29 +1182,29 @@
   .pie-chart-column {
     padding: 25px;
   }
-  
 
-  
+
+
   .chart-summary {
     padding: 15px;
   }
-  
+
   .summary-value {
     font-size: 20px;
   }
-  
+
   .legend-item {
     padding: 12px;
   }
-  
+
   .legend-text {
     font-size: 12px;
   }
-  
+
   .legend-percentage {
     font-size: 14px;
   }
-  
+
   .custom-legend {
     grid-template-columns: 1fr;
   }
