@@ -38,7 +38,6 @@ export const AuthProvider = ({ children }) => {
     }));
   };
 
-
   // FIXED: Handle token from URL parameters first, before checking auth status
   useEffect(() => {
     const handleTokenFromUrl = async () => {
@@ -63,9 +62,8 @@ export const AuthProvider = ({ children }) => {
           if (response.data.user) {
             console.log('User authenticated via token:', response.data.user);
             setUser(response.data.user);
-            storeMinimalUser(userData);
-
-
+            // FIXED: Changed userData to response.data.user
+            storeMinimalUser(response.data.user);
 
             // Ensure anime list exists for Google users
             await ensureAnimeListExists(response.data.user._id);
