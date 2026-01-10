@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 
 const ProfilePage = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, checkAuthStatus } = useAuth();
 
   // Profile data
   const [profileData, setProfileData] = useState(null);
@@ -139,12 +139,26 @@ const ProfilePage = () => {
       const data = await response.json();
 
       if (data) {
+        // Helper function to fix image URLs
+        const fixImageUrl = (url) => {
+          if (!url) return null;
+          if (url.startsWith('http') || url.startsWith('data:')) {
+            return url; // Already absolute
+          }
+          if (url.startsWith('/uploads/')) {
+            const backendBaseUrl = API.replace('/api', '');
+            return `${backendBaseUrl}${url}`;
+          }
+          return url;
+        };
+
         setProfileData({
           name: data.name || 'Anime Lover',
           username: data.profile?.username || `@user_${user._id.toString().slice(-6)}`,
           bio: data.profile?.bio || 'Anime enthusiast exploring new worlds through animation',
           joinDate: new Date(data.profile?.joinDate || data.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-          avatar: data.photo || null,
+          avatar: fixImageUrl(data.photo),
+          coverImage: fixImageUrl(data.profile?.coverImage), // ADD THIS LINE
           email: data.email
         });
 
@@ -179,6 +193,7 @@ const ProfilePage = () => {
         bio: 'Anime enthusiast exploring new worlds through animation',
         joinDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
         avatar: null,
+        coverImage: null, // ADD THIS
         email: ''
       });
       setStats({
@@ -204,29 +219,84 @@ const ProfilePage = () => {
     const file = e.target.files[0];
     if (!file || !user?._id) return;
 
-    if (!file.type.startsWith("image/")) {
-      alert("Invalid image");
-      return;
-    }
+    try {
+      console.log('DEBUG: handleCoverUpload triggered');
+      console.log('User ID:', user._id);
+      console.log('API URL:', API);
+      console.log('File:', file.name, file.size, 'bytes', file.type);
 
-    const formData = new FormData();
-    formData.append("cover", file);
+      if (!file.type.startsWith("image/")) {
+        alert("Invalid image type. Please select an image file (JPEG, PNG, WebP)");
+        return;
+      }
 
-    const token = localStorage.getItem("token");
+      if (file.size > 5 * 1024 * 1024) { // 5MB max
+        alert("Image too large. Maximum size is 5MB");
+        return;
+      }
 
-    const res = await fetch(`${API}/api/profile/${user._id}/upload-cover`, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData
-    });
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please log in to upload images");
+        return;
+      }
 
-    const data = await res.json();
+      const formData = new FormData();
+      formData.append("cover", file);
 
-    if (data.coverImage) {
-      setProfileData(prev => ({
-        ...prev,
-        coverImage: data.coverImage
-      }));
+      console.log('Sending request to:', `${API}/api/profile/${user._id}/upload-cover`);
+
+      const response = await fetch(`${API}/api/profile/${user._id}/upload-cover`, {
+        method: "POST",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: formData
+      });
+
+      console.log('Response status:', response.status);
+
+      // Check if response is OK
+      if (!response.ok) {
+        let errorMsg = 'Upload failed';
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
+          console.error('Server error response:', errorData);
+        } catch (e) {
+          errorMsg = `Server error: ${response.status}`;
+        }
+        throw new Error(errorMsg);
+      }
+
+      const data = await response.json();
+      console.log('Cover upload response:', data);
+
+      if (data.coverImage) {
+        // Fix the URL like you do for profile photos
+        let coverUrl = data.coverImage;
+
+        // If it's a relative path starting with /uploads
+        if (coverUrl && coverUrl.startsWith('/uploads/')) {
+          const backendBaseUrl = API.replace('/api', '');
+          coverUrl = `${backendBaseUrl}${coverUrl}`;
+        }
+
+        console.log('Final cover URL:', coverUrl);
+
+        setProfileData(prev => ({
+          ...prev,
+          coverImage: coverUrl
+        }));
+
+        alert('Cover image updated successfully!');
+      } else {
+        alert('Upload completed but no cover image URL returned');
+      }
+
+    } catch (error) {
+      console.error('Cover upload error:', error);
+      alert('Failed to upload cover: ' + error.message);
     }
   };
 
@@ -304,64 +374,99 @@ const ProfilePage = () => {
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file && user?._id) {
-      try {
-        // Validate file
-        if (!file.type.startsWith('image/')) {
-          alert('Please select an image file');
-          return;
-        }
 
-        if (file.size > 5 * 1024 * 1024) {
-          alert('Image size should be less than 5MB');
-          return;
-        }
+    // Get user ID safely from multiple sources
+    const userId = user?._id || localStorage.getItem("user_id") || JSON.parse(localStorage.getItem("user"))?.id;
 
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          try {
-            // Update local state immediately for better UX
-            setProfileData(prev => ({
-              ...prev,
-              avatar: reader.result
-            }));
+    if (!userId) {
+      alert('Please log in to upload images');
+      return;
+    }
 
-            // Upload to server
-            const token = localStorage.getItem("token");
-            const formData = new FormData();
-            formData.append('photo', file);
+    if (!file) {
+      alert('Please select an image file');
+      return;
+    }
 
-            const response = await fetch(`${API}/api/profile/${user._id}/upload-photo`, {
-              method: 'POST',
-              headers: token ? { Authorization: `Bearer ${token}` } : {},
-              body: formData
-            });
-
-            if (!response.ok) {
-              throw new Error('Upload failed');
-            }
-
-            const result = await response.json();
-
-            // Update user in context if needed
-            if (updateProfile) {
-              await updateProfile({ photo: result.photo });
-            }
-
-            alert('Profile picture updated successfully!');
-          } catch (error) {
-            console.error('Upload error:', error);
-            alert('Failed to upload image');
-
-            // Revert to previous image by reloading
-            await loadProfileData();
-          }
-        };
-        reader.readAsDataURL(file);
-      } catch (error) {
-        console.error('Image upload error:', error);
-        alert('Error uploading image: ' + error.message);
+    try {
+      // Validate file
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file (JPEG, PNG, WebP, or GIF)');
+        return;
       }
+
+      if (file.size > 2 * 1024 * 1024) { // 2MB max
+        alert('Image size should be less than 2MB');
+        return;
+      }
+
+      // Create FormData
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      // Get token safely
+      const token = localStorage.getItem("token") || '';
+
+      // Show loading state
+      setLoading(true);
+
+      console.log('Uploading image for user:', userId);
+
+      // Upload to server
+      const response = await fetch(`${API}/api/profile/${userId}/upload-photo`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
+      });
+
+      if (!response.ok) {
+        let errorMsg = 'Upload failed';
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
+        } catch (e) {
+          errorMsg = `Server error: ${response.status}`;
+        }
+        throw new Error(errorMsg);
+      }
+
+      const result = await response.json();
+      console.log('Upload successful:', result);
+
+      // FIX: Construct the full absolute URL
+      let photoUrl = result.photo;
+
+      // If it's a relative path starting with /uploads
+      if (photoUrl && photoUrl.startsWith('/uploads/')) {
+        // Extract the backend base URL from your API URL
+        // If API is "http://localhost:5000/api", we want "http://localhost:5000"
+        const backendBaseUrl = API.replace('/api', '');
+        photoUrl = `${backendBaseUrl}${photoUrl}`;
+      }
+
+      console.log('Final photo URL:', photoUrl);
+
+      // Update UI with the URL from server
+      setProfileData(prev => ({
+        ...prev,
+        avatar: photoUrl
+      }));
+
+      // Update auth context
+      if (updateProfile) {
+        await updateProfile({ photo: photoUrl });
+      }
+
+      alert('Profile picture updated successfully!');
+
+    } catch (error) {
+      console.error('Upload error details:', error);
+      alert('Failed to upload image: ' + error.message);
+
+      // Revert by reloading
+      await loadProfileData();
+    } finally {
+      setLoading(false);
     }
   };
 
