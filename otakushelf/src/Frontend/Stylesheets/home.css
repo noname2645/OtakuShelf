@@ -551,7 +551,7 @@
   height: 300px;
   background: linear-gradient(90deg, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%);
   background-size: 200% 100%;
-  animation: shimmer 2s infinite;
+  /* animation: shimmer 2s infinite; */
   border-radius: 12px;
   margin-bottom: 30px;
 }
@@ -567,7 +567,7 @@
   height: 320px;
   background: linear-gradient(90deg, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%);
   background-size: 200% 100%;
-  animation: shimmer 2s infinite;
+  /* animation: shimmer 2s infinite; */
   border-radius: 12px;
 }
 

@@ -534,10 +534,22 @@ const ProfilePage = () => {
         <BottomNavBar />
         <div className="profile-page">
           <Header showSearch={false} />
-          <div className="profile-container2">
-            <div className="loading-spinner">
-              <div className="spinner"></div>
-              <p>Loading profile...</p>
+          {/* Simple Loading Preview */}
+          <div className="profile-loading">
+            <div className="loading-icons">
+              <div className="loading-icon">🎬</div>
+              <div className="loading-icon">🌟</div>
+              <div className="loading-icon">🎨</div>
+              <div className="loading-icon">🔥</div>
+              <div className="loading-icon">✨</div>
+            </div>
+
+            <div className="loading-content">
+              <div className="loading-spinner"></div>
+              <h2 className="loading-text">Loading Your Anime Journey</h2>
+              <p className="loading-subtext">
+                Preparing your stats, favorites, and anime collection...
+              </p>
             </div>
           </div>
         </div>
@@ -551,12 +563,6 @@ const ProfilePage = () => {
         <BottomNavBar />
         <div className="profile-page">
           <Header showSearch={false} />
-          <div className="profile-container2">
-            <div className="error-message">
-              <h2>Profile Not Found</h2>
-              <p>Please log in to view your profile.</p>
-            </div>
-          </div>
         </div>
       </>
     );
