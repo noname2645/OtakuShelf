@@ -686,20 +686,24 @@ const EnhancedAnimeList = () => {
                             </select>
                           </div>
 
-                          <div className="card-poster">
-                            {/* Base grayscale image */}
+                          <div
+                            className="card-poster"
+                            style={{ '--progress': `${progress}%` }}
+                          >
                             <img
-                              className="base-img"
+                              className="poster-img grayscale"
                               src={imageUrl}
                               alt={anime.title}
-                              onError={(e) => {
-                                e.target.src = getFallbackImage(anime.title);
-                              }}
+                              onError={(e) => (e.target.src = getFallbackImage(anime.title))}
                             />
 
-                            {/* Progress line */}
-                            <div className="progress-line" style={{ left: progressPercentage }}></div>
-
+                            <img
+                              className="poster-img color"
+                              src={imageUrl}
+                              alt=""
+                              aria-hidden
+                              onError={(e) => (e.target.src = getFallbackImage(anime.title))}
+                            />
                             <div className="poster-overlay">
                               <h3 className="anime-title-card">{anime.title || 'Unknown Title'}</h3>
                               <div className="card-content2">

@@ -176,7 +176,7 @@
   cursor: not-allowed;
   border-radius: 50%;
   border: 2px solid #ffffff70;
-  box-shadow: 
+  box-shadow:
     -4px -4px 4px rgb(17, 0, 255),
     0px -4px 4px 0px rgb(153, 0, 255),
     4px -4px 4px rgb(255, 0, 85),
@@ -238,6 +238,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -367,12 +368,12 @@
   display: none;
 }
 
-.option-radio input[type="radio"]:checked + .radio-custom {
+.option-radio input[type="radio"]:checked+.radio-custom {
   background: #FF5533;
   border-color: #FF5533;
 }
 
-.option-radio input[type="radio"]:checked + .radio-custom::after {
+.option-radio input[type="radio"]:checked+.radio-custom::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -384,7 +385,7 @@
   border-radius: 50%;
 }
 
-.option-radio input[type="radio"]:checked ~ .option-content strong {
+.option-radio input[type="radio"]:checked~.option-content strong {
   color: #FF5533;
 }
 
@@ -504,7 +505,7 @@
   border-radius: 8px;
   padding: 12px;
   width: 280px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   font-size: 12px;
   line-height: 1.4;
@@ -523,7 +524,7 @@
   border-width: 8px 8px 8px 0;
   border-style: solid;
   border-color: transparent white transparent transparent;
-  filter: drop-shadow(-1px 0 1px rgba(0,0,0,0.1));
+  filter: drop-shadow(-1px 0 1px rgba(0, 0, 0, 0.1));
 }
 
 .help-content:after {
@@ -583,82 +584,85 @@
   line-height: 1.4;
 }
 
-/* =========================================== */
-/* EPIC GAMES STYLE PROGRESS EFFECT - SIMPLE */
-/* =========================================== */
+/* ============================= */
+/* EPIC GAMES STYLE PROGRESS UI */
+/* ============================= */
 
-/* Reset any existing card-poster styles that might interfere */
 .card-poster {
   position: relative;
-  overflow: hidden;
-  height: 100%;
   width: 100%;
-  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
-/* Base image - ALWAYS grayscale */
-.card-poster .base-img {
+/* Base image */
+.poster-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
-  filter: grayscale(100%) !important;
-  opacity: 0.7 !important;
 }
 
-/* Color overlay - shows watched portion */
-.card-poster::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: var(--progress-width, 0%);
-  height: 100%;
-  background-image: var(--poster-bg, none);
-  background-size: cover;
-  background-position: center;
+/* Grayscale base */
+.poster-img.grayscale {
+  filter: grayscale(100%) brightness(0.65);
+  opacity: 1;
+}
+
+
+/* Colored progress layer */
+.poster-img.color {
   z-index: 2;
-  pointer-events: none;
-  transition: width 0.3s ease;
+  clip-path: inset(0 calc(100% - var(--progress)) 0 0);
+  transition: clip-path 0.35s ease;
 }
 
-/* Progress line at the boundary */
-.card-poster .progress-line {
+/* Vertical progress divider */
+.progress-divider {
   position: absolute;
   top: 0;
-  left: var(--progress-width, 0%);
+  bottom: 0;
+  left: calc(var(--progress) * 1%);
   width: 2px;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.6);
+  width: 3px;
+  background: linear-gradient(to bottom,
+      rgba(255, 255, 255, 0.9),
+      rgba(255, 255, 255, 0.4),
+      rgba(255, 255, 255, 0.9));
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
   z-index: 3;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-  pointer-events: none;
-  transition: left 0.3s ease;
+  transition: left 0.35s ease;
 }
 
-/* On hover: Show full color */
-.anime-card3:hover .card-poster .base-img {
-  filter: grayscale(0%) !important;
-  opacity: 1 !important;
+/* Hover → full color */
+.anime-card3:hover .poster-img.grayscale {
+  filter: grayscale(0%);
+  opacity: 1;
 }
 
-.anime-card3:hover .card-poster::after {
+.anime-card3:hover .poster-img.color {
+  clip-path: inset(0 0 0 0);
+}
+
+.anime-card3:hover .progress-divider {
   opacity: 0;
 }
 
-/* Completed anime: Always full color */
-.anime-card3.status-completed .card-poster .base-img {
-  filter: grayscale(0%) !important;
-  opacity: 1 !important;
+/* Completed = always color */
+.anime-card3.status-completed .poster-img.grayscale {
+  filter: grayscale(0%);
+  opacity: 1;
 }
 
-.anime-card3.status-completed .card-poster::after {
+.anime-card3.status-completed .poster-img.color {
+  clip-path: inset(0 0 0 0);
+}
+
+.anime-card3.status-completed .progress-divider {
   display: none;
 }
 
-.anime-card3.status-completed .card-poster .progress-line {
-  display: none;
-}
 
 /* Make sure status badge is on top */
 .status-badge2 {
@@ -676,7 +680,7 @@
     width: 250px;
     left: calc(100% + 8px);
   }
-  
+
   .import-wrapper {
     gap: 6px;
   }
@@ -688,11 +692,11 @@
     margin: 20px;
     max-width: calc(100% - 40px);
   }
-  
+
   .modal-actions {
     flex-direction: column;
   }
-  
+
   .option-radio {
     padding: 14px;
   }
@@ -791,9 +795,6 @@
   transition: transform 0.3s ease;
 }
 
-.anime-card3:hover .card-poster img {
-  transform: scale(1.05);
-}
 
 /* Title overlay on image */
 .poster-overlay {
@@ -802,8 +803,8 @@
   left: 0;
   right: 0;
   background: linear-gradient(to top,
-      rgba(0, 0, 0, 2) 20%,
-      rgba(0, 0, 0, 0.5) 70%,
+      rgba(0, 0, 0, 0.85) 30%,
+      rgba(0, 0, 0, 0.4) 65%,
       rgba(0, 0, 0, 0) 100%);
   padding: 20px 16px 16px;
   z-index: 5;
