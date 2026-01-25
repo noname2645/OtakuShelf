@@ -21,9 +21,15 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-dotenv.config();
+const envFile =
+  process.env.NODE_ENV === "production"
+    ? ".env.production"
+    : ".env.development";
 
-// Get __dirname in ES modules
+dotenv.config({ path: envFile });
+
+console.log("Loaded env file:", envFile);
+console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -32,13 +38,6 @@ const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-
-const parseMALDate = (dateStr) => {
-  if (!dateStr || dateStr === '0000-00-00') return null;
-
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? null : d;
-};
 
 const app = express();
 const PORT = process.env.PORT || 5000;

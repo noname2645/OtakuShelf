@@ -663,8 +663,16 @@ const EnhancedAnimeList = () => {
                       const animeStatus = anime.status || activeTab;
                       const isCompleted = animeStatus === "completed";
 
+                      // Calculate progress percentage
+                      const progressPercentage = `${progress}%`;
+                      const imageUrl = anime.image || anime.poster || getFallbackImage(anime.title);
+
                       return (
-                        <div key={anime._id || anime.animeId || anime.title} className="anime-card3">
+                        <div
+                          key={anime._id || anime.animeId || anime.title}
+                          className={`anime-card3 ${isCompleted ? 'status-completed' : ''}`}
+                          style={{ '--progress-width': progressPercentage, '--poster-bg': `url(${imageUrl})` }}
+                        >
                           <div className={`status-badge2 ${getStatusBadgeClass(animeStatus)}`}>
                             <select
                               className="status-badge-select"
@@ -679,13 +687,18 @@ const EnhancedAnimeList = () => {
                           </div>
 
                           <div className="card-poster">
+                            {/* Base grayscale image */}
                             <img
-                              src={anime.image || anime.poster || getFallbackImage(anime.title)}
+                              className="base-img"
+                              src={imageUrl}
                               alt={anime.title}
                               onError={(e) => {
                                 e.target.src = getFallbackImage(anime.title);
                               }}
                             />
+
+                            {/* Progress line */}
+                            <div className="progress-line" style={{ left: progressPercentage }}></div>
 
                             <div className="poster-overlay">
                               <h3 className="anime-title-card">{anime.title || 'Unknown Title'}</h3>
@@ -706,7 +719,7 @@ const EnhancedAnimeList = () => {
                                   <div className="progress-bar-container">
                                     <div
                                       className="progress-bar-fill"
-                                      style={{ width: `${progress}%` }}
+                                      style={{ width: progressPercentage }}
                                     ></div>
                                   </div>
                                   <div className="progress-text">

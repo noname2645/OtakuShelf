@@ -9,6 +9,8 @@ import BottomNavBar from './bottom.jsx';
 
 // API base URL
 const API = import.meta.env.VITE_API_BASE_URL;
+console.log(API);
+console.log("Frontend running in", import.meta.env.MODE);
 
 // Simple useInView hook that always returns true
 const useInView = () => {
