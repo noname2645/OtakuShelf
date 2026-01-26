@@ -1,9 +1,11 @@
 import express from "express";
 import fetch from "node-fetch";
+import axios from "axios";
 
 const router = express.Router();
 
 const ANILIST_URL = "https://graphql.anilist.co";
+const HF_AI_URL = "https://oceandiver2789-otakushelf-ai.hf.space/intent";
 
 async function fetchAnimeByGenres(genres, limit = 10) {
   const query = `
@@ -33,10 +35,7 @@ async function fetchAnimeByGenres(genres, limit = 10) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       query,
-      variables: {
-        genres,
-        perPage: limit,
-      },
+      variables: { genres, perPage: limit },
     }),
   });
 
@@ -44,24 +43,16 @@ async function fetchAnimeByGenres(genres, limit = 10) {
   return data?.data?.Page?.media || [];
 }
 
-
-// ✅ HF FastAPI endpoint (NOT Gradio)
-const HF_AI_URL =
-  "https://oceandiver2789-otakushelf-ai.hf.space/intent";
-
 router.post("/chat", async (req, res) => {
-  const userMessage = req.body.message;
+  const { message: userMessage, userId } = req.body;
 
-  // 🧠 DEFAULT FALLBACK INTENT (never crash)
   let intent = {
     genres: [],
     mood: "neutral",
     pacing: "medium",
   };
 
-  /* ================================
-     1️⃣ CALL HF AI INTENT ENGINE
-     ================================ */
+  // 1️⃣ AI INTENT
   try {
     const aiRes = await fetch(HF_AI_URL, {
       method: "POST",
@@ -71,28 +62,49 @@ router.post("/chat", async (req, res) => {
 
     const aiData = await aiRes.json();
 
-    console.log("HF RAW RESPONSE:", aiData);
+    // ✅ NEW HF FORMAT (preferred)
+    if (Array.isArray(aiData.genres)) {
+      intent = {
+        genres: aiData.genres,
+        mood: aiData.mood || "neutral",
+        pacing: aiData.pacing || "medium",
+      };
+    }
 
-    if (aiData && typeof aiData.intent === "string") {
-      const text = aiData.intent;
-
-      // 🔒 Extract FIRST valid JSON object only
-      const match = text.match(/\{[\s\S]*?\}/);
-
-      if (match) {
-        intent = JSON.parse(match[0]);
-      } else {
-        console.error("❌ No JSON found in AI response");
-      }
+    if (typeof aiData.intent === "string") {
+      const match = aiData.intent.match(/\{[\s\S]*?\}/);
+      if (match) intent = JSON.parse(match[0]);
     }
   } catch (err) {
     console.error("❌ HF AI error:", err.message);
   }
 
-  /* ================================
-     2️⃣ FETCH ANIME FROM ANILIST
-     ================================ */
+  // 2️⃣ USER LIST PERSONALIZATION
+  let completedIds = [];
+  let droppedIds = [];
 
+  if (userId) {
+    try {
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+      const listRes = await axios.get(
+        `${baseUrl}/api/list/${userId}`,
+        {
+          headers: {
+            Authorization: req.headers.authorization || ""
+          }
+        }
+      );
+
+      const list = listRes.data;
+      completedIds = (list.completed || []).map(a => a.animeId || a._id);
+      droppedIds = (list.dropped || []).map(a => a.animeId || a._id);
+    } catch (err) {
+      console.error("⚠️ Failed to fetch user list:", err.message);
+    }
+  }
+
+  // 3️⃣ ANILIST FETCH
   let animeList = [];
 
   try {
@@ -100,19 +112,19 @@ router.post("/chat", async (req, res) => {
       animeList = await fetchAnimeByGenres(intent.genres, 10);
     }
   } catch (err) {
-    console.error("❌ AniList fetch error:", err.message);
+    console.error("❌ AniList error:", err.message);
   }
 
+  // 4️⃣ FILTER COMPLETED / DROPPED
+  animeList = animeList.filter(
+    a => !completedIds.includes(a.id) && !droppedIds.includes(a.id)
+  );
 
-  /* ================================
-     3️⃣ SEND RESPONSE TO FRONTEND
-     ================================ */
-
+  // 5️⃣ RESPONSE
   res.json({
     reply: `I picked these based on your vibe: ${intent.genres.join(", ")}`,
     anime: animeList,
   });
-
 });
 
 export default router;

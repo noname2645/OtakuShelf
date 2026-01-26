@@ -1,5 +1,6 @@
 import { useState } from "react";
 import AnimeCard from "./animecard";
+import { useAuth } from '../components/AuthContext';
 
 const AIPage = () => {
     const [input, setInput] = useState("");
@@ -10,6 +11,7 @@ const AIPage = () => {
         if (!input.trim()) return;
 
         const userText = input;
+        const user = JSON.parse(localStorage.getItem("user"));
 
         // 1️⃣ Show USER message immediately
         setMessages((prev) => [
@@ -25,7 +27,7 @@ const AIPage = () => {
             const res = await fetch("http://localhost:5000/api/ai/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: userText }),
+                body: JSON.stringify({ message: userText, userId: user?.id || user?._id }),
             });
 
             const data = await res.json();
@@ -42,7 +44,7 @@ const AIPage = () => {
                 {
                     role: "ai",
                     text: data.reply,
-                    anime: data.anime || [],
+                    anime: data.anime || animeList || [],
                 },
             ]);
         } catch (err) {
