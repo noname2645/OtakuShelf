@@ -8,6 +8,7 @@ import Register from "../Frontend/components/register.jsx"
 import { AuthProvider } from "../Frontend/components/AuthContext.jsx"; 
 import AdvancedSearch from "../Frontend/components/advancedsearch.jsx"
 import Profile from "../Frontend/components/profile.jsx"
+import AIPage from "../Frontend/components/aipage.jsx"
 
 function App() {
   const router = createBrowserRouter([
@@ -38,6 +39,10 @@ function App() {
     {
       path: "/profile",
       element: <Profile />,
+    },
+      {
+      path: "/ai",
+      element: <AIPage />,
     },
   ]);
   

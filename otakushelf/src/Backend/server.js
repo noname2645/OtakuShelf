@@ -20,6 +20,7 @@ import { parse } from 'url';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import aiChat from "../Backend/aiChat.js";
 
 const envFile =
   process.env.NODE_ENV === "production"
@@ -1163,7 +1164,7 @@ app.use("/api/list/:userId", async (req, res, next) => {
 // =======================
 app.use('/api/anime', animeRoutes);
 app.use('/api/anilist', anilistRoutes);
-
+app.use("/api/ai", aiChat);
 app.use("/auth", (req, res, next) => next());
 app.use("/api", (req, res, next) => next());
 
