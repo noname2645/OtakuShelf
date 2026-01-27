@@ -10,6 +10,8 @@ const AIPage = () => {
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef(null);
 
+    const API = import.meta.env.VITE_API_BASE_URL;
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -35,7 +37,7 @@ const AIPage = () => {
 
         try {
             // 2️⃣ Send message to backend
-            const res = await fetch("http://localhost:5000/api/ai/chat", {
+            const res = await fetch(`${API}/api/ai/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: userText, userId: user?.id || user?._id }),
