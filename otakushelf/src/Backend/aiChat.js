@@ -7,22 +7,19 @@ const router = express.Router();
 const ANILIST_URL = "https://graphql.anilist.co";
 const HF_AI_URL = "https://oceandiver2789-otakushelf-ai.hf.space/intent";
 
-async function fetchAnimeByGenres(genres, limit = 10) {
+async function fetchAnimeByGenres(genres, excludedGenres = [], limit = 10) {
   const query = `
-    query ($genres: [String], $perPage: Int) {
+    query ($genres: [String], $excludedGenres: [String], $perPage: Int) {
       Page(perPage: $perPage) {
         media(
           type: ANIME,
           genre_in: $genres,
+          genre_not_in: $excludedGenres,
           sort: POPULARITY_DESC
         ) {
           id
-          title {
-            romaji
-          }
-          coverImage {
-            large
-          }
+          title { romaji }
+          coverImage { large }
           averageScore
           episodes
         }
@@ -35,7 +32,11 @@ async function fetchAnimeByGenres(genres, limit = 10) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       query,
-      variables: { genres, perPage: limit },
+      variables: {
+        genres,
+        excludedGenres,
+        perPage: limit,
+      },
     }),
   });
 
@@ -43,14 +44,17 @@ async function fetchAnimeByGenres(genres, limit = 10) {
   return data?.data?.Page?.media || [];
 }
 
+
 router.post("/chat", async (req, res) => {
   const { message: userMessage, userId } = req.body;
 
   let intent = {
-    genres: [],
+    includeGenres: [],
+    excludeGenres: [],
     mood: "neutral",
     pacing: "medium",
   };
+
 
   // 1️⃣ AI INTENT
   try {
@@ -63,13 +67,15 @@ router.post("/chat", async (req, res) => {
     const aiData = await aiRes.json();
 
     // ✅ NEW HF FORMAT (preferred)
-    if (Array.isArray(aiData.genres)) {
+    if (Array.isArray(aiData.includeGenres)) {
       intent = {
-        genres: aiData.genres,
+        includeGenres: aiData.includeGenres,
+        excludeGenres: aiData.excludeGenres || [],
         mood: aiData.mood || "neutral",
         pacing: aiData.pacing || "medium",
       };
     }
+
 
     if (typeof aiData.intent === "string") {
       const match = aiData.intent.match(/\{[\s\S]*?\}/);
@@ -106,10 +112,13 @@ router.post("/chat", async (req, res) => {
 
   // 3️⃣ ANILIST FETCH
   let animeList = [];
-
   try {
-    if (intent.genres.length > 0) {
-      animeList = await fetchAnimeByGenres(intent.genres, 10);
+    if (intent.includeGenres.length > 0) {
+      animeList = await fetchAnimeByGenres(
+        intent.includeGenres,
+        intent.excludeGenres,
+        10
+      );
     }
   } catch (err) {
     console.error("❌ AniList error:", err.message);
@@ -122,7 +131,7 @@ router.post("/chat", async (req, res) => {
 
   // 5️⃣ RESPONSE
   res.json({
-    reply: `I picked these based on your vibe: ${intent.genres.join(", ")}`,
+    reply: `I picked these based on your vibe: ${intent.includeGenres.join(", ")}`,
     anime: animeList,
   });
 });
