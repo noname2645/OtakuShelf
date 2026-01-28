@@ -8,9 +8,14 @@ const AIPage = () => {
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [conversationContext, setConversationContext] = useState({
+        mood: 'neutral',
+        suggestions: []
+    });
     const messagesEndRef = useRef(null);
 
     const API = import.meta.env.VITE_API_BASE_URL;
+    const user = JSON.parse(localStorage.getItem("user"));
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -18,54 +23,86 @@ const AIPage = () => {
 
     useEffect(() => {
         scrollToBottom();
+        // Load previous conversation from localStorage
+        const savedConvo = localStorage.getItem('ai_conversation');
+        if (savedConvo) {
+            setMessages(JSON.parse(savedConvo));
+        }
+    }, []);
+
+    // Save conversation to localStorage
+    useEffect(() => {
+        if (messages.length > 0) {
+            localStorage.setItem('ai_conversation', JSON.stringify(messages.slice(-50)));
+        }
     }, [messages]);
 
     const sendMessage = async () => {
         if (!input.trim()) return;
 
         const userText = input;
-        const user = JSON.parse(localStorage.getItem("user"));
 
-        // 1️⃣ Show USER message immediately
+        // Add user message
         setMessages((prev) => [
             ...prev,
-            { role: "user", text: userText },
+            {
+                role: "user",
+                text: userText,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                id: Date.now()
+            },
         ]);
 
         setInput("");
         setLoading(true);
 
         try {
-            // 2️⃣ Send message to backend
             const res = await fetch(`${API}/api/ai/chat`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: userText, userId: user?.id || user?._id }),
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify({
+                    message: userText,
+                    userId: user?._id || user?.id,
+                    context: conversationContext
+                }),
             });
 
             const data = await res.json();
 
-            // 3️⃣ Fetch anime details from AniList (if IDs provided)
-            let animeList = [];
-            if (data.anilistIds && data.anilistIds.length > 0) {
-                animeList = await fetchAnimeFromAnilist(data.anilistIds);
-            }
+            // Update conversation context
+            setConversationContext(prev => ({
+                ...prev,
+                mood: data.context?.mood || 'neutral',
+                suggestions: data.context?.suggestions || []
+            }));
 
-            // 4️⃣ Show AI message + anime cards
+            // Add AI message
             setMessages((prev) => [
                 ...prev,
                 {
                     role: "ai",
                     text: data.reply,
-                    anime: data.anime || animeList || [],
+                    anime: data.anime || [],
+                    context: data.context,
+                    suggestions: data.context?.suggestions || [],
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    mood: data.context?.mood || 'neutral',
+                    id: Date.now() + 1
                 },
             ]);
+
         } catch (err) {
             setMessages((prev) => [
                 ...prev,
                 {
                     role: "ai",
-                    text: "Backend not responding 😭",
+                    text: "Hmm, having a little trouble connecting. Try again in a moment! 🌸",
+                    isError: true,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    id: Date.now() + 1
                 },
             ]);
         } finally {
@@ -80,95 +117,188 @@ const AIPage = () => {
         }
     };
 
+    // Quick prompts for easy interaction
+    const quickPrompts = [
+        "Recommend me a comedy anime",
+        "I'm in the mood for something adventurous",
+        "What's similar to Jujutsu Kaisen?",
+        "Find me hidden gem anime",
+        "Recommend based on my watch list",
+        "What should I watch next?",
+        "Suggest a short anime series"
+    ];
+
+    // Handle quick prompt click
+    const handlePromptClick = (prompt) => {
+        setInput(prompt);
+        setTimeout(() => {
+            const sendBtn = document.querySelector('.send-button');
+            if (sendBtn && !sendBtn.disabled) {
+                sendMessage();
+            }
+        }, 100);
+    };
+
+    // Calculate conversation stats
+    const userMessagesCount = messages.filter(m => m.role === 'user').length;
+    const totalAnimeRecommended = messages.reduce((acc, msg) => acc + (msg.anime?.length || 0), 0);
+
     return (
         <>
-            <Header showSearch={false} onSearchChange={(value) => setSearchText(value)} />
-            {/* Bottom Navigation Component */}
+            <Header showSearch={false} />
             <BottomNavBar />
-            <div className="ai-page">
-                {/* CHAT CONTAINER */}
-                <div className="chat-container">
-                    <div className="messages-area">
+
+            <div className="ai-page-container">
+                <div className="ai-page-wrapper">
+                    {/* AI Companion Header Box */}
+                    <div className="ai-companion-box">
+
+                        {/* Quick Prompts */}
                         {messages.length === 0 && (
-                            <div className="welcome-message">
-                                <div className="welcome-icon">🎬</div>
-                                <h3>Welcome to OtakuShell AI</h3>
-                                <p>Ask me anything about anime! I can recommend shows, provide information, or help you discover new series.</p>
-                                <div className="example-queries">
-                                    <span className="example-tag">"Recommend me a psychological thriller anime"</span>
-                                    <span className="example-tag">"What's similar to Jujutsu Kaisen?"</span>
-                                    <span className="example-tag">"Tell me about the top romance anime from 2023"</span>
+                            <div className="quick-prompts-box">
+                                <p className="prompts-title">Try asking:</p>
+                                <div className="prompts-grid">
+                                    {quickPrompts.map((prompt, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handlePromptClick(prompt)}
+                                            className="prompt-chip"
+                                        >
+                                            {prompt}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         )}
 
-                        {messages.map((msg, i) => (
-                            <div key={i} className={`message-bubble ${msg.role}`}>
-                                <div className="message-header">
-                                    <div className={`message-avatar ${msg.role}`}>
-                                        {msg.role === "user" ? "👤" : "🤖"}
-                                    </div>
-                                    <div className="message-sender">
-                                        {msg.role === "user" ? "You" : "OtakuShell AI"}
-                                        <span className="message-time">Just now</span>
-                                    </div>
-                                </div>
-                                <div className="message-content">{msg.text}</div>
-
-                                {msg.anime && msg.anime.length > 0 && (
-                                    <div className="anime-results">
-                                        <div className="anime-cards-grid">
-                                            {msg.anime.map((a) => (
-                                                <AnimeCard key={a.id} anime={a} />
-                                            ))}
+                        {/* Chat Container Box */}
+                        <div className="chat-box">
+                            <div className="messages-box">
+                                {messages.length === 0 && (
+                                    <div className="welcome-message">
+                                        <div className="welcome-icon">🎬</div>
+                                        <h3>Welcome to OtakuShell AI Companion!</h3>
+                                        <p>I'm your personal anime buddy. I'll learn what you like and recommend perfect shows just for you!</p>
+                                        <div className="companion-features">
+                                            <div className="feature">
+                                                <span>✨</span> Personalized recommendations
+                                            </div>
+                                            <div className="feature">
+                                                <span>🎯</span> Based on your watch history
+                                            </div>
+                                            <div className="feature">
+                                                <span>🤖</span> Gets smarter as we chat
+                                            </div>
                                         </div>
                                     </div>
                                 )}
-                            </div>
-                        ))}
 
-                        {loading && (
-                            <div className="message-bubble ai">
-                                <div className="message-header">
-                                    <div className="message-avatar ai">🤖</div>
-                                    <div className="message-sender">
-                                        OtakuShell AI
-                                        <span className="message-time">Typing...</span>
-                                    </div>
-                                </div>
-                                <div className="message-content">
-                                    <div className="typing-indicator">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
+                                {messages.map((msg) => (
+                                    <div key={msg.id} className={`message-bubble ${msg.role} ${msg.mood || ''}`}>
+                                        <div className="message-header">
+                                            <div className={`message-avatar ${msg.role}`}>
+                                                {msg.role === "user" ? "👤" : "🤖"}
+                                            </div>
+                                            <div className="message-meta">
+                                                <span className="message-sender">
+                                                    {msg.role === "user" ? "You" : "Otaku AI"}
+                                                </span>
+                                                <span className="message-time">{msg.timestamp}</span>
+                                                {msg.mood && msg.role === 'ai' && (
+                                                    <span className={`message-mood mood-${msg.mood}`}>{msg.mood}</span>
+                                                )}
+                                            </div>
+                                        </div>
 
-                    {/* INPUT AREA */}
-                    <div className="input-container">
-                        <div className="input-wrapper">
-                            <input
-                                type="text"
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                placeholder="Ask for anime recommendations..."
-                                className="message-input"
-                            />
-                            <button
-                                onClick={sendMessage}
-                                className="send-button"
-                                disabled={loading || !input.trim()}
-                            >
-                                <span className="send-icon">➤</span>
-                            </button>
-                        </div>
-                        <div className="input-hint">
-                            Press Enter to send • Shift+Enter for new line
+                                        <div className="message-content">
+                                            {msg.text}
+                                            {msg.isError && <span className="error-indicator"> ⚠️</span>}
+                                        </div>
+
+                                        {/* Follow-up suggestions */}
+                                        {msg.suggestions && msg.suggestions.length > 0 && (
+                                            <div className="followup-suggestions">
+                                                <p className="suggestions-label">Quick follow-ups:</p>
+                                                <div className="suggestions-chips">
+                                                    {msg.suggestions.map((suggestion, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            onClick={() => setInput(suggestion)}
+                                                            className="suggestion-chip"
+                                                        >
+                                                            {suggestion}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Anime Recommendations */}
+                                        {msg.anime && msg.anime.length > 0 && (
+                                            <div className="anime-recommendations-box">
+                                                <div className="recommendations-header">
+                                                    <h4>✨ Personalized Recommendations</h4>
+                                                    <p>Based on our conversation</p>
+                                                </div>
+                                                <div className="anime-cards-grid">
+                                                    {msg.anime.map((a) => (
+                                                        <AnimeCard
+                                                            key={a.id}
+                                                            anime={a}
+                                                            showAddButton={true}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {loading && (
+                                    <div className="message-bubble ai loading">
+                                        <div className="message-header">
+                                            <div className="message-avatar ai">🤖</div>
+                                            <div className="message-meta">
+                                                <span className="message-sender">Otaku AI</span>
+                                                <span className="message-time">Typing...</span>
+                                            </div>
+                                        </div>
+                                        <div className="message-content">
+                                            <div className="typing-indicator">
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {/* Input Area */}
+
+                            <div className="input-wrapper">
+                                <input
+                                    type="text"
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    placeholder="Type your message here..."
+                                    className="message-input"
+                                    disabled={loading}
+                                />
+                                <button
+                                    onClick={sendMessage}
+                                    className="send-button"
+                                    disabled={loading || !input.trim()}
+                                >
+                                    {loading ? (
+                                        <span className="loading-dots">⏳</span>
+                                    ) : (
+                                        <span className="send-icon">➤</span>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

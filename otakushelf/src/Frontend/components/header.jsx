@@ -132,7 +132,7 @@ export const Header = ({ showSearch = true, onSearchChange }) => {
     return (
         <header className={`header ${isScrolled ? "scrolled" : ""}`}>
             <div className="header-center">
-                {showSearch && (
+                {showSearch ? (
                     <div className={`InputContainer ${onSearchChange ? "active" : ""}`}>
                         <input
                             placeholder="Quick Search (Title Only)"
@@ -143,8 +143,13 @@ export const Header = ({ showSearch = true, onSearchChange }) => {
                             onKeyDown={handleKeyDown}
                         />
                     </div>
+                ) : (
+                    <div className="otaku-ai-label">
+                        🤖 <span>OtakuAI</span>
+                    </div>
                 )}
             </div>
+
             <div className="logo">
                 <Link to="/">
                     <span>OtakuShelf</span>

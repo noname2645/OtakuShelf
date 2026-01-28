@@ -17,6 +17,29 @@
       font-family: 'Bricolage Grotesque', sans-serif;
 }
 
+.otaku-ai-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 0.9;
+    transform: translateY(0);
+  }
+}
+
+
 
 /* Default transparent background */
 .header:not(.scrolled) {
