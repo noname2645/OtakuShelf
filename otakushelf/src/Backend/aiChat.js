@@ -1,75 +1,64 @@
 import express from "express";
 import fetch from "node-fetch";
 import axios from "axios";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from "dotenv";
 
 const router = express.Router();
 
 const ANILIST_URL = "https://graphql.anilist.co";
-const HF_AI_URL = "https://oceandiver2789-otakushelf-ai.hf.space/intent";
+
+const envFile =
+    process.env.NODE_ENV === "production"
+        ? ".env.production"
+        : ".env.development";
+
+dotenv.config({ path: envFile });
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+// console.log("GEMINI KEY:", process.env.GEMINI_API_KEY);
 
 // ============================================
-// 🧠 MODE DETECTOR - Friend first, recommender second
+// 🧠 CLEAN GEMINI CHAT (ONLY CONVERSATION)
 // ============================================
-function isRecommendationRequest(message) {
-    if (!message || typeof message !== 'string') return false;
-    
-    const msg = message.toLowerCase().trim();
-    
-    // If message is very short, assume casual chat
-    if (msg.length < 5) return false;
-    
-    // Clear recommendation triggers
-    const recommendationTriggers = [
-        "recommend", "suggest", "what should i watch",
-        "anime like", "something like", "similar to",
-        "give me anime", "find anime", "search for",
-        "any good anime", "what to watch", "need recommendations",
-        "show me anime", "what anime", "recommendations"
-    ];
-    
-    return recommendationTriggers.some(trigger => msg.includes(trigger));
-}
-
-// Simple casual chat handler
-async function handleCasualChat(message) {
-    const casualResponses = [
-        "Haha yeah, anime is awesome! What's on your mind? 😄",
-        "I love chatting about anime! Tell me more ✨",
-        "That's interesting! Want to talk about your favorite shows? 🎌",
-        "Oh cool! What's your take on that? 🤔",
-        "Nice! As an anime buddy, I'm always here to chat! 🌸",
-        "Hehe, tell me more! I'm all ears 👂",
-        "That's fun! Want to share your anime thoughts? 💭",
-        "Yeah! Anything specific you want to discuss? 🎬",
-        "I feel you! Anime has so many cool aspects to talk about 🎯",
-        "Totally! What's your current watch? 📺"
-    ];
-    
-    // Try AI chat first, fallback to simple responses
+async function getGeminiChatResponse(userMessage, userId = null, userMemory = null) {
     try {
-        const chatRes = await axios.post(HF_AI_URL, {
-            message: `
-You are OtakuAI, a friendly anime buddy.
-Rules:
-- Casual conversation only
-- No anime recommendations
-- No anime titles
-- Be short, chill, friendly
-- Ask light follow-up questions sometimes
+        const model = genAI.getGenerativeModel({
+            model: "gemini-3-flash-preview",
+        });
 
-User says: "${message}"
-`
-        }, { timeout: 5000 });
-        
-        return chatRes.data.reply || casualResponses[Math.floor(Math.random() * casualResponses.length)];
+        // Build simple history context
+        let history = "";
+        if (userMemory && userMemory.conversationHistory.length > 0) {
+            const recent = userMemory.conversationHistory
+                .slice(-3)
+                .map(chat => `User: ${chat.userMessage}\nYou: ${chat.aiResponse}`)
+                .join('\n\n');
+            history = `Previous conversation:\n${recent}\n\n`;
+        }
+
+        // SIMPLE PROMPT - NO TOOL LOGIC
+        const prompt = `${history}
+You are OtakuAI, a friendly anime fan chatting with a friend.
+Be natural, enthusiastic, and conversational.
+Just respond to what the user says.
+
+User: "${userMessage}"
+You:`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text().trim();
+
     } catch (error) {
-        console.log("Using fallback casual response");
-        return casualResponses[Math.floor(Math.random() * casualResponses.length)];
+        console.error("Gemini error:", error.message);
+        return "Hmm, I'm having trouble connecting! Try again? 😅";
     }
 }
 
 // ============================================
-// 🔧 IN-MEMORY USER MEMORY SYSTEM
+// 📊 USER MEMORY (KEEP IT)
 // ============================================
 const userMemories = new Map();
 
@@ -79,37 +68,23 @@ class UserMemory {
         this.conversationHistory = [];
         this.preferences = {
             favoriteGenres: [],
-            dislikedGenres: [],
-            preferredMood: "neutral",
             watchHistory: []
         };
-        this.personalityScore = {
-            casual: 0,
-            formal: 0,
-            enthusiastic: 0
-        };
         this.lastInteraction = Date.now();
-        this.interactionCount = 0;
     }
 
-    addConversation(userMessage, aiResponse, intent) {
+    addConversation(userMessage, aiResponse) {
         this.conversationHistory.push({
             userMessage,
             aiResponse,
-            intent,
             timestamp: new Date().toISOString()
         });
 
-        if (this.conversationHistory.length > 15) {
+        if (this.conversationHistory.length > 10) {
             this.conversationHistory.shift();
         }
 
         this.lastInteraction = Date.now();
-        this.interactionCount++;
-
-        if (userMessage.includes("!")) this.personalityScore.enthusiastic++;
-        if (userMessage.length < 20) this.personalityScore.casual++;
-        if (userMessage.includes("please") || userMessage.includes("thank")) this.personalityScore.formal++;
     }
 
     updatePreferencesFromAnimeList(animeList) {
@@ -130,230 +105,34 @@ class UserMemory {
 
         this.preferences.favoriteGenres = Object.entries(genreCount)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
+            .slice(0, 3)
             .map(([genre]) => genre);
-
-        this.preferences.watchHistory = allAnime.map(a => ({
-            title: a.title,
-            rating: a.userRating || null,
-            status: a.status || 'unknown'
-        }));
     }
 }
 
 // ============================================
-// 🎭 PERSONALITY SYSTEM
+// 🎬 ANIME FETCH (SIMPLE)
 // ============================================
-const PERSONALITY_RESPONSES = {
-    greetings: [
-        "Hey there! Ready to find some awesome anime? 🎬",
-        "Welcome back! I've been thinking about what you might like today! ✨",
-        "Nice to see you! Let's chat about anime! 🌸",
-        "Hey anime buddy! What's on your mind today? 🎌"
-    ],
-    recommendations: [
-        "Based on your vibe, I think you'd love these! ✨",
-        "Ooh, great choice! Here are some similar picks: 🎯",
-        "I've got some perfect matches for what you're looking for! 🎌",
-        "Check these out! They match what you're looking for perfectly! 🌟"
-    ],
-    casual: [
-        "That's a great question! Let me think... 🤔",
-        "Oh, I love talking about that! Here's what I know: 🗣️",
-        "Hmm, let me dig into my anime database for you! 📚",
-        "Interesting! Let me share some thoughts about that! 💭"
-    ],
-    question: [
-        "Great question! Here's what I can tell you: 📖",
-        "I've got the answer for you! 🎯",
-        "Let me explain that to you! 📝",
-        "Here's what you need to know about that: 🧠"
-    ]
-};
-
-const MOOD_EMOJIS = {
-    neutral: "🎬",
-    excited: "✨",
-    chill: "🌸",
-    curious: "🤔",
-    adventurous: "🗺️",
-    romantic: "💖",
-    suspenseful: "🔍"
-};
-
-// ============================================
-// 🔧 HELPER FUNCTIONS
-// ============================================
-function analyzeMessageType(message) {
-    const msg = message.toLowerCase();
-
-    if (msg.includes("recommend") || msg.includes("suggest") || msg.includes("what should i watch")) {
-        return "recommendation";
-    }
-    if (msg.includes("like") || msg.includes("similar to") || msg.includes("same as")) {
-        return "similar";
-    }
-    if (msg.includes("?") || msg.includes("what is") || msg.includes("tell me about") || msg.includes("how")) {
-        return "question";
-    }
-    if (msg.includes("hi") || msg.includes("hello") || msg.includes("hey") || msg.includes("greetings")) {
-        return "greeting";
-    }
-    if (msg.includes("thank") || msg.includes("thanks")) {
-        return "thanks";
-    }
-    return "casual";
-}
-
-function generatePersonalityReply(baseReply, messageType, userMemory) {
-    const replies = PERSONALITY_RESPONSES[messageType] || PERSONALITY_RESPONSES.casual;
-    let personalityFlair = replies[Math.floor(Math.random() * replies.length)];
-
-    if (userMemory && userMemory.interactionCount > 3 && Math.random() > 0.6) {
-        personalityFlair = "Hey again! " + personalityFlair;
-    }
-
-    return `${personalityFlair}\n\n${baseReply}`;
-}
-
-function generateFollowupSuggestions(messageType, intent, userMemory) {
-    const suggestions = [];
-
-    if (messageType === "recommendation") {
-        suggestions.push(
-            "Show me more like these",
-            "Recommend something different",
-            "What's popular this season?",
-            "Find me hidden gems"
-        );
-    } else if (messageType === "similar") {
-        suggestions.push(
-            "Find anime with similar themes",
-            "Recommend something from different genres",
-            "Show me highly rated ones"
-        );
-    } else if (messageType === "question") {
-        suggestions.push(
-            "Tell me more about that",
-            "What else should I know?",
-            "Recommend anime about this topic"
-        );
-    } else {
-        suggestions.push(
-            "Recommend me a comedy anime",
-            "What should I watch next?",
-            "Find hidden gems for me",
-            "What's trending right now?"
-        );
-    }
-
-    if (userMemory && userMemory.preferences.favoriteGenres.length > 0) {
-        const randomGenre = userMemory.preferences.favoriteGenres[
-            Math.floor(Math.random() * userMemory.preferences.favoriteGenres.length)
-        ];
-        suggestions.push(`Find more ${randomGenre} anime`);
-    }
-
-    return suggestions.slice(0, 4);
-}
-
-function detectMoodFromMessage(message) {
-    const msg = message.toLowerCase();
-
-    if (msg.includes("excited") || msg.includes("awesome") || msg.includes("amazing")) return "excited";
-    if (msg.includes("chill") || msg.includes("relax") || msg.includes("calm")) return "chill";
-    if (msg.includes("adventure") || msg.includes("explore") || msg.includes("journey")) return "adventurous";
-    if (msg.includes("romance") || msg.includes("love") || msg.includes("relationship")) return "romantic";
-    if (msg.includes("mystery") || msg.includes("thriller") || msg.includes("suspense")) return "suspenseful";
-    if (msg.includes("curious") || msg.includes("wonder") || msg.includes("ask")) return "curious";
-
-    return "neutral";
-}
-
-// ============================================
-// 🎬 ANILIST FETCH FUNCTION
-// ============================================
-async function fetchAnimeByGenres(genres, excludedGenres = [], limit = 10, mood = "neutral") {
-    let query;
-    
-    if (mood === "chill" || mood === "casual") {
-        query = `
-            query ($genres: [String], $excludedGenres: [String], $perPage: Int) {
-                Page(perPage: $perPage) {
-                    media(
-                        type: ANIME,
-                        genre_in: $genres,
-                        genre_not_in: $excludedGenres,
-                        sort: POPULARITY_DESC,
-                        format_in: [TV, MOVIE]
-                    ) {
-                        id
-                        title { romaji english }
-                        coverImage { large extraLarge }
-                        averageScore
-                        episodes
-                        format
-                        status
-                        description
-                        genres
-                    }
+async function fetchAnimeByGenres(genres, limit = 8) {
+    const query = `
+        query ($genres: [String], $perPage: Int) {
+            Page(perPage: $perPage) {
+                media(
+                    type: ANIME,
+                    genre_in: $genres,
+                    sort: POPULARITY_DESC
+                ) {
+                    id
+                    title { romaji english }
+                    coverImage { large }
+                    averageScore
+                    episodes
+                    description
+                    genres
                 }
             }
-        `;
-    } else if (mood === "excited" || mood === "adventurous") {
-        query = `
-            query ($genres: [String], $excludedGenres: [String], $perPage: Int) {
-                Page(perPage: $perPage) {
-                    media(
-                        type: ANIME,
-                        genre_in: $genres,
-                        genre_not_in: $excludedGenres,
-                        sort: SCORE_DESC,
-                        averageScore_greater: 70
-                    ) {
-                        id
-                        title { romaji english }
-                        coverImage { large extraLarge }
-                        averageScore
-                        episodes
-                        format
-                        status
-                        description
-                        genres
-                    }
-                }
-            }
-        `;
-    } else {
-        query = `
-            query ($genres: [String], $excludedGenres: [String], $perPage: Int) {
-                Page(perPage: $perPage) {
-                    media(
-                        type: ANIME,
-                        genre_in: $genres,
-                        genre_not_in: $excludedGenres,
-                        sort: POPULARITY_DESC
-                    ) {
-                        id
-                        title { romaji english }
-                        coverImage { large extraLarge }
-                        averageScore
-                        episodes
-                        format
-                        status
-                        description
-                        genres
-                    }
-                }
-            }
-        `;
-    }
-
-    const variables = {
-        genres,
-        excludedGenres,
-        perPage: limit,
-    };
+        }
+    `;
 
     try {
         const res = await fetch(ANILIST_URL, {
@@ -361,338 +140,145 @@ async function fetchAnimeByGenres(genres, excludedGenres = [], limit = 10, mood 
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 query,
-                variables,
+                variables: { genres, perPage: limit }
             }),
         });
 
         const data = await res.json();
         return data?.data?.Page?.media || [];
     } catch (err) {
-        console.error("❌ AniList fetch error:", err.message);
+        console.error("AniList error:", err.message);
         return [];
     }
 }
 
 // ============================================
-// 🎯 MAIN CHAT ENDPOINT (WITH MODE DETECTION)
+// 🎯 MAIN ENDPOINT (CLEAN FLOW)
 // ============================================
 router.post("/chat", async (req, res) => {
     const { message: userMessage, userId } = req.body;
 
-    console.log(`🤖 AI Chat request from user ${userId || 'anonymous'}: "${userMessage}"`);
+    console.log(`💬 User ${userId || 'guest'}: "${userMessage}"`);
 
-    // 🧠 MODE SWITCH - Friend first, recommender second
-    const wantsRecommendation = isRecommendationRequest(userMessage);
-
-    // ============================================
-    // 🗣️ MODE 1: CASUAL CHAT (NO RECOMMENDATIONS)
-    // ============================================
-    if (!wantsRecommendation) {
-        try {
-            const casualReply = await handleCasualChat(userMessage);
-            
-            // Update memory if user exists
-            if (userId) {
-                if (!userMemories.has(userId)) {
-                    userMemories.set(userId, new UserMemory(userId));
-                }
-                const userMemory = userMemories.get(userId);
-                userMemory.addConversation(userMessage, casualReply, { mode: "casual" });
-            }
-
-            return res.json({
-                reply: casualReply,
-                anime: [] // 👈 NO CARDS FOR CASUAL CHAT
-            });
-        } catch (error) {
-            console.error("Casual chat error:", error);
-            return res.json({
-                reply: "Heh 😅 what's on your mind?",
-                anime: []
-            });
-        }
-    }
-
-    // ============================================
-    // 🎬 MODE 2: RECOMMENDATION MODE
-    // ============================================
-    
-    // 1️⃣ INITIALIZE USER MEMORY
+    // 1. Get user memory
     let userMemory = null;
     if (userId) {
         if (!userMemories.has(userId)) {
             userMemories.set(userId, new UserMemory(userId));
         }
         userMemory = userMemories.get(userId);
-
-        // Clean old memories
-        const now = Date.now();
-        if (now - userMemory.lastInteraction > 24 * 60 * 60 * 1000) {
-            userMemories.delete(userId);
-            userMemories.set(userId, new UserMemory(userId));
-            userMemory = userMemories.get(userId);
-        }
     }
 
-    // 2️⃣ ANALYZE MESSAGE
-    const messageType = analyzeMessageType(userMessage);
-    const userMood = detectMoodFromMessage(userMessage);
-
-    let intent = {
-        includeGenres: [],
-        excludeGenres: [],
-        mood: userMood,
-        pacing: "medium",
-        messageType: messageType
-    };
-
-    // 3️⃣ AI INTENT PROCESSING
-    try {
-        const aiRes = await fetch(HF_AI_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: userMessage }),
-        });
-
-        const aiData = await aiRes.json();
-
-        if (Array.isArray(aiData.includeGenres)) {
-            intent = {
-                includeGenres: aiData.includeGenres,
-                excludeGenres: aiData.excludeGenres || [],
-                mood: aiData.mood || userMood,
-                pacing: aiData.pacing || "medium",
-                messageType: messageType
-            };
-        }
-
-        if (typeof aiData.intent === "string") {
-            const match = aiData.intent.match(/\{[\s\S]*?\}/);
-            if (match) {
-                const parsedIntent = JSON.parse(match[0]);
-                intent = {
-                    ...intent,
-                    ...parsedIntent,
-                    messageType: messageType
-                };
-            }
-        }
-    } catch (err) {
-        console.error("❌ HF AI error:", err.message);
-        const fallbackGenres = detectGenresFromMessage(userMessage);
-        intent.includeGenres = fallbackGenres;
-    }
-
-    // 4️⃣ FETCH USER ANIME LIST
+    // 2. Get user's anime list (for filtering only)
     let completedIds = [];
-    let droppedIds = [];
-    let userAnimeList = { watching: [], completed: [], planned: [], dropped: [] };
-
-    if (userId) {
+    if (userId && userMemory) {
         try {
             const baseUrl = `${req.protocol}://${req.get("host")}`;
-            const authHeader = req.headers.authorization || "";
-
             const listRes = await axios.get(
                 `${baseUrl}/api/list/${userId}`,
                 {
                     headers: {
-                        Authorization: authHeader,
+                        Authorization: req.headers.authorization || "",
                         "Content-Type": "application/json"
                     }
                 }
             );
 
-            userAnimeList = listRes.data;
+            const userAnimeList = listRes.data;
             completedIds = (userAnimeList.completed || []).map(a => a.animeId || a._id || a.id);
-            droppedIds = (userAnimeList.dropped || []).map(a => a.animeId || a._id || a.id);
+            userMemory.updatePreferencesFromAnimeList(userAnimeList);
 
-            if (userMemory) {
-                userMemory.updatePreferencesFromAnimeList(userAnimeList);
-            }
         } catch (err) {
-            console.error("⚠️ Failed to fetch user list:", err.message);
+            console.log("Skipping user list fetch");
         }
     }
 
-    // 5️⃣ FETCH ANIME RECOMMENDATIONS
-    let animeList = [];
-    try {
-        let genresToSearch = intent.includeGenres;
+    // 3. GET AI REPLY FIRST (ALWAYS)
+    const aiReply = await getGeminiChatResponse(userMessage, userId, userMemory);
 
-        if (genresToSearch.length === 0 && userMemory && userMemory.preferences.favoriteGenres.length > 0) {
-            genresToSearch = userMemory.preferences.favoriteGenres.slice(0, 3);
-        }
+    // 4. CHECK FOR ANIME REQUEST (SIMPLE)
+    let animeCards = [];
+    const lowerMsg = userMessage.toLowerCase();
 
-        if (genresToSearch.length === 0) {
-            genresToSearch = ["Action", "Adventure", "Fantasy"];
-        }
+    // SIMPLE RULE: Only show cards if user explicitly asks
+    const isAskingForAnime =
+        lowerMsg.includes("recommend") ||
+        lowerMsg.includes("suggest") ||
+        lowerMsg.includes("find me anime") ||
+        lowerMsg.includes("what should i watch");
 
-        if (genresToSearch.length > 0) {
-            animeList = await fetchAnimeByGenres(
-                genresToSearch,
-                intent.excludeGenres,
-                12,
-                intent.mood
-            );
-        }
-    } catch (err) {
-        console.error("❌ AniList fetch error:", err.message);
-    }
+    if (isAskingForAnime) {
+        console.log("🎬 User wants anime recommendations");
 
-    // 6️⃣ FILTER ALREADY WATCHED
-    animeList = animeList.filter(
-        a => !completedIds.includes(a.id.toString()) && !droppedIds.includes(a.id.toString())
-    );
-    animeList = animeList.slice(0, 8);
+        // Simple genre detection - just use first matching genre or user's favorites
+        let genres = [];
 
-    // 7️⃣ GENERATE REPLY
-    let reply = "";
-    switch (messageType) {
-        case "greeting":
-            reply = PERSONALITY_RESPONSES.greetings[Math.floor(Math.random() * PERSONALITY_RESPONSES.greetings.length)];
-            break;
-        case "recommendation":
-            reply = intent.includeGenres.length > 0 
-                ? `I found some great ${intent.includeGenres.join(", ")} anime for you!`
-                : "I've got some awesome anime recommendations for you!";
-            break;
-        case "similar":
-            reply = "Here are some anime similar to what you're looking for!";
-            break;
-        case "question":
-            reply = "Great question! Here's what I can tell you about that topic.";
-            break;
-        case "thanks":
-            reply = "You're welcome! Always happy to help a fellow anime fan! 😊";
-            break;
-        default:
-            reply = intent.includeGenres.length > 0
-                ? `Talking about ${intent.includeGenres.join(", ")}? Here are some great picks!`
-                : "Here are some anime I think you'll enjoy!";
-    }
+        // Check for genre keywords in message
+        const genreKeywords = {
+            "action": ["action", "fight", "battle"],
+            "comedy": ["comedy", "funny", "humor"],
+            "romance": ["romance", "love", "romantic"],
+            "fantasy": ["fantasy", "magic", "isekai"],
+            "drama": ["drama", "emotional"],
+            "sci-fi": ["sci-fi", "science fiction", "space"]
+        };
 
-    // Personal touches
-    if (userMemory) {
-        if (userMemory.interactionCount > 1 && Math.random() > 0.7) {
-            reply = `Welcome back! ${reply}`;
-        }
-        
-        if (userMemory.preferences.favoriteGenres.length > 0) {
-            const mentionedGenres = intent.includeGenres.filter(genre =>
-                userMemory.preferences.favoriteGenres.includes(genre)
-            );
-            if (mentionedGenres.length > 0) {
-                reply += `\n\nI know you love ${mentionedGenres.join(" and ")} anime, so these should be perfect!`;
+        for (const [genre, keywords] of Object.entries(genreKeywords)) {
+            if (keywords.some(keyword => lowerMsg.includes(keyword))) {
+                genres.push(genre.charAt(0).toUpperCase() + genre.slice(1));
+                break; // Just use first found genre
             }
         }
-    }
 
-    const moodEmoji = MOOD_EMOJIS[intent.mood] || MOOD_EMOJIS.neutral;
-    reply += ` ${moodEmoji}`;
-    reply = generatePersonalityReply(reply, messageType, userMemory);
-
-    // 8️⃣ UPDATE MEMORY
-    if (userMemory) {
-        userMemory.addConversation(userMessage, reply, intent);
-    }
-
-    // 9️⃣ PREPARE RESPONSE
-    const suggestions = generateFollowupSuggestions(messageType, intent, userMemory);
-    
-    const response = {
-        reply: reply,
-        anime: animeList,
-        context: {
-            messageType: messageType,
-            genres: intent.includeGenres,
-            mood: intent.mood,
-            personalized: !!userMemory,
-            conversationCount: userMemory ? userMemory.interactionCount : 0,
-            favoriteGenres: userMemory ? userMemory.preferences.favoriteGenres.slice(0, 3) : [],
-            suggestions: suggestions,
-            mode: "recommendation" // Track which mode we're in
+        // If no genre in message, use user's favorites
+        if (genres.length === 0 && userMemory && userMemory.preferences.favoriteGenres.length > 0) {
+            genres = [userMemory.preferences.favoriteGenres[0]]; // Just one genre
         }
+
+        // Default fallback
+        if (genres.length === 0) {
+            genres = ["Action"];
+        }
+
+        console.log(`🔍 Using genre: ${genres[0]}`);
+
+        // Fetch anime
+        animeCards = await fetchAnimeByGenres(genres, 10);
+
+        // Filter out watched
+        animeCards = animeCards.filter(a => !completedIds.includes(a.id.toString()));
+
+        // Limit to 6
+        animeCards = animeCards.slice(0, 6);
+
+        console.log(`✅ Found ${animeCards.length} anime`);
+    }
+
+    // 5. Update memory
+    if (userMemory) {
+        userMemory.addConversation(userMessage, aiReply);
+    }
+
+    // 6. Return
+    const response = {
+        reply: aiReply,
+        anime: animeCards
     };
 
-    console.log(`✅ Response ready with ${animeList.length} anime recommendations`);
+    console.log(`🤖 Response ready`);
     res.json(response);
 });
 
 // ============================================
-// 🎯 FALLBACK GENRE DETECTION
-// ============================================
-function detectGenresFromMessage(message) {
-    const msg = message.toLowerCase();
-    const genreKeywords = {
-        "Action": ["action", "fight", "battle", "combat"],
-        "Adventure": ["adventure", "journey", "explore"],
-        "Comedy": ["comedy", "funny", "humor", "jokes"],
-        "Drama": ["drama", "emotional", "serious"],
-        "Fantasy": ["fantasy", "magic", "isekai", "reincarnation"],
-        "Horror": ["horror", "scary", "creepy", "fear"],
-        "Mystery": ["mystery", "detective", "investigation"],
-        "Romance": ["romance", "love", "romantic", "relationship"],
-        "Sci-Fi": ["sci-fi", "science fiction", "space", "future"],
-        "Slice of Life": ["slice of life", "daily life", "chill", "relaxing"],
-        "Sports": ["sports", "athlete", "competition"],
-        "Supernatural": ["supernatural", "ghost", "spirits"],
-        "Suspense": ["suspense", "tense"],
-        "Thriller": ["thriller", "psychological", "mind game"]
-    };
-
-    const detectedGenres = [];
-    for (const [genre, keywords] of Object.entries(genreKeywords)) {
-        for (const keyword of keywords) {
-            if (msg.includes(keyword)) {
-                if (!detectedGenres.includes(genre)) {
-                    detectedGenres.push(genre);
-                }
-                break;
-            }
-        }
-    }
-
-    return detectedGenres.slice(0, 3);
-}
-
-// ============================================
-// 🧹 CLEANUP OLD MEMORIES
+// 🧹 CLEANUP
 // ============================================
 setInterval(() => {
     const now = Date.now();
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-
     for (const [userId, memory] of userMemories.entries()) {
-        if (now - memory.lastInteraction > twentyFourHours) {
+        if (now - memory.lastInteraction > 24 * 60 * 60 * 1000) {
             userMemories.delete(userId);
-            console.log(`🧹 Cleaned up old memory for user ${userId}`);
         }
     }
 }, 60 * 60 * 1000);
-
-// ============================================
-// 📊 DEBUG ENDPOINT
-// ============================================
-router.get("/debug/memory/:userId", (req, res) => {
-    const { userId } = req.params;
-
-    if (userMemories.has(userId)) {
-        const memory = userMemories.get(userId);
-        res.json({
-            userId,
-            conversationCount: memory.conversationHistory.length,
-            lastInteraction: new Date(memory.lastInteraction).toISOString(),
-            favoriteGenres: memory.preferences.favoriteGenres,
-            personalityScore: memory.personalityScore,
-            recentConversations: memory.conversationHistory.slice(-3)
-        });
-    } else {
-        res.json({
-            message: "No memory found for this user",
-            userId
-        });
-    }
-});
 
 export default router;
