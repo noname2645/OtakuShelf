@@ -12,23 +12,77 @@ const AIPage = () => {
         mood: 'neutral',
         suggestions: []
     });
+    const [showScrollButton, setShowScrollButton] = useState(false);
     const messagesEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
 
     const API = import.meta.env.VITE_API_BASE_URL;
     const user = JSON.parse(localStorage.getItem("user"));
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Auto-scroll to bottom when new messages are added
+    const scrollToBottom = (instant = false) => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ 
+                behavior: instant ? "auto" : "smooth" 
+            });
+        }
     };
 
+    // Check if user has scrolled up
+    const checkScrollPosition = () => {
+        if (chatContainerRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+            const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+            setShowScrollButton(!isNearBottom);
+        }
+    };
+
+    // Scroll to bottom button handler
+    const handleScrollToBottom = () => {
+        scrollToBottom(true);
+    };
+
+    // Effect for auto-scrolling when messages change
     useEffect(() => {
-        scrollToBottom();
-        // Load previous conversation from localStorage
+        // Auto-scroll when:
+        // 1. User sends a message (loading starts)
+        // 2. AI responds (loading ends)
+        if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage.role === "user" || (!loading && lastMessage.role === "ai")) {
+                setTimeout(() => scrollToBottom(), 100);
+            }
+        }
+    }, [messages, loading]);
+
+    // Effect for initial scroll and scroll event listener
+    useEffect(() => {
+        // Load previous conversation
         const savedConvo = localStorage.getItem('ai_conversation');
         if (savedConvo) {
-            setMessages(JSON.parse(savedConvo));
+            const parsedConvo = JSON.parse(savedConvo);
+            setMessages(parsedConvo);
+            // Scroll to bottom after messages are loaded
+            setTimeout(() => scrollToBottom(true), 300);
         }
+
+        // Add scroll event listener
+        const chatContainer = chatContainerRef.current;
+        if (chatContainer) {
+            chatContainer.addEventListener('scroll', checkScrollPosition);
+        }
+
+        return () => {
+            if (chatContainer) {
+                chatContainer.removeEventListener('scroll', checkScrollPosition);
+            }
+        };
     }, []);
+
+    // Check scroll position when messages change
+    useEffect(() => {
+        setTimeout(() => checkScrollPosition(), 100);
+    }, [messages, loading]);
 
     // Save conversation to localStorage
     useEffect(() => {
@@ -55,6 +109,9 @@ const AIPage = () => {
 
         setInput("");
         setLoading(true);
+
+        // Auto-scroll to show user message immediately
+        setTimeout(() => scrollToBottom(), 50);
 
         try {
             const res = await fetch(`${API}/api/ai/chat`, {
@@ -139,10 +196,6 @@ const AIPage = () => {
         }, 100);
     };
 
-    // Calculate conversation stats
-    const userMessagesCount = messages.filter(m => m.role === 'user').length;
-    const totalAnimeRecommended = messages.reduce((acc, msg) => acc + (msg.anime?.length || 0), 0);
-
     return (
         <>
             <Header showSearch={false} />
@@ -173,7 +226,11 @@ const AIPage = () => {
 
                         {/* Chat Container Box */}
                         <div className="chat-box">
-                            <div className="messages-box">
+                            <div 
+                                className="messages-box" 
+                                ref={chatContainerRef}
+                                onScroll={checkScrollPosition}
+                            >
                                 {messages.length === 0 && (
                                     <div className="welcome-message">
                                         <div className="welcome-icon">🎬</div>
@@ -275,8 +332,18 @@ const AIPage = () => {
                                 <div ref={messagesEndRef} />
                             </div>
 
-                            {/* Input Area */}
+                            {/* Scroll to bottom button - appears when user scrolls up */}
+                            {showScrollButton && messages.length > 2 && (
+                                <button 
+                                    className="scroll-to-bottom-btn"
+                                    onClick={handleScrollToBottom}
+                                    title="Scroll to latest message"
+                                >
+                                    ↓
+                                </button>
+                            )}
 
+                            {/* Input Area */}
                             <div className="input-wrapper">
                                 <input
                                     type="text"
