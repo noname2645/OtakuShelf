@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
 /* Main Section - Fullscreen */
 .trailer-hero-section {
     position: fixed;
@@ -182,8 +184,8 @@
 
 /* Anime Title */
 .anime-title {
-    font-family: "Misrow", sans-serif;
-    font-size: 3rem;
+    font-family: "Outfit", sans-serif;
+    font-size: 2.5rem;
     font-weight: 900;
     margin-bottom: 0.8rem;
     line-height: 1.2;
@@ -224,7 +226,7 @@
 
 /* Anime Description */
 .anime-description {
-    font-family: "Coolvetica", sans-serif;
+    font-family: "Josefin Sans", sans-serif;
     font-size: 1.2rem;
     line-height: 1.4;
     margin-bottom: 1.2rem;

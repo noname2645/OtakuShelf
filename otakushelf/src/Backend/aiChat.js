@@ -1,7 +1,6 @@
 import express from "express";
 import fetch from "node-fetch";
 import axios from "axios";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 
 const router = express.Router();
@@ -15,45 +14,70 @@ const envFile =
 
 dotenv.config({ path: envFile });
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-// console.log("GEMINI KEY:", process.env.GEMINI_API_KEY);
+// OpenRouter configuration
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MODEL = "meta-llama/llama-3.1-8b-instruct";
 
 // ============================================
-// 🧠 CLEAN GEMINI CHAT (ONLY CONVERSATION)
+// 🧠 OPENROUTER CHAT
 // ============================================
-async function getGeminiChatResponse(userMessage, userId = null, userMemory = null) {
+async function getOpenRouterResponse(userMessage, userId = null, userMemory = null) {
     try {
-        const model = genAI.getGenerativeModel({
-            model: "gemini-3-flash-preview",
+        // Build conversation history
+        const messages = [];
+        
+        // Add system prompt
+        messages.push({
+            role: "system",
+            content: `You are OtakuAI, a friendly anime fan chatting with a friend.
+            Be natural, enthusiastic, and conversational.
+            Keep responses concise and engaging.
+            If the user asks for anime recommendations, acknowledge it naturally but keep your response brief.
+            Don't list specific anime titles in your response - the system will handle recommendations separately.`
         });
 
-        // Build simple history context
-        let history = "";
+        // Add conversation history if available
         if (userMemory && userMemory.conversationHistory.length > 0) {
-            const recent = userMemory.conversationHistory
-                .slice(-3)
-                .map(chat => `User: ${chat.userMessage}\nYou: ${chat.aiResponse}`)
-                .join('\n\n');
-            history = `Previous conversation:\n${recent}\n\n`;
+            const recentHistory = userMemory.conversationHistory.slice(-3);
+            recentHistory.forEach(chat => {
+                messages.push({ role: "user", content: chat.userMessage });
+                messages.push({ role: "assistant", content: chat.aiResponse });
+            });
         }
 
-        // SIMPLE PROMPT - NO TOOL LOGIC
-        const prompt = `${history}
-You are OtakuAI, a friendly anime fan chatting with a friend.
-Be natural, enthusiastic, and conversational.
-Just respond to what the user says.
+        // Add current user message
+        messages.push({ role: "user", content: userMessage });
 
-User: "${userMessage}"
-You:`;
+        // Make API call to OpenRouter
+        const response = await fetch(OPENROUTER_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+                "HTTP-Referer": "https://otakushell.com",
+                "X-Title": "OtakuShell AI Companion"
+            },
+            body: JSON.stringify({
+                model: MODEL,
+                messages: messages,
+                temperature: 0.7,
+                max_tokens: 500,
+            })
+        });
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text().trim();
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("OpenRouter API error:", response.status, errorText);
+            throw new Error(`OpenRouter API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.choices[0].message.content.trim();
 
     } catch (error) {
-        console.error("Gemini error:", error.message);
-        return "Hmm, I'm having trouble connecting! Try again? 😅";
+        console.error("OpenRouter error:", error.message);
+        return "Hmm, I'm having trouble connecting to my brain! Try again? 😅";
     }
 }
 
@@ -152,8 +176,27 @@ async function fetchAnimeByGenres(genres, limit = 8) {
     }
 }
 
+// Helper function for follow-up suggestions
+function getFollowupSuggestions(message, genres) {
+    const suggestions = [];
+    
+    if (message.includes("recommend") || message.includes("suggest")) {
+        suggestions.push(
+            "Can you suggest more like these?",
+            "What are some hidden gems?",
+            "Show me popular ones from this genre"
+        );
+    }
+    
+    if (genres.length > 0) {
+        suggestions.push(`Find me more ${genres[0].toLowerCase()} anime`);
+    }
+    
+    return suggestions.slice(0, 3);
+}
+
 // ============================================
-// 🎯 MAIN ENDPOINT (CLEAN FLOW)
+// 🎯 MAIN ENDPOINT
 // ============================================
 router.post("/chat", async (req, res) => {
     const { message: userMessage, userId } = req.body;
@@ -193,46 +236,50 @@ router.post("/chat", async (req, res) => {
         }
     }
 
-    // 3. GET AI REPLY FIRST (ALWAYS)
-    const aiReply = await getGeminiChatResponse(userMessage, userId, userMemory);
+    // 3. GET AI REPLY FROM OPENROUTER
+    const aiReply = await getOpenRouterResponse(userMessage, userId, userMemory);
 
     // 4. CHECK FOR ANIME REQUEST (SIMPLE)
     let animeCards = [];
     const lowerMsg = userMessage.toLowerCase();
+    let genres = []; 
 
     // SIMPLE RULE: Only show cards if user explicitly asks
     const isAskingForAnime =
         lowerMsg.includes("recommend") ||
         lowerMsg.includes("suggest") ||
         lowerMsg.includes("find me anime") ||
-        lowerMsg.includes("what should i watch");
+        lowerMsg.includes("what should i watch") ||
+        lowerMsg.includes("anime to watch") ||
+        lowerMsg.includes("something to watch");
 
     if (isAskingForAnime) {
         console.log("🎬 User wants anime recommendations");
 
-        // Simple genre detection - just use first matching genre or user's favorites
-        let genres = [];
 
         // Check for genre keywords in message
         const genreKeywords = {
-            "action": ["action", "fight", "battle"],
-            "comedy": ["comedy", "funny", "humor"],
+            "action": ["action", "fight", "battle", "shonen"],
+            "comedy": ["comedy", "funny", "humor", "slice of life"],
             "romance": ["romance", "love", "romantic"],
             "fantasy": ["fantasy", "magic", "isekai"],
-            "drama": ["drama", "emotional"],
-            "sci-fi": ["sci-fi", "science fiction", "space"]
+            "drama": ["drama", "emotional", "serious"],
+            "sci-fi": ["sci-fi", "science fiction", "space", "cyberpunk"],
+            "adventure": ["adventure", "journey", "explore"],
+            "mystery": ["mystery", "detective", "thriller"],
+            "horror": ["horror", "scary", "psychological"]
         };
 
         for (const [genre, keywords] of Object.entries(genreKeywords)) {
             if (keywords.some(keyword => lowerMsg.includes(keyword))) {
                 genres.push(genre.charAt(0).toUpperCase() + genre.slice(1));
-                break; // Just use first found genre
+                break;
             }
         }
 
         // If no genre in message, use user's favorites
         if (genres.length === 0 && userMemory && userMemory.preferences.favoriteGenres.length > 0) {
-            genres = [userMemory.preferences.favoriteGenres[0]]; // Just one genre
+            genres = [userMemory.preferences.favoriteGenres[0]];
         }
 
         // Default fallback
@@ -243,7 +290,7 @@ router.post("/chat", async (req, res) => {
         console.log(`🔍 Using genre: ${genres[0]}`);
 
         // Fetch anime
-        animeCards = await fetchAnimeByGenres(genres, 10);
+        animeCards = await fetchAnimeByGenres(genres, 12);
 
         // Filter out watched
         animeCards = animeCards.filter(a => !completedIds.includes(a.id.toString()));
@@ -251,7 +298,7 @@ router.post("/chat", async (req, res) => {
         // Limit to 6
         animeCards = animeCards.slice(0, 6);
 
-        console.log(`✅ Found ${animeCards.length} anime`);
+        console.log(`✅ Found ${animeCards.length} anime recommendations`);
     }
 
     // 5. Update memory
@@ -259,13 +306,17 @@ router.post("/chat", async (req, res) => {
         userMemory.addConversation(userMessage, aiReply);
     }
 
-    // 6. Return
+    // 6. Return response
     const response = {
         reply: aiReply,
-        anime: animeCards
+        anime: animeCards,
+        context: {
+            mood: 'neutral',
+            suggestions: getFollowupSuggestions(lowerMsg, genres || [])
+        }
     };
 
-    console.log(`🤖 Response ready`);
+    console.log(`🤖 Response ready with ${animeCards.length} anime cards`);
     res.json(response);
 });
 

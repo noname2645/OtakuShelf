@@ -20,7 +20,7 @@ import { parse } from 'url';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import aiChat from "../Backend/aiChat.js";
+import aiChat from "./aiChat.js";  
 
 const envFile =
   process.env.NODE_ENV === "production"

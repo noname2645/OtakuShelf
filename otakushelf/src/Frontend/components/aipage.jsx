@@ -44,9 +44,6 @@ const AIPage = () => {
 
     // Effect for auto-scrolling when messages change
     useEffect(() => {
-        // Auto-scroll when:
-        // 1. User sends a message (loading starts)
-        // 2. AI responds (loading ends)
         if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
             if (lastMessage.role === "user" || (!loading && lastMessage.role === "ai")) {
@@ -235,16 +232,16 @@ const AIPage = () => {
                                     <div className="welcome-message">
                                         <div className="welcome-icon">🎬</div>
                                         <h3>Welcome to OtakuShell AI Companion!</h3>
-                                        <p>I'm your personal anime buddy. I'll learn what you like and recommend perfect shows just for you!</p>
+                                        <p>Now powered by Llama 3.1! I'll recommend perfect anime shows just for you!</p>
                                         <div className="companion-features">
                                             <div className="feature">
-                                                <span>✨</span> Personalized recommendations
+                                                <span>✨</span> Smart recommendations
                                             </div>
                                             <div className="feature">
                                                 <span>🎯</span> Based on your watch history
                                             </div>
                                             <div className="feature">
-                                                <span>🤖</span> Gets smarter as we chat
+                                                <span>🤖</span> Powered by Llama 3.1
                                             </div>
                                         </div>
                                     </div>
