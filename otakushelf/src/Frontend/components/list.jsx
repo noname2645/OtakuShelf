@@ -591,7 +591,7 @@ const EnhancedAnimeList = () => {
 
   return (
     <>
-      <Header showSearch={true} onSearchChange={() => { }} />
+      <Header showSearch={false}/>
       <BottomNavBar />
       <div className="enhanced-anime-list">
         <div className="list-header">

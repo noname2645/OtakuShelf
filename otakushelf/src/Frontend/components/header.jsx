@@ -117,7 +117,7 @@ export const Header = ({ showSearch = true, onSearchChange }) => {
 
     useEffect(() => {
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 600);
+            setIsScrolled(window.scrollY > 100);
         };
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
