@@ -618,27 +618,17 @@
   transition: clip-path 0.35s ease;
 }
 
-/* Vertical progress divider */
-.progress-divider {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(var(--progress) * 1%);
-  width: 2px;
-  width: 3px;
-  background: linear-gradient(to bottom,
-      rgba(255, 255, 255, 0.9),
-      rgba(255, 255, 255, 0.4),
-      rgba(255, 255, 255, 0.9));
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
-  z-index: 3;
-  transition: left 0.35s ease;
-}
 
 /* Hover → full color */
 .anime-card3:hover .poster-img.grayscale {
   filter: grayscale(0%);
   opacity: 1;
+}
+
+.anime-card3:hover .anime-title-card {
+  filter: grayscale(0%);
+  opacity: 1;
+  color: #ff6a00;
 }
 
 .anime-card3:hover .poster-img.color {
@@ -653,6 +643,14 @@
 .anime-card3.status-completed .poster-img.grayscale {
   filter: grayscale(0%);
   opacity: 1;
+}
+
+.anime-card3.status-completed .anime-title-card {
+  filter: grayscale(0%);
+  opacity: 1;
+  color: #ff6a00;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
 .anime-card3.status-completed .poster-img.color {
@@ -811,7 +809,7 @@
 }
 
 .anime-title-card {
-  font-family: 'Poppins', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-weight: 600;
   font-size: 1.2rem;
   color: white;
@@ -953,7 +951,6 @@
   align-items: center;
   padding: 60px 20px;
   color: white;
-  font-family: 'Poppins', sans-serif;
   text-align: center;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 20px;

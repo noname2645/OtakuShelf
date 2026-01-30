@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Lobster+Two:ital,wght@0,400;0,700;1,400;1,700&family=Outfit:wght@100..900&family=SN+Pro:ital,wght@0,200..900;1,200..900&display=swap');
+
+
 /* ============================================
    🎌 AI CHAT PAGE STYLES - BOXED CONTAINER
    ============================================ */
@@ -333,14 +336,6 @@ body {
     font-size: 0.8rem;
 }
 
-.message-mood {
-    padding: 0.2rem 0.6rem;
-    border-radius: 10px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: capitalize;
-}
-
 .mood-excited {
     background: #fef3c7;
     color: #92400e;
@@ -372,6 +367,8 @@ body {
 }
 
 .message-content {
+    font-family: "Google Sans Flex", sans-serif;
+    font-size: 1.05em;
     padding: 1rem;
     line-height: 1.5;
     position: relative;

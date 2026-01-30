@@ -258,9 +258,6 @@ const AIPage = () => {
                                                     {msg.role === "user" ? "You" : "Otaku AI"}
                                                 </span>
                                                 <span className="message-time">{msg.timestamp}</span>
-                                                {msg.mood && msg.role === 'ai' && (
-                                                    <span className={`message-mood mood-${msg.mood}`}>{msg.mood}</span>
-                                                )}
                                             </div>
                                         </div>
 

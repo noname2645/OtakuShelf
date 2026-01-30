@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Mulish:ital,wght@0,200..1000;1,200..1000&family=Nata+Sans:wght@100..900&family=Playwrite+AU+QLD:wght@100..400&family=Roboto:ital,wght@0,100..900;1,100..900&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Lobster+Two:ital,wght@0,400;0,700;1,400;1,700&family=Outfit:wght@100..900&family=SN+Pro:ital,wght@0,200..900;1,200..900&display=swap');
+
 
 * {
   margin: 0;
@@ -153,27 +155,89 @@
 }
 
 /* Staggered delays */
-.anime-grid .anime-card2:nth-child(1) { animation-delay: 0.05s; }
-.anime-grid .anime-card2:nth-child(2) { animation-delay: 0.1s; }
-.anime-grid .anime-card2:nth-child(3) { animation-delay: 0.15s; }
-.anime-grid .anime-card2:nth-child(4) { animation-delay: 0.2s; }
-.anime-grid .anime-card2:nth-child(5) { animation-delay: 0.25s; }
-.anime-grid .anime-card2:nth-child(6) { animation-delay: 0.3s; }
-.anime-grid .anime-card2:nth-child(7) { animation-delay: 0.35s; }
-.anime-grid .anime-card2:nth-child(8) { animation-delay: 0.4s; }
-.anime-grid .anime-card2:nth-child(9) { animation-delay: 0.45s; }
-.anime-grid .anime-card2:nth-child(10) { animation-delay: 0.5s; }
-.anime-grid .anime-card2:nth-child(11) { animation-delay: 0.55s; }
-.anime-grid .anime-card2:nth-child(12) { animation-delay: 0.6s; }
-.anime-grid .anime-card2:nth-child(13) { animation-delay: 0.65s; }
-.anime-grid .anime-card2:nth-child(14) { animation-delay: 0.7s; }
-.anime-grid .anime-card2:nth-child(15) { animation-delay: 0.75s; }
-.anime-grid .anime-card2:nth-child(16) { animation-delay: 0.8s; }
-.anime-grid .anime-card2:nth-child(17) { animation-delay: 0.85s; }
-.anime-grid .anime-card2:nth-child(18) { animation-delay: 0.9s; }
-.anime-grid .anime-card2:nth-child(19) { animation-delay: 0.95s; }
-.anime-grid .anime-card2:nth-child(20) { animation-delay: 1s; }
-.anime-grid .anime-card2:nth-child(n+21) { animation-delay: 1s; }
+.anime-grid .anime-card2:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.anime-grid .anime-card2:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.anime-grid .anime-card2:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.anime-grid .anime-card2:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.anime-grid .anime-card2:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+.anime-grid .anime-card2:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+.anime-grid .anime-card2:nth-child(7) {
+  animation-delay: 0.35s;
+}
+
+.anime-grid .anime-card2:nth-child(8) {
+  animation-delay: 0.4s;
+}
+
+.anime-grid .anime-card2:nth-child(9) {
+  animation-delay: 0.45s;
+}
+
+.anime-grid .anime-card2:nth-child(10) {
+  animation-delay: 0.5s;
+}
+
+.anime-grid .anime-card2:nth-child(11) {
+  animation-delay: 0.55s;
+}
+
+.anime-grid .anime-card2:nth-child(12) {
+  animation-delay: 0.6s;
+}
+
+.anime-grid .anime-card2:nth-child(13) {
+  animation-delay: 0.65s;
+}
+
+.anime-grid .anime-card2:nth-child(14) {
+  animation-delay: 0.7s;
+}
+
+.anime-grid .anime-card2:nth-child(15) {
+  animation-delay: 0.75s;
+}
+
+.anime-grid .anime-card2:nth-child(16) {
+  animation-delay: 0.8s;
+}
+
+.anime-grid .anime-card2:nth-child(17) {
+  animation-delay: 0.85s;
+}
+
+.anime-grid .anime-card2:nth-child(18) {
+  animation-delay: 0.9s;
+}
+
+.anime-grid .anime-card2:nth-child(19) {
+  animation-delay: 0.95s;
+}
+
+.anime-grid .anime-card2:nth-child(20) {
+  animation-delay: 1s;
+}
+
+.anime-grid .anime-card2:nth-child(n+21) {
+  animation-delay: 1s;
+}
 
 /* Simple fade-in-up animation - ensure this exists */
 @keyframes fadeInUp {
@@ -181,6 +245,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -421,17 +486,20 @@
 .anime-sections .divider::before {
   left: 0;
   transform: translateX(-10px);
+  transform: translateY(-8px);
 }
 
 .anime-sections .divider::after {
   right: 0;
   transform: translateX(10px);
+  transform: translateY(-10px);
+
   background: linear-gradient(90deg, #ff5252, transparent);
 }
 
 .anime-sections .divider .divider-content {
-  font-family: "Dynamix", sans-serif;
-  font-size: 2.5rem;
+  font-family: "SN Pro", sans-serif;
+  font-size: 4rem;
   color: #ff6b6b;
   font-weight: 600;
   display: inline-block;
@@ -440,13 +508,9 @@
   position: relative;
   z-index: 1;
   transition: all 0.3s ease;
+  margin-bottom: 20px;
 }
 
-.anime-sections .divider .divider-content:hover {
-  color: #ff5252;
-  transform: translateY(-2px);
-  text-shadow: 0 4px 12px rgba(255, 82, 82, 0.3);
-}
 
 /* Enhanced Anime Grid - Responsive */
 .anime-grid {
@@ -511,8 +575,6 @@
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* display: -webkit-box; */
-  /* -webkit-box-orient: vertical; */
   color: #ff6a00;
   text-shadow: 0 0 8px rgba(190, 79, 0, 0.5);
 }
@@ -589,6 +651,7 @@
 /* Add to existing mobile responsive styles in home.css */
 
 @media (max-width: 992px) {
+
   /* Adjust animation delays for mobile */
   .anime-grid .anime-card2:nth-child(n) {
     animation-delay: calc(var(--index, 0) * 0.03s);
@@ -603,6 +666,7 @@
     transform: none !important;
   }
 }
+
 /* Tablet (768px and below) */
 @media (max-width: 768px) {
   .anime-grid {
@@ -631,11 +695,6 @@
   .anime-sections .divider::after {
     width: 35% !important;
   }
-
-
-
-
-
 
 
 
