@@ -602,6 +602,70 @@ const EnhancedAnimeList = () => {
     return <Navigate to="/login" replace />;
   }
 
+  const handleRatingChange = useCallback(async (anime, newRating) => {
+    if (!user || !user._id) {
+      alert('Please log in to rate anime');
+      return;
+    }
+
+    const userId = user._id;
+    const animeId = anime._id || anime.animeId;
+
+    // Update local state immediately for better UX
+    updateAnimeInList(animeId, { userRating: newRating });
+
+    try {
+      await axios.put(
+        `${API}/api/list/${userId}/${animeId}`,
+        {
+          userRating: newRating,
+          status: anime.status || activeTab
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          }
+        }
+      );
+    } catch (err) {
+      console.error("Failed to update rating", err);
+      // Revert on error
+      updateAnimeInList(animeId, { userRating: anime.userRating || 0 });
+      alert('Failed to save rating. Please try again.');
+    }
+  }, [user, updateAnimeInList]);
+
+  // Add this Star Rating Component inside your component
+  const StarRating = ({ rating, onRatingChange, disabled = false }) => {
+    const [hoverRating, setHoverRating] = useState(0);
+
+    return (
+      <div className="star-rating">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            className={`star-btn ${star <= (hoverRating || rating) ? 'active' : ''}`}
+            onClick={() => !disabled && onRatingChange(star)}
+            onMouseEnter={() => !disabled && setHoverRating(star)}
+            onMouseLeave={() => !disabled && setHoverRating(0)}
+            disabled={disabled}
+            title={`${star}/10`}
+          >
+            <Star
+              size={16}
+              fill={star <= (hoverRating || rating) ? "#ffd700" : "none"}
+              color={star <= (hoverRating || rating) ? "#ffd700" : "#ccc"}
+            />
+          </button>
+        ))}
+        <span className="rating-text">
+          {rating > 0 ? `${rating}/10` : 'Rate'}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <>
       <Header showSearch={false} />
@@ -748,8 +812,11 @@ const EnhancedAnimeList = () => {
                                 </div>
                                 <div className="rating-section">
                                   <div className="rating-left">
-                                    <Star size={16} className="star-icon" />
-                                    <span>{userRating > 0 ? `${userRating}/5` : 'Not rated'}</span>
+                                    <StarRating
+                                      rating={userRating || 0}
+                                      onRatingChange={(newRating) => handleRatingChange(anime, newRating)}
+                                      disabled={!user}
+                                    />
                                   </div>
                                   <button
                                     className="action-btn remove-btn-card"

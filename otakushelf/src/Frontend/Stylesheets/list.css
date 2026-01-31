@@ -871,12 +871,6 @@
   font-weight: 500;
 }
 
-.rating-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .dropvalue option {
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
@@ -903,15 +897,42 @@
   margin-left: 8%;
 }
 
-.rating-section {
+/* Star Rating Styles */
+.star-rating {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 0.9rem;
+  gap: 2px;
 }
 
+.star-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.star-btn:hover:not(:disabled) {
+  transform: scale(1.2);
+}
+
+.star-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.star-btn.active .star-icon {
+  fill: #ffd700;
+  color: #ffd700;
+}
+
+.rating-text {
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  min-width: 60px;
+}
 
 .star-icon {
   color: #fbbf24;

@@ -1355,7 +1355,7 @@ app.get("/api/profile/:userId/badges", async (req, res) => {
 
 app.put("/api/list/:userId/:animeId", async (req, res) => {
   try {
-    const { episodesWatched, status } = req.body;
+    const { episodesWatched, status, userRating } = req.body; // Add userRating
     const { userId, animeId } = req.params;
 
     const list = await AnimeList.findOne({ userId });
@@ -1380,6 +1380,11 @@ app.put("/api/list/:userId/:animeId", async (req, res) => {
 
     if (episodesWatched !== undefined) {
       anime.episodesWatched = episodesWatched;
+    }
+
+    // ADD THIS: Handle rating update
+    if (userRating !== undefined) {
+      anime.userRating = userRating;
     }
 
     if (status && categories.includes(status) && status !== currentCategory) {
