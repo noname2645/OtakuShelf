@@ -20,7 +20,7 @@ import { parse } from 'url';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import aiChat from "./aiChat.js";  
+import aiChat from "./aiChat.js";
 
 const envFile =
   process.env.NODE_ENV === "production"
@@ -30,11 +30,9 @@ const envFile =
 dotenv.config({ path: envFile });
 
 console.log("Loaded env file:", envFile);
-console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -45,20 +43,16 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 const isProduction = process.env.NODE_ENV === 'production';
 
-// CRITICAL: Trust proxy for Render deployment
 app.set('trust proxy', 1);
 
-// FIXED: File upload middleware MUST come first
 app.use(fileUpload({
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 },
   useTempFiles: false,
   createParentPath: true
 }));
 
-// Serve static files from uploads directory - MUST BE BEFORE OTHER MIDDLEWARE
 app.use('/uploads', express.static(uploadsDir));
 
-// Middleware
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
@@ -66,12 +60,9 @@ const allowedOrigins = [
   "https://otakushelf-uuvw.onrender.com"
 ];
 
-// Enhanced CORS configuration
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -82,13 +73,12 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200 // For legacy browser support
+  optionsSuccessStatus: 200
 }));
 
 app.use(express.json());
 app.use(compression());
 
-// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/animeApp", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -96,7 +86,6 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/animeApp", 
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.error("MongoDB Error:", err));
 
-// FIXED: Session middleware with proper production settings
 app.use(session({
   secret: process.env.SESSION_SECRET || "mysecret",
   resave: false,
@@ -106,28 +95,23 @@ app.use(session({
     collectionName: 'sessions'
   }),
   cookie: {
-    secure: isProduction, // Only use secure cookies in production (HTTPS)
+    secure: isProduction,
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24, // 24 hours
-    sameSite: isProduction ? 'none' : 'lax' // Important for cross-site requests in production
+    maxAge: 1000 * 60 * 60 * 24,
+    sameSite: isProduction ? 'none' : 'lax'
   },
-  name: 'sessionId' // Change default session name for security
+  name: 'sessionId'
 }));
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-// =======================
-// User Schema + Model
-// =======================
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String },
   authType: { type: String, enum: ["local", "google"], required: true },
   photo: { type: String },
   name: { type: String },
-
-  // NEW: Profile Fields
   profile: {
     username: { type: String, unique: true, sparse: true },
     bio: { type: String, default: "" },
@@ -162,23 +146,35 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
+// FIXED: Improved Jikan image fetching with better rate limiting
 const jikanImageCache = new Map();
-const jikanGenreCache = new Map();
+let lastJikanRequest = 0;
+const JIKAN_DELAY = 1000; // 1 second between requests
 
 const fetchJikanImage = async (malId) => {
   if (jikanImageCache.has(malId)) {
     return jikanImageCache.get(malId);
   }
 
+  // Rate limiting
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastJikanRequest;
+
+  if (timeSinceLastRequest < JIKAN_DELAY) {
+    await new Promise(resolve => setTimeout(resolve, JIKAN_DELAY - timeSinceLastRequest));
+  }
+
   try {
+    lastJikanRequest = Date.now();
+
     const res = await axios.get(
       `https://api.jikan.moe/v4/anime/${malId}`,
       {
         headers: {
-          "User-Agent": "OtakuShelf/1.0 (contact: dev@otakushelf.app)",
+          "User-Agent": "OtakuShelf/1.0",
           "Accept": "application/json"
         },
-        timeout: 15000
+        timeout: 10000
       }
     );
 
@@ -187,94 +183,21 @@ const fetchJikanImage = async (malId) => {
     return image;
   } catch (err) {
     if (err.response?.status === 429) {
-      console.warn("Jikan rate limit hit. Skipping further image fetches.");
+      console.warn("Jikan rate limit hit. Waiting 5 seconds...");
+      await new Promise(resolve => setTimeout(resolve, 5000));
       return null;
     }
-    console.error(`Jikan fetch failed for MAL ID ${malId}`, err.response?.status, err.response?.data || err.message);
+    if (err.response?.status === 404) {
+      console.log(`Jikan: Anime ${malId} not found`);
+      jikanImageCache.set(malId, null);
+      return null;
+    }
+    console.error(`Jikan fetch failed for MAL ID ${malId}:`, err.message);
+    jikanImageCache.set(malId, null);
     return null;
   }
 };
 
-const fetchAniListGenres = async (malId) => {
-  if (!malId) return [];
-
-  if (jikanGenreCache.has(malId)) {
-    return jikanGenreCache.get(malId);
-  }
-
-  try {
-    const query = `
-      query ($idMal: Int) {
-        Media(idMal: $idMal, type: ANIME) {
-          genres
-        }
-      }
-    `;
-
-    const res = await axios.post(
-      "https://graphql.anilist.co",
-      {
-        query,
-        variables: { idMal: Number(malId) }
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        timeout: 15000
-      }
-    );
-
-    const genres = res.data?.data?.Media?.genres || [];
-    jikanGenreCache.set(malId, genres);
-    return genres;
-
-  } catch (err) {
-    if (err.response?.status === 429) {
-      console.warn("⚠️ AniList rate limit hit! Waiting 60 seconds...");
-      await new Promise(resolve => setTimeout(resolve, 60000));
-      
-      console.log("↻ Retrying after wait...");
-      try {
-        const retryRes = await axios.post(
-          "https://graphql.anilist.co",
-          {
-            query: `
-              query ($idMal: Int) {
-                Media(idMal: $idMal, type: ANIME) {
-                  genres
-                }
-              }
-            `,
-            variables: { idMal: Number(malId) }
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            timeout: 15000
-          }
-        );
-
-        const retryGenres = retryRes.data?.data?.Media?.genres || [];
-        jikanGenreCache.set(malId, retryGenres);
-        return retryGenres;
-      } catch (retryErr) {
-        console.error("❌ Retry also failed:", retryErr.message);
-        return [];
-      }
-    }
-
-    console.error(`AniList genre fetch failed for MAL ID ${malId}`, err.response?.data || err.message);
-    return [];
-  }
-};
-
-// =======================
-// Anime List Schema
-// =======================
 const animeListSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   watching: [{
@@ -336,7 +259,6 @@ const animeListSchema = new mongoose.Schema({
 
 const AnimeList = mongoose.model("AnimeList", animeListSchema);
 
-// Passport Google Strategy
 passport.use(new GoogleStrategy(
   {
     clientID: process.env.GOOGLE_CLIENT_ID,
@@ -385,14 +307,8 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// =======================
-// API ROUTES
-// =======================
-
-// Health check
 app.get('/healthz', (req, res) => res.send('ok'));
 
-// FIXED: Auth routes with better error handling
 app.post("/auth/register", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -452,9 +368,6 @@ app.post("/auth/login", async (req, res) => {
 
       const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "24h" });
 
-      console.log('User logged in successfully:', email);
-      console.log('Session ID:', req.sessionID);
-
       res.json({
         message: "Login successful!",
         user: {
@@ -489,7 +402,6 @@ app.get("/auth/google/callback",
   }
 );
 
-// Enhanced user info endpoint
 app.get("/auth/me", (req, res) => {
   const authHeader = req.headers["authorization"];
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -520,7 +432,6 @@ app.get("/auth/me", (req, res) => {
   }
 });
 
-// Enhanced logout endpoint
 app.get("/auth/logout", (req, res) => {
   const userEmail = req.user ? req.user.email : 'unknown';
 
@@ -544,11 +455,6 @@ app.get("/auth/logout", (req, res) => {
   });
 });
 
-// =======================
-// PROFILE API ROUTES - UPDATED FOR FILE UPLOADS
-// =======================
-
-// Upload profile picture - STORES AS FILE, NOT BASE64
 app.post("/api/profile/:userId/upload-photo", async (req, res) => {
   try {
     if (!req.files || !req.files.photo) {
@@ -558,29 +464,23 @@ app.post("/api/profile/:userId/upload-photo", async (req, res) => {
     const photo = req.files.photo;
     const { userId } = req.params;
 
-    // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(photo.mimetype)) {
       return res.status(400).json({ message: "Invalid image type. Use JPEG, PNG, or WebP" });
     }
 
-    // Validate file size (max 2MB)
     if (photo.size > 2 * 1024 * 1024) {
       return res.status(400).json({ message: "Image too large (max 2MB)" });
     }
 
-    // Generate unique filename
     const fileExt = photo.name.split('.').pop()?.toLowerCase() || 'jpg';
     const safeFileName = `${userId}_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filepath = path.join(uploadsDir, safeFileName);
 
-    // Save file
     await photo.mv(filepath);
 
-    // Generate URL for the uploaded file
     const photoUrl = `/uploads/${safeFileName}`;
-    
-    // Update user with URL (not base64!)
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { photo: photoUrl },
@@ -590,13 +490,13 @@ app.post("/api/profile/:userId/upload-photo", async (req, res) => {
     res.json({
       success: true,
       message: "Photo uploaded successfully",
-      photo: photoUrl, // URL, not base64!
+      photo: photoUrl,
       user: updatedUser
     });
 
   } catch (err) {
     console.error('Photo upload error:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Error uploading photo",
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -604,7 +504,6 @@ app.post("/api/profile/:userId/upload-photo", async (req, res) => {
   }
 });
 
-// Upload profile COVER image - STORES AS FILE, NOT BASE64
 app.post("/api/profile/:userId/upload-cover", async (req, res) => {
   try {
     if (!req.files || !req.files.cover) {
@@ -614,24 +513,19 @@ app.post("/api/profile/:userId/upload-cover", async (req, res) => {
     const cover = req.files.cover;
     const { userId } = req.params;
 
-    // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(cover.mimetype)) {
       return res.status(400).json({ message: "Invalid image type. Use JPEG, PNG, or WebP" });
     }
 
-
-    // Generate unique filename
     const fileExt = cover.name.split('.').pop()?.toLowerCase() || 'jpg';
     const safeFileName = `cover_${userId}_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filepath = path.join(uploadsDir, safeFileName);
 
-    // Save file
     await cover.mv(filepath);
 
-    // Generate URL
     const coverUrl = `/uploads/${safeFileName}`;
-    
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { "profile.coverImage": coverUrl },
@@ -641,20 +535,19 @@ app.post("/api/profile/:userId/upload-cover", async (req, res) => {
     res.json({
       success: true,
       message: "Cover image uploaded successfully",
-      coverImage: coverUrl, 
+      coverImage: coverUrl,
       user: updatedUser
     });
 
   } catch (err) {
     console.error('Cover upload error:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Error uploading cover image" 
+      message: "Error uploading cover image"
     });
   }
 });
 
-// Get user profile - CLEAN BASE64 BEFORE SENDING
 app.get("/api/profile/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -664,19 +557,16 @@ app.get("/api/profile/:userId", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Convert user to plain object
     const userObj = user.toObject();
-    
-    // Remove any base64 image data that might be stored
+
     if (userObj.photo && userObj.photo.startsWith('data:image')) {
       userObj.photo = null;
     }
-    
+
     if (userObj.profile?.coverImage && userObj.profile.coverImage.startsWith('data:image')) {
       userObj.profile.coverImage = null;
     }
 
-    // Calculate dynamic stats from anime list
     const animeList = await AnimeList.findOne({ userId });
 
     let stats = {
@@ -696,7 +586,6 @@ app.get("/api/profile/:userId", async (req, res) => {
       stats.animePlanned = animeList.planned?.length || 0;
       stats.animeDropped = animeList.dropped?.length || 0;
 
-      // Calculate total episodes watched
       let totalEpisodes = 0;
       let totalRatings = 0;
       let ratingCount = 0;
@@ -721,13 +610,10 @@ app.get("/api/profile/:userId", async (req, res) => {
       stats.favorites = animeList.completed?.filter(a => a.userRating >= 4).length || 0;
     }
 
-    // Calculate genre breakdown
     const genres = await calculateGenreBreakdown(userId);
 
-    // Get recently watched
     const recentlyWatched = await getRecentlyWatched(userId, 4);
 
-    // Get favorite anime
     const favoriteAnime = await getFavoriteAnime(userId, 6);
 
     const profileData = {
@@ -756,19 +642,16 @@ app.get("/api/profile/:userId", async (req, res) => {
   }
 });
 
-// Update profile
 app.put("/api/profile/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     const updateData = req.body;
 
-    // Check if user exists
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update profile fields
     const update = {};
 
     if (updateData.name) update.name = updateData.name;
@@ -777,7 +660,6 @@ app.put("/api/profile/:userId", async (req, res) => {
     if (updateData.profile) {
       update.$set = update.$set || {};
       if (updateData.profile.username) {
-        // Check if username is unique
         const existingUser = await User.findOne({
           'profile.username': updateData.profile.username,
           _id: { $ne: userId }
@@ -808,7 +690,6 @@ app.put("/api/profile/:userId", async (req, res) => {
   }
 });
 
-// Anime list routes (keep these as they are)
 app.post("/api/list/:userId", async (req, res) => {
   try {
     const { category, animeTitle, animeData } = req.body;
@@ -848,18 +729,6 @@ app.post("/api/list/:userId", async (req, res) => {
       genres: animeData?.genres || []
     };
 
-    // If genres not provided but we have malId, fetch them
-    if ((!animeEntry.genres || animeEntry.genres.length === 0) && animeEntry.malId) {
-      try {
-        const fetchedGenres = await fetchAniListGenres(animeEntry.malId);
-        if (fetchedGenres && fetchedGenres.length > 0) {
-          animeEntry.genres = fetchedGenres;
-        }
-      } catch (error) {
-        console.error(`Could not fetch genres for ${animeTitle}:`, error.message);
-      }
-    }
-
     if (category === 'watching') {
       animeEntry.startDate = new Date();
       animeEntry.episodesWatched = 0;
@@ -883,13 +752,471 @@ app.post("/api/list/:userId", async (req, res) => {
   }
 });
 
-// FIXED: MAL Import Route with REAL-TIME WebSocket Progress
+// FIXED: MAL Import Route with better error handling
 app.post('/api/list/import/mal', async (req, res) => {
-  // ... keep all your existing MAL import code ...
-  // (the code you already have works fine)
+  console.log('🔵 MAL IMPORT REQUEST RECEIVED');
+
+  try {
+    if (!req.files || !req.files.malFile) {
+      console.log('❌ No file uploaded');
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    const malFile = req.files.malFile;
+    const userId = req.body.userId;
+    const clearExisting = req.body.clearExisting === 'true';
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    if (malFile.size > 10 * 1024 * 1024) {
+      return res.status(400).json({
+        success: false,
+        message: 'File too large (max 10MB)'
+      });
+    }
+
+    const userWs = userConnections.get(userId);
+
+    const sendProgress = (current, total, message) => {
+      console.log(`📈 Progress: ${current}/${total} - ${message}`);
+
+      if (userWs && userWs.readyState === 1) {
+        try {
+          userWs.send(JSON.stringify({
+            type: 'progress',
+            current: current,
+            total: total,
+            message: message,
+            progress: `${current}/${total}`
+          }));
+        } catch (wsError) {
+          console.error('WebSocket send error:', wsError.message);
+        }
+      }
+    };
+
+    console.log('Parsing XML file...');
+    sendProgress(0, 0, 'Starting import...');
+
+    let malData;
+    try {
+      const xmlContent = malFile.data.toString('utf-8');
+      console.log('XML length:', xmlContent.length);
+
+      const parser = new xml2js.Parser({
+        explicitArray: false,
+        mergeAttrs: true,
+        trim: true,
+        normalize: true
+      });
+
+      malData = await parser.parseStringPromise(xmlContent);
+      console.log('✅ XML parsed successfully');
+    } catch (xmlError) {
+      console.error('❌ XML parsing failed:', xmlError.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid XML file. Please export from MyAnimeList.'
+      });
+    }
+
+    if (!malData || !malData.myanimelist) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid MAL XML format'
+      });
+    }
+
+    let rawAnimeList = malData.myanimelist.anime;
+    if (!rawAnimeList) {
+      return res.status(400).json({
+        success: false,
+        message: 'No anime found in XML file'
+      });
+    }
+
+    const malAnimeList = Array.isArray(rawAnimeList) ? rawAnimeList : [rawAnimeList];
+
+    console.log(`Found ${malAnimeList.length} anime entries`);
+
+    if (malAnimeList.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No anime found in the file'
+      });
+    }
+
+    sendProgress(0, malAnimeList.length, 'Preparing database...');
+
+    let animeList = await AnimeList.findOne({ userId });
+
+    if (!animeList) {
+      animeList = new AnimeList({
+        userId,
+        watching: [],
+        completed: [],
+        planned: [],
+        dropped: []
+      });
+    }
+
+    if (clearExisting) {
+      console.log('Clearing existing lists...');
+      animeList.watching = [];
+      animeList.completed = [];
+      animeList.planned = [];
+      animeList.dropped = [];
+      await animeList.save();
+      sendProgress(0, malAnimeList.length, 'Cleared existing list');
+    }
+
+    function getCategoryFromMalStatus(malStatus) {
+      if (!malStatus) return 'planned';
+
+      const statusStr = String(malStatus).trim().toLowerCase();
+
+      if (statusStr === '1') return 'watching';
+      if (statusStr === '2') return 'completed';
+      if (statusStr === '3') return 'planned';
+      if (statusStr === '4') return 'dropped';
+      if (statusStr === '6') return 'planned';
+
+      if (statusStr.includes('watching') || statusStr.includes('currently')) {
+        return 'watching';
+      }
+      if (statusStr.includes('completed') || statusStr.includes('complete')) {
+        return 'completed';
+      }
+      if (statusStr.includes('dropped')) {
+        return 'dropped';
+      }
+      if (statusStr.includes('on-hold') || statusStr.includes('on hold') || statusStr === '3') {
+        return 'planned';
+      }
+      if (statusStr.includes('plan') || statusStr.includes('ptw') || statusStr === '6') {
+        return 'planned';
+      }
+
+      console.warn(`Unknown status: "${malStatus}", defaulting to planned`);
+      return 'planned';
+    }
+
+    console.log('\n🎬 PROCESSING ANIME ENTRIES...');
+
+    const batchSize = 10;
+    let processed = 0;
+    let imported = 0;
+    let skipped = 0;
+    let errors = [];
+
+    const categoryCounts = {
+      watching: 0,
+      completed: 0,
+      planned: 0,
+      dropped: 0
+    };
+
+    for (let i = 0; i < malAnimeList.length; i += batchSize) {
+      const batch = malAnimeList.slice(i, Math.min(i + batchSize, malAnimeList.length));
+
+      for (const malAnime of batch) {
+        processed++;
+
+        try {
+          const malId = malAnime.series_animedb_id || malAnime.series_anime_db_id || malAnime.series_animedbid;
+          const title = malAnime.series_title || malAnime.series_title_eng || 'Unknown Title';
+
+          const malStatus = malAnime.my_status || malAnime.my_status_string || malAnime.my_status_str || malAnime.my_status_code;
+          const episodesWatched = parseInt(malAnime.my_watched_episodes || malAnime.my_watched_episodes_string || malAnime.my_watched_episodes_str || 0) || 0;
+          const totalEpisodes = parseInt(malAnime.series_episodes || malAnime.series_episodes_string || malAnime.series_episodes_str || 24) || 24;
+          const userRating = parseInt(malAnime.my_score || malAnime.my_score_string || malAnime.my_score_str || 0) || 0;
+
+          const category = getCategoryFromMalStatus(malStatus);
+          categoryCounts[category]++;
+
+          sendProgress(
+            processed,
+            malAnimeList.length,
+            `Processing: ${title.substring(0, 30)}... -> ${category}`
+          );
+
+          if (!clearExisting && malId) {
+            const exists = animeList[category].some(a => a.malId === malId.toString());
+            if (exists) {
+              console.log(`Skipped (duplicate): ${title}`);
+              skipped++;
+              continue;
+            }
+          }
+
+          // FIX THIS SECTION - Replace the existing image fetching code:
+
+          let imageUrl = null;
+
+          // Use a more reliable image source
+          if (malId) {
+            // Method 1: Try multiple image sources
+            imageUrl = await getAnimeImage(malId, title);
+          }
+
+          // NEW FUNCTION TO ADD (place it near other helper functions):
+          async function getAnimeImage(malId, title) {
+            // Try multiple sources in order
+
+            // 1. First try: Jikan API (with proper rate limiting)
+            try {
+              // Check cache first
+              if (jikanImageCache.has(malId)) {
+                return jikanImageCache.get(malId);
+              }
+
+              // Rate limiting
+              const now = Date.now();
+              if (now - lastJikanRequest < 1500) { // 1.5 second delay
+                await new Promise(resolve => setTimeout(resolve, 1500 - (now - lastJikanRequest)));
+              }
+
+              lastJikanRequest = Date.now();
+
+              const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}`, {
+                headers: {
+                  "User-Agent": "OtakuShelf/1.0 (contact: example@email.com)",
+                  "Accept": "application/json"
+                },
+                timeout: 5000
+              });
+
+              const image = res.data?.data?.images?.jpg?.large_image_url ||
+                res.data?.data?.images?.jpg?.image_url ||
+                res.data?.data?.images?.jpg?.small_image_url ||
+                null;
+
+              if (image) {
+                jikanImageCache.set(malId, image);
+                return image;
+              }
+            } catch (error) {
+              console.log(`Jikan failed for ${malId}: ${error.message}`);
+            }
+
+            // 2. Second try: MyAnimeList CDN (direct URL)
+            try {
+              const malImageUrl = `https://cdn.myanimelist.net/images/anime/${malId}.jpg`;
+              // Test if image exists
+              const response = await axios.head(malImageUrl, { timeout: 3000 });
+              if (response.status === 200) {
+                return malImageUrl;
+              }
+            } catch (error) {
+              console.log(`MAL CDN failed for ${malId}`);
+            }
+
+            // 3. Third try: AniList API (alternative)
+            try {
+              const query = `
+      query ($idMal: Int) {
+        Media(idMal: $idMal, type: ANIME) {
+          coverImage {
+            extraLarge
+            large
+            medium
+          }
+        }
+      }
+    `;
+
+              const response = await axios.post(
+                "https://graphql.anilist.co",
+                {
+                  query,
+                  variables: { idMal: Number(malId) }
+                },
+                {
+                  headers: { "Content-Type": "application/json" },
+                  timeout: 5000
+                }
+              );
+
+              const image = response.data?.data?.Media?.coverImage?.extraLarge ||
+                response.data?.data?.Media?.coverImage?.large ||
+                response.data?.data?.Media?.coverImage?.medium;
+
+              if (image) {
+                return image;
+              }
+            } catch (error) {
+              console.log(`AniList failed for ${malId}: ${error.message}`);
+            }
+
+            // 4. Fallback: Use placeholder with anime title
+            const encodedTitle = encodeURIComponent(title || 'Anime Poster');
+            return `https://placehold.co/300x400/667eea/ffffff?text=${encodedTitle}&font=roboto`;
+          }
+
+          const malStartDate = malAnime.my_start_date && malAnime.my_start_date !== "0000-00-00"
+            ? new Date(malAnime.my_start_date)
+            : null;
+
+          const malFinishDate = malAnime.my_finish_date && malAnime.my_finish_date !== "0000-00-00"
+            ? new Date(malAnime.my_finish_date)
+            : null;
+
+          const animeEntry = {
+            title,
+            animeId: malId ? malId.toString() : `mal_${Date.now()}_${processed}`,
+            malId: malId ? malId.toString() : null,
+            image: imageUrl,
+            totalEpisodes,
+            episodes: totalEpisodes,
+            episodesWatched,
+            status: category,
+            genres: [],
+            userRating: userRating > 0 ? userRating : undefined,
+            addedDate: malStartDate || new Date(),
+          };
+
+          if (category === "completed") {
+            animeEntry.finishDate = malFinishDate || malStartDate || new Date();
+            animeEntry.episodesWatched = animeEntry.totalEpisodes;
+          }
+
+          if (category === "watching") {
+            animeEntry.startDate = malStartDate || new Date();
+          }
+
+          if (category === "dropped") {
+            animeEntry.droppedDate = malFinishDate || new Date();
+          }
+
+          if (category === "planned") {
+            animeEntry.plannedDate = malStartDate || new Date();
+          }
+
+          animeList[category].push(animeEntry);
+          imported++;
+
+          console.log(`✅ Imported to ${category}: ${title}`);
+
+        } catch (animeError) {
+          const errorMsg = `Failed to process anime: ${animeError.message}`;
+          errors.push(errorMsg);
+          console.error('❌ Anime processing error:', errorMsg);
+        }
+      }
+
+      try {
+        await animeList.save();
+        console.log(`💾 Saved batch ${Math.ceil(processed / batchSize)}`);
+        sendProgress(
+          processed,
+          malAnimeList.length,
+          `Saved ${processed}/${malAnimeList.length} entries`
+        );
+      } catch (saveError) {
+        console.error('❌ Batch save error:', saveError.message);
+        errors.push(`Batch save failed: ${saveError.message}`);
+      }
+
+      if (processed < malAnimeList.length) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+
+    console.log('\n💾 FINALIZING IMPORT...');
+
+    console.log('\n📊 IMPORT SUMMARY BY CATEGORY:');
+    console.log(`Watching: ${categoryCounts.watching}`);
+    console.log(`Completed: ${categoryCounts.completed}`);
+    console.log(`Planned: ${categoryCounts.planned}`);
+    console.log(`Dropped: ${categoryCounts.dropped}`);
+
+    sendProgress(malAnimeList.length, malAnimeList.length, 'Finalizing import...');
+
+    try {
+      await animeList.save();
+      console.log('✅ List saved successfully');
+    } catch (saveError) {
+      console.error('❌ Final save error:', saveError.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to save list to database'
+      });
+    }
+
+    try {
+      const user = await User.findById(userId);
+      if (user && user.profile) {
+        user.profile.stats = user.profile.stats || {};
+        user.profile.stats.animeWatched = animeList.completed.length;
+        user.profile.stats.currentlyWatching = animeList.watching.length;
+        user.profile.stats.animePlanned = animeList.planned.length;
+        user.profile.stats.animeDropped = animeList.dropped.length;
+        await user.save();
+      }
+    } catch (statsError) {
+      console.error('Stats update error:', statsError.message);
+    }
+
+    const finalMessage = `Imported ${imported} anime (Watching: ${categoryCounts.watching}, Completed: ${categoryCounts.completed}, Planned: ${categoryCounts.planned}, Dropped: ${categoryCounts.dropped})`;
+    console.log(`\n✅ ${finalMessage}`);
+
+    if (userWs && userWs.readyState === 1) {
+      userWs.send(JSON.stringify({
+        type: 'progress',
+        message: 'Import completed successfully!',
+        current: malAnimeList.length,
+        total: malAnimeList.length,
+        completed: true
+      }));
+    }
+
+    res.json({
+      success: true,
+      message: finalMessage,
+      imported: imported,
+      skipped: skipped,
+      errors: errors.length,
+      total: malAnimeList.length,
+      categoryCounts: categoryCounts
+    });
+
+  } catch (error) {
+    console.error('❌ UNHANDLED ERROR IN MAL IMPORT:', error);
+
+    try {
+      const userId = req.body?.userId;
+      if (userId) {
+        const userWs = userConnections.get(userId);
+        if (userWs && userWs.readyState === 1) {
+          userWs.send(JSON.stringify({
+            type: 'progress',
+            message: `Import failed: ${error.message}`,
+            current: 0,
+            total: 0,
+            error: true
+          }));
+        }
+      }
+    } catch (wsError) {
+      console.error('Failed to send WebSocket error:', wsError);
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Import failed',
+      error: error.message
+    });
+  }
 });
 
-// Get anime list with error handling
 app.get("/api/list/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -924,7 +1251,6 @@ app.get("/api/list/:userId", async (req, res) => {
   }
 });
 
-// Helper functions (keep these as they are)
 async function calculateGenreBreakdown(userId) {
   const animeList = await AnimeList.findOne({ userId });
   if (!animeList || !animeList.completed.length) return [];
@@ -937,24 +1263,6 @@ async function calculateGenreBreakdown(userId) {
       for (const genre of anime.genres) {
         genreCount[genre] = (genreCount[genre] || 0) + 1;
         total++;
-      }
-    } else if (anime.malId) {
-      try {
-        const genres = await fetchAniListGenres(anime.malId);
-        if (genres && genres.length > 0) {
-          await AnimeList.findOneAndUpdate(
-            { userId, "completed._id": anime._id },
-            { $set: { "completed.$.genres": genres } }
-          );
-
-          for (const genre of genres) {
-            genreCount[genre] = (genreCount[genre] || 0) + 1;
-            total++;
-          }
-        }
-        await new Promise(r => setTimeout(r, 500));
-      } catch (error) {
-        console.error(`Could not fetch genres for ${anime.title}:`, error.message);
       }
     }
   }
@@ -980,8 +1288,11 @@ async function getRecentlyWatched(userId, limit = 4) {
   const allAnime = [
     ...(animeList.watching || []),
     ...(animeList.completed || []),
-  ].sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate))
-    .slice(0, limit);
+  ].sort((a, b) => {
+    const dateA = a.finishDate || a.addedDate;
+    const dateB = b.finishDate || b.addedDate;
+    return new Date(dateB) - new Date(dateA);
+  }).slice(0, limit);
 
   return allAnime.map(anime => ({
     id: anime._id,
@@ -1009,7 +1320,6 @@ async function getFavoriteAnime(userId, limit = 4) {
   }));
 }
 
-// Get user badges
 app.get("/api/profile/:userId/badges", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -1017,7 +1327,6 @@ app.get("/api/profile/:userId/badges", async (req, res) => {
 
     const badges = [];
 
-    // Anime Veteran - Member for 2+ years
     const user = await User.findById(userId);
     if (user && new Date() - user.createdAt > 2 * 365 * 24 * 60 * 60 * 1000) {
       badges.push({
@@ -1028,7 +1337,6 @@ app.get("/api/profile/:userId/badges", async (req, res) => {
       });
     }
 
-    // Completionist - Completed 50+ anime
     if (animeList && animeList.completed && animeList.completed.length >= 50) {
       badges.push({
         title: 'Completionist',
@@ -1045,15 +1353,6 @@ app.get("/api/profile/:userId/badges", async (req, res) => {
   }
 });
 
-async function checkBingeKing(userId) {
-  return null;
-}
-
-async function checkSeasonalHunter(userId) {
-  return null;
-}
-
-// Update anime in list
 app.put("/api/list/:userId/:animeId", async (req, res) => {
   try {
     const { episodesWatched, status } = req.body;
@@ -1104,7 +1403,6 @@ app.put("/api/list/:userId/:animeId", async (req, res) => {
   }
 });
 
-// Remove anime from list
 app.delete("/api/list/:userId/:animeId", async (req, res) => {
   try {
     const list = await AnimeList.findOne({ userId: req.params.userId });
@@ -1135,7 +1433,6 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
   }
 });
 
-// List middleware
 app.use("/api/list/:userId", async (req, res, next) => {
   try {
     const userId = req.params.userId;
@@ -1159,23 +1456,19 @@ app.use("/api/list/:userId", async (req, res, next) => {
   }
 });
 
-// =======================
-// Other Routes
-// =======================
 app.use('/api/anime', animeRoutes);
 app.use('/api/anilist', anilistRoutes);
 app.use("/api/ai", aiChat);
 app.use("/auth", (req, res, next) => next());
 app.use("/api", (req, res, next) => next());
 
-// File cleanup function
 function cleanupOldUploads() {
   try {
     if (!fs.existsSync(uploadsDir)) return;
-    
+
     const files = fs.readdirSync(uploadsDir);
     const now = Date.now();
-    const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+    const maxAge = 30 * 24 * 60 * 60 * 1000;
 
     files.forEach(file => {
       const filepath = path.join(uploadsDir, file);
@@ -1194,10 +1487,8 @@ function cleanupOldUploads() {
   }
 }
 
-// Run cleanup every day
 setInterval(cleanupOldUploads, 24 * 60 * 60 * 1000);
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({
@@ -1207,9 +1498,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// =======================
-// WebSocket Setup
-// =======================
 const server = http.createServer(app);
 const wss = new WebSocketServer({
   server,

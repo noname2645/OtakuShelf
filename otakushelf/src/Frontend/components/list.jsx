@@ -5,6 +5,7 @@ import { Star } from 'lucide-react';
 import { Navigate } from "react-router-dom";
 import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
+import Import from "../images/import.png";
 
 const EnhancedAnimeList = () => {
   const [activeTab, setActiveTab] = useState('watching');
@@ -19,8 +20,8 @@ const EnhancedAnimeList = () => {
   const [importing, setImporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [importOption, setImportOption] = useState('replace'); // 'replace' or 'merge'
-  const [importProgress, setImportProgress] = useState(''); // Store progress like "15/250"
+  const [importOption, setImportOption] = useState('replace');
+  const [importProgress, setImportProgress] = useState('');
 
   const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
   const wsRef = useRef(null);
@@ -30,37 +31,27 @@ const EnhancedAnimeList = () => {
     return `https://placehold.co/300x180/667eea/ffffff?text=${encodedTitle}&font=roboto`;
   };
 
-  // FIXED: Proper user extraction with debugging
   const user = useMemo(() => {
     try {
       const userStr = localStorage.getItem("user");
-      // console.log("Raw user from localStorage:", userStr);
-
       if (!userStr) {
-        console.log("No user found in localStorage");
         return null;
       }
 
       const storedUser = JSON.parse(userStr);
-      // console.log("Parsed user:", storedUser);
-
-      // Normalize user object - ensure _id exists
       const normalizedUser = {
         ...storedUser,
         _id: storedUser._id || storedUser.id,
         id: storedUser._id || storedUser.id
       };
 
-      // console.log("Normalized user:", normalizedUser);
-
       if (!normalizedUser._id) {
-        console.error("User object has no ID:", normalizedUser);
         return null;
       }
 
       return normalizedUser;
     } catch (e) {
-      console.error("Error parsing user from localStorage:", e);
+      console.error("Error parsing user:", e);
       return null;
     }
   }, []);
@@ -71,70 +62,35 @@ const EnhancedAnimeList = () => {
 
     const connectWebSocket = () => {
       try {
-        // Get the correct backend URL
         const backendUrl = API.replace('http://', 'ws://').replace('https://', 'wss://');
         const wsUrl = `${backendUrl}/ws?userId=${user._id}`;
-
-        console.log('Connecting to WebSocket:', wsUrl);
 
         wsRef.current = new WebSocket(wsUrl);
 
         wsRef.current.onopen = () => {
-          console.log('✅ WebSocket connected to:', wsUrl);
-          console.log('User ID for connection:', user._id);
+          console.log('✅ WebSocket connected');
         };
 
         wsRef.current.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log('WebSocket progress message:', data);
-
             if (data.type === 'progress') {
-              // Method 1: Use structured data from backend (current/total fields)
               if (data.current !== undefined && data.total !== undefined) {
                 const progressStr = `${data.current}/${data.total}`;
                 setImportProgress(progressStr);
-                console.log(`Progress updated: ${progressStr}`);
               }
-              // Method 2: Fallback - extract from message string
-              else if (data.message) {
-                // Try multiple patterns to extract [X/Y]
-                const patterns = [
-                  /\[(\d+)\s*\/\s*(\d+)\]/g,  // [X/Y] with spaces
-                  /\((\d+)\/(\d+)\)/g,         // (X/Y)
-                  /(\d+)\s*\/\s*(\d+)/g        // Just X/Y
-                ];
 
-                let match = null;
-                for (const pattern of patterns) {
-                  const matches = data.message.matchAll(pattern);
-                  for (const m of matches) {
-                    if (m[1] && m[2]) {
-                      match = m;
-                      break;
-                    }
-                  }
-                  if (match) break;
-                }
-
-                if (match && match[1] && match[2]) {
-                  const progressStr = `${match[1]}/${match[2]}`;
-                  setImportProgress(progressStr);
-                  console.log(`Progress from message: ${progressStr}`);
-                } else if (data.message.includes('Starting') || data.message.includes('Clearing')) {
-                  setImportProgress('0/?');
-                } else if (data.message.includes('completed') || data.message.includes('finished')) {
-                  setImportProgress('');
-                }
+              if (data.completed) {
+                setTimeout(() => setImportProgress(''), 2000);
+                setImporting(false);
               }
-            } else if (data.type === 'error') {
-              console.error('WebSocket error:', data.message);
-            } else if (data.type === 'connected') {
-              console.log('WebSocket connection confirmed');
+
+              if (data.error) {
+                console.error('Import error:', data.message);
+              }
             }
           } catch (e) {
             console.error('Failed to parse WebSocket message:', e);
-            console.log('Raw WebSocket data:', event.data);
           }
         };
 
@@ -143,11 +99,8 @@ const EnhancedAnimeList = () => {
         };
 
         wsRef.current.onclose = (event) => {
-          console.log('WebSocket disconnected, code:', event.code, 'reason:', event.reason);
-          // Attempt to reconnect after 3 seconds if not a normal closure
           if (event.code !== 1000) {
             setTimeout(() => {
-              console.log('Attempting to reconnect WebSocket...');
               connectWebSocket();
             }, 3000);
           }
@@ -160,7 +113,6 @@ const EnhancedAnimeList = () => {
 
     connectWebSocket();
 
-    // Cleanup on unmount
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
@@ -172,7 +124,6 @@ const EnhancedAnimeList = () => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.name.endsWith('.xml') && file.type !== 'application/xml' && file.type !== 'text/xml') {
       alert('Please select a valid XML file exported from MyAnimeList');
       event.target.value = '';
@@ -181,7 +132,7 @@ const EnhancedAnimeList = () => {
 
     setSelectedFile(file);
     setShowImportModal(true);
-    event.target.value = ''; // Reset file input
+    event.target.value = '';
   };
 
   const handleImportConfirm = async () => {
@@ -192,14 +143,12 @@ const EnhancedAnimeList = () => {
 
     setShowImportModal(false);
     setImporting(true);
-    setImportProgress('0/?'); // Reset progress
+    setImportProgress('0/?');
 
     const formData = new FormData();
     formData.append('malFile', selectedFile);
     formData.append('userId', user._id);
     formData.append('clearExisting', (importOption === 'replace').toString());
-
-    console.log("Sending import request with option:", importOption);
 
     try {
       const response = await axios.post(`${API}/api/list/import/mal`, formData, {
@@ -209,20 +158,27 @@ const EnhancedAnimeList = () => {
         }
       });
 
-      console.log('Import response:', response.data);
-
       if (response.data.success) {
-        alert(`Success! ${response.data.message}`);
+        alert(`✅ Success! ${response.data.message}`);
         fetchAnimeList();
       } else {
-        alert(`Import failed: ${response.data.message}`);
+        alert(`❌ Import failed: ${response.data.message}`);
       }
     } catch (error) {
       console.error('Import error:', error);
-      alert(`Failed to import: ${error.response?.data?.message || error.message}`);
+      let errorMsg = error.response?.data?.message || error.message;
+
+      if (errorMsg.includes('Invalid XML')) {
+        errorMsg = 'The selected file is not a valid MyAnimeList XML export. Please export your list from MAL and try again.';
+      } else if (errorMsg.includes('Rate limited')) {
+        errorMsg = 'Too many requests. Please wait a few minutes before trying again.';
+      } else if (errorMsg.includes('timeout')) {
+        errorMsg = 'Import is taking too long. Your list might be very large. Please try with a smaller list or wait and try again.';
+      }
+
+      alert(`Failed to import: ${errorMsg}`);
     } finally {
       setImporting(false);
-      // Clear progress after a short delay
       setTimeout(() => setImportProgress(''), 3000);
       setSelectedFile(null);
     }
@@ -231,7 +187,7 @@ const EnhancedAnimeList = () => {
   const handleImportCancel = () => {
     setShowImportModal(false);
     setSelectedFile(null);
-    setImportOption('replace'); // Reset to default
+    setImportOption('replace');
   };
 
   const fetchAnimeList = useCallback(async () => {
@@ -240,22 +196,17 @@ const EnhancedAnimeList = () => {
       setError(null);
 
       if (!user || !user._id) {
-        console.error("No user or user ID found");
         setError("Please log in to view your list");
         setLoading(false);
         return;
       }
 
       const userId = user._id;
-      // console.log("Fetching list for user ID:", userId);
-
       const response = await axios.get(`${API}/api/list/${userId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         }
       });
-
-      // console.log("List API response:", response.data);
 
       let listData = response.data;
 
@@ -266,7 +217,6 @@ const EnhancedAnimeList = () => {
         dropped: [],
       };
 
-      // Extract lists from response
       if (listData) {
         normalizedList.watching = Array.isArray(listData.watching) ? listData.watching : [];
         normalizedList.completed = Array.isArray(listData.completed) ? listData.completed : [];
@@ -274,18 +224,9 @@ const EnhancedAnimeList = () => {
         normalizedList.dropped = Array.isArray(listData.dropped) ? listData.dropped : [];
       }
 
-      // console.log("Normalized list counts:", {
-      //   watching: normalizedList.watching.length,
-      //   completed: normalizedList.completed.length,
-      //   planned: normalizedList.planned.length,
-      //   dropped: normalizedList.dropped.length
-      // });
-
       setAnimeList(normalizedList);
     } catch (error) {
       console.error("Error fetching list:", error);
-      console.error("Error response:", error.response?.data);
-
       setError(error.response?.data?.message || error.message || "Failed to load anime list");
       setAnimeList({
         watching: [],
@@ -300,10 +241,8 @@ const EnhancedAnimeList = () => {
 
   useEffect(() => {
     if (user) {
-      // console.log("User detected, fetching list...");
       fetchAnimeList();
     } else {
-      console.log("No user, setting loading to false");
       setLoading(false);
     }
   }, [user, fetchAnimeList]);
@@ -348,40 +287,68 @@ const EnhancedAnimeList = () => {
     });
   }, []);
 
-  const groupAnimeByMonthYear = useCallback((animeList) => {
+  const groupAnimeByMonthYear = useCallback((animeList, category) => {
+    if (!Array.isArray(animeList) || animeList.length === 0) {
+      return [];
+    }
+
     const groups = {};
 
     animeList.forEach(anime => {
-      // Debug the date
-      // console.log(`Processing anime: ${anime.title}, addedDate: ${anime.addedDate}`);
-
       let date;
+      let hasValidDate = true;
 
-      // Try different date formats
-      if (anime.addedDate) {
-        date = new Date(anime.addedDate);
-      } else if (anime.createdAt) {
-        date = new Date(anime.createdAt);
-      } else if (anime.updatedAt) {
-        date = new Date(anime.updatedAt);
-      } else {
-        date = new Date();
+      // SPECIAL CASE: For completed anime, use finishDate first
+      if (category === 'completed') {
+        if (anime.finishDate) {
+          date = new Date(anime.finishDate);
+        } else if (anime.addedDate) {
+          date = new Date(anime.addedDate);
+        } else if (anime.updatedAt) {
+          date = new Date(anime.updatedAt);
+        } else if (anime.createdAt) {
+          date = new Date(anime.createdAt);
+        } else {
+          // No date at all - group them under "Unknown Date"
+          date = new Date(0);
+          hasValidDate = false;
+        }
+      }
+      // For other categories
+      else {
+        if (anime.addedDate) {
+          date = new Date(anime.addedDate);
+        } else if (anime.createdAt) {
+          date = new Date(anime.createdAt);
+        } else if (anime.updatedAt) {
+          date = new Date(anime.updatedAt);
+        } else {
+          date = new Date(0);
+          hasValidDate = false;
+        }
       }
 
-      // Check if date is valid
+      // Validate date
       if (isNaN(date.getTime())) {
-        console.warn(`Invalid date for anime: ${anime.title}, using current date`);
-        date = new Date();
+        date = new Date(0);
+        hasValidDate = false;
       }
 
-      const month = date.toLocaleString('default', { month: 'long' });
-      const year = date.getFullYear();
-      const key = `${month} ${year}`;
+      // Create group key
+      let key;
+      if (!hasValidDate || date.getTime() === 0) {
+        key = "Unknown Date";
+      } else {
+        const month = date.toLocaleString('default', { month: 'long' });
+        const year = date.getFullYear();
+        key = `${month} ${year}`;
+      }
 
       if (!groups[key]) {
         groups[key] = {
-          title: `${month} ${year}`,
-          sortDate: new Date(year, date.getMonth(), 1), // Use first day of month for consistent sorting
+          title: key,
+          sortDate: hasValidDate ? new Date(date.getFullYear(), date.getMonth(), 1) : new Date(0),
+          hasValidDate: hasValidDate,
           anime: []
         };
       }
@@ -389,21 +356,18 @@ const EnhancedAnimeList = () => {
       groups[key].anime.push(anime);
     });
 
-    // Debug groups
-    // console.log('Groups created:', Object.keys(groups));
+    // Sort groups: Valid date groups first (newest to oldest), then "Unknown Date" at bottom
+    const sortedGroups = Object.values(groups).sort((a, b) => {
+      // "Unknown Date" always goes to bottom
+      if (!a.hasValidDate && b.hasValidDate) return 1;
+      if (a.hasValidDate && !b.hasValidDate) return -1;
 
-    // Convert to array and sort by date descending (newest first)
-    const sortedGroups = Object.values(groups).sort((a, b) => b.sortDate - a.sortDate);
-
-    // console.log('Sorted groups:', sortedGroups.map(g => ({
-    //   title: g.title,
-    //   count: g.anime.length,
-    //   sortDate: g.sortDate
-    // })));
+      // Both have valid dates or both don't - sort by date
+      return b.sortDate - a.sortDate;
+    });
 
     return sortedGroups;
   }, []);
-
   const handleRemove = useCallback(async (animeId) => {
     if (window.confirm('Are you sure you want to remove this anime from your list?')) {
       try {
@@ -573,25 +537,74 @@ const EnhancedAnimeList = () => {
 
   const groupedAnimeList = useMemo(() => {
     const list = animeList[activeTab];
-    if (!Array.isArray(list)) return [];
+    if (!Array.isArray(list) || list.length === 0) {
+      return [];
+    }
 
-    const sortedList = [...list].sort((a, b) => {
-      const dateA = new Date(a.addedDate || a.createdAt || a.updatedAt || 0);
-      const dateB = new Date(b.addedDate || b.createdAt || b.updatedAt || 0);
+    // Separate anime with and without dates
+    const animeWithDates = [];
+    const animeWithoutDates = [];
+
+    list.forEach(anime => {
+      if (activeTab === 'completed') {
+        // For completed, check if has ANY date field
+        if (anime.finishDate || anime.addedDate || anime.createdAt || anime.updatedAt) {
+          animeWithDates.push(anime);
+        } else {
+          animeWithoutDates.push(anime);
+        }
+      } else {
+        // For other tabs
+        if (anime.addedDate || anime.createdAt || anime.updatedAt) {
+          animeWithDates.push(anime);
+        } else {
+          animeWithoutDates.push(anime);
+        }
+      }
+    });
+
+    // Sort anime with dates (newest first)
+    const sortedWithDates = animeWithDates.sort((a, b) => {
+      const dateA = new Date(
+        activeTab === 'completed'
+          ? (a.finishDate || a.addedDate || a.createdAt || a.updatedAt)
+          : (a.addedDate || a.createdAt || a.updatedAt)
+      );
+      const dateB = new Date(
+        activeTab === 'completed'
+          ? (b.finishDate || b.addedDate || b.createdAt || b.updatedAt)
+          : (b.addedDate || b.createdAt || b.updatedAt)
+      );
       return dateB - dateA;
     });
 
-    return groupAnimeByMonthYear(sortedList);
-  }, [animeList, activeTab, groupAnimeByMonthYear]);
+    // Sort anime without dates alphabetically
+    const sortedWithoutDates = animeWithoutDates.sort((a, b) =>
+      a.title?.localeCompare(b.title) || 0
+    );
 
+    // Group only anime with dates
+    const groupedWithDates = groupAnimeByMonthYear(sortedWithDates, activeTab);
+
+    // If there are anime without dates, add a special group at the bottom
+    if (sortedWithoutDates.length > 0) {
+      groupedWithDates.push({
+        title: "No Date Available",
+        sortDate: new Date(0),
+        hasValidDate: false,
+        anime: sortedWithoutDates
+      });
+    }
+
+    return groupedWithDates;
+  }, [animeList, activeTab, groupAnimeByMonthYear]);
   if (!user) {
-    console.log("No user, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
   return (
     <>
-      <Header showSearch={false}/>
+      <Header showSearch={false} />
       <BottomNavBar />
       <div className="enhanced-anime-list">
         <div className="list-header">
@@ -622,7 +635,10 @@ const EnhancedAnimeList = () => {
                     {importProgress ? ` Importing ${importProgress}` : ' Importing…'}
                   </>
                 ) : (
-                  '📥 Import MAL List'
+                  <span className="import-icon">
+                    <img src={Import} alt="Import" />
+                    Import MAL List
+                  </span>
                 )}
               </label>
             </div>
@@ -663,7 +679,6 @@ const EnhancedAnimeList = () => {
                       const animeStatus = anime.status || activeTab;
                       const isCompleted = animeStatus === "completed";
 
-                      // Calculate progress percentage
                       const progressPercentage = `${progress}%`;
                       const imageUrl = anime.image || anime.poster || getFallbackImage(anime.title);
 
@@ -764,7 +779,7 @@ const EnhancedAnimeList = () => {
           </div>
         )}
       </div>
-      {/* Import Confirmation Modal */}
+
       {showImportModal && (
         <div className="import-modal-overlay">
           <div className="import-modal">
@@ -796,8 +811,7 @@ const EnhancedAnimeList = () => {
                     <span className="radio-custom"></span>
                     <div className="option-content">
                       <strong>Replace existing list (Clean Import)</strong>
-                      <p>Clears your current list and re-imports everything from the XML file.
-                        Slower, but fixes inconsistencies.</p>
+                      <p>Clears your current list and re-imports everything from the XML file.</p>
                     </div>
                   </label>
                 </div>
@@ -814,8 +828,7 @@ const EnhancedAnimeList = () => {
                     <span className="radio-custom"></span>
                     <div className="option-content">
                       <strong>Merge with existing list (Faster)</strong>
-                      <p>Adds new and updated entries from the XML file to your current list.
-                        Faster, but incorrect data may remain.</p>
+                      <p>Adds new and updated entries from the XML file to your current list.</p>
                     </div>
                   </label>
                 </div>
