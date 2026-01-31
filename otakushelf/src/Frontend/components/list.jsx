@@ -646,11 +646,11 @@ const EnhancedAnimeList = () => {
             key={star}
             type="button"
             className={`star-btn ${star <= (hoverRating || rating) ? 'active' : ''}`}
-            onClick={() => !disabled && onRatingChange(star)}
+            onClick={() => !disabled && onRatingChange(Math.round(star))}
             onMouseEnter={() => !disabled && setHoverRating(star)}
             onMouseLeave={() => !disabled && setHoverRating(0)}
             disabled={disabled}
-            title={`${star}/10`}
+            title={`${star}/5`}
           >
             <Star
               size={16}
@@ -660,7 +660,7 @@ const EnhancedAnimeList = () => {
           </button>
         ))}
         <span className="rating-text">
-          {rating > 0 ? `${rating}/10` : 'Rate'}
+          {rating > 0 ? `${rating}/5` : ''}
         </span>
       </div>
     );

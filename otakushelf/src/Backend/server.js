@@ -1079,7 +1079,7 @@ app.post('/api/list/import/mal', async (req, res) => {
             episodesWatched,
             status: category,
             genres: [],
-            userRating: userRating > 0 ? userRating : undefined,
+            userRating: userRating > 0 ? Math.round(userRating/2) : undefined,
             addedDate: malStartDate || new Date(),
           };
 

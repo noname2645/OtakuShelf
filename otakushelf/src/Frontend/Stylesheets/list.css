@@ -926,11 +926,17 @@
   color: #ffd700;
 }
 
+.rating-section{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .rating-text {
   margin-left: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #666;
+  color: #ffffff;
   min-width: 60px;
 }
 
