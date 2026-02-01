@@ -23,6 +23,37 @@ const MODEL = "meta-llama/llama-3.1-8b-instruct";
 // 🧠 ADAPTIVE AI SYSTEM
 // ============================================
 
+// // 🆕 PROFILE DATA EXTRACTOR
+// async function extractUserProfileForAI(userProfileData) {
+//     if (!userProfileData) return "No detailed profile available.";
+    
+//     let profileSummary = "USER PROFILE:\n";
+    
+//     // Only include essential info
+//     const stats = userProfileData.profile?.stats || {};
+    
+//     profileSummary += `• Completed: ${stats.animeWatched || 0} anime\n`;
+//     profileSummary += `• Watching: ${stats.currentlyWatching || 0} anime\n`;
+    
+//     // Favorite genres (short)
+//     const favGenres = userProfileData.profile?.favoriteGenres || [];
+//     if (favGenres.length > 0) {
+//         const top3 = favGenres.slice(0, 3).map(g => `${g.name} (${g.percentage}%)`).join(', ');
+//         profileSummary += `• Top genres: ${top3}\n`;
+//     } else {
+//         profileSummary += `• Top genres: Not enough data yet\n`;
+//     }
+    
+//     // Recent activity
+//     const recentWatched = userProfileData.recentlyWatched || [];
+//     if (recentWatched.length > 0) {
+//         const recentNames = recentWatched.slice(0, 2).map(a => a.title).join(', ');
+//         profileSummary += `• Recently watched: ${recentNames}\n`;
+//     }
+    
+//     return profileSummary;
+// }
+
 const adaptiveProfiles = new Map();
 
 class AdaptiveUserProfile {
@@ -53,30 +84,10 @@ class AdaptiveUserProfile {
             explorationRate: 0.25
         };
         this.recentActivity = {
-            lastMessages: []
+            lastMessages: [],
+            lastRecommendations: [] // 🆕 Track recent recommendations
         };
         this.lastUpdated = Date.now();
-    }
-
-    addRecentRecommendation(animeList) {
-        if (!this.recentActivity.lastRecommendations) {
-            this.recentActivity.lastRecommendations = [];
-        }
-
-        // Add new recommendations
-        animeList.forEach(anime => {
-            this.recentActivity.lastRecommendations.push({
-                id: anime.id,
-                title: anime.title?.english || anime.title?.romaji,
-                timestamp: new Date().toISOString()
-            });
-        });
-
-        // Keep only last 20 recommendations
-        if (this.recentActivity.lastRecommendations.length > 20) {
-            this.recentActivity.lastRecommendations =
-                this.recentActivity.lastRecommendations.slice(-20);
-        }
     }
 
     updateFromAnime(animeData, action) {
@@ -163,6 +174,39 @@ class AdaptiveUserProfile {
         });
 
         return selected.length > 0 ? selected : ['Slice of Life', 'Sports'];
+    }
+
+    // 🆕 Add recent recommendation tracking
+    addRecentRecommendation(animeList) {
+        if (!this.recentActivity.lastRecommendations) {
+            this.recentActivity.lastRecommendations = [];
+        }
+
+        animeList.forEach(anime => {
+            // Check if already in recent recommendations
+            const exists = this.recentActivity.lastRecommendations.some(
+                rec => rec.id === anime.id
+            );
+
+            if (!exists) {
+                this.recentActivity.lastRecommendations.push({
+                    id: anime.id,
+                    title: anime.title?.english || anime.title?.romaji || "Unknown",
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
+
+        // Keep only last 15 recommendations
+        if (this.recentActivity.lastRecommendations.length > 15) {
+            this.recentActivity.lastRecommendations =
+                this.recentActivity.lastRecommendations.slice(-15);
+        }
+    }
+
+    // 🆕 Get recently recommended anime IDs
+    getRecentRecommendationIds() {
+        return this.recentActivity.lastRecommendations?.map(rec => rec.id) || [];
     }
 
     updateFromInteraction(userMessage, aiResponse, feedback = null) {
@@ -279,6 +323,41 @@ class AdaptiveUserProfile {
 }
 
 // ============================================
+// 🆕 HELPER FUNCTIONS
+// ============================================
+
+// Check for single anime request
+function isSingleAnimeRequest(message) {
+    const lowerMsg = message.toLowerCase();
+    const singlePatterns = [
+        /recommend (me )?(just )?(one|single|1) anime/i,
+        /suggest (me )?(just )?(one|single|1) anime/i,
+        /give me (only )?(one|single|1) anime/i,
+        /(one|single|1) (anime|recommendation)/i,
+        /just (one|single|1)/i
+    ];
+
+    return singlePatterns.some(pattern => pattern.test(lowerMsg));
+}
+
+// Check for unique/new requests
+function isUniqueAnimeRequest(message) {
+    const lowerMsg = message.toLowerCase();
+    const uniquePatterns = [
+        /unique anime/i,
+        /different anime/i,
+        /new anime/i,
+        /something i haven't seen/i,
+        /not the usual/i,
+        /something different/i,
+        /hidden gem/i,
+        /underrated/i
+    ];
+
+    return uniquePatterns.some(pattern => pattern.test(lowerMsg));
+}
+
+// ============================================
 // 🧠 ADAPTIVE OPENROUTER CHAT
 // ============================================
 async function getAdaptiveOpenRouterResponse(userMessage, userId = null, adaptiveProfile = null, context = {}, recommendations = null) {
@@ -348,6 +427,11 @@ async function getAdaptiveOpenRouterResponse(userMessage, userId = null, adaptiv
             }
 
             profile.updateFromInteraction(userMessage, aiResponse);
+
+            // 🆕 Track recommendations
+            if (recommendations?.anime?.length > 0) {
+                profile.addRecentRecommendation(recommendations.anime);
+            }
         }
 
         return aiResponse;
@@ -377,48 +461,71 @@ function buildAdaptiveSystemPrompt(profile, context, userMessage, recommendation
             style: 'Use casual language, like you\'re recommending to a friend.'
         }
     };
-
+    
     const personality = profile?.personality?.current || 'enthusiastic_otaku';
     const config = personalityConfigs[personality];
-
-    let tasteSummary = "New user, no taste profile yet.";
+    
+    // Get user's favorite genres from profile
+    let userTasteInfo = "New user, no taste profile yet.";
     if (profile) {
         const topGenres = profile.getTopGenres(2);
         if (topGenres.length > 0) {
-            tasteSummary = `User enjoys: ${topGenres.map(g => g.genre).join(', ')}.`;
+            userTasteInfo = `User enjoys: ${topGenres.map(g => g.genre).join(', ')}.`;
         }
     }
-
+    
+    // 🆕 Create short profile summary
+    let profileSummary = "";
+    if (context.userProfile) {
+        // Create a simple profile summary
+        const stats = context.userProfile.profile?.stats || {};
+        const favGenres = context.userProfile.profile?.favoriteGenres || [];
+        
+        profileSummary = `📊 User Stats: ${stats.animeWatched || 0} completed, ${stats.currentlyWatching || 0} watching. `;
+        
+        if (favGenres.length > 0) {
+            const top3 = favGenres.slice(0, 3).map(g => `${g.name}`).join(', ');
+            profileSummary += `Top genres: ${top3}.`;
+        }
+    }
+    
     // CRITICAL: Only mention anime we actually fetched
     let animeContext = "";
     if (recommendations && recommendations.anime && recommendations.anime.length > 0) {
         const animeList = recommendations.anime.slice(0, 4).map((anime, index) => {
             const title = anime.title?.english || anime.title?.romaji || "Anime";
-            const description = anime.description ?
-                anime.description.replace(/<[^>]*>/g, '').substring(0, 100) + "..." :
+            const description = anime.description ? 
+                anime.description.replace(/<[^>]*>/g, '').substring(0, 80) + "..." : 
                 "Great anime with interesting story";
             const genres = anime.genres ? anime.genres.slice(0, 2).join(', ') : "Various";
-            const score = anime.averageScore ? `Rated ${anime.averageScore / 10}/10` : "Popular";
-
-            return `${index + 1}. "${title}" - ${description} (${genres}, ${score})`;
+            const score = anime.averageScore ? `Rated ${anime.averageScore/10}/10` : "Popular";
+            
+            return `${index + 1}. "${title}" - ${genres}, ${score}`;
         }).join('\n');
-
+        
+        const isSingleRequest = isSingleAnimeRequest(userMessage);
+        const isUniqueRequest = isUniqueAnimeRequest(userMessage);
+        
         animeContext = `
+USER PROFILE: ${profileSummary}
+
 ANIME DATA FROM DATABASE (USE THESE ONLY):
 ${animeList}
 
 STRICT RULES FOR RESPONSE:
 1. ONLY mention anime from the list above
 2. NEVER mention anime not in the list (no Fullmetal Alchemist, Hunter x Hunter, One Piece, Naruto, etc.)
-3. Mention 2-3 anime from the list naturally
+3. Mention 2-3 anime from the list naturally${isSingleRequest ? ' (OR JUST 1 if they asked for one)' : ''}
 4. Briefly describe why they match the user's request
-5. Ask what they think about these suggestions`;
+5. Ask what they think about these suggestions${isUniqueRequest ? ' (emphasize uniqueness if asked)' : ''}`;
     } else {
         animeContext = `
+USER PROFILE: ${profileSummary}
+
 NO ANIME DATA AVAILABLE:
 Just have a normal conversation about anime. Ask what they like or share general thoughts.`;
     }
-
+    
     return `You are OtakuAI, an adaptive anime companion chatting with a user.
 
 PERSONALITY: ${personality.toUpperCase()}
@@ -426,7 +533,7 @@ PERSONALITY: ${personality.toUpperCase()}
 - Style: ${config.style}
 
 USER MESSAGE: "${userMessage}"
-USER PROFILE: ${tasteSummary}
+USER PROFILE: ${userTasteInfo}
 ${animeContext}
 
 RESPONSE REQUIREMENTS:
@@ -484,56 +591,102 @@ function getFallbackResponse(userMessage) {
 }
 
 // ============================================
-// 🎯 ADAPTIVE RECOMMENDATION ENGINE
+// 🎯 UPDATED ADAPTIVE RECOMMENDATION ENGINE
 // ============================================
 async function getAdaptiveRecommendations(userMessage, adaptiveProfile, userHistory) {
-    const { intent, genres, confidence } = analyzeRecommendationIntent(userMessage, adaptiveProfile);
+    const { intent, genres, confidence, limit = 6 } = analyzeRecommendationIntent(userMessage, adaptiveProfile);
 
-    console.log(`🎯 Detected: ${intent} - Genres: ${genres.join(', ')} (${confidence}%)`);
+    console.log(`🎯 Detected: ${intent} - Genres: ${genres.join(', ')} (${confidence}%) - Limit: ${limit}`);
 
-    // Fetch anime
-    let animeCards = await fetchAnimeByGenres(genres, 10);
+    // 🆕 Fetch more anime for better filtering
+    let animeCards = await fetchAnimeByGenres(genres, limit * 3);
 
-    // 🆕 SMART FILTERING: Remove watched + recently shown
+    // 🆕 COMPREHENSIVE FILTERING
     const watchedIds = userHistory?.completed?.map(a => a.animeId || a._id || a.id) || [];
     const watchingIds = userHistory?.watching?.map(a => a.animeId || a._id || a.id) || [];
 
-    // Get recently recommended anime (from user's session)
-    const recentRecs = adaptiveProfile?.recentActivity?.lastRecommendations || [];
-    const recentIds = recentRecs.map(r => r.id);
+    // Get recently recommended anime
+    const recentRecIds = adaptiveProfile?.getRecentRecommendationIds() || [];
 
     // Combine all IDs to exclude
-    const excludeIds = [...new Set([...watchedIds, ...watchingIds, ...recentIds])];
+    const excludeIds = [...new Set([
+        ...watchedIds.map(id => id?.toString()),
+        ...watchingIds.map(id => id?.toString()),
+        ...recentRecIds.map(id => id?.toString())
+    ])].filter(id => id && id !== 'null' && id !== 'undefined');
+
+    console.log(`📊 Filtering: ${animeCards.length} anime, excluding ${excludeIds.length} IDs`);
 
     // Filter out excluded anime
     animeCards = animeCards.filter(a => {
-        return !excludeIds.includes(a.id.toString()) &&
-            !excludeIds.includes(a.id) &&
-            !recentIds.includes(a.id);
+        const animeId = a.id?.toString();
+        if (!animeId) return false;
+
+        // Check all possible ID formats
+        const isExcluded = excludeIds.some(exId =>
+            exId === animeId ||
+            exId === a.id ||
+            (a.malId && exId === a.malId.toString())
+        );
+
+        return !isExcluded;
     });
 
-    // 🆕 If still showing same anime, add more variety
-    if (animeCards.length < 3) {
-        // Fetch more diverse results
-        const backupGenres = ['Slice of Life', 'Sports', 'Mystery', 'Supernatural'];
-        const backupAnime = await fetchAnimeByGenres(backupGenres, 6);
-        animeCards = [...animeCards, ...backupAnime.filter(a =>
-            !excludeIds.includes(a.id.toString())
-        )];
+    // 🆕 Add variety for unique requests
+    if (isUniqueAnimeRequest(userMessage) && animeCards.length > 0) {
+        // Boost less popular anime for unique requests
+        animeCards = animeCards.sort((a, b) => {
+            const scoreA = (a.averageScore || 60) + (a.popularity ? -a.popularity / 100 : 0);
+            const scoreB = (b.averageScore || 60) + (b.popularity ? -b.popularity / 100 : 0);
+            return scoreB - scoreA;
+        });
+    }
+
+    // 🆕 If we filtered out too many, fetch backup genres
+    if (animeCards.length < Math.max(3, limit)) {
+        console.log(`🔄 Low count (${animeCards.length}), fetching backup genres...`);
+
+        const backupGenres = adaptiveProfile ?
+            adaptiveProfile.getExplorationGenres() :
+            ['Slice of Life', 'Mystery', 'Sports', 'Supernatural'];
+
+        const backupAnime = await fetchAnimeByGenres(backupGenres, 10);
+
+        // Filter backup anime
+        const filteredBackup = backupAnime.filter(a => {
+            const animeId = a.id?.toString();
+            if (!animeId) return false;
+            return !excludeIds.includes(animeId);
+        });
+
+        animeCards = [...animeCards, ...filteredBackup];
+        console.log(`➕ Added ${filteredBackup.length} backup anime`);
     }
 
     // Apply scoring
-    animeCards = rankByAdaptiveScore(animeCards, adaptiveProfile, intent);
+    animeCards = rankByAdaptiveScore(animeCards, adaptiveProfile, intent, userMessage);
 
-    // Limit
-    animeCards = animeCards.slice(0, 6);
+    // Remove duplicates by title
+    const seenTitles = new Set();
+    animeCards = animeCards.filter(a => {
+        const title = a.title?.english || a.title?.romaji;
+        if (!title || seenTitles.has(title)) return false;
+        seenTitles.add(title);
+        return true;
+    });
+
+    // Apply limit
+    const finalAnime = animeCards.slice(0, limit);
+
+    console.log(`✅ Final: ${finalAnime.length} unique anime recommendations`);
 
     return {
-        anime: animeCards,
+        anime: finalAnime,
         intent: intent,
+        limit: limit,
         genres: genres,
         confidence: confidence,
-        reasoning: `Found ${animeCards.length} ${genres.join(', ')} anime matching your request`
+        reasoning: `Found ${finalAnime.length} ${genres.join(', ')} anime matching your request`
     };
 }
 
@@ -543,6 +696,14 @@ function analyzeRecommendationIntent(message, profile) {
     let intent = 'general';
     let confidence = 0.7;
     let genres = [];
+    let limit = 6; // Default limit
+
+    // 🆕 Check for single anime request
+    if (isSingleAnimeRequest(message)) {
+        intent = 'single';
+        confidence = 0.9;
+        limit = 1;
+    }
 
     // Check for random request
     if (lowerMsg.includes('random')) {
@@ -588,19 +749,34 @@ function analyzeRecommendationIntent(message, profile) {
         }
     }
 
+    // 🆕 Adjust limit based on message
+    if (lowerMsg.includes('few') || lowerMsg.includes('couple') || lowerMsg.includes('2-3')) {
+        limit = 3;
+    } else if (lowerMsg.includes('several') || lowerMsg.includes('bunch') || lowerMsg.includes('variety')) {
+        limit = 8;
+    }
+
     // Remove duplicates
     genres = [...new Set(genres)];
 
-    return { intent, genres, confidence };
+    return { intent, genres, confidence, limit };
 }
 
-function rankByAdaptiveScore(animeList, profile, intent) {
-    if (!profile) {
+function rankByAdaptiveScore(animeList, profile, intent, userMessage) {
+    if (!profile || animeList.length === 0) {
         return animeList.sort((a, b) => (b.averageScore || 0) - (a.averageScore || 0));
     }
 
+    // 🆕 Check if user wants unique anime
+    const wantsUnique = isUniqueAnimeRequest(userMessage);
+
     return animeList.map(anime => {
-        let score = anime.averageScore / 10;
+        let score = (anime.averageScore || 60) / 10;
+
+        // 🆕 Penalize very popular anime for unique requests
+        if (wantsUnique && anime.popularity) {
+            score -= anime.popularity / 5000; // Reduce score for popular anime
+        }
 
         if (anime.genres) {
             anime.genres.forEach(genre => {
@@ -612,9 +788,29 @@ function rankByAdaptiveScore(animeList, profile, intent) {
             });
         }
 
+        // 🆕 Boost newer anime for discovery
+        const currentYear = new Date().getFullYear();
+        const year = anime.seasonYear || anime.startDate?.year || currentYear - 1;
+        const yearDiff = currentYear - year;
+        if (yearDiff <= 2) score += 1; // Boost recent anime
+
+        // 🆕 Penalize recently recommended anime
+        const recentIds = profile.getRecentRecommendationIds();
+        if (recentIds.includes(anime.id?.toString())) {
+            score -= 2; // Strong penalty for recently recommended
+        }
+
         if (intent === 'random') {
             score += Math.random() * 2; // Add randomness for random requests
         }
+
+        // 🆕 Bonus for matching user's favorite topics
+        const lowerTitle = (anime.title?.english || anime.title?.romaji || '').toLowerCase();
+        profile.interactionStats.favoriteTopics.forEach(topic => {
+            if (lowerTitle.includes(topic) || (anime.description || '').toLowerCase().includes(topic)) {
+                score += 1.5;
+            }
+        });
 
         return { ...anime, adaptiveScore: score };
     })
@@ -622,9 +818,9 @@ function rankByAdaptiveScore(animeList, profile, intent) {
 }
 
 // ============================================
-// 🎬 ANIME FETCH
+// 🎬 ANIME FETCH (OPTIMIZED)
 // ============================================
-async function fetchAnimeByGenres(genres, limit = 8) {
+async function fetchAnimeByGenres(genres, limit = 12) {
     const query = `
         query ($genres: [String], $perPage: Int) {
             Page(perPage: $perPage) {
@@ -635,11 +831,14 @@ async function fetchAnimeByGenres(genres, limit = 8) {
                 ) {
                     id
                     title { romaji english }
-                    coverImage { large }
+                    coverImage { large extraLarge }
                     averageScore
                     episodes
                     description
                     genres
+                    seasonYear
+                    popularity
+                    startDate { year month day }
                 }
             }
         }
@@ -664,16 +863,18 @@ async function fetchAnimeByGenres(genres, limit = 8) {
 }
 
 // ============================================
-// 🎯 MAIN ENDPOINT
+// 🎯 UPDATED MAIN ENDPOINT
 // ============================================
 router.post("/chat", async (req, res) => {
     const { message: userMessage, userId } = req.body;
 
     console.log(`💬 User ${userId || 'guest'}: "${userMessage}"`);
 
-
     // 1. Get adaptive profile WITH DATABASE SYNC
     let adaptiveProfile = null;
+    let userProfileData = null;
+    let baseUrl = `${req.protocol}://${req.get("host")}`;
+
     if (userId) {
         if (!adaptiveProfiles.has(userId)) {
             adaptiveProfiles.set(userId, new AdaptiveUserProfile(userId));
@@ -682,24 +883,34 @@ router.post("/chat", async (req, res) => {
 
         // 🆕 SYNC WITH DATABASE PROFILE
         try {
-            const userRes = await axios.get(`${baseUrl}/api/profile/${userId}`);
-            const userProfile = userRes.data;
+            const userRes = await axios.get(
+                `${baseUrl}/api/profile/${userId}`,
+                {
+                    headers: {
+                        Authorization: req.headers.authorization || "",
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+            userProfileData = userRes.data;
 
             // Update taste based on user's favorite genres
-            if (userProfile.profile?.favoriteGenres) {
-                userProfile.profile.favoriteGenres.forEach(genre => {
-                    if (!adaptiveProfile.tasteVectors.genres.has(genre.name)) {
+            if (userProfileData.profile?.favoriteGenres) {
+                userProfileData.profile.favoriteGenres.forEach(genre => {
+                    if (genre.name && !adaptiveProfile.tasteVectors.genres.has(genre.name)) {
                         adaptiveProfile.tasteVectors.genres.set(genre.name, {
-                            weight: 0.8,
-                            confidence: 0.9,
-                            interactions: 5,
+                            weight: 0.7 + (genre.percentage / 100 * 0.3),
+                            confidence: 0.8,
+                            interactions: 3,
                             lastUpdated: Date.now()
                         });
                     }
                 });
             }
+
+            console.log(`📊 Synced profile for ${userId}: ${userProfileData.profile?.favoriteGenres?.length || 0} favorite genres`);
         } catch (err) {
-            console.log("No detailed profile available");
+            console.log("No detailed profile available or sync failed:", err.message);
         }
     }
 
@@ -707,7 +918,6 @@ router.post("/chat", async (req, res) => {
     let userHistory = null;
     if (userId && adaptiveProfile) {
         try {
-            const baseUrl = `${req.protocol}://${req.get("host")}`;
             const listRes = await axios.get(
                 `${baseUrl}/api/list/${userId}`,
                 {
@@ -719,13 +929,19 @@ router.post("/chat", async (req, res) => {
             );
             userHistory = listRes.data;
 
+            // Update profile from watched anime
             if (userHistory.completed) {
-                userHistory.completed.forEach(anime => {
+                userHistory.completed.slice(0, 10).forEach(anime => {
                     adaptiveProfile.updateFromAnime(anime, 'completed');
                 });
             }
+            if (userHistory.watching) {
+                userHistory.watching.slice(0, 5).forEach(anime => {
+                    adaptiveProfile.updateFromAnime(anime, 'watched');
+                });
+            }
         } catch (err) {
-            console.log("No user history available");
+            console.log("No user history available:", err.message);
         }
     }
 
@@ -736,7 +952,10 @@ router.post("/chat", async (req, res) => {
         lowerMsg.includes("suggest") ||
         lowerMsg.includes("find") ||
         lowerMsg.includes("what should") ||
-        lowerMsg.includes("random");
+        lowerMsg.includes("random") ||
+        lowerMsg.includes("give me") ||
+        lowerMsg.includes("looking for") ||
+        isSingleAnimeRequest(userMessage);
 
     let recommendations = null;
     if (isAskingForAnime) {
@@ -753,13 +972,12 @@ router.post("/chat", async (req, res) => {
         userMessage,
         userId,
         adaptiveProfile,
-        { userHistory },
+        {
+            userHistory,
+            userProfile: userProfileData // 🆕 Pass the full profile object
+        },
         recommendations
     );
-
-    if (recommendations?.anime?.length > 0 && adaptiveProfile) {
-        adaptiveProfile.addRecentRecommendation(recommendations.anime);
-    }
 
     // 5. Prepare response
     const response = {
@@ -770,11 +988,13 @@ router.post("/chat", async (req, res) => {
             personality: adaptiveProfile?.personality?.current || 'enthusiastic_otaku',
             engagement: adaptiveProfile?.interactionStats?.engagementScore || 0.5,
             intent: recommendations?.intent || 'chat',
-            confidence: recommendations?.confidence || 0
+            confidence: recommendations?.confidence || 0,
+            limit: recommendations?.limit || 0,
+            userHasHistory: !!(userHistory?.completed?.length > 0)
         }
     };
 
-    console.log(`🤖 Response ready with ${response.anime.length} anime`);
+    console.log(`🤖 Response ready with ${response.anime.length} anime (limit: ${response.context.limit})`);
     res.json(response);
 });
 
