@@ -26,15 +26,15 @@ const MODEL = "meta-llama/llama-3.1-8b-instruct";
 // // 🆕 PROFILE DATA EXTRACTOR
 // async function extractUserProfileForAI(userProfileData) {
 //     if (!userProfileData) return "No detailed profile available.";
-    
+
 //     let profileSummary = "USER PROFILE:\n";
-    
+
 //     // Only include essential info
 //     const stats = userProfileData.profile?.stats || {};
-    
+
 //     profileSummary += `• Completed: ${stats.animeWatched || 0} anime\n`;
 //     profileSummary += `• Watching: ${stats.currentlyWatching || 0} anime\n`;
-    
+
 //     // Favorite genres (short)
 //     const favGenres = userProfileData.profile?.favoriteGenres || [];
 //     if (favGenres.length > 0) {
@@ -43,14 +43,14 @@ const MODEL = "meta-llama/llama-3.1-8b-instruct";
 //     } else {
 //         profileSummary += `• Top genres: Not enough data yet\n`;
 //     }
-    
+
 //     // Recent activity
 //     const recentWatched = userProfileData.recentlyWatched || [];
 //     if (recentWatched.length > 0) {
 //         const recentNames = recentWatched.slice(0, 2).map(a => a.title).join(', ');
 //         profileSummary += `• Recently watched: ${recentNames}\n`;
 //     }
-    
+
 //     return profileSummary;
 // }
 
@@ -414,11 +414,12 @@ async function getAdaptiveOpenRouterResponse(userMessage, userId = null, adaptiv
 
         const data = await response.json();
         const aiResponse = data.choices[0].message.content.trim();
+        const cleanedResponse = cleanAIResponse(aiResponse);
 
         if (profile) {
             profile.recentActivity.lastMessages.push({
                 userMessage,
-                aiResponse,
+                aiResponse: cleanedResponse,
                 timestamp: new Date().toISOString()
             });
 
@@ -434,7 +435,7 @@ async function getAdaptiveOpenRouterResponse(userMessage, userId = null, adaptiv
             }
         }
 
-        return aiResponse;
+        return cleanedResponse;
 
     } catch (error) {
         console.error("Adaptive OpenRouter error:", error.message);
@@ -445,26 +446,47 @@ async function getAdaptiveOpenRouterResponse(userMessage, userId = null, adaptiv
 function buildAdaptiveSystemPrompt(profile, context, userMessage, recommendations) {
     const personalityConfigs = {
         'enthusiastic_otaku': {
-            tone: 'Excited and passionate! Use lots of exclamations and emojis! 😄🎉',
-            style: 'Be energetic and share your love for anime enthusiastically!'
+            tone: 'Knowledgeable and passionate about anime',
+            style: 'Share insights with moderate enthusiasm. Use emojis sparingly (0-1 per paragraph).'
         },
         'calm_sensei': {
-            tone: 'Wise and thoughtful. Be analytical and share insights.',
-            style: 'Speak like a knowledgeable mentor. Use thoughtful language.'
+            tone: 'Analytical and thoughtful',
+            style: 'Provide balanced recommendations with detailed insights.'
         },
         'curious_researcher': {
-            tone: 'Inquisitive and exploratory. Ask questions and show curiosity.',
-            style: 'Be curious about the user\'s opinions and preferences.'
+            tone: 'Inquisitive and focused',
+            style: 'Ask specific questions and provide precise information.'
         },
         'friendly_buddy': {
-            tone: 'Casual and relatable. Be a friend chatting about anime.',
-            style: 'Use casual language, like you\'re recommending to a friend.'
+            tone: 'Casual and helpful',
+            style: 'Recommend anime like a knowledgeable friend would.'
         }
     };
-    
+
+    const formattingRules = `
+🚫 STRICT FORMATTING RULES - DO NOT IGNORE:
+1. **ANIME TITLES**: Use **bold** only for anime titles: **Title Here**
+2. **EMOJIS**: Maximum 1-2 emojis in entire response. Do NOT use: 😊😍🤯❤️🐰✨ repeatedly
+3. **EXCLAMATIONS**: Use ! sparingly. Never use multiple !!! or ??? 
+4. **PARAGRAPHS**: Keep paragraphs short (2-3 sentences). Use line breaks.
+5. **REPETITION**: Avoid saying "just" "so" "really" "totally" repeatedly
+6. **HYPERBOLE**: Avoid "TO DIE FOR", "SOOOO AMAZING", "EPIC", "INSANE"
+7. **STRUCTURE**:
+   • Start with a brief acknowledgment
+   • Present 2-3 recommendations with clear reasoning
+   • Ask one thoughtful follow-up question
+8. **AVOID PHRASES**:
+   • "Well, I've got just the thing for you!"
+   • "Now, I know what you're thinking..."
+   • "Trust me..."
+   • "Last but not least..."
+   • "Another one that caught my eye is..."
+   • "The way [character] [action] is just so..."
+9. **BE CONCISE**: Get to the point without excessive preamble`;
+
     const personality = profile?.personality?.current || 'enthusiastic_otaku';
     const config = personalityConfigs[personality];
-    
+
     // Get user's favorite genres from profile
     let userTasteInfo = "New user, no taste profile yet.";
     if (profile) {
@@ -473,44 +495,48 @@ function buildAdaptiveSystemPrompt(profile, context, userMessage, recommendation
             userTasteInfo = `User enjoys: ${topGenres.map(g => g.genre).join(', ')}.`;
         }
     }
-    
+
     // 🆕 Create short profile summary
     let profileSummary = "";
     if (context.userProfile) {
         // Create a simple profile summary
         const stats = context.userProfile.profile?.stats || {};
         const favGenres = context.userProfile.profile?.favoriteGenres || [];
-        
+
         profileSummary = `📊 User Stats: ${stats.animeWatched || 0} completed, ${stats.currentlyWatching || 0} watching. `;
-        
+
         if (favGenres.length > 0) {
             const top3 = favGenres.slice(0, 3).map(g => `${g.name}`).join(', ');
             profileSummary += `Top genres: ${top3}.`;
         }
     }
-    
-    // CRITICAL: Only mention anime we actually fetched
+
+    // 🆕 Define variables at the function scope level
     let animeContext = "";
+    let animeListContent = "";
+    let availableAnimeSection = "";
+
+    // CRITICAL: Only mention anime we actually fetched
     if (recommendations && recommendations.anime && recommendations.anime.length > 0) {
-        const animeList = recommendations.anime.slice(0, 4).map((anime, index) => {
+        animeListContent = recommendations.anime.slice(0, 3).map((anime, index) => {
             const title = anime.title?.english || anime.title?.romaji || "Anime";
-            const description = anime.description ? 
-                anime.description.replace(/<[^>]*>/g, '').substring(0, 80) + "..." : 
-                "Great anime with interesting story";
-            const genres = anime.genres ? anime.genres.slice(0, 2).join(', ') : "Various";
-            const score = anime.averageScore ? `Rated ${anime.averageScore/10}/10` : "Popular";
-            
-            return `${index + 1}. "${title}" - ${genres}, ${score}`;
-        }).join('\n');
-        
+            const cleanDesc = anime.description ?
+                anime.description.replace(/<[^>]*>/g, '').substring(0, 100).trim() + "..." :
+                "";
+            const genres = anime.genres ? anime.genres.slice(0, 3).join(' · ') : "";
+            const score = anime.averageScore ? `⭐ ${(anime.averageScore / 10).toFixed(1)}/10` : "";
+
+            return `${index + 1}. **${title}**\n   ${genres} ${score}\n   ${cleanDesc}`;
+        }).join('\n\n');
+
         const isSingleRequest = isSingleAnimeRequest(userMessage);
         const isUniqueRequest = isUniqueAnimeRequest(userMessage);
-        
+
         animeContext = `
 USER PROFILE: ${profileSummary}
 
 ANIME DATA FROM DATABASE (USE THESE ONLY):
-${animeList}
+${animeListContent}
 
 STRICT RULES FOR RESPONSE:
 1. ONLY mention anime from the list above
@@ -518,32 +544,124 @@ STRICT RULES FOR RESPONSE:
 3. Mention 2-3 anime from the list naturally${isSingleRequest ? ' (OR JUST 1 if they asked for one)' : ''}
 4. Briefly describe why they match the user's request
 5. Ask what they think about these suggestions${isUniqueRequest ? ' (emphasize uniqueness if asked)' : ''}`;
+
+        availableAnimeSection = `
+AVAILABLE ANIME FOR RECOMMENDATION:
+${animeListContent}`;
     } else {
         animeContext = `
 USER PROFILE: ${profileSummary}
 
 NO ANIME DATA AVAILABLE:
 Just have a normal conversation about anime. Ask what they like or share general thoughts.`;
+
+        availableAnimeSection = "NO ANIME DATA AVAILABLE FOR RECOMMENDATION";
     }
-    
-    return `You are OtakuAI, an adaptive anime companion chatting with a user.
+
+    return `You are OtakuAI, an anime recommendation assistant. Provide helpful, concise recommendations.
 
 PERSONALITY: ${personality.toUpperCase()}
-- Tone: ${config.tone}
-- Style: ${config.style}
+Tone: ${config.tone}
+Style: ${config.style}
 
-USER MESSAGE: "${userMessage}"
-USER PROFILE: ${userTasteInfo}
-${animeContext}
+${formattingRules}
 
-RESPONSE REQUIREMENTS:
-1. Match the ${personality} personality style exactly
-2. ${personality === 'enthusiastic_otaku' ? 'Use emojis and exclamations! Be excited! 😄🎉' : ''}
-${personality === 'calm_sensei' ? 'Be thoughtful and analytical. Use complete sentences.' : ''}
-${personality === 'curious_researcher' ? 'Ask questions and show curiosity.' : ''}
-${personality === 'friendly_buddy' ? 'Be casual and friendly, like chatting with a buddy.' : ''}
-3. Keep response under ${getAdaptiveTokenLength(profile)} tokens
-4. End with a follow-up question`;
+USER'S MESSAGE: "${userMessage}"
+USER'S PREFERENCES: ${userTasteInfo}
+
+${availableAnimeSection}
+
+RESPONSE GUIDELINES:
+1. If recommending, mention 2-3 anime from the list above
+2. Briefly explain why each matches the request (genre, theme, quality)
+3. Use natural, conversational language
+4. Ask one specific follow-up question about their preferences
+5. ${personality === 'enthusiastic_otaku' ? 'Show moderate enthusiasm' : 'Maintain appropriate tone'}
+6. DO NOT add anime not in the list above
+
+Respond naturally while following all formatting rules strictly.`;
+}
+
+// 🆕 RESPONSE CLEANER - Post-process to remove cringy patterns
+function cleanAIResponse(response) {
+    if (!response) return response;
+
+    let cleaned = response;
+
+    // Remove excessive exclamations
+    cleaned = cleaned.replace(/!{2,}/g, '!');
+    cleaned = cleaned.replace(/\?{2,}/g, '?');
+
+    // Remove ellipsis abuse
+    cleaned = cleaned.replace(/\.{3,}/g, '...');
+
+    // Remove repeated emojis
+    cleaned = cleaned.replace(/([\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}]){2,}/gu, '$1');
+
+    // Remove filler phrases
+    const fillerPhrases = [
+        /Well, I've got just the thing for you!/gi,
+        /Now, I know what you're thinking:/gi,
+        /trust me,/gi,
+        /Last but not least,/gi,
+        /Another one that caught my eye is/gi,
+        /just so \.\.\./gi,
+        /TO DIE FOR/gi,
+        /you've got to check out/gi,
+        /you should totally watch/gi,
+        /it's just\.\.\. wow!/gi,
+        /the way it (.*?) is just so/gi,
+        /I think you might enjoy/gi,
+        /While you mentioned/gi,
+        /But trust me/gi,
+        /for short/gi
+    ];
+
+    fillerPhrases.forEach(pattern => {
+        cleaned = cleaned.replace(pattern, '');
+    });
+
+    // Remove redundant enthusiasm
+    const overEnthusiastic = [
+        /sooo+/gi,
+        /very very/gi,
+        /really really/gi,
+        /absolutely amazing/gi,
+        /incredibly epic/gi,
+        /heartwarming!/gi,
+        /adorable!/gi,
+        /beautifully crafted/gi
+    ];
+
+    overEnthusiastic.forEach(pattern => {
+        cleaned = cleaned.replace(pattern, (match) => {
+            // Tone down the adjectives
+            return match.replace(/absolutely |incredibly |beautifully /gi, '')
+                .replace(/!/g, '');
+        });
+    });
+
+    // Fix common patterns
+    cleaned = cleaned.replace(/Romance anime, you say\?/gi, 'For romance anime,');
+    cleaned = cleaned.replace(/Another one (that )?is/gi, 'Also');
+    cleaned = cleaned.replace(/caught my eye/gi, 'worth considering');
+
+    // Clean up parentheses
+    cleaned = cleaned.replace(/\(or (.*?) for short\)/gi, '');
+
+    // Trim extra whitespace and fix punctuation
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    cleaned = cleaned.replace(/\s\./g, '.');
+    cleaned = cleaned.replace(/\s,/g, ',');
+    cleaned = cleaned.replace(/\s\?/g, '?');
+    cleaned = cleaned.replace(/\s!/g, '!');
+
+    // Ensure proper capitalization
+    if (cleaned.length > 0) {
+        cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+    }
+
+    return cleaned;
 }
 
 function getAdaptiveTemperature(profile) {
@@ -581,10 +699,10 @@ function getAdaptiveTokenLength(profile) {
 
 function getFallbackResponse(userMessage) {
     const fallbacks = [
-        "Hey! I'd love to recommend some anime for you. What kind of shows do you usually enjoy?",
-        "Great question! Let me find some awesome anime for you. Any particular genres you're interested in?",
-        "I'm excited to help you find new anime! Tell me what you've been watching lately?",
-        "Awesome! I've got some great recommendations coming up. What's your favorite anime so far?"
+        "Hey there! I'd love to help you find some great anime. What genres or themes are you interested in?",
+        "I enjoy chatting about anime! Are you looking for recommendations, or just want to talk about shows you've watched?",
+        "Let me help you discover some anime. Could you tell me what you've enjoyed watching recently?",
+        "I'm here to chat about all things anime. What's on your mind today?"
     ];
 
     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
