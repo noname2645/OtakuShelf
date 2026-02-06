@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 
 const ProfilePage = () => {
-  const { user, updateProfile, checkAuthStatus } = useAuth();
+  const { user, updateProfile, checkAuthStatus, updateUserState } = useAuth();
 
   // Profile data
   const [profileData, setProfileData] = useState(null);
@@ -452,9 +452,9 @@ const ProfilePage = () => {
         avatar: photoUrl
       }));
 
-      // Update auth context
-      if (updateProfile) {
-        await updateProfile({ photo: photoUrl });
+      // Update auth context locally immediately
+      if (updateUserState) {
+        updateUserState({ photo: photoUrl });
       }
 
       alert('Profile picture updated successfully!');
@@ -528,40 +528,40 @@ const ProfilePage = () => {
     return null;
   };
 
-if (loading) {
-  return (
-    <div style={{ position: 'relative', minHeight: '100vh', background: 'linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)' }}>
-      <Header showSearch={false} />
-      <BottomNavBar />
-      {/* Simple Loading Preview - Full screen overlay */}
-      <div className="profile-loading" style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        bottom: 0, 
-        zIndex: 9999,
-        background: 'linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)'
-      }}>
-        <div className="loading-icons">
-          <div className="loading-icon">🎬</div>
-          <div className="loading-icon">🌟</div>
-          <div className="loading-icon">🎨</div>
-          <div className="loading-icon">🔥</div>
-          <div className="loading-icon">✨</div>
-        </div>
-        
-        <div className="loading-content">
-          <div className="loading-spinner"></div>
-          <h2 className="loading-text">Loading Your Anime Journey</h2>
-          <p className="loading-subtext">
-            Preparing your stats, favorites, and anime collection...
-          </p>
+  if (loading) {
+    return (
+      <div style={{ position: 'relative', minHeight: '100vh', background: 'linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)' }}>
+        <Header showSearch={false} />
+        <BottomNavBar />
+        {/* Simple Loading Preview - Full screen overlay */}
+        <div className="profile-loading" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+          background: 'linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)'
+        }}>
+          <div className="loading-icons">
+            <div className="loading-icon">🎬</div>
+            <div className="loading-icon">🌟</div>
+            <div className="loading-icon">🎨</div>
+            <div className="loading-icon">🔥</div>
+            <div className="loading-icon">✨</div>
+          </div>
+
+          <div className="loading-content">
+            <div className="loading-spinner"></div>
+            <h2 className="loading-text">Loading Your Anime Journey</h2>
+            <p className="loading-subtext">
+              Preparing your stats, favorites, and anime collection...
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   if (!profileData) {
     return (

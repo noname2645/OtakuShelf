@@ -6,6 +6,7 @@ import Modal from "./modal.jsx";
 import '../Stylesheets/aipage.css';
 import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
+import { useAuth } from "../components/AuthContext.jsx";
 
 const AIPage = () => {
     const [input, setInput] = useState("");
@@ -26,7 +27,7 @@ const AIPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const API = import.meta.env.VITE_API_BASE_URL;
-    const user = JSON.parse(localStorage.getItem("user"));
+    const { user } = useAuth();
 
     // Auto-scroll to bottom when new messages are added
     const scrollToBottom = (instant = false) => {
@@ -260,9 +261,35 @@ const AIPage = () => {
         setSelectedAnime(null);
     };
 
+    // 🆕 Clear Chat Handler
+    const handleClearChat = () => {
+        if (window.confirm("Are you sure you want to clear the conversation?")) {
+            setMessages([]);
+            localStorage.removeItem('ai_conversation');
+            setConversationContext({ mood: 'neutral', suggestions: [] });
+
+            // Re-add welcome message
+            const welcomeMessage = {
+                role: "ai",
+                text: "Chat cleared! What's next on your watchlist?",
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                mood: 'neutral',
+                id: Date.now()
+            };
+            setMessages([welcomeMessage]);
+        }
+    };
+
     return (
         <>
-            <Header showSearch={false} />
+            <Header
+                showSearch={false}
+                customAction={
+                    <button className="clear-chat-btn" onClick={handleClearChat} title="Clear conversation">
+                        Clear Chat
+                    </button>
+                }
+            />
             <BottomNavBar />
 
             <div className="ai-page-container">
@@ -318,11 +345,19 @@ const AIPage = () => {
                                     <div key={msg.id} className={`message-bubble ${msg.role} ${msg.mood || ''}`}>
                                         <div className="message-header">
                                             <div className={`message-avatar ${msg.role}`}>
-                                                {msg.role === "user" ? "👤" : "🤖"}
+                                                {msg.role === "user" ? (
+                                                    user?.photo ? (
+                                                        <img src={user.photo} alt="User" className="user-avatar-img" />
+                                                    ) : (
+                                                        <div className="user-initials" style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#667eea', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '1rem' }}>
+                                                            {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                                                        </div>
+                                                    )
+                                                ) : "🤖"}
                                             </div>
                                             <div className="message-meta">
                                                 <span className="message-sender">
-                                                    {msg.role === "user" ? "You" : "Otaku AI"}
+                                                    {msg.role === "user" ? (user?.name || "You") : "Otaku AI"}
                                                 </span>
                                                 <span className="message-time">{msg.timestamp}</span>
                                             </div>
@@ -369,6 +404,7 @@ const AIPage = () => {
                                                             anime={a}
                                                             showAddButton={true}
                                                             onClick={handleCardClick}
+                                                            className="anime-card"
                                                         />
                                                     ))}
                                                 </div>

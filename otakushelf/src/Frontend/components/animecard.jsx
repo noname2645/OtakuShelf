@@ -1,23 +1,23 @@
 import styles from "../Stylesheets/animecard.module.css";
 
-const AnimeCard = ({ anime, onClick }) => {
+const AnimeCard = ({ anime, onClick, className }) => {
   // Safely extract title
   const getTitle = () => {
     if (!anime) return "Untitled";
-    
+
     // If title is already a string
     if (typeof anime.title === 'string') {
       return anime.title;
     }
-    
+
     // If title is an object
     if (anime.title && typeof anime.title === 'object') {
       return anime.title.english ||
-             anime.title.romaji ||
-             anime.title.native ||
-             "Untitled";
+        anime.title.romaji ||
+        anime.title.native ||
+        "Untitled";
     }
-    
+
     // Fallback
     return "Untitled";
   };
@@ -25,25 +25,25 @@ const AnimeCard = ({ anime, onClick }) => {
   // Safely extract image
   const getImage = () => {
     if (!anime) return null;
-    
+
     // Try coverImage properties
     if (anime.coverImage) {
       return anime.coverImage.extraLarge ||
-             anime.coverImage.large ||
-             anime.coverImage.medium ||
-             null;
+        anime.coverImage.large ||
+        anime.coverImage.medium ||
+        null;
     }
-    
+
     // Try bannerImage
     if (anime.bannerImage) {
       return anime.bannerImage;
     }
-    
+
     // Try direct image properties
     if (anime.image_url) {
       return anime.image_url;
     }
-    
+
     return null;
   };
 
@@ -57,7 +57,7 @@ const AnimeCard = ({ anime, onClick }) => {
   };
 
   return (
-    <div className={styles["anime-card"]} onClick={handleClick}>
+    <div className={`${styles["anime-card"]} ${className || ''}`} onClick={handleClick}>
       <div className={styles["card-image"]}>
         {img ? (
           <img

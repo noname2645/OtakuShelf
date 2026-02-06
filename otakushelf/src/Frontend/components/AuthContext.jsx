@@ -370,7 +370,12 @@ export const AuthProvider = ({ children }) => {
     logout,
     checkAuthStatus,
     updateProfile,
-    refreshProfile: () => user && fetchFreshProfile(user.id).then(setProfile)
+    refreshProfile: () => user && fetchFreshProfile(user.id).then(setProfile),
+    updateUserState: (updates) => {
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+      storeMinimalUser(updatedUser);
+    }
   };
 
   return (
