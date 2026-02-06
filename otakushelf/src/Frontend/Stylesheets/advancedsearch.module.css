@@ -7,7 +7,8 @@ body {
 .advancedSearchContainer {
   padding: 20px;
   margin: 0 auto;
-  background: #0a1124;
+  /* background: #0a1124; Removed for global background */
+  background: transparent;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -335,26 +336,85 @@ body {
 }
 
 /* Staggered delays */
-.animeGrid .animeCard:nth-child(1) { animation-delay: 0.05s; }
-.animeGrid .animeCard:nth-child(2) { animation-delay: 0.1s; }
-.animeGrid .animeCard:nth-child(3) { animation-delay: 0.15s; }
-.animeGrid .animeCard:nth-child(4) { animation-delay: 0.2s; }
-.animeGrid .animeCard:nth-child(5) { animation-delay: 0.25s; }
-.animeGrid .animeCard:nth-child(6) { animation-delay: 0.3s; }
-.animeGrid .animeCard:nth-child(7) { animation-delay: 0.35s; }
-.animeGrid .animeCard:nth-child(8) { animation-delay: 0.4s; }
-.animeGrid .animeCard:nth-child(9) { animation-delay: 0.45s; }
-.animeGrid .animeCard:nth-child(10) { animation-delay: 0.5s; }
-.animeGrid .animeCard:nth-child(11) { animation-delay: 0.55s; }
-.animeGrid .animeCard:nth-child(12) { animation-delay: 0.6s; }
-.animeGrid .animeCard:nth-child(13) { animation-delay: 0.65s; }
-.animeGrid .animeCard:nth-child(14) { animation-delay: 0.7s; }
-.animeGrid .animeCard:nth-child(15) { animation-delay: 0.75s; }
-.animeGrid .animeCard:nth-child(16) { animation-delay: 0.8s; }
-.animeGrid .animeCard:nth-child(17) { animation-delay: 0.85s; }
-.animeGrid .animeCard:nth-child(18) { animation-delay: 0.9s; }
-.animeGrid .animeCard:nth-child(19) { animation-delay: 0.95s; }
-.animeGrid .animeCard:nth-child(20) { animation-delay: 1s; }
+.animeGrid .animeCard:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.animeGrid .animeCard:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.animeGrid .animeCard:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.animeGrid .animeCard:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.animeGrid .animeCard:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+.animeGrid .animeCard:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+.animeGrid .animeCard:nth-child(7) {
+  animation-delay: 0.35s;
+}
+
+.animeGrid .animeCard:nth-child(8) {
+  animation-delay: 0.4s;
+}
+
+.animeGrid .animeCard:nth-child(9) {
+  animation-delay: 0.45s;
+}
+
+.animeGrid .animeCard:nth-child(10) {
+  animation-delay: 0.5s;
+}
+
+.animeGrid .animeCard:nth-child(11) {
+  animation-delay: 0.55s;
+}
+
+.animeGrid .animeCard:nth-child(12) {
+  animation-delay: 0.6s;
+}
+
+.animeGrid .animeCard:nth-child(13) {
+  animation-delay: 0.65s;
+}
+
+.animeGrid .animeCard:nth-child(14) {
+  animation-delay: 0.7s;
+}
+
+.animeGrid .animeCard:nth-child(15) {
+  animation-delay: 0.75s;
+}
+
+.animeGrid .animeCard:nth-child(16) {
+  animation-delay: 0.8s;
+}
+
+.animeGrid .animeCard:nth-child(17) {
+  animation-delay: 0.85s;
+}
+
+.animeGrid .animeCard:nth-child(18) {
+  animation-delay: 0.9s;
+}
+
+.animeGrid .animeCard:nth-child(19) {
+  animation-delay: 0.95s;
+}
+
+.animeGrid .animeCard:nth-child(20) {
+  animation-delay: 1s;
+}
 
 /* Simple fade-in-up animation */
 @keyframes fadeInUp {
@@ -362,6 +422,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -441,7 +502,7 @@ body {
     row-gap: 20px;
     column-gap: 20px;
   }
-  
+
   .animeCard {
     height: 300px;
     max-width: 200px;
@@ -454,30 +515,30 @@ body {
     justify-content: flex-start;
     gap: 12px;
   }
-  
+
   .dropdown {
     flex: 0 0 calc(33.333% - 12px);
     min-width: 150px;
   }
-  
+
   .animeGrid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 15px;
   }
-  
+
   .animeCard {
     height: 280px;
     max-width: 180px;
   }
-  
+
   .genresMenu {
     width: 400px;
   }
-  
+
   .dropdownContent .genresGrid {
     grid-template-columns: 1fr 1fr 1fr;
   }
-  
+
   .animeGrid .animeCard:nth-child(n) {
     animation-delay: calc(var(--index, 0) * 0.05s);
   }
@@ -489,64 +550,65 @@ body {
     padding-top: 100px;
     background-attachment: scroll;
   }
-  
+
   .dropdownFilters {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     width: 100%;
   }
-  
+
   .dropdown {
     flex: 0 0 100%;
     width: 100%;
   }
-  
+
   .dropdownToggle {
     width: 100%;
     padding: 10px 15px;
     font-size: 13px;
   }
-  
+
   .dropdownMenu {
     width: 100%;
     max-width: 100vw;
     left: 0;
     right: 0;
   }
-  
+
   .genresMenu {
     width: calc(100vw - 40px);
     max-width: 100%;
   }
-  
+
   .dropdownContent .genresGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .animeGrid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 15px;
     padding: 0 10px;
   }
-  
+
   .animeCard {
     height: 280px;
     max-width: 160px;
     margin: 0 auto;
   }
-  
+
   .cardTitleBottom h3 {
     font-size: 0.9rem;
   }
-  
+
   .resultsCount {
     font-size: 16px;
     padding: 5px 12px;
     margin: 15px auto;
   }
-  
-  .resetBtn, .searchBtn {
+
+  .resetBtn,
+  .searchBtn {
     padding: 10px 20px;
     font-size: 12px;
     width: 100%;
@@ -554,17 +616,17 @@ body {
     order: 1;
     margin-top: 5px;
   }
-  
+
   .checkboxLabel {
     font-size: 12px;
     padding: 6px 8px;
   }
-  
+
   .checkboxLabel input {
     width: 14px;
     height: 14px;
   }
-  
+
   .headerControls {
     flex-direction: column;
     gap: 10px;
@@ -577,57 +639,58 @@ body {
     padding: 12px;
     padding-top: 90px;
   }
-  
+
   .dropdownFilters {
     grid-template-columns: 1fr;
     gap: 8px;
   }
-  
+
   .dropdown {
     width: 100%;
   }
-  
+
   .dropdownToggle {
     padding: 9px 12px;
     font-size: 12px;
   }
-  
+
   .animeGrid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px;
     padding: 0 8px;
   }
-  
+
   .animeCard {
     height: 240px;
     max-width: 140px;
   }
-  
+
   .dropdownContent .genresGrid {
     grid-template-columns: 1fr;
   }
-  
-  .optionsGrid, .seasonGrid {
+
+  .optionsGrid,
+  .seasonGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .resultsCount {
     font-size: 14px;
     text-align: center;
     width: 90%;
     padding: 4px 10px;
   }
-  
+
   .cardTitleBottom {
     padding: 10px 8px;
   }
-  
+
   .cardTitleBottom h3 {
     font-size: 0.85rem;
     letter-spacing: 1px;
     -webkit-line-clamp: 2;
   }
-  
+
   .resetBtn {
     font-size: 11px;
     padding: 8px 16px;
@@ -639,16 +702,16 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 10px;
   }
-  
+
   .animeCard {
     height: 220px;
     max-width: 130px;
   }
-  
+
   .cardTitleBottom {
     padding: 8px 6px;
   }
-  
+
   .cardTitleBottom h3 {
     font-size: 0.8rem;
     letter-spacing: 0.5px;
@@ -660,31 +723,31 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
     gap: 8px;
   }
-  
+
   .animeCard {
     height: 200px;
     max-width: 115px;
   }
-  
+
   .dropdownFilters {
     gap: 6px;
   }
-  
+
   .dropdownToggle {
     padding: 8px 10px;
     font-size: 11px;
   }
-  
+
   .resetBtn {
     padding: 7px 14px;
     font-size: 10px;
   }
-  
+
   .resultsCount {
     font-size: 13px;
     padding: 4px 8px;
   }
-  
+
   .cardTitleBottom h3 {
     font-size: 0.75rem;
   }
@@ -695,21 +758,21 @@ body {
     padding: 10px;
     padding-top: 80px;
   }
-  
+
   .dropdownFilters {
     gap: 5px;
   }
-  
+
   .animeGrid {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 6px;
   }
-  
+
   .animeCard {
     height: 180px;
     max-width: 100px;
   }
-  
+
   .cardTitleBottom h3 {
     font-size: 0.7rem;
   }
@@ -720,7 +783,7 @@ body {
   .advancedSearchContainer {
     padding-top: 80px;
   }
-  
+
   .dropdownFilters {
     display: flex;
     flex-wrap: nowrap;
@@ -728,22 +791,22 @@ body {
     padding-bottom: 5px;
     gap: 8px;
   }
-  
+
   .dropdown {
     flex: 0 0 auto;
     min-width: 140px;
   }
-  
+
   .animeGrid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 10px;
   }
-  
+
   .animeCard {
     height: 180px;
     max-width: 140px;
   }
-  
+
   .cardTitleBottom h3 {
     font-size: 0.8rem;
     -webkit-line-clamp: 1;
@@ -755,11 +818,11 @@ body {
   .animeGrid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
-  
+
   .dropdownFilters {
     flex-wrap: wrap;
   }
-  
+
   .dropdown {
     flex: 0 0 calc(25% - 12px);
   }
@@ -770,7 +833,7 @@ body {
   .animeCard {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
   }
-  
+
   .dropdownToggle {
     border-width: 1px;
   }
@@ -782,32 +845,32 @@ body {
     background: rgba(30, 30, 30, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .checkboxLabel {
     background: rgba(255, 255, 255, 0.05);
     color: #e0e0e0;
   }
-  
+
   .checkboxLabel:hover {
     background: rgba(255, 255, 255, 0.1);
   }
-  
-  .checkboxLabel input:checked + span {
+
+  .checkboxLabel input:checked+span {
     color: #3498db;
   }
-  
+
   .textInput {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
     color: white;
   }
-  
+
   .resultsCount {
     color: #ffffff;
     border-color: #ffffff;
     background: rgba(30, 30, 30, 0.9);
   }
-  
+
   .animeCard {
     background: rgba(15, 15, 25, 0.7);
   }
@@ -820,23 +883,23 @@ body {
     -webkit-tap-highlight-color: transparent;
     transition-duration: 0.15s;
   }
-  
+
   * {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
   }
-  
+
   input,
   textarea {
     -webkit-user-select: text;
     user-select: text;
   }
-  
+
   .animeCard:hover {
     transform: translateY(0);
   }
-  
+
   .animeCard:active {
     transform: scale(0.98);
   }
@@ -844,6 +907,7 @@ body {
 
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
+
   .animeCard,
   .animeCard img,
   .dropdownToggle,
@@ -852,16 +916,16 @@ body {
     animation: none !important;
     transform: none !important;
   }
-  
+
   .animeCard {
     opacity: 1 !important;
     transform: none !important;
   }
-  
+
   .animeCard:hover {
     transform: none;
   }
-  
+
   .loader {
     animation: none;
   }

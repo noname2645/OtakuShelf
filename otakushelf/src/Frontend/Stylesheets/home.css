@@ -13,7 +13,7 @@
   font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 650;
   font-style: normal;
-  background: #0a1124;
+  background: #030712;
   min-height: 100vh;
   -webkit-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
@@ -467,6 +467,9 @@
 
 .anime-section-container {
   margin-bottom: 2rem;
+  content-visibility: auto;
+  contain-intrinsic-size: 5000px;
+  /* Better estimate for 100 items */
 }
 
 .anime-sections .divider {

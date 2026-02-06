@@ -2,53 +2,27 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import "../Stylesheets/home.css";
 import axios from "axios";
 import Modal from "../components/modal.jsx";
-import { Link } from 'react-router-dom';
 import TrailerHero from './TrailerHero.jsx';
 import { Header } from '../components/header.jsx';
 import BottomNavBar from './bottom.jsx';
 
 // API base URL
 const API = import.meta.env.VITE_API_BASE_URL;
-console.log(API);
-console.log("Frontend running in", import.meta.env.MODE);
 
-// Simple useInView hook that always returns true
-const useInView = () => {
-    const ref = useRef(null);
-    return [ref, true]; // Always return true to show immediately
-};
+// Stale-while-revalidate key
+const CACHE_KEY = 'animeSections_100_v3'; // Increment version to force fresh structure
+const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
+const STALE_TIME = 1000 * 60 * 30; // 30 minutes until fresh fetch (but stale data shown immediately)
+
 // Optimized Anime Card Component
-// Updated AnimeCard component in home.jsx
 const AnimeCard = React.memo(({ anime, onClick, index }) => {
-    const [isMobile, setIsMobile] = useState(false);
-    const [imageSrc, setImageSrc] = useState('/placeholder-anime.jpg');
-    // Remove the loaded state since animation is automatic now
+    const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
 
-    // Check mobile on mount
     useEffect(() => {
-        setIsMobile(window.innerWidth <= 768);
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
-
-    // Load image
-    useEffect(() => {
-        if (!anime) return;
-
-        const imgUrl = anime.coverImage?.extraLarge ||
-            anime.coverImage?.large ||
-            anime.bannerImage ||
-            "/placeholder-anime.jpg";
-
-        const img = new Image();
-        img.src = imgUrl;
-        img.onload = () => {
-            setImageSrc(imgUrl);
-            // Remove setLoaded(true) since we don't need it
-        };
-        img.onerror = () => {
-            setImageSrc('/placeholder-anime.jpg');
-            // Remove setLoaded(true) since we don't need it
-        };
-    }, [anime]);
 
     const handleClick = useCallback(() => {
         onClick(anime);
@@ -57,25 +31,36 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
     const cardHeight = isMobile ? '240px' : '320px';
     const cardWidth = isMobile ? '160px' : '220px';
 
+    // Prioritize high-quality images but fallback gracefully
+    const imageSrc = anime.coverImage?.extraLarge ||
+        anime.coverImage?.large ||
+        anime.bannerImage ||
+        '/placeholder-anime.jpg';
+
     return (
         <div
-            className={`anime-card2`} // Remove 'loaded' class
+            className="anime-card2"
             onClick={handleClick}
             style={{
-                animationDelay: `${index * 0.03}s`, // Keep this for initial load
+                // Inline styles for base sizing to reduce layout thrash
                 height: cardHeight,
                 width: cardWidth,
                 minHeight: cardHeight,
-                minWidth: cardWidth
+                minWidth: cardWidth,
+                // Only animate the first few items to prevent massive paint storms
+                animationDelay: index < 12 ? `${index * 0.05}s` : '0s',
+                opacity: index < 12 ? 0 : 1, // Start hidden only if animating
+                animation: index < 12 ? 'fadeInUp 0.5s ease-out forwards' : 'none'
             }}
         >
             <div className="home-card-image">
                 <img
                     src={imageSrc}
                     alt={anime?.title || "Anime"}
-                    loading="lazy"
+                    loading="lazy" // Native lazy loading relies on browser to optimize
                     width={isMobile ? 160 : 220}
                     height={isMobile ? 240 : 320}
+                    decoding="async"
                 />
                 <div className="card-title-bottom">
                     <h3>{anime?.title || "Unknown Title"}</h3>
@@ -86,41 +71,62 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
 });
 AnimeCard.displayName = 'AnimeCard';
 
+// Section Component to manage its own "View More" state
+const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
+    // Only render what's needed
+    // const visibleData = useMemo(() => data.slice(0, visibleCount), [data, visibleCount]);
+
+    if (!data || data.length === 0) return null;
+
+    return (
+        <>
+            <div className="divider">
+                <span className="divider-content">{title}</span>
+            </div>
+            <section className="anime-section">
+                <div className="anime-section-container">
+                    <div className="anime-grid">
+                        {data.map((anime, index) => (
+                            <AnimeCard
+                                key={`${title}-${anime.id || index}`}
+                                anime={anime}
+                                onClick={onOpenModal}
+                                index={index} // Index relative to current render
+                            />
+                        ))}
+                    </div>
+                </div>
+            </section>
+        </>
+    );
+});
+AnimeSection.displayName = 'AnimeSection';
+
 const AnimeHomepage = () => {
-    // State declarations
-    const [loading, setLoading] = useState(true);
-    const [mostWatched, setMostWatched] = useState([]);
-    const [topMovies, setTopMovies] = useState([]);
-    const [topAiring, setTopAiring] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedAnime, setSelectedAnime] = useState(null);
+    // State
+    const [loading, setLoading] = useState(true); // Initial skeleton state
+    const [sections, setSections] = useState({
+        topAiring: [],
+        mostWatched: [],
+        topMovies: []
+    });
+
+    // Search State
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
+
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedAnime, setSelectedAnime] = useState(null);
     const [isMobile, setIsMobile] = useState(false);
 
     const controllerRef = useRef(null);
-    const searchRef = useRef(null);
 
-    // Intersection observers for lazy loading sections
-    const [airingRef, airingVisible] = useInView({ threshold: 0.01 });
-    const [watchedRef, watchedVisible] = useInView({ threshold: 0.01 });
-    const [moviesRef, moviesVisible] = useInView({ threshold: 0.01 });
-
-    // Memoized functions
-    const getActivePage = useCallback(() => {
-        const path = window.location.pathname;
-        if (path === '/home' || path === '/') return 'home';
-        if (path === '/list') return 'list';
-        if (path === '/advance') return 'search';
-        if (path === '/ai') return 'AI';
-        return '';
-    }, []);
-
+    // Helpers
     const normalizeGridAnime = useCallback((anime) => {
         if (!anime) return null;
-
         return {
             id: anime.id || anime.mal_id || Math.random().toString(36).substr(2, 9),
             idMal: anime.idMal || anime.mal_id,
@@ -136,171 +142,133 @@ const AnimeHomepage = () => {
             averageScore: anime.averageScore || anime.score || anime.rating || null,
             status: anime.status || anime.airing_status || null,
             genres: anime.genres || [],
-            studios: anime.studios?.edges?.map(e => e.node.name) ||
-                anime.studios?.map(s => s.name) ||
-                anime.studios || [],
-            startDate: anime.startDate || anime.aired?.from || null,
-            endDate: anime.endDate || anime.aired?.to || null,
-            isAdult: anime.isAdult || false,
+            studios: anime.studios?.edges?.map(e => e.node.name) || anime.studios?.map(s => s.name) || [],
             trailer: anime.trailer || null,
             format: anime.format || null,
-            duration: anime.duration || null,
-            popularity: anime.popularity || null,
-            year: anime.year || anime.startDate?.year || null,
             season: anime.season || null,
-            type: anime.type || anime.format || null,
-            source: anime.source || null,
+            year: anime.year || anime.startDate?.year || null,
         };
     }, []);
 
-
-    // Check mobile on mount and resize
+    // Stale-While-Revalidate Data Fetching
     useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth <= 768);
-        };
+        const loadWrapper = async () => {
+            let hasCachedData = false;
 
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
-    // Add this useEffect hook near your other useEffect hooks in AnimeHomepage component:
-    useEffect(() => {
-        const checkAuth = async () => {
-            const activePage = getActivePage();
-
-            // Only protect the list page
-            if (activePage === 'list') {
+            // 1. Load from Cache Immediately
+            const cachedData = localStorage.getItem(CACHE_KEY);
+            if (cachedData) {
                 try {
-                    const response = await axios.get(`${API}/api/auth/check`, {
-                        withCredentials: true
-                    });
+                    const parsed = JSON.parse(cachedData);
+                    const cacheTime = localStorage.getItem(CACHE_TIME_KEY);
+                    const age = Date.now() - (parseInt(cacheTime) || 0);
 
-                    // If not authenticated, redirect to login or home
-                    if (!response.data.authenticated) {
-                        window.location.href = '/login'; // or '/home'
+                    // If valid JSON, show immediately
+                    if (parsed.topAiring && parsed.mostWatched) {
+                        setSections({
+                            topAiring: (parsed.topAiring || []).map(normalizeGridAnime).filter(Boolean),
+                            mostWatched: (parsed.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
+                            topMovies: (parsed.topMovies || []).map(normalizeGridAnime).filter(Boolean)
+                        });
+                        setLoading(false); // Stop skeleton loader immediately
+                        hasCachedData = true;
+
+                        // If data is fresh enough, we stop here to avoid aggressive networking
+                        if (age < STALE_TIME) {
+                            console.log("Using fresh cache, no network fetch needed.");
+                            return;
+                        }
                     }
-                } catch (error) {
-                    console.error("Auth check failed:", error);
-                    window.location.href = '/login'; // or '/home'
+                } catch (e) {
+                    console.error("Cache parse error:", e);
+                    localStorage.removeItem(CACHE_KEY);
                 }
             }
-        };
 
-        checkAuth();
-    }, [getActivePage]);
-
-    // Load anime sections with caching
-    useEffect(() => {
-        const fetchAnimeSections = async () => {
+            // 2. Fetch Fresh Data (Background Update)
             try {
-                // Try cache first
-                const cachedSections = localStorage.getItem('animeSections');
-                const cacheTime = localStorage.getItem('animeSections_time');
-                const isCacheValid = cacheTime && (Date.now() - parseInt(cacheTime)) < 30 * 60 * 1000;
-
-                if (cachedSections && isCacheValid) {
-                    const parsed = JSON.parse(cachedSections);
-                    setTopAiring((parsed.topAiring || []).map(normalizeGridAnime).filter(Boolean));
-                    setMostWatched((parsed.mostWatched || []).map(normalizeGridAnime).filter(Boolean));
-                    setTopMovies((parsed.topMovies || []).map(normalizeGridAnime).filter(Boolean));
-                    setLoading(false);
-                    return;
-                }
-
-                // Fetch fresh data
-                const response = await axios.get(`${API}/api/anime/anime-sections`, {
-                    timeout: 10000
-                });
-
+                // If we didn't have cache, we are still loading skeleton
+                // If we did have cache, we are just silently updating
+                console.log("Fetching fresh data...");
+                const response = await axios.get(`${API}/api/anime/anime-sections`, { timeout: 15000 });
                 const data = response.data;
-                const normalizedTopAiring = (data.topAiring || []).map(normalizeGridAnime).filter(Boolean);
-                const normalizedMostWatched = (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean);
-                const normalizedTopMovies = (data.topMovies || []).map(normalizeGridAnime).filter(Boolean);
 
-                setTopAiring(normalizedTopAiring);
-                setMostWatched(normalizedMostWatched);
-                setTopMovies(normalizedTopMovies);
+                const newSections = {
+                    topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
+                    mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
+                    topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean)
+                };
 
-                // Cache the data
-                localStorage.setItem('animeSections', JSON.stringify({
+                // Update State
+                setSections(newSections);
+                setLoading(false);
+
+                // Update Cache
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
                     topAiring: data.topAiring || [],
                     mostWatched: data.mostWatched || [],
                     topMovies: data.topMovies || []
                 }));
-                localStorage.setItem('animeSections_time', Date.now().toString());
+                localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
 
-                setLoading(false);
             } catch (error) {
-                console.error("Error fetching anime sections:", error);
-                setLoading(false);
+                console.error("Network fetch failed:", error);
+                // If we had no cache and network failed, stop loading to show empty state or error
+                if (!hasCachedData) setLoading(false);
             }
         };
 
-        fetchAnimeSections();
+        loadWrapper();
     }, [normalizeGridAnime]);
 
-    // Search functionality
+    // Check Mobile
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Search Logic
     useEffect(() => {
         if (!searchQuery.trim()) {
             setIsSearching(false);
             setSearchResults([]);
-            setSearchLoading(false);
             return;
         }
 
         setSearchLoading(true);
         setIsSearching(true);
 
-        if (controllerRef.current) {
-            controllerRef.current.abort();
-        }
+        if (controllerRef.current) controllerRef.current.abort();
         controllerRef.current = new AbortController();
 
-        const performSearch = async () => {
+        const searchTimer = setTimeout(async () => {
             try {
-                const searchUrl = `${API}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=12`;
-                const res = await axios.get(searchUrl, {
-                    signal: controllerRef.current.signal,
-                    timeout: 10000
+                const res = await axios.get(`${API}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=20`, {
+                    signal: controllerRef.current.signal
                 });
-
-                if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-                    const normalized = res.data.map(normalizeGridAnime).filter(Boolean);
-                    setSearchResults(normalized);
-                } else {
-                    setSearchResults([]);
+                if (res.data) {
+                    setSearchResults(res.data.map(normalizeGridAnime).filter(Boolean));
                 }
             } catch (err) {
-                if (!axios.isCancel(err)) {
-                    console.error("Search failed:", err);
-                    setSearchResults([]);
-                }
+                if (!axios.isCancel(err)) console.error("Search error", err);
             } finally {
                 setSearchLoading(false);
             }
-        };
-
-        const timeoutId = setTimeout(performSearch, 500);
+        }, 500);
 
         return () => {
-            clearTimeout(timeoutId);
-            if (controllerRef.current) {
-                controllerRef.current.abort();
-            }
+            clearTimeout(searchTimer);
+            if (controllerRef.current) controllerRef.current.abort();
         };
     }, [searchQuery, normalizeGridAnime]);
 
-    // Modal handlers
+
+    // Modal Handlers
     const openModal = useCallback((anime) => {
         setSelectedAnime(anime);
         setIsModalOpen(true);
-    }, []);
-
-    const handleOpenRelatedAnime = useCallback((relatedAnime) => {
-        setSelectedAnime(relatedAnime);
     }, []);
 
     const closeModal = useCallback(() => {
@@ -308,74 +276,11 @@ const AnimeHomepage = () => {
         setIsModalOpen(false);
     }, []);
 
-    // Scroll to search results
-    const scrollToView = useCallback(() => {
-        if (searchRef.current) {
-            searchRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+    const handleOpenRelatedAnime = useCallback((related) => {
+        setSelectedAnime(related);
     }, []);
 
-    useEffect(() => {
-        if (isSearching && (searchResults.length > 0 || !searchLoading)) {
-            setTimeout(scrollToView, 100);
-        }
-    }, [searchResults, searchLoading, isSearching, scrollToView]);
 
-    // Render anime grid
-    const renderAnimeGrid = useCallback((data, sectionName) => {
-        if (!data || data.length === 0) {
-            return (
-                <div className="anime-section-container">
-                    <div className="no-anime-found">
-                        No anime found in {sectionName}
-                    </div>
-                </div>
-            );
-        }
-
-        return (
-            <div className="anime-section-container">
-                <div className="anime-grid">
-                    {data.map((anime, index) => (
-                        <AnimeCard
-                            key={`${sectionName}-${anime?.id}-${index}`}
-                            anime={anime}
-                            onClick={openModal}
-                            index={index}
-                        />
-                    ))}
-                </div>
-            </div>
-        );
-    }, [openModal]);
-
-    // Process data
-    const processedTopAiring = useMemo(() => topAiring.filter(Boolean), [topAiring]);
-    const processedMostWatched = useMemo(() => mostWatched.filter(Boolean), [mostWatched]);
-    const processedTopMovies = useMemo(() => topMovies.filter(Boolean), [topMovies]);
-
-        // Add this useEffect in AnimeHomepage component (around line where you have other useEffects)
-    useEffect(() => {
-        // Trigger staggered animations when search results or sections load
-        if (processedTopAiring.length > 0 || processedMostWatched.length > 0 || processedTopMovies.length > 0 || searchResults.length > 0) {
-            const timer = setTimeout(() => {
-                const cards = document.querySelectorAll('.anime-card2');
-                cards.forEach((card, index) => {
-                    // Reset animation to trigger it
-                    card.style.animation = 'none';
-                    setTimeout(() => {
-                        card.style.animation = '';
-                        card.style.animationDelay = `${(index % 20) * 0.05}s`;
-                    }, 10);
-                });
-            }, 100);
-
-            return () => clearTimeout(timer);
-        }
-    }, [processedTopAiring, processedMostWatched, processedTopMovies, searchResults, isSearching]);
-
-
-    // Loading state
     if (loading && !isSearching) {
         return (
             <div className="homepage">
@@ -383,101 +288,75 @@ const AnimeHomepage = () => {
                 <div className="loading-skeleton">
                     <div className="skeleton-hero"></div>
                     <div className="skeleton-grid">
-                        {[...Array(10)].map((_, i) => (
-                            <div key={i} className="skeleton-card"></div>
-                        ))}
+                        {[...Array(8)].map((_, i) => <div key={i} className="skeleton-card"></div>)}
                     </div>
                 </div>
+                <BottomNavBar />
             </div>
         );
     }
 
     return (
         <>
-        <BottomNavBar />
-        <div className="homepage">
-            <div className="main-content">
-                <Header showSearch={true} onSearchChange={setSearchQuery} />
+            <BottomNavBar />
+            <div className="homepage">
+                <div className="main-content">
+                    <Header showSearch={true} onSearchChange={setSearchQuery} />
 
+                    <TrailerHero onOpenModal={openModal} isMobile={isMobile} />
 
-                {/* Hero Section */}
-                <TrailerHero
-                    onOpenModal={openModal}
-                    isMobile={isMobile}
-                />
-
-                {/* Main Anime Sections */}
-                <main className="anime-sections">
-                    {isSearching ? (
-                        <div ref={searchRef} className="anime-section-container">
-                            {searchLoading ? (
-                                <div className="loading-search">
-                                    <div className="spinner"></div>
-                                    <p>Searching anime...</p>
-                                </div>
-                            ) : searchResults.length > 0 ? (
-                                <div className="anime-grid">
-                                    {searchResults.map((anime, index) => (
-                                        <AnimeCard
-                                            key={`search-${anime?.id}-${index}`}
-                                            anime={anime}
-                                            onClick={openModal}
-                                            index={index}
-                                        />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="no-results">
-                                    <div className="no-results-icon">
-                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <circle cx="11" cy="11" r="8" strokeWidth="2" />
-                                            <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round" />
-                                        </svg>
-                                        <p>No anime found for "{searchQuery}"</p>
+                    <main className="anime-sections">
+                        {isSearching ? (
+                            <div className="anime-section-container">
+                                {searchLoading ? (
+                                    <div className="loading-search">
+                                        <div className="spinner"></div>
+                                        <p>Searching...</p>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <>
-                            {/* Top Airing Section */}
-                            <div className="divider">
-                                <span className="divider-content">TOP AIRING</span>
+                                ) : (
+                                    <div className="anime-grid">
+                                        {searchResults.map((anime, index) => (
+                                            <AnimeCard
+                                                key={`search-${anime.id}`}
+                                                anime={anime}
+                                                onClick={openModal}
+                                                index={index}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <section className="anime-section">
-                                {renderAnimeGrid(processedTopAiring, "Top Airing")}
-                            </section>
+                        ) : (
+                            <>
+                                <AnimeSection
+                                    title="TOP AIRING"
+                                    data={sections.topAiring}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
+                                    title="MOST WATCHED"
+                                    data={sections.mostWatched}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
+                                    title="TOP MOVIES"
+                                    data={sections.topMovies}
+                                    onOpenModal={openModal}
+                                />
+                            </>
+                        )}
+                    </main>
+                </div>
 
-                            {/* Most Watched Section */}
-                            <div className="divider">
-                                <span className="divider-content">MOST WATCHED</span>
-                            </div>
-                            <section className="anime-section">
-                                {renderAnimeGrid(processedMostWatched, "Most Watched")}
-                            </section>
-
-                            {/* Top Movies Section */}
-                            <div className="divider">
-                                <span className="divider-content">TOP MOVIES</span>
-                            </div>
-                            <section className="anime-section">
-                                {renderAnimeGrid(processedTopMovies, "Top Movies")}
-                            </section>
-                        </>
-                    )}
-                </main>
+                {isModalOpen && selectedAnime && (
+                    <Modal
+                        isOpen={isModalOpen}
+                        onClose={closeModal}
+                        anime={selectedAnime}
+                        onOpenAnime={handleOpenRelatedAnime}
+                    />
+                )}
             </div>
-
-            {/* Modal */}
-            {isModalOpen && selectedAnime && (
-                <Modal
-                    isOpen={isModalOpen}
-                    onClose={closeModal}
-                    anime={selectedAnime}
-                    onOpenAnime={handleOpenRelatedAnime}
-                />
-            )}
-        </div>
         </>
     );
 };

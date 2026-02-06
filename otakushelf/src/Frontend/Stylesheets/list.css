@@ -69,7 +69,8 @@
 
 /* Enhanced List Styles */
 .enhanced-anime-list {
-  background: #0a1124;
+  /* background: #0a1124; Removed for global background */
+  background: transparent;
   display: flex;
   flex-direction: column;
   padding: 1.2rem;
@@ -172,7 +173,7 @@
   opacity: 0.8;
 }
 
-.import-icon img{
+.import-icon img {
   width: 20px;
   height: 20px;
   object-fit: contain;
@@ -926,7 +927,7 @@
   color: #ffd700;
 }
 
-.rating-section{
+.rating-section {
   display: flex;
   align-items: center;
   justify-content: center;

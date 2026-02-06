@@ -26,186 +26,100 @@ router.get('/anime-sections', async (req, res) => {
 
   try {
     const query = `
-query {
-  airing: Page(page: 1, perPage: 50) {
-    media(
-      type: ANIME
-      status: RELEASING
-      sort: POPULARITY_DESC
-      isAdult: false
-    ) {
-      id
-      idMal
-      title { 
-        english 
-        romaji 
-        native 
+      fragment mediaFields on Media {
+        id
+        idMal
+        title { 
+          english 
+          romaji 
+          native 
+        }
+        description
+        coverImage { 
+          large 
+          extraLarge 
+          medium
+        }
+        bannerImage
+        episodes
+        averageScore
+        status
+        genres
+        season
+        seasonYear
+        format
+        duration
+        popularity
+        startDate {
+          year
+          month
+          day
+        }
+        endDate {
+          year
+          month
+          day
+        }
+        studios {
+          edges {
+            node {
+              name
+            }
+          }
+        }
+        trailer {
+          id
+          site
+          thumbnail
+        }
+        isAdult
+        source
       }
-      description
-      coverImage { 
-        large 
-        extraLarge 
-        medium
-      }
-      bannerImage
-      episodes
-      averageScore
-      status
-      genres
-      season
-      seasonYear
-      format
-      duration
-      popularity
-      startDate {
-        year
-        month
-        day
-      }
-      endDate {
-        year
-        month
-        day
-      }
-      studios {
-        edges {
-          node {
-            name
+
+      query {
+        airing1: Page(page: 1, perPage: 50) {
+          media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {
+            ...mediaFields
+          }
+        }
+        airing2: Page(page: 2, perPage: 50) {
+          media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {
+            ...mediaFields
+          }
+        }
+        
+        mostWatched1: Page(page: 1, perPage: 50) {
+          media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
+            ...mediaFields
+          }
+        }
+        mostWatched2: Page(page: 2, perPage: 50) {
+          media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
+            ...mediaFields
+          }
+        }
+        
+        movies1: Page(page: 1, perPage: 50) {
+          media(type: ANIME, format: MOVIE, sort: POPULARITY_DESC, isAdult: false) {
+            ...mediaFields
+          }
+        }
+        movies2: Page(page: 2, perPage: 50) {
+          media(type: ANIME, format: MOVIE, sort: POPULARITY_DESC, isAdult: false) {
+            ...mediaFields
           }
         }
       }
-      trailer {
-        id
-        site
-        thumbnail
-      }
-      isAdult
-      source
-    }
-  }
-
-  mostWatched: Page(page: 1, perPage: 50) {
-    media(
-      type: ANIME
-      sort: POPULARITY_DESC
-      isAdult: false
-    ) {
-      id
-      idMal
-      title { 
-        english 
-        romaji 
-        native 
-      }
-      description
-      coverImage { 
-        large 
-        extraLarge 
-        medium
-      }
-      bannerImage
-      episodes
-      averageScore
-      status
-      genres
-      season
-      seasonYear
-      format
-      duration
-      popularity
-      startDate {
-        year
-        month
-        day
-      }
-      endDate {
-        year
-        month
-        day
-      }
-      studios {
-        edges {
-          node {
-            name
-          }
-        }
-      }
-      trailer {
-        id
-        site
-        thumbnail
-      }
-      isAdult
-      source
-    }
-  }
-
-  movies: Page(page: 1, perPage: 50) {
-    media(
-      type: ANIME
-      format: MOVIE
-      sort: POPULARITY_DESC
-      isAdult: false
-    ) {
-      id
-      idMal
-      title { 
-        english 
-        romaji 
-        native 
-      }
-      description
-      coverImage { 
-        large 
-        extraLarge 
-        medium
-      }
-      bannerImage
-      episodes
-      averageScore
-      status
-      genres
-      season
-      seasonYear
-      format
-      duration
-      popularity
-      startDate {
-        year
-        month
-        day
-      }
-      endDate {
-        year
-        month
-        day
-      }
-      studios {
-        edges {
-          node {
-            name
-          }
-        }
-      }
-      trailer {
-        id
-        site
-        thumbnail
-      }
-      isAdult
-      source
-    }
-  }
-}
-
     `;
 
+    console.log("Fetching anime sections...");
     const data = await fetchAniList(query);
+    console.log("Raw AniList data received.");
 
     // Process trailer URLs
     const processTrailer = (trailer) => {
       if (!trailer) return null;
-      
+
       if (trailer.site === 'youtube') {
         return {
           ...trailer,
@@ -224,11 +138,18 @@ query {
       }));
     };
 
+    // Combine pages
+    const airingList = [...(data.airing1?.media || []), ...(data.airing2?.media || [])];
+    const watchedList = [...(data.mostWatched1?.media || []), ...(data.mostWatched2?.media || [])];
+    const moviesList = [...(data.movies1?.media || []), ...(data.movies2?.media || [])];
+
+    console.log(`Fetched counts - Airing: ${airingList.length}, Watched: ${watchedList.length}, Movies: ${moviesList.length}`);
+
     cache = {
       data: {
-        topAiring: processMediaArray(data.airing.media || []),
-        mostWatched: processMediaArray(data.mostWatched.media || []),
-        topMovies: processMediaArray(data.movies.media || []),
+        topAiring: processMediaArray(airingList),
+        mostWatched: processMediaArray(watchedList),
+        topMovies: processMediaArray(moviesList),
       },
       timestamp: now,
     };
@@ -246,7 +167,7 @@ query {
 router.get('/search', async (req, res) => {
   const q = req.query.q;
   const limit = parseInt(req.query.limit) || 20;
-  
+
   if (!q) return res.status(400).json({ error: "Missing search query" });
 
   try {
@@ -306,15 +227,15 @@ router.get('/search', async (req, res) => {
       }
     `;
 
-    const data = await fetchAniList(query, { 
-      search: q, 
-      perPage: limit 
+    const data = await fetchAniList(query, {
+      search: q,
+      perPage: limit
     });
 
     // Process trailers for search results
     const processTrailer = (trailer) => {
       if (!trailer) return null;
-      
+
       if (trailer.site === 'youtube') {
         return {
           ...trailer,
@@ -345,7 +266,7 @@ router.get('/search', async (req, res) => {
 // Get Single Anime Details 
 router.get('/anime/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const query = `
       query ($id: Int) {
@@ -454,7 +375,7 @@ router.get('/anime/:id', async (req, res) => {
     // Process trailer
     const processTrailer = (trailer) => {
       if (!trailer) return null;
-      
+
       if (trailer.site === 'youtube') {
         return {
           ...trailer,
