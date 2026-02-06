@@ -1,4 +1,73 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@font-face {
+  font-family: 'Coolvetica';
+  src: url('../Frontend/public/Coolvetica.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Misrow';
+  src: url('../Frontend/public/Misrow.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'BarberChop';
+  src: url('../Frontend/public/BarberChop.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Dynamix';
+  src: url('../Frontend/public/Dynamix.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Ostrichsans';
+  src: url('../Frontend/public/OstrichSans-Heavy.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Papernotesb';
+  src: url('../Frontend/public/Papernotes-Bold.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Papernotes';
+  src: url('../Frontend/public/Papernotes.ttf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Hoshiko';
+  src: url('../Frontend/public/Hoshiko-Satsuki.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Keepcalm';
+  src: url('../Frontend/public/KeepCalm-Medium.ttf') format('truetype');
+}
+
+/* ============================================
+   🌌 GLOBAL COSMIC GLASS UI THEME
+   ============================================ */
+:root {
+  --primary-gradient: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
+  --glass-bg: rgba(20, 20, 35, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.03);
+  --accent-glow: #8b5cf6;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --anim-speed: 0.4s;
+}
+
 body {
   margin: 0 !important;
   padding: 0 !important;
+  background-color: #030712;
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(219, 39, 119, 0.1) 0%, transparent 50%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
 }

@@ -1,0 +1,801 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+/* Main Section - Fullscreen */
+.trailer-hero-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 3;
+    pointer-events: none;
+}
+
+
+/* Interactive UI */
+.details-button,
+.mute-button,
+.user-interaction-prompt,
+.slider-btns,
+.slider-btns button {
+    pointer-events: auto;
+}
+
+
+.trailer-hero button,
+.trailer-hero a {
+    pointer-events: auto;
+}
+
+
+/* YouTube Container */
+.youtube-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: auto;
+    aspect-ratio: 16/9;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+}
+
+.youtube-container iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 177.78vh;
+    height: 100vh;
+    min-width: 100vw;
+    min-height: 56.25vw;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    border: none;
+}
+
+.youtube-container.active {
+    display: block;
+}
+
+.youtube-container.hidden {
+    display: none;
+}
+
+/* Alternative YouTube Container for better fullscreen coverage */
+.youtube-player-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    background: #000;
+}
+
+/* Fallback Image */
+.fallback-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: -1;
+}
+
+/* No Trailer Indicator */
+.no-trailer-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    z-index: 2;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 200px;
+    text-align: center;
+}
+
+/* User Interaction Prompt */
+.user-interaction-prompt {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    z-index: 3;
+    cursor: pointer;
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255, 115, 0, 0.5);
+    text-align: center;
+    max-width: 90%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.user-interaction-prompt:hover {
+    background-color: rgba(0, 0, 0, 0.95);
+    border-color: rgba(255, 115, 0, 0.8);
+}
+
+/* Mute/Unmute Button */
+.mute-button {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.mute-button:hover {
+    background-color: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+}
+
+/* Gradient Overlay */
+.gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.85) 0%,
+            rgba(0, 0, 0, 0.5) 30%,
+            rgba(0, 0, 0, 0.2) 50%,
+            transparent 70%);
+    z-index: 1;
+}
+
+/* Content Overlay */
+.content-overlay {
+    position: absolute;
+    bottom: 20%;
+    left: 10%;
+    right: 10%;
+    color: white;
+    z-index: 2;
+    max-width: 600px;
+    padding: 1rem;
+}
+
+/* Anime Title */
+.anime-title {
+    font-family: "Outfit", sans-serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin-bottom: 0.8rem;
+    line-height: 1.2;
+    background-image: linear-gradient(90deg, #fd2600ff, #ff003cff);
+    letter-spacing: 1px;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Anime Meta Information */
+.anime-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.score {
+    color: #FFD700;
+}
+
+/* Anime Description */
+.anime-description {
+    font-family: "Josefin Sans", sans-serif;
+    font-size: 1.2rem;
+    line-height: 1.4;
+    margin-bottom: 1.2rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    letter-spacing: 0.3px;
+}
+
+/* Genres */
+.genres {
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+    color: #ddd;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    line-height: 1.4;
+}
+
+.genres strong {
+    color: #fff;
+}
+
+/* Details Button */
+.details-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 1rem 2.5rem;
+    background-color: rgb(255, 115, 0);
+    color: #000;
+    border: none;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    min-height: 44px;
+    min-width: 160px;
+    white-space: nowrap;
+}
+
+.details-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Navigation Arrows */
+.slider-btns {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 4;
+    pointer-events: none;
+    padding: 0 5%;
+}
+
+.slider-btns button {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border-radius: 50%;
+    backdrop-filter: blur(5px);
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.left-arrow {
+    margin-left: 0;
+    transform: rotate(180deg) scale(0.8);
+}
+
+.right-arrow {
+    margin-right: 0;
+    transform: scale(0.8);
+}
+
+.slider-btns button:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 115, 0, 0.8);
+    transform: scale(0.9);
+}
+
+/* Trailer Spacer */
+.trailer-spacer {
+    height: 100vh;
+    position: relative;
+    z-index: 2;
+}
+
+/* ========== FULLSCREEN YOUTUBE FIXES ========== */
+
+/* For Portrait Mode (Mobile) */
+@media (orientation: portrait) {
+    .youtube-container iframe {
+        /* For portrait, width should be viewport width, height auto */
+        width: 100vw;
+        height: 177.78vw;
+        /* 16:9 height relative to viewport width */
+        min-width: 100vw;
+        min-height: 56.25vw;
+    }
+}
+
+/* For Landscape Mode */
+@media (orientation: landscape) {
+    .youtube-container iframe {
+        /* For landscape, height should be viewport height, width auto */
+        width: 177.78vh;
+        height: 100vh;
+        min-width: 100vw;
+        min-height: 56.25vw;
+    }
+}
+
+/* ========== RESPONSIVE BREAKPOINTS ========== */
+
+/* Tablet (768px and below) */
+@media (max-width: 768px) {
+    .content-overlay {
+        bottom: 30%;
+        left: 3%;
+        right: 3%;
+        padding: 1rem;
+    }
+
+    .anime-title {
+        font-size: clamp(1.8rem, 5vw, 2.5rem);
+    }
+
+    .anime-meta {
+        gap: 0.6rem;
+        font-size: clamp(0.9rem, 2.5vw, 1rem);
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.6rem;
+        font-size: clamp(0.8rem, 2vw, 0.9rem);
+    }
+
+    .anime-description {
+        font-size: clamp(1rem, 3vw, 1.1rem);
+    }
+
+    .genres {
+        font-size: clamp(0.9rem, 2.5vw, 0.95rem);
+    }
+
+    .details-button {
+        padding: clamp(0.8rem, 3vw, 1rem) clamp(1.5rem, 4vw, 2rem);
+        font-size: clamp(1rem, 3vw, 1.1rem);
+        width: 100%;
+        max-width: 250px;
+    }
+
+    .slider-btns {
+        padding: 0 3%;
+        top: 12%;
+    }
+
+    .slider-btns button {
+        width: clamp(40px, 10vw, 50px);
+        height: clamp(40px, 10vw, 50px);
+        font-size: clamp(1.5rem, 4vw, 1.8rem);
+    }
+
+    .mute-button {
+        bottom: clamp(15px, 4vw, 20px);
+        left: clamp(15px, 4vw, 20px);
+        width: clamp(40px, 10vw, 45px);
+        height: clamp(40px, 10vw, 45px);
+        font-size: clamp(16px, 4vw, 18px);
+    }
+
+    .no-trailer-indicator {
+        top: clamp(15px, 4vw, 20px);
+        right: clamp(15px, 4vw, 20px);
+        padding: clamp(6px, 2vw, 8px) clamp(8px, 2vw, 12px);
+        font-size: clamp(0.7rem, 2vw, 0.8rem);
+    }
+
+    .user-interaction-prompt {
+        padding: clamp(12px, 3vw, 15px) clamp(20px, 4vw, 25px);
+        font-size: clamp(0.9rem, 3vw, 1rem);
+    }
+
+    /* Fullscreen YouTube fix for mobile */
+    .youtube-container iframe {
+        width: 100vw;
+        height: 177.78vw;
+        /* 16:9 aspect ratio */
+    }
+
+    .youtube-container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100vw;
+        height: auto;
+        aspect-ratio: 16/9;
+        transform: translate(-50%, -160%);
+        z-index: -1;
+    }
+
+}
+
+/* Mobile (480px and below) */
+@media (max-width: 480px) {
+    .content-overlay {
+        bottom: 30%;
+        left: 3%;
+        right: 3%;
+        padding: 1rem;
+    }
+
+    .anime-title {
+        font-size: 1.5rem;
+        line-height: 1.3;
+        margin-bottom: 0.6rem;
+    }
+
+    .anime-meta {
+        font-size: 0.85rem;
+        gap: 0.5rem;
+    }
+
+    .status-badge {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .anime-description {
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .genres {
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .details-button {
+        padding: 0.7rem 1.5rem;
+        font-size: 0.95rem;
+        min-height: 40px;
+        min-width: 140px;
+    }
+
+    .slider-btns button {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+
+    .mute-button {
+        bottom: 16%;
+        left: 10px;
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+
+    .no-trailer-indicator {
+        font-size: 0.7rem;
+        padding: 5px 8px;
+    }
+
+    .user-interaction-prompt {
+        font-size: 0.85rem;
+        padding: 10px 15px;
+    }
+
+    .youtube-container {
+        position: absolute;
+        /* top: 50%; */
+        left: 50%;
+        width: 100vw;
+        aspect-ratio: 16/9;
+        transform: translate(-50%, -175%);
+        z-index: -1;
+
+    }
+}
+
+/* Small Mobile (375px and below) */
+@media (max-width: 375px) {
+    .anime-title {
+        font-size: 1.3rem;
+    }
+
+    .anime-meta {
+        font-size: 0.8rem;
+    }
+
+    .anime-description {
+        font-size: 0.9rem;
+    }
+
+    .details-button {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+        min-width: 130px;
+    }
+
+    .slider-btns button {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+
+    .slider-btns {
+        padding: 0 2%;
+    }
+
+    .youtube-container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100vw;
+        height: auto;
+        aspect-ratio: 16/9;
+        transform: translate(-50%, -160%);
+        z-index: -1;
+    }
+}
+
+/* Landscape Mode - Fullscreen Optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+    .trailer-hero-section {
+        height: 100vh;
+    }
+
+    .content-overlay {
+        bottom: 5%;
+        left: 2%;
+        right: 2%;
+        padding: 0.8rem;
+    }
+
+    .anime-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .anime-description {
+        max-height: 2.8em;
+        font-size: 0.9rem;
+    }
+
+    .details-button {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .slider-btns {
+        top: 50%;
+    }
+
+    .slider-btns button {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+
+    .mute-button {
+        bottom: 5px;
+        left: 5px;
+        width: 35px;
+        height: 35px;
+        font-size: 14px;
+    }
+
+    /* Fullscreen YouTube for landscape */
+    .youtube-container iframe {
+        width: 177.78vh;
+        height: 100vh;
+    }
+}
+
+/* ========== TOUCH DEVICE OPTIMIZATIONS ========== */
+@media (hover: none) and (pointer: coarse) {
+
+    .details-button,
+    .slider-btns button,
+    .mute-button {
+        cursor: default;
+    }
+
+    .details-button:active {
+        transform: scale(0.98);
+        background-color: rgb(255, 95, 0);
+    }
+
+    .slider-btns button:active {
+        transform: scale(0.9);
+        background: rgba(0, 0, 0, 0.8);
+    }
+
+    .mute-button:active {
+        transform: scale(0.95);
+    }
+
+    /* Prevent text selection on tap */
+    .content-overlay {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    /* Enable text selection for description */
+    .anime-description {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+
+    /* Improve touch scrolling */
+    .trailer-hero-section {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ========== REDUCED MOTION PREFERENCE ========== */
+@media (prefers-reduced-motion: reduce) {
+
+    .content-overlay,
+    .details-button,
+    .slider-btns button,
+    .mute-button {
+        transition: none;
+    }
+
+    .details-button:hover,
+    .slider-btns button:hover,
+    .mute-button:hover {
+        transform: none;
+    }
+
+    /* Remove all animations */
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ========== DARK MODE SUPPORT ========== */
+@media (prefers-color-scheme: dark) {
+
+    .user-interaction-prompt {
+        background-color: rgba(20, 20, 20, 0.95);
+    }
+
+    .no-trailer-indicator {
+        background-color: rgba(30, 30, 30, 0.9);
+    }
+}
+
+/* ========== IOS SAFARI FIXES ========== */
+@supports (-webkit-touch-callout: none) {
+    .trailer-hero-section {
+        height: -webkit-fill-available;
+    }
+
+    .trailer-spacer {
+        height: -webkit-fill-available;
+    }
+
+    .youtube-container iframe {
+        height: -webkit-fill-available;
+        width: 177.78vh;
+    }
+}
+
+/* ========== HIGH DPI DISPLAYS ========== */
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+    .fallback-image {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+
+    .details-button {
+        border-width: 1.5px;
+    }
+}
+
+/* ========== PRINT STYLES ========== */
+@media print {
+    .trailer-hero-section {
+        position: relative;
+        height: auto;
+    }
+
+    .youtube-container,
+    .mute-button,
+    .user-interaction-prompt,
+    .slider-btns {
+        display: none !important;
+    }
+
+    .content-overlay {
+        position: relative;
+        color: black;
+        background: none;
+        backdrop-filter: none;
+    }
+
+    .anime-title {
+        -webkit-text-fill-color: black;
+        background-image: none;
+    }
+}
+
+/* ========== ALTERNATIVE FULLSCREEN FIX ========== */
+/* If the above doesn't work, try this alternative approach */
+.youtube-container.alternative {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    min-width: 100%;
+    min-height: 100%;
+}
+
+.youtube-container.alternative iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: none;
+}
+
+/* Force fullscreen on all devices */
+.youtube-fullscreen-fix {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.youtube-fullscreen-fix iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 56.25vw;
+    /* 9/16 = 0.5625 */
+    min-height: 100vh;
+    min-width: 177.78vh;
+    /* 16/9 = 1.7778 */
+    transform: translate(-50%, -50%);
+}

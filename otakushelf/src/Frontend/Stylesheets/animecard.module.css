@@ -1,48 +1,42 @@
 .anime-card {
   position: relative;
-  height: 216px;
-  width: 160px;
   aspect-ratio: 2/3;
   overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transition: all 0.1s ease;
-  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  /* Softer than beige, compatible with dark theme */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   text-align: center;
+  background: rgba(30, 30, 40, 0.6);
 }
 
 .anime-card:hover {
-  transform: translateY(-2px) scale(1.02);
+  transform: translateY(-6px);
+  border-color: #ff6a00;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 106, 0, 0.2);
 }
 
 .card-image {
   width: 100%;
-  height: 216px;
+  height: 100%;
 }
 
 .card-image img {
   width: 100%;
-  height: 216px;
+  height: 100%;
   object-fit: cover;
-  cursor: pointer;
+  transition: transform 0.4s ease;
+  border-radius: 12px;
 }
 
-.card-image img:hover {
-  transform: scale(1.1);
-  transition: 0.1s;
-  transition: transform 0.3s ease-in-out;
+.anime-card:hover img {
+  transform: scale(1.05);
 }
 
 .image-placeholder {
   width: 100%;
-  height: 216px;
-  object-fit: cover;
-  cursor: pointer;
-}
-
-.image-placeholder {
-  width: 100%;
-  height: 216px;
+  height: 100%;
   background: #333;
   display: flex;
   align-items: center;
@@ -52,30 +46,32 @@
 }
 
 .card-title-bottom {
-  font-family: "Work Sans", sans-serif;
-  letter-spacing: 0.8px;
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 12px 8px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+  padding: 15px 10px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent);
   color: #ff6a00;
   z-index: 1;
-  text-shadow:
-    0 0 10px rgba(255, 102, 0, 0.4),
-    2px 2px 6px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(0px);
+  /* Home css has 7px but might look weird if small */
 }
 
 .card-title-bottom h3 {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-family: "Outfit", sans-serif;
+  letter-spacing: 1px;
+  font-size: 1rem;
   text-align: center;
   line-height: 1.4;
-  backdrop-filter: blur(7px);
-  border: 2px solid rgb(255, 60, 0);
-  /* mix-blend-mode: lighten; */
-  transition: all 0.3s ease;
-  border-radius: 20px;
-  padding: 5px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ff6a00;
+  text-shadow: 0 0 8px rgba(190, 79, 0, 0.5);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
 }

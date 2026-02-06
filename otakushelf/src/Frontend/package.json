@@ -12,15 +12,24 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/material": "^7.3.1",
     "@studio-freight/lenis": "^1.0.42",
+    "@tailwindcss/vite": "^4.1.13",
     "@vitejs/plugin-react": "^5.0.0",
     "axios": "^1.11.0",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.539.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.8.2",
     "react-transition-group": "^4.4.5",
+    "recharts": "^3.6.0",
+    "remark-gfm": "^4.0.1",
+    "tailwindcss": "^4.1.13",
     "vite": "^7.1.2"
   }
 }

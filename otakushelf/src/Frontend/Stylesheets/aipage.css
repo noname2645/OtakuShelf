@@ -1,0 +1,568 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   🌌 COSMIC GLASS UI THEME
+   ============================================ */
+:root {
+    --primary-gradient: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
+    --glass-bg: rgba(20, 20, 35, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-highlight: rgba(255, 255, 255, 0.03);
+    --accent-glow: #8b5cf6;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --anim-speed: 0.4s;
+}
+
+body {
+    background-color: #030712;
+    background-image:
+        radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, rgba(219, 39, 119, 0.1) 0%, transparent 50%);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+}
+
+.ai-page-container {
+    padding-top: 80px;
+    /* Space for navbar */
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.ai-page-wrapper {
+    width: 100%;
+    max-width: 96%;
+    /* Wider layout */
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ============================================
+   🎭 MAIN GLASS PANEL
+   ============================================ */
+.ai-companion-box {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 32px;
+    border: 1px solid var(--glass-border);
+    box-shadow:
+        0 20px 50px -10px rgba(0, 0, 0, 0.5),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    height: 75vh;
+    /* Reduced height to keep input visible above bottom nav */
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 80px;
+    /* Extra clearance */
+}
+
+/* Glossy reflection effect */
+.ai-companion-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+/* ============================================
+   🎩 HEADER
+   ============================================ */
+.companion-header {
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.companion-info h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #fff, #cbd5e1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+}
+
+.companion-subtitle {
+    margin: 4px 0 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.clear-chat-btn {
+    background: rgba(255, 255, 255, 0.05);
+    /* Transparent ghost button */
+    color: var(--text-secondary);
+    border: 1px solid var(--glass-border);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.clear-chat-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ============================================
+   💬 CHAT AREA
+   ============================================ */
+.chat-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.messages-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    scroll-behavior: smooth;
+    display: flex;
+    /* Flexbox for alignment */
+    flex-direction: column;
+}
+
+/* Scrollbar styling */
+.messages-box::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messages-box::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.messages-box::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.messages-box::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   💬 BUBBLES
+   ============================================ */
+.message-bubble {
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+}
+
+.message-bubble.user {
+    align-self: flex-end;
+    /* Align right */
+    align-items: flex-end;
+}
+
+.message-bubble.ai {
+    align-self: flex-start;
+    /* Align left */
+    align-items: flex-start;
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+}
+
+/* Message Meta & Avatar Styles */
+.message-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    /* Gap between name and time */
+    margin-left: 4px;
+}
+
+.message-sender {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.message-time {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.message-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.message-avatar img,
+.user-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* AI Bubble Style */
+.message-bubble.ai .message-content {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid var(--glass-border);
+    color: #e2e8f0;
+    border-radius: 4px 24px 24px 24px;
+    padding: 20px 24px;
+    line-height: 1.6;
+    font-size: 1.05rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+/* No decorative accent line */
+.message-bubble.ai .message-content::before {
+    display: none;
+}
+
+/* User Bubble Style */
+.message-bubble.user .message-content {
+    background: var(--primary-gradient);
+    color: white;
+    border-radius: 24px 4px 24px 24px;
+    padding: 16px 24px;
+    font-weight: 500;
+    box-shadow: 0 8px 25px rgba(167, 139, 250, 0.25);
+    text-align: right;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Markdown Styles */
+.markdown-bold {
+    color: #fff;
+    font-weight: 700;
+}
+
+.markdown-list {
+    padding-left: 20px;
+    margin: 10px 0;
+}
+
+.markdown-list-item {
+    margin-bottom: 6px;
+}
+
+.markdown-paragraph {
+    margin-bottom: 0.8rem;
+    line-height: 1.6;
+}
+
+.markdown-italic {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ============================================
+   ⌨️ INPUT AREA (Floating)
+   ============================================ */
+.input-wrapper {
+    margin: 20px;
+    padding: 8px;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 20;
+}
+
+.message-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    padding: 12px 20px;
+    font-family: 'Outfit', sans-serif;
+}
+
+.message-input:focus {
+    outline: none;
+}
+
+.message-input::placeholder {
+    color: rgba(148, 163, 184, 0.6);
+}
+
+.send-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 15px rgba(167, 139, 250, 0.3);
+}
+
+.send-button:hover:not(:disabled) {
+    transform: scale(1.05) rotate(-10deg);
+    box-shadow: 0 6px 20px rgba(167, 139, 250, 0.5);
+}
+
+.send-button:disabled {
+    filter: grayscale(1);
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* ============================================
+   🃏 RECOMMENDATION CARDS
+   ============================================ */
+.anime-recommendations-box {
+    margin-top: 20px;
+    background: transparent;
+    padding: 0;
+    border: none;
+    width: 100%;
+}
+
+/* Fix grid to ensure full visibility and snug fit */
+.anime-cards-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+    justify-content: flex-start;
+    /* Align to start to avoid huge gaps */
+}
+
+.anime-cards-grid .anime-card {
+    flex: 0 0 calc(25% - 9px);
+    /* 4 cards per row approx, minus gap */
+    min-width: 120px;
+    max-width: 160px;
+}
+
+@media (max-width: 768px) {
+    .anime-cards-grid .anime-card {
+        flex: 0 0 calc(33.333% - 8px);
+        /* 3 cards on tablet */
+    }
+}
+
+@media (max-width: 480px) {
+    .anime-cards-grid .anime-card {
+        flex: 0 0 calc(50% - 6px);
+        /* 2 cards on mobile */
+    }
+}
+
+.score-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    z-index: 2;
+}
+
+/* ============================================
+   ✨ QUICK PROMPTS
+   ============================================ */
+.quick-prompts-box {
+    padding: 0;
+    background: transparent;
+    border: none;
+    position: absolute;
+    bottom: 100px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+    /* Let clicks pass through container */
+}
+
+.prompts-title {
+    display: none;
+    /* Hide 'Try asking' label for cleaner look */
+}
+
+.prompts-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    pointer-events: auto;
+    padding: 0 20px;
+}
+
+.prompt-chip {
+    background: rgba(30, 41, 59, 0.8);
+    color: var(--text-secondary);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(8px);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.prompt-chip:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* ============================================
+   🌊 WELCOME SCREEN
+   ============================================ */
+.welcome-message {
+    text-align: center;
+    padding: 40px;
+    background: transparent;
+    border: none;
+    margin-top: 40px;
+}
+
+.welcome-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    text-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+    animation: float 3s ease-in-out infinite;
+}
+
+.welcome-message h3 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    background: linear-gradient(to right, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+}
+
+.welcome-message p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.companion-features {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 40px;
+}
+
+.feature {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    padding: 12px 20px;
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* ============================================
+   📱 MOBILE RESPONSIVENESS
+   ============================================ */
+@media (max-width: 768px) {
+    .ai-page-container {
+        padding: 60px 0 0 0;
+        height: 100vh;
+    }
+
+    .ai-companion-box {
+        border-radius: 0;
+        height: 100%;
+        border: none;
+        background: rgba(3, 7, 18, 0.95);
+    }
+
+    .companion-header {
+        padding: 12px 16px;
+    }
+
+    .input-wrapper {
+        margin: 10px;
+        border-radius: 30px;
+    }
+
+    .message-bubble {
+        max-width: 90%;
+    }
+}

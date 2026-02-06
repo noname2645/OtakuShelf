@@ -1,843 +1,366 @@
-import { React, useState, useEffect, useRef } from 'react';
-import { Play, Star, Calendar, Users } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import "../Stylesheets/home.css";
 import axios from "axios";
-import logo from "../images/logo.png"
-import Lenis from '@studio-freight/lenis'
 import Modal from "../components/modal.jsx";
-import list from "../images/list.png"
-import search from "../images/search.png"
-import { Link } from 'react-router-dom';
-import { useLocation } from "react-router-dom";
-import { useAuth } from './AuthContext';
+import TrailerHero from './TrailerHero.jsx';
+import { Header } from '../components/header.jsx';
+import BottomNavBar from './bottom.jsx';
 
-// ProfileDropdown Component
-const ProfileDropdown = () => {
-    const [showDropdown, setShowDropdown] = useState(false);
-    const dropdownRef = useRef(null);
-    const { user, logout } = useAuth();
+// API base URL
+const API = import.meta.env.VITE_API_BASE_URL;
 
-    // Close dropdown when clicking outside
+// Stale-while-revalidate key
+const CACHE_KEY = 'animeSections_100_v3'; // Increment version to force fresh structure
+const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
+const STALE_TIME = 1000 * 60 * 30; // 30 minutes until fresh fetch (but stale data shown immediately)
+
+// Optimized Anime Card Component
+const AnimeCard = React.memo(({ anime, onClick, index }) => {
+    const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setShowDropdown(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const handleLogout = async () => {
-        await logout();
-        setShowDropdown(false);
-        window.location.href = "/";
-    };
+    const handleClick = useCallback(() => {
+        onClick(anime);
+    }, [anime, onClick]);
 
-    const getInitials = (email) => {
-        return email ? email.charAt(0).toUpperCase() : 'U';
-    };
+    const cardHeight = isMobile ? '240px' : '320px';
+    const cardWidth = isMobile ? '160px' : '220px';
 
-    // Don't render anything if user is not logged in
-    if (!user) {
-        return null;
-    }
+    // Prioritize high-quality images but fallback gracefully
+    const imageSrc = anime.coverImage?.extraLarge ||
+        anime.coverImage?.large ||
+        anime.bannerImage ||
+        '/placeholder-anime.jpg';
 
     return (
-        <div className="profile-container" ref={dropdownRef}>
-            <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="profile-button"
-            >
-                <div className="profile-glow"></div>
-                
-                {user.photo ? (
-                    <div className="profile-avatar">
-                        <img
-                            src={user.photo}
-                            alt="Profile"
-                        />
-                        
-                    </div>
-                ) : (
-                    <div className="profile-initials">
-                        {getInitials(user.email)}
-                    </div>
-                )}
-
-                <div className="profile-info">
-                    <div className="welcome-text">
-                        Welcome
-                    </div>
-                    <div className="username">
-                        {user.name || user.email}
-                    </div>
+        <div
+            className="anime-card2"
+            onClick={handleClick}
+            style={{
+                // Inline styles for base sizing to reduce layout thrash
+                height: cardHeight,
+                width: cardWidth,
+                minHeight: cardHeight,
+                minWidth: cardWidth,
+                // Only animate the first few items to prevent massive paint storms
+                animationDelay: index < 12 ? `${index * 0.05}s` : '0s',
+                opacity: index < 12 ? 0 : 1, // Start hidden only if animating
+                animation: index < 12 ? 'fadeInUp 0.5s ease-out forwards' : 'none'
+            }}
+        >
+            <div className="home-card-image">
+                <img
+                    src={imageSrc}
+                    alt={anime?.title || "Anime"}
+                    loading="lazy" // Native lazy loading relies on browser to optimize
+                    width={isMobile ? 160 : 220}
+                    height={isMobile ? 240 : 320}
+                    decoding="async"
+                />
+                <div className="card-title-bottom">
+                    <h3>{anime?.title || "Unknown Title"}</h3>
                 </div>
-
-                <svg
-                    className={`dropdown-arrow ${showDropdown ? "rotated" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
-
-            {showDropdown && (
-                <div className="profile-dropdown">
-                    {/* User Info Section */}
-                    <div className="user-info-section">
-                        <div className="user-name">
-                            {user.name || user.email}
-                        </div>
-                        <div className="auth-type">
-                            {user.authType === 'google' ? 'Signed in with Google' : 'Local Account'}
-                        </div>
-                    </div>
-
-                    {/* Profile Button */}
-                    <button
-                        onClick={() => {
-                            setShowDropdown(false);
-                        }}
-                        className="dropdown-item"
-                    >
-                        <svg className="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        View Profile
-                    </button>
-
-                    {/* Settings Button */}
-                    <button
-                        onClick={() => {
-                            setShowDropdown(false);
-                        }}
-                        className="dropdown-item"
-                    >
-                        <svg className="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Settings
-                    </button>
-
-                    {/* Divider */}
-                    <div className="dropdown-divider"></div>
-
-                    {/* Logout Button */}
-                    <button
-                        onClick={handleLogout}
-                        className="dropdown-item logout-button"
-                    >
-                        <svg className="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Logout
-                    </button>
-                </div>
-            )}
+            </div>
         </div>
     );
-};
+});
+AnimeCard.displayName = 'AnimeCard';
+
+// Section Component to manage its own "View More" state
+const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
+    // Only render what's needed
+    // const visibleData = useMemo(() => data.slice(0, visibleCount), [data, visibleCount]);
+
+    if (!data || data.length === 0) return null;
+
+    return (
+        <>
+            <div className="divider">
+                <span className="divider-content">{title}</span>
+            </div>
+            <section className="anime-section">
+                <div className="anime-section-container">
+                    <div className="anime-grid">
+                        {data.map((anime, index) => (
+                            <AnimeCard
+                                key={`${title}-${anime.id || index}`}
+                                anime={anime}
+                                onClick={onOpenModal}
+                                index={index} // Index relative to current render
+                            />
+                        ))}
+                    </div>
+                </div>
+            </section>
+        </>
+    );
+});
+AnimeSection.displayName = 'AnimeSection';
 
 const AnimeHomepage = () => {
-    const [currentSlide, setCurrentSlide] = useState(0);
-    const [loading, setLoading] = useState(true);
-    const [mostWatched, setMostWatched] = useState([]);
-    const [topmovies, settopMovies] = useState([]);
-    const [topAiring, setTopAiring] = useState([]);
-    const [announcements, setAnnouncements] = useState([]);
-    const lenisRef = useRef(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedAnime, setSelectedAnime] = useState(null);
-    const [isScrolled, setIsScrolled] = useState(false);
+    // State
+    const [loading, setLoading] = useState(true); // Initial skeleton state
+    const [sections, setSections] = useState({
+        topAiring: [],
+        mostWatched: [],
+        topMovies: []
+    });
+
+    // Search State
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [searchLoading, setSearchLoading] = useState(false);
-    const controllerRef = useRef(null);
     const [isSearching, setIsSearching] = useState(false);
 
-    const { user } = useAuth();
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedAnime, setSelectedAnime] = useState(null);
+    const [isMobile, setIsMobile] = useState(false);
 
+    const controllerRef = useRef(null);
 
-    // Handle scroll events
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20);
-        };
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
-
-    // Initialize smooth scrolling
-    useEffect(() => {
-        const lenis = new Lenis({
-            lerp: 0.09,
-            smooth: true,
-            infinite: false,
-        });
-
-        lenisRef.current = lenis;
-
-        function raf(time) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-
-        requestAnimationFrame(raf);
-
-        return () => {
-            lenis.destroy();
-            lenisRef.current = null;
-        };
-    }, []);
-
-
-    // Fetch announcements
-    useEffect(() => {
-        if (announcements.length === 0) return;
-
-        const interval = setInterval(() => {
-            setCurrentSlide(prev => (prev + 1) % announcements.length);
-        }, 7000);
-        return () => clearInterval(interval);
-    }, [announcements.length]);
-
-    // Normalize hero anime data
-    const normalizeHeroAnime = (anime) => {
+    // Helpers
+    const normalizeGridAnime = useCallback((anime) => {
+        if (!anime) return null;
         return {
-            // IDs
-            id: anime.id,
-            animeId: anime.id,
-            animeMalId: anime.idMal || null,
-
-            // Titles
-            title: {
-                romaji: anime.title?.romaji || null,
-                english: anime.title?.english || null,
-                native: anime.title?.native || null,
-            },
-
+            id: anime.id || anime.mal_id || Math.random().toString(36).substr(2, 9),
+            idMal: anime.idMal || anime.mal_id,
+            title: anime.title?.english || anime.title?.romaji || anime.title?.native || anime.title || "Unknown Title",
             coverImage: {
-                extraLarge: anime.coverImage?.extraLarge || null,
-                large: anime.coverImage?.large || null,
-                medium: anime.coverImage?.medium || null,
+                large: anime.coverImage?.large || anime.image_url || anime.images?.jpg?.large_image_url,
+                extraLarge: anime.coverImage?.extraLarge || anime.images?.jpg?.large_image_url,
+                medium: anime.coverImage?.medium || anime.images?.jpg?.image_url
             },
-
-
-            images: {
-                jpg: {
-                    large_image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
-                    image_url: anime.coverImage?.large || anime.coverImage?.medium,
-                },
-                webp: {
-                    large_image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
-                    image_url: anime.coverImage?.large || anime.coverImage?.medium,
-                },
-            },
-            image_url: anime.coverImage?.extraLarge || anime.coverImage?.large,
-
-            // Details
-            status: anime.status || null,
-            description: anime.description || null,
-            episodes: anime.episodes || null,
-            averageScore: anime.averageScore || null,
-            format: anime.format || null,
+            bannerImage: anime.bannerImage || anime.images?.jpg?.large_image_url,
+            description: anime.description || anime.synopsis || null,
+            episodes: anime.episodes || anime.episodes_count || anime.totalEpisodes || null,
+            averageScore: anime.averageScore || anime.score || anime.rating || null,
+            status: anime.status || anime.airing_status || null,
             genres: anime.genres || [],
-            studios: anime.studios?.nodes?.map(s => s.name) || [],
-            startDate: anime.startDate || null,
-            endDate: anime.endDate || null,
+            studios: anime.studios?.edges?.map(e => e.node.name) || anime.studios?.map(s => s.name) || [],
+            trailer: anime.trailer || null,
+            format: anime.format || null,
             season: anime.season || null,
-            seasonYear: anime.seasonYear || null,
-            popularity: anime.popularity || null,
-            isAdult: anime.isAdult || false,
-            nextAiringEpisode: anime.nextAiringEpisode || null,
-
-            ...anime,
+            year: anime.year || anime.startDate?.year || null,
+            startDate: anime.startDate || anime.aired?.from || null,
+            endDate: anime.endDate || anime.aired?.to || null,
         };
-    };
-
-
-
-    // Normalize grid anime data (from Jikan)
-    const normalizeGridAnime = (anime) => {
-        return {
-            // IDs
-            id: anime.mal_id,
-            animeId: null, // We don't have AniList ID from Jikan
-            animeMalId: anime.mal_id,
-            idMal: anime.mal_id,
-            mal_id: anime.mal_id,
-
-            // Title
-            title: anime.title || anime.title_english || anime.title_japanese,
-            title_english: anime.title_english,
-            title_romaji: anime.title,
-
-            // Images - Handle different image structures
-            coverImage: {
-                large: anime.images?.jpg?.large_image_url || anime.images?.webp?.large_image_url,
-                medium: anime.images?.jpg?.image_url || anime.images?.webp?.image_url,
-                extraLarge: anime.images?.jpg?.large_image_url || anime.images?.webp?.large_image_url
-            },
-            images: anime.images || {
-                jpg: {
-                    image_url: '/placeholder-anime.jpg',
-                    large_image_url: '/placeholder-anime.jpg'
-                },
-                webp: {
-                    image_url: '/placeholder-anime.jpg',
-                    large_image_url: '/placeholder-anime.jpg'
-                }
-            },
-            image_url: anime.images?.jpg?.large_image_url || anime.images?.webp?.large_image_url,
-
-            // Details
-            status: anime.status,
-            description: anime.synopsis,
-            synopsis: anime.synopsis,
-            episodes: anime.episodes,
-            episodeCount: anime.episodes,
-            averageScore: anime.score ? Math.round(anime.score * 10) : null,
-            score: anime.score,
-            format: anime.type,
-            type: anime.type,
-            genres: anime.genres?.map(g => ({ name: g.name })) || [],
-            studios: anime.studios?.map(s => ({ name: s.name })) || [],
-            startDate: anime.aired?.from ? {
-                year: new Date(anime.aired.from).getFullYear(),
-                month: new Date(anime.aired.from).getMonth() + 1,
-                day: new Date(anime.aired.from).getDate()
-            } : null,
-            popularity: anime.popularity || anime.members,
-            isAdult: anime.rating?.includes("R") || anime.rating?.includes("Rx"),
-            year: anime.year || (anime.aired?.from ? new Date(anime.aired.from).getFullYear() : null),
-
-            // Keep original data
-            ...anime
-        };
-    };
-
-    // API base URL
-    const API_BASE =
-        import.meta.env.MODE === "development"
-            ? "http://localhost:5000"
-            : "https://otakushelf-uuvw.onrender.com";
-
-
-    // Fetch announcements
-    useEffect(() => {
-        const fetchAnnouncements = async () => {
-            try {
-                const res = await axios.get(`${API_BASE}/api/anilist/latest-sequels`);
-                const sorted = res.data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                const normalizedAnnouncements = sorted.slice(0, 10).map(normalizeHeroAnime);
-                setAnnouncements(normalizedAnnouncements);
-                localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
-
-            } catch (err) {
-                console.error("Error fetching announcements:", err);
-            }
-        };
-        fetchAnnouncements();
     }, []);
 
-
-    // Fetch anime sections
+    // Stale-While-Revalidate Data Fetching
     useEffect(() => {
-        const fetchAnimeSections = async () => {
+        const loadWrapper = async () => {
+            let hasCachedData = false;
+
+            // 1. Load from Cache Immediately
+            const cachedData = localStorage.getItem(CACHE_KEY);
+            if (cachedData) {
+                try {
+                    const parsed = JSON.parse(cachedData);
+                    const cacheTime = localStorage.getItem(CACHE_TIME_KEY);
+                    const age = Date.now() - (parseInt(cacheTime) || 0);
+
+                    // If valid JSON, show immediately
+                    if (parsed.topAiring && parsed.mostWatched) {
+                        setSections({
+                            topAiring: (parsed.topAiring || []).map(normalizeGridAnime).filter(Boolean),
+                            mostWatched: (parsed.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
+                            topMovies: (parsed.topMovies || []).map(normalizeGridAnime).filter(Boolean)
+                        });
+                        setLoading(false); // Stop skeleton loader immediately
+                        hasCachedData = true;
+
+                        // If data is fresh enough, we stop here to avoid aggressive networking
+                        if (age < STALE_TIME) {
+                            console.log("Using fresh cache, no network fetch needed.");
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Cache parse error:", e);
+                    localStorage.removeItem(CACHE_KEY);
+                }
+            }
+
+            // 2. Fetch Fresh Data (Background Update)
             try {
-                const res = await axios.get(`${API_BASE}/api/anime/anime-sections`);
-                setTopAiring(res.data.topAiring.map(normalizeGridAnime));
-                setMostWatched(res.data.mostWatched.map(normalizeGridAnime));
-                settopMovies(res.data.topMovies.map(normalizeGridAnime));
-                localStorage.setItem('animeSections', JSON.stringify({
-                    topAiring: res.data.topAiring,
-                    mostWatched: res.data.mostWatched,
-                    topMovies: res.data.topMovies
+                // If we didn't have cache, we are still loading skeleton
+                // If we did have cache, we are just silently updating
+                console.log("Fetching fresh data...");
+                const response = await axios.get(`${API}/api/anime/anime-sections`, { timeout: 15000 });
+                const data = response.data;
+
+                const newSections = {
+                    topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
+                    mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
+                    topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean)
+                };
+
+                // Update State
+                setSections(newSections);
+                setLoading(false);
+
+                // Update Cache
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    topAiring: data.topAiring || [],
+                    mostWatched: data.mostWatched || [],
+                    topMovies: data.topMovies || []
                 }));
+                localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
 
             } catch (error) {
-                console.error("Error fetching anime sections:", error);
+                console.error("Network fetch failed:", error);
+                // If we had no cache and network failed, stop loading to show empty state or error
+                if (!hasCachedData) setLoading(false);
             }
         };
-        fetchAnimeSections();
+
+        loadWrapper();
+    }, [normalizeGridAnime]);
+
+    // Check Mobile
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-
-    // Check if all sections are ready
-    useEffect(() => {
-        const sectionsReady = topAiring.length || mostWatched.length || topmovies.length;
-        if (announcements.length && sectionsReady) {
-            setLoading(false);
-        }
-    }, [announcements.length, topAiring.length, mostWatched.length, topmovies.length]);
-
-
-    // Try cached data
-    useEffect(() => {
-        // Try cached announcements
-        const cachedAnns = localStorage.getItem('announcements');
-        if (cachedAnns) {
-            try {
-                const parsed = JSON.parse(cachedAnns);
-                if (Array.isArray(parsed) && parsed.length) setAnnouncements(parsed);
-            } catch { }
-        }
-
-
-        // Try cached sections
-        const cachedSections = localStorage.getItem('animeSections');
-        if (cachedSections) {
-            try {
-                const parsed = JSON.parse(cachedSections);
-                if (parsed?.topAiring?.length) setTopAiring(parsed.topAiring.map(normalizeGridAnime));
-                if (parsed?.mostWatched?.length) setMostWatched(parsed.mostWatched.map(normalizeGridAnime));
-                if (parsed?.topMovies?.length) settopMovies(parsed.topMovies.map(normalizeGridAnime));
-                setLoading(false);
-            } catch { }
-        }
-    }, []);
-
-    // Search functionality
+    // Search Logic
     useEffect(() => {
         if (!searchQuery.trim()) {
             setIsSearching(false);
             setSearchResults([]);
-            setSearchLoading(false);
             return;
         }
 
         setSearchLoading(true);
         setIsSearching(true);
 
-        if (controllerRef.current) {
-            controllerRef.current.abort();
-        }
+        if (controllerRef.current) controllerRef.current.abort();
         controllerRef.current = new AbortController();
 
-        const fetchSearch = async () => {
+        const searchTimer = setTimeout(async () => {
             try {
-                const res = await axios.get(
-                    `${API_BASE}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=12`,
-                    { signal: controllerRef.current.signal }
-                );
-
-                if (res.data && res.data.length > 0) {
-                    const normalized = res.data.map(normalizeGridAnime);
-                    setSearchResults(normalized);
-                } else {
-                    setSearchResults([]);
+                const res = await axios.get(`${API}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=20`, {
+                    signal: controllerRef.current.signal
+                });
+                if (res.data) {
+                    setSearchResults(res.data.map(normalizeGridAnime).filter(Boolean));
                 }
             } catch (err) {
-                if (axios.isCancel(err)) {
-                    console.log("Search request cancelled:", searchQuery);
-                } else {
-                    console.error("Search failed:", err);
-                    setSearchResults([]);
-                }
+                if (!axios.isCancel(err)) console.error("Search error", err);
             } finally {
                 setSearchLoading(false);
             }
+        }, 500);
+
+        return () => {
+            clearTimeout(searchTimer);
+            if (controllerRef.current) controllerRef.current.abort();
         };
-
-        const debounce = setTimeout(fetchSearch, 400); // debounce keystrokes
-        return () => clearTimeout(debounce);
-    }, [searchQuery]);
+    }, [searchQuery, normalizeGridAnime]);
 
 
-    // Remove duplicate anime entries
-    const removeDuplicates = (animeArray) => {
-        const seen = new Set();
-        return animeArray.filter((anime) => {
-            if (seen.has(anime.mal_id)) return false;
-            seen.add(anime.mal_id);
-            return true;
-        });
-    };
-
-    // Format date
-    const formatDate = (startDate) => {
-        if (!startDate || !startDate.year) return "TBA";
-        const year = startDate.year;
-        const month = startDate.month ? String(startDate.month).padStart(2, '0') : '??';
-        const day = startDate.day ? String(startDate.day).padStart(2, '0') : '??';
-        return `${year}-${month}-${day}`;
-    };
-
-    // Truncate description
-    const truncateDescription = (description, maxLength = 250) => {
-        if (!description) return "No description available.";
-        const cleanText = description.replace(/<[^>]*>/g, '');
-        return cleanText.length > maxLength
-            ? cleanText.substring(0, maxLength) + "..."
-            : cleanText;
-    };
-
-    // Format genres
-    const formatGenres = (genres) => {
-        if (!genres || genres.length === 0) return "Unknown";
-        return genres.slice(0, 3).map(g => g.name || g).join(", ");
-    };
-
-    // Format score
-    const formatScore = (score) => {
-        return score ? `${score}/100` : "N/A";
-    };
-
-    // Format popularity
-    const formatPopularity = (popularity) => {
-        if (!popularity) return "N/A";
-        if (popularity >= 1000000) {
-            return `${(popularity / 1000000).toFixed(1)}M`;
-        } else if (popularity >= 1000) {
-            return `${(popularity / 1000).toFixed(1)}K`;
-        }
-        return popularity.toString();
-    };
-
-    // Get status color
-    const getStatusColor = (status) => {
-        switch (status?.toLowerCase()) {
-            case 'releasing':
-            case 'currently_airing':
-                return 'status-releasing';
-            case 'not_yet_released':
-            case 'not_yet_aired':
-                return 'status-not_yet_released';
-            case 'finished':
-            case 'finished_airing':
-                return 'status-finished';
-            default:
-                return '';
-        }
-    };
-
-    // Open modal for selected anime
-    const openModal = (anime) => {
-        console.log("Opening anime with data:", anime);
+    // Modal Handlers
+    const openModal = useCallback((anime) => {
         setSelectedAnime(anime);
         setIsModalOpen(true);
-    };
+    }, []);
 
-    // Open modal for related anime
-    const handleOpenRelatedAnime = (relatedAnime) => {
-        console.log("Opening related anime:", relatedAnime);
-        setSelectedAnime(relatedAnime);
-    };
-
-    // Close modal
-    const closeModal = () => {
+    const closeModal = useCallback(() => {
         setSelectedAnime(null);
         setIsModalOpen(false);
-    };
+    }, []);
 
-    // Close search
-    const closeSearch = () => {
-        setSearchQuery("");
-        setSearchResults([]);
-        setSearchLoading(false);
-        setIsSearching(false);
-    };
+    const handleOpenRelatedAnime = useCallback((related) => {
+        setSelectedAnime(related);
+    }, []);
 
-    // Handle key down events
-    const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-            closeSearch();
-        }
-    };
 
-    // Render anime grid
-    const renderAnimeGrid = (title, data) => (
-        <div className="anime-section-container">
-            <h2 className="section-title">{title}</h2>
-            <div className="anime-grid">
-                {data.map((anime) => (
-                    <div key={anime.mal_id} className={`anime-card ${loading ? 'loading' : ''}`}
-                        onClick={() => openModal(anime)}
-                        style={{ cursor: "pointer" }}>
-                        {loading ? (
-                            <div className="card-skeleton">
-                                <div className="skeleton-image"></div>
-                                <div className="skeleton-content">
-                                    <div className="skeleton-title"></div>
-                                    <div className="skeleton-info"></div>
-                                </div>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="home-card-image">
-                                    <img
-                                        src={anime.images.webp?.large_image_url || anime.images.jpg.large_image_url}
-                                        alt={anime.title}
-                                        loading="lazy"
-                                    />
-                                    <div className="card-title-bottom">
-                                        <h3>{anime.title}</h3>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+    if (loading && !isSearching) {
+        return (
+            <div className="homepage">
+                <Header showSearch={true} onSearchChange={setSearchQuery} />
+                <div className="loading-skeleton">
+                    <div className="skeleton-hero"></div>
+                    <div className="skeleton-grid">
+                        {[...Array(8)].map((_, i) => <div key={i} className="skeleton-card"></div>)}
                     </div>
-                ))}
+                </div>
+                <BottomNavBar />
             </div>
-        </div>
-    );
+        );
+    }
 
     return (
-        <div className="homepage">
-            <div className="main-content">
-                <header className={`header ${isScrolled ? "scrolled" : ""}`}>
-                    <div className="header-center">
-                        <div className="logo">
-                            <img src={logo} alt="no img" />
-                        </div>
-                    </div>
-                    <div className={`InputContainer ${searchQuery ? "active" : ""}`}>
-                        <input
-                            placeholder="Search anime"
-                            id="input"
-                            className="input"
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                        />
-                    </div>
+        <>
+            <BottomNavBar />
+            <div className="homepage">
+                <div className="main-content">
+                    <Header showSearch={true} onSearchChange={setSearchQuery} />
 
-                    <div className="auth-buttons">
-                        {user ? (
-                            <ProfileDropdown />
+                    <TrailerHero onOpenModal={openModal} isMobile={isMobile} />
+
+                    <main className="anime-sections">
+                        {isSearching ? (
+                            <div className="anime-section-container">
+                                {searchLoading ? (
+                                    <div className="loading-search">
+                                        <div className="spinner"></div>
+                                        <p>Searching...</p>
+                                    </div>
+                                ) : (
+                                    <div className="anime-grid">
+                                        {searchResults.map((anime, index) => (
+                                            <AnimeCard
+                                                key={`search-${anime.id}`}
+                                                anime={anime}
+                                                onClick={openModal}
+                                                index={index}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         ) : (
                             <>
-                                <Link to="/login">
-                                    <button>
-                                        <span className="button_login">Login</span>
-                                    </button>
-                                </Link>
-                                <Link to="/register">
-                                    <button>
-                                        <span className="button_register">Register</span>
-                                    </button>
-                                </Link>
+                                <AnimeSection
+                                    title="TOP AIRING"
+                                    data={sections.topAiring}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
+                                    title="MOST WATCHED"
+                                    data={sections.mostWatched}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
+                                    title="TOP MOVIES"
+                                    data={sections.topMovies}
+                                    onOpenModal={openModal}
+                                />
                             </>
                         )}
-                    </div>
-
-                </header>
-
-                <div className="bottom-button-container">
-                    {/* Home Button */}
-                    <button className="button">
-                        <div className="button-content">
-                            <Link to="/list">
-                                <img className="button-icon" src={list} alt="Home" />
-                            </Link>
-                            <span className="button-text">List</span>
-
-                        </div>
-                    </button>
-
-                    {/* Search Button */}
-                    <button className="button">
-                        <div className="button-content">
-                            <img className="button-icon" src={search} alt="Search" />
-                            <span className="button-text">Advanced search</span>
-                        </div>
-                    </button>
-
-                    {/* Profile Button */}
-                    <button className="button">
-                        <div className="button-content">
-                            <img className="button-icon" src={list} alt="Profile" />
-                            <span className="button-text">Profile</span>
-                        </div>
-                    </button>
-
-                    {/* Cart Button */}
-                    <button className="button">
-                        <div className="button-content">
-                            <img className="button-icon" src={list} alt="Cart" />
-                            <span className="button-text">Cart</span>
-                        </div>
-                    </button>
+                    </main>
                 </div>
 
-                <section className="hero-slider">
-                    <div className="slider-container">
-                        {announcements.map((anime, index) => {
-                            const isVisible =
-                                index === currentSlide ||
-                                index === (currentSlide + 1) % announcements.length ||
-                                index === (currentSlide - 1 + announcements.length) % announcements.length;
-                            if (!isVisible) return null;
-
-                            return (
-                                <div
-                                    key={anime.id}
-                                    className={`slide ${index === currentSlide ? "active" : ""}`}
-                                    onClick={() => openModal(anime)}
-                                    style={{ cursor: "pointer" }}
-                                >
-                                    <div className="slide-content-wrapper">
-                                        <div className="slide-image-left">
-                                            <img
-                                                src={anime.coverImage?.extraLarge || anime.coverImage?.large || anime.coverImage?.medium}
-                                                alt={anime.title?.romaji || anime.title?.english}
-                                                loading={index === currentSlide ? "eager" : "lazy"}
-                                                fetchpriority={index === currentSlide ? "high" : "auto"}
-                                                decoding="async"
-                                            />
-
-
-                                        </div>
-                                        <div className="slide-info-right">
-                                            <h2 className="anime-title">
-                                                {anime.title?.romaji || anime.title?.english}
-                                            </h2>
-
-                                            <div className="anime-info2">
-                                                <div className="info-item2">
-                                                    <span className="info-label">Status</span>
-                                                    <span
-                                                        className={`info-value ${getStatusColor(anime.status)}`}
-                                                    >
-                                                        {anime.status?.replace(/_/g, " ").toUpperCase() || "Unknown"}
-                                                    </span>
-                                                </div>
-                                                <div className="info-item2">
-                                                    <span className="info-label">Release Date</span>
-                                                    <span className="info-value">
-                                                        {formatDate(anime.startDate)}
-                                                    </span>
-                                                </div>
-                                                <div className="info-item2">
-                                                    <span className="info-label">Episodes</span>
-                                                    <span className="info-value">
-                                                        {anime.episodes || "TBA"}
-                                                    </span>
-                                                </div>
-                                                <div className="info-item2">
-                                                    <span className="info-label">Score</span>
-                                                    <span className="info-value">
-                                                        {formatScore(anime.averageScore)}
-                                                    </span>
-                                                </div>
-                                                <div className="info-item2">
-                                                    <span className="info-label">Genres</span>
-                                                    <span className="info-value">
-                                                        {formatGenres(anime.genres)}
-                                                    </span>
-                                                </div>
-                                                <div className="info-item2">
-                                                    <span className="info-label">Popularity</span>
-                                                    <span className="info-value">
-                                                        {formatPopularity(anime.popularity)}
-                                                    </span>
-                                                </div>
-                                                {anime.nextAiringEpisode && (
-                                                    <div className="info-item2">
-                                                        <span className="info-label">Next Episode</span>
-                                                        <span className="info-value">
-                                                            Episode {anime.nextAiringEpisode.episode}
-                                                        </span>
-                                                    </div>
-                                                )}
-
-                                            </div>
-                                            <p className="anime-description">
-                                                {truncateDescription(anime.description)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {announcements.length > 1 && (
-                        <div className="slider-navigation">
-                            <div className="slider-dots">
-                                {announcements.map((_, index) => (
-                                    <button
-                                        key={index}
-                                        className={`dot ${index === currentSlide ? "active" : ""}`}
-                                        onClick={() => setCurrentSlide(index)}
-                                        aria-label={`Go to slide ${index + 1}`}
-                                    ></button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </section>
-                <main className="anime-sections">
-                    {isSearching ? (
-                        <div className="anime-section-container">
-                            <h2 className="section-title">Search Results for "{searchQuery}"</h2>
-                            {searchLoading ? (
-                                <p className="loading-text">Searching anime...</p>
-                            ) : searchResults.length > 0 ? (
-                                <div className="anime-grid">
-                                    {searchResults.map((anime, index) => (
-                                        <div
-                                            key={anime.mal_id || anime.id || index}
-                                            className="anime-card"
-                                            onClick={() => openModal(anime)}
-                                            style={{ "--card-index": index }}
-                                        >
-                                            <img
-                                                src={
-                                                    anime.images?.webp?.large_image_url ||
-                                                    anime.images?.jpg?.large_image_url ||
-                                                    anime.images?.webp?.image_url ||
-                                                    anime.images?.jpg?.image_url ||
-                                                    '/placeholder-anime.jpg'
-                                                }
-                                                alt={anime.title || 'Anime'}
-                                                loading="lazy"
-                                                onError={(e) => {
-                                                    e.target.src = '/placeholder-anime.jpg';
-                                                }}
-                                            />
-                                            <div className="card-title-bottom">
-                                                <h3>{anime.title || 'Unknown Title'}</h3>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="no-results">
-                                    <div className="no-results-icon">🔍</div>
-                                    <h3>No anime found</h3>
-                                    <p>Try searching with a different title or check your spelling.</p>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <>
-                            {renderAnimeGrid("Top Airing", removeDuplicates(topAiring))}
-                            {renderAnimeGrid("Most Watched", removeDuplicates(mostWatched))}
-                            {renderAnimeGrid("Top Movies", removeDuplicates(topmovies))}
-                        </>
-                    )}
-                </main>
-
+                {isModalOpen && selectedAnime && (
+                    <Modal
+                        isOpen={isModalOpen}
+                        onClose={closeModal}
+                        anime={selectedAnime}
+                        onOpenAnime={handleOpenRelatedAnime}
+                    />
+                )}
             </div>
-            <Modal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                anime={selectedAnime}
-                onOpenAnime={handleOpenRelatedAnime}
-            />
-        </div>
+        </>
     );
 };
 
-export default AnimeHomepage;
+export default React.memo(AnimeHomepage);
