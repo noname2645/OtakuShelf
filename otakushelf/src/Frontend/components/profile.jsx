@@ -9,7 +9,6 @@ import {
   Pie,
   Cell,
   Tooltip,
-  Legend
 } from 'recharts';
 
 const ProfilePage = () => {
@@ -24,6 +23,7 @@ const ProfilePage = () => {
   const [badges, setBadges] = useState([]);
   const [genres, setGenres] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
     bio: '',
@@ -32,8 +32,8 @@ const ProfilePage = () => {
 
   const API = import.meta.env.VITE_API_BASE_URL;
 
-  // Anime Genres Array - All 19 genres
-  const ANIME_GENRES = [
+  // Official 19 AniList genres
+  const ALL_ANIME_GENRES = [
     "Action",
     "Adventure",
     "Avant Garde",
@@ -52,12 +52,40 @@ const ProfilePage = () => {
     "Sports",
     "Supernatural",
     "Suspense",
-    "Thriller",
+    "Thriller"
   ];
 
-  // Add this function to prepare data for pie chart - FIXED to show all genres
-  // Add this function to prepare data for pie chart - FIXED to show all genres from user list
-  // Add this function to prepare data for pie chart - FIXED to show all genres
+  // Backfill genres function
+  const backfillGenres = async () => {
+    if (!confirm('This will fetch genres for all your anime from AniList. It may take several minutes (about 1 minute per 100 anime). Continue?')) {
+      return;
+    }
+
+    try {
+      setBackfilling(true);
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${API}/api/list/${user._id}/backfill-genres`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`Success! Updated genres for ${data.updated} anime. ${data.failed > 0 ? `Failed: ${data.failed}` : ''}`);
+        await loadProfileData(); // Reload to see new genres
+      } else {
+        alert('Failed to backfill genres: ' + (data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      alert('Error backfilling genres: ' + error.message);
+    } finally {
+      setBackfilling(false);
+    }
+  };
+
+  // Prepare chart data - show ALL genres including 0%
   const prepareChartData = (userGenres) => {
     if (!userGenres) userGenres = [];
 
@@ -72,6 +100,7 @@ const ProfilePage = () => {
       }
     });
 
+    // Color palette
     const colors = [
       '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2',
       '#EF476F', '#073B4C', '#7209B7', '#3A86FF', '#FB5607',
@@ -79,35 +108,35 @@ const ProfilePage = () => {
       '#FF595E', '#8AC926', '#1982C4', '#6A4C93'
     ];
 
-    // Map over the STANDARD 19 GENRES to ensure they all appear
-    return ANIME_GENRES.map((genreName, index) => {
+    // Create array with ALL genres
+    const allGenresData = ALL_ANIME_GENRES.map((genreName, index) => {
       const userGenre = userGenreMap[genreName.toLowerCase()];
       const actualValue = userGenre ? userGenre.percentage : 0;
 
       return {
         name: genreName,
         value: actualValue,
-        // For Pie rendering: if 0, keep it 0 or tiny? 
-        // If we want it HIDDEN from pie but SHOWN in legend, we can control that in the Pie component prop.
-        // For now, let's keep 'displayValue' logic if we want tiny slices, OR we just let them be 0.
-        // The user wants 0% listed.
-        displayValue: actualValue > 0 ? actualValue : 0,
         count: userGenre ? userGenre.count : 0,
         color: colors[index % colors.length]
       };
+    });
+
+    // Sort by percentage (highest first), but keep 0% at the end
+    return allGenresData.sort((a, b) => {
+      if (a.value === 0 && b.value === 0) return a.name.localeCompare(b.name);
+      if (a.value === 0) return 1;
+      if (b.value === 0) return -1;
+      return b.value - a.value;
     });
   };
 
   // Add chart data state
   const [chartData, setChartData] = useState([]);
 
-  // Update the useEffect or loadProfileData to set chart data
+  // Update chart data when genres change
   useEffect(() => {
     setChartData(prepareChartData(genres));
   }, [genres]);
-
-  // Check if we have effective data
-  const hasGenreData = chartData.some(g => g.value > 0);
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload }) => {
@@ -156,7 +185,7 @@ const ProfilePage = () => {
         const fixImageUrl = (url) => {
           if (!url) return null;
           if (url.startsWith('http') || url.startsWith('data:')) {
-            return url; // Already absolute
+            return url;
           }
           if (url.startsWith('/uploads/')) {
             const backendBaseUrl = API.replace('/api', '');
@@ -171,7 +200,7 @@ const ProfilePage = () => {
           bio: data.profile?.bio || 'Anime enthusiast exploring new worlds through animation',
           joinDate: new Date(data.profile?.joinDate || data.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
           avatar: fixImageUrl(data.photo),
-          coverImage: fixImageUrl(data.profile?.coverImage), // ADD THIS LINE
+          coverImage: fixImageUrl(data.profile?.coverImage),
           email: data.email
         });
 
@@ -206,7 +235,7 @@ const ProfilePage = () => {
         bio: 'Anime enthusiast exploring new worlds through animation',
         joinDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
         avatar: null,
-        coverImage: null, // ADD THIS
+        coverImage: null,
         email: ''
       });
       setStats({
@@ -233,17 +262,12 @@ const ProfilePage = () => {
     if (!file || !user?._id) return;
 
     try {
-      console.log('DEBUG: handleCoverUpload triggered');
-      console.log('User ID:', user._id);
-      console.log('API URL:', API);
-      console.log('File:', file.name, file.size, 'bytes', file.type);
-
       if (!file.type.startsWith("image/")) {
         alert("Invalid image type. Please select an image file (JPEG, PNG, WebP)");
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) { // 5MB max
+      if (file.size > 5 * 1024 * 1024) {
         alert("Image too large. Maximum size is 5MB");
         return;
       }
@@ -257,8 +281,6 @@ const ProfilePage = () => {
       const formData = new FormData();
       formData.append("cover", file);
 
-      console.log('Sending request to:', `${API}/api/profile/${user._id}/upload-cover`);
-
       const response = await fetch(`${API}/api/profile/${user._id}/upload-cover`, {
         method: "POST",
         headers: {
@@ -267,15 +289,11 @@ const ProfilePage = () => {
         body: formData
       });
 
-      console.log('Response status:', response.status);
-
-      // Check if response is OK
       if (!response.ok) {
         let errorMsg = 'Upload failed';
         try {
           const errorData = await response.json();
           errorMsg = errorData.message || errorMsg;
-          console.error('Server error response:', errorData);
         } catch (e) {
           errorMsg = `Server error: ${response.status}`;
         }
@@ -283,19 +301,14 @@ const ProfilePage = () => {
       }
 
       const data = await response.json();
-      console.log('Cover upload response:', data);
 
       if (data.coverImage) {
-        // Fix the URL like you do for profile photos
         let coverUrl = data.coverImage;
 
-        // If it's a relative path starting with /uploads
         if (coverUrl && coverUrl.startsWith('/uploads/')) {
           const backendBaseUrl = API.replace('/api', '');
           coverUrl = `${backendBaseUrl}${coverUrl}`;
         }
-
-        console.log('Final cover URL:', coverUrl);
 
         setProfileData(prev => ({
           ...prev,
@@ -303,8 +316,6 @@ const ProfilePage = () => {
         }));
 
         alert('Cover image updated successfully!');
-      } else {
-        alert('Upload completed but no cover image URL returned');
       }
 
     } catch (error) {
@@ -312,7 +323,6 @@ const ProfilePage = () => {
       alert('Failed to upload cover: ' + error.message);
     }
   };
-
 
   const handleEditProfile = () => {
     setIsEditing(true);
@@ -347,7 +357,6 @@ const ProfilePage = () => {
         await updateProfile(updateData);
       }
 
-      // Update local state
       setProfileData(prev => ({
         ...prev,
         name: editForm.name,
@@ -358,7 +367,6 @@ const ProfilePage = () => {
       setIsEditing(false);
       alert('Profile updated successfully!');
 
-      // Reload profile data to get fresh data from server
       await loadProfileData();
 
     } catch (error) {
@@ -369,7 +377,6 @@ const ProfilePage = () => {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    // Reset form to current profile data
     setEditForm({
       name: profileData?.name || '',
       bio: profileData?.bio || '',
@@ -388,7 +395,6 @@ const ProfilePage = () => {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
 
-    // Get user ID safely from multiple sources
     const userId = user?._id || localStorage.getItem("user_id") || JSON.parse(localStorage.getItem("user"))?.id;
 
     if (!userId) {
@@ -402,30 +408,23 @@ const ProfilePage = () => {
     }
 
     try {
-      // Validate file
       if (!file.type.startsWith('image/')) {
         alert('Please select an image file (JPEG, PNG, WebP, or GIF)');
         return;
       }
 
-      if (file.size > 2 * 1024 * 1024) { // 2MB max
+      if (file.size > 2 * 1024 * 1024) {
         alert('Image size should be less than 2MB');
         return;
       }
 
-      // Create FormData
       const formData = new FormData();
       formData.append('photo', file);
 
-      // Get token safely
       const token = localStorage.getItem("token") || '';
 
-      // Show loading state
       setLoading(true);
 
-      console.log('Uploading image for user:', userId);
-
-      // Upload to server
       const response = await fetch(`${API}/api/profile/${userId}/upload-photo`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -444,28 +443,19 @@ const ProfilePage = () => {
       }
 
       const result = await response.json();
-      console.log('Upload successful:', result);
 
-      // FIX: Construct the full absolute URL
       let photoUrl = result.photo;
 
-      // If it's a relative path starting with /uploads
       if (photoUrl && photoUrl.startsWith('/uploads/')) {
-        // Extract the backend base URL from your API URL
-        // If API is "http://localhost:5000/api", we want "http://localhost:5000"
         const backendBaseUrl = API.replace('/api', '');
         photoUrl = `${backendBaseUrl}${photoUrl}`;
       }
 
-      console.log('Final photo URL:', photoUrl);
-
-      // Update UI with the URL from server
       setProfileData(prev => ({
         ...prev,
         avatar: photoUrl
       }));
 
-      // Update auth context locally immediately
       if (updateUserState) {
         updateUserState({ photo: photoUrl });
       }
@@ -476,7 +466,6 @@ const ProfilePage = () => {
       console.error('Upload error details:', error);
       alert('Failed to upload image: ' + error.message);
 
-      // Revert by reloading
       await loadProfileData();
     } finally {
       setLoading(false);
@@ -498,27 +487,20 @@ const ProfilePage = () => {
     }
   };
 
-  // Function to render custom label that shows 0% as empty
+  // Custom label renderer for pie chart
   const renderCustomizedLabel = ({
     cx,
     cy,
     midAngle,
     innerRadius,
     outerRadius,
-    percent,
-    index,
-    name,
-    value,
     payload
   }) => {
-    // Get the actual value from payload
     const actualValue = payload.value;
 
-    // Only show label if actual value > 0
-    if (actualValue > 0) {
+    // Only show label if value > 3% (to avoid cluttering)
+    if (actualValue > 3) {
       const RADIAN = Math.PI / 180;
-
-      // Calculate position in the MIDDLE of the slice (between inner and outer radius)
       const middleRadius = (innerRadius + outerRadius) / 2;
       const x = cx + middleRadius * Math.cos(-midAngle * RADIAN);
       const y = cy + middleRadius * Math.sin(-midAngle * RADIAN);
@@ -528,11 +510,11 @@ const ProfilePage = () => {
           x={x}
           y={y}
           fill="white"
-          textAnchor="middle"  // Always center the text
-          dominantBaseline="middle"  // Vertically center
-          fontSize={14}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize={12}
           fontWeight="bold"
-          textShadow="0 2px 4px rgba(0,0,0,0.8)"
+          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}
         >
           {`${actualValue.toFixed(1)}%`}
         </text>
@@ -546,7 +528,6 @@ const ProfilePage = () => {
       <div style={{ position: 'relative', minHeight: '100vh', background: 'linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)' }}>
         <Header showSearch={false} />
         <BottomNavBar />
-        {/* Simple Loading Preview - Full screen overlay */}
         <div className="profile-loading" style={{
           position: 'fixed',
           top: 0,
@@ -587,15 +568,20 @@ const ProfilePage = () => {
     );
   }
 
+  // Calculate stats for display
+  const genresWithData = chartData.filter(g => g.value > 0);
+  const totalGenres = ALL_ANIME_GENRES.length;
+  const watchedGenres = genresWithData.length;
+  const topPercentage = genresWithData.length > 0
+    ? Math.max(...genresWithData.map(g => g.value)).toFixed(1)
+    : '0';
+
   return (
     <>
       <BottomNavBar />
       <div className="profile-page">
         <Header showSearch={false} />
-        {/* PROFILE COVER */}
         <div className="profile-cover">
-
-          {/* Hidden input */}
           <input
             type="file"
             accept="image/*"
@@ -604,7 +590,6 @@ const ProfilePage = () => {
             onChange={handleCoverUpload}
           />
 
-          {/* Change cover button */}
           <label htmlFor="cover-upload" className="cover-upload-btn">
             Change Cover
           </label>
@@ -619,7 +604,6 @@ const ProfilePage = () => {
           />
 
           <div className="profile-cover-fade"></div>
-          {/* Profile Header */}
           <div className="profile-header">
             <div className="profile-avatar-section">
               <div className="profile-avatar-large">
@@ -711,18 +695,26 @@ const ProfilePage = () => {
                   <button className="btn-share" onClick={handleShareProfile}>
                     Share Profile
                   </button>
+                  {/* TEMPORARY BUTTON - Remove after running once */}
+                  {watchedGenres === 0 && (
+                    <button
+                      className="btn-edit"
+                      onClick={backfillGenres}
+                      disabled={backfilling}
+                      style={{ backgroundColor: '#FF6B6B' }}
+                    >
+                      {backfilling ? 'Backfilling...' : 'Fix Genres'}
+                    </button>
+                  )}
                 </>
               )}
             </div>
           </div>
         </div>
         <div className="profile-container2">
-
-
           <div className="initial">
             <div className="overview">
               <h2 className="overview-header">Overview</h2>
-              {/* Overview Section */}
               <div className="stats-grid">
                 <div className="stat-card">
                   <span className="stat-number">{stats?.currentlyWatching || 0}</span>
@@ -769,9 +761,6 @@ const ProfilePage = () => {
                       ? 'Feature coming soon'
                       : 'Start watching anime to see your activity here!'}
                   </p>
-                  {/* <p className="activity-subtext">
-                    Track your latest anime additions, episode progress, and ratings here.
-                  </p> */}
                 </div>
               </div>
             </div>
@@ -843,32 +832,30 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Genre Breakdown Section - UPDATED WITH PIE CHART AND TOP GENRES */}
+          {/* Genre Breakdown Section */}
           <div className="genre-section">
-            <h3 className="section-title">Genre Breakdown</h3>
+            <h3 className="section-title">Genre Breakdown - {totalGenres} Genres</h3>
 
             <div className="genre-breakdown-container">
-              {/* Pie Chart Column with Legend Below */}
+              {/* Pie Chart Column */}
               <div className="pie-chart-column">
-                {/* Always show if we have chartData (which we now always should) */}
                 {chartData.length > 0 ? (
                   <>
                     <div className="pie-chart-wrapper">
                       <ResponsiveContainer width="100%" height={400}>
                         <PieChart>
                           <Pie
-                            data={chartData.filter(d => d.value > 0)} // Only render slices > 0
+                            data={chartData.filter(d => d.value > 0)}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            outerRadius={180}
-                            innerRadius={70}
+                            outerRadius={200}
+                            innerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
                             nameKey="name"
                             label={renderCustomizedLabel}
                           >
-                            {/* We need to map colors from the filtered list */}
                             {chartData.filter(d => d.value > 0).map((entry, index) => (
                               <Cell
                                 key={`cell-${index}`}
@@ -883,21 +870,23 @@ const ProfilePage = () => {
                           {/* Donut Center Text */}
                           <text
                             x="50%"
-                            y="50%"
+                            y="48%"
                             textAnchor="middle"
                             dominantBaseline="middle"
                             className="donut-total"
+                            style={{ fontSize: '32px', fontWeight: 'bold', fill: '#fff' }}
                           >
-                            {ANIME_GENRES.length}
+                            {watchedGenres}
                           </text>
                           <text
                             x="50%"
-                            y="57%"
+                            y="56%"
                             textAnchor="middle"
                             dominantBaseline="middle"
                             className="donut-label"
+                            style={{ fontSize: '14px', fill: '#999' }}
                           >
-                            Total Genres
+                            Genres Watched
                           </text>
                         </PieChart>
                       </ResponsiveContainer>
@@ -907,21 +896,20 @@ const ProfilePage = () => {
                     <div className="chart-summary">
                       <div className="summary-item">
                         <span className="summary-label">Total Genres:</span>
-                        <span className="summary-value">{ANIME_GENRES.length}</span>
+                        <span className="summary-value">{totalGenres}</span>
                       </div>
                       <div className="summary-item">
                         <span className="summary-label">Genres Watched:</span>
-                        <span className="summary-value">
-                          {chartData.filter(g => g.value > 0).length}
-                        </span>
+                        <span className="summary-value">{watchedGenres}</span>
                       </div>
                       <div className="summary-item">
                         <span className="summary-label">Top Percentage:</span>
+                        <span className="summary-value">{topPercentage}%</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Coverage:</span>
                         <span className="summary-value">
-                          {chartData.length > 0 ?
-                            `${Math.max(...chartData.map(g => g.value)).toFixed(1)}%` :
-                            '0%'
-                          }
+                          {((watchedGenres / totalGenres) * 100).toFixed(1)}%
                         </span>
                       </div>
                     </div>
@@ -931,13 +919,13 @@ const ProfilePage = () => {
                     <div className="chart-placeholder">
                       <div className="placeholder-icon">📊</div>
                       <p>No genre data available yet.</p>
-                      <p>Complete more anime to see your genre breakdown!</p>
+                      <p>Click "Fix Genres" button above to fetch genres for your anime!</p>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Custom Legend Below Pie Chart */}
+              {/* Genre Legend - Shows ALL genres */}
               <div className="legend-container">
                 <div className="custom-legend">
                   {chartData.map((genre, index) => (
@@ -949,14 +937,19 @@ const ProfilePage = () => {
                         className="legend-color"
                         style={{
                           backgroundColor: genre.color || '#8884d8',
-                          opacity: genre.value === 0 ? 0.5 : 1
+                          opacity: genre.value === 0 ? 0.3 : 1
                         }}
                       />
                       <div className="legend-info">
                         <p className="legend-text">{genre.name}</p>
                         <p className="legend-percentage">
-                          {genre.value < 0.01 ? '0%' : `${genre.value.toFixed(1)}%`}
+                          {genre.value === 0 ? '0.0%' : `${genre.value.toFixed(1)}%`}
                         </p>
+                        {genre.count > 0 && (
+                          <p className="legend-count" style={{ fontSize: '11px', color: '#888' }}>
+                            ({genre.count} anime)
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
