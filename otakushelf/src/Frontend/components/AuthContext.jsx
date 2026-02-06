@@ -96,6 +96,20 @@ export const AuthProvider = ({ children }) => {
     }
   }, [API]);
 
+  // Helper to ensure photo URLs are absolute
+  const fixPhotoUrl = useCallback((url) => {
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    if (url.startsWith('/uploads/')) {
+      // Remove /api from the end of API URL if present to get base URL
+      const backendBaseUrl = API.endsWith('/api')
+        ? API.slice(0, -4)
+        : API.replace('/api', '');
+      return `${backendBaseUrl}${url}`;
+    }
+    return url;
+  }, [API]);
+
   // 5. HANDLE TOKEN FROM URL (Google OAuth)
   const handleTokenFromUrl = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
@@ -116,6 +130,9 @@ export const AuthProvider = ({ children }) => {
 
         if (response.data.user) {
           const userData = response.data.user;
+          // FIX URL
+          userData.photo = fixPhotoUrl(userData.photo);
+
           const profileData = await fetchFreshProfile(userData._id);
 
           setUser(userData);
@@ -130,7 +147,7 @@ export const AuthProvider = ({ children }) => {
       }
     }
     return false;
-  }, [API, fetchFreshProfile, storeMinimalUser, clearStorage]);
+  }, [API, fetchFreshProfile, storeMinimalUser, clearStorage, fixPhotoUrl]);
 
   // 6. MAIN AUTH CHECK
   const checkAuthStatus = useCallback(async () => {
@@ -139,8 +156,11 @@ export const AuthProvider = ({ children }) => {
 
       if (!token) {
         // No token, check for stored user (offline mode)
-        const storedUser = loadFromStorage();
+        let storedUser = loadFromStorage();
         if (storedUser) {
+          // FIX URL for stored user too
+          storedUser.photo = fixPhotoUrl(storedUser.photo);
+
           setUser(storedUser);
           // Try to fetch profile but don't fail if offline
           fetchFreshProfile(storedUser.id)
@@ -159,6 +179,9 @@ export const AuthProvider = ({ children }) => {
 
       if (response.data.user) {
         const userData = response.data.user;
+        // FIX URL
+        userData.photo = fixPhotoUrl(userData.photo);
+
         const profileData = await fetchFreshProfile(userData._id);
 
         setUser(userData);
@@ -174,6 +197,7 @@ export const AuthProvider = ({ children }) => {
       if (error.code === 'ECONNABORTED' || error.code === 'NETWORK_ERROR') {
         const storedUser = loadFromStorage();
         if (storedUser) {
+          storedUser.photo = fixPhotoUrl(storedUser.photo);
           setUser(storedUser);
           console.log('Using cached data (offline mode)');
         }
@@ -183,7 +207,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [API, fetchFreshProfile, storeMinimalUser, clearStorage, loadFromStorage]);
+  }, [API, fetchFreshProfile, storeMinimalUser, clearStorage, loadFromStorage, fixPhotoUrl]);
 
   // 7. INITIALIZE AUTH
   useEffect(() => {
@@ -232,12 +256,15 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", authToken);
     }
 
+    // FIX URL
+    userData.photo = fixPhotoUrl(userData.photo);
+
     const profileData = await fetchFreshProfile(userData._id);
 
     setUser(userData);
     setProfile(profileData);
     storeMinimalUser(userData);
-  }, [fetchFreshProfile, storeMinimalUser]);
+  }, [fetchFreshProfile, storeMinimalUser, fixPhotoUrl]);
 
   // 10. LOGOUT FUNCTION
   const logout = useCallback(async () => {
@@ -251,78 +278,81 @@ export const AuthProvider = ({ children }) => {
     }
   }, [API, clearStorage]);
 
-// 11. UPDATE PROFILE FUNCTION (FIXED)
-const updateProfile = useCallback(async (profileData) => {
-  try {
-    // Get user ID safely
-    const currentUser = user || JSON.parse(localStorage.getItem("user")) || {};
-    const userId = currentUser.id || currentUser._id;
+  // 11. UPDATE PROFILE FUNCTION (FIXED)
+  const updateProfile = useCallback(async (profileData) => {
+    try {
+      // Get user ID safely
+      const currentUser = user || JSON.parse(localStorage.getItem("user")) || {};
+      const userId = currentUser.id || currentUser._id;
 
-    if (!userId) {
-      console.error('Cannot update profile: No user ID found');
-      throw new Error('User not authenticated');
-    }
-
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error('Cannot update profile: No token found');
-      throw new Error('Authentication token missing');
-    }
-
-    console.log('Updating profile for user:', userId);
-    console.log('Update data:', profileData);
-
-    const response = await axios.put(
-      `${API}/api/profile/${userId}`,
-      profileData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000
+      if (!userId) {
+        console.error('Cannot update profile: No user ID found');
+        throw new Error('User not authenticated');
       }
-    );
 
-    console.log('Profile update response:', response.data);
-
-    if (response.data.user) {
-      const updatedUser = {
-        ...currentUser,
-        ...response.data.user
-      };
-
-      // Update state
-      setUser(updatedUser);
-
-      // Update localStorage
-      storeMinimalUser(updatedUser);
-
-      // Fetch fresh profile data to ensure consistency
-      const freshProfile = await fetchFreshProfile(userId);
-      if (freshProfile) {
-        setProfile(freshProfile); 
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error('Cannot update profile: No token found');
+        throw new Error('Authentication token missing');
       }
+
+      console.log('Updating profile for user:', userId);
+      console.log('Update data:', profileData);
+
+      const response = await axios.put(
+        `${API}/api/profile/${userId}`,
+        profileData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        }
+      );
+
+      console.log('Profile update response:', response.data);
+
+      if (response.data.user) {
+        const updatedUser = {
+          ...currentUser,
+          ...response.data.user
+        };
+
+        // FIX URL
+        updatedUser.photo = fixPhotoUrl(updatedUser.photo);
+
+        // Update state
+        setUser(updatedUser);
+
+        // Update localStorage
+        storeMinimalUser(updatedUser);
+
+        // Fetch fresh profile data to ensure consistency
+        const freshProfile = await fetchFreshProfile(userId);
+        if (freshProfile) {
+          setProfile(freshProfile);
+        }
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Profile update error details:', error);
+
+      // More detailed error message
+      let errorMessage = 'Failed to update profile';
+      if (error.response) {
+        errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
+        console.error('Server response:', error.response.data);
+      } else if (error.request) {
+        errorMessage = 'No response from server';
+      } else {
+        errorMessage = error.message;
+      }
+
+      throw new Error(errorMessage);
     }
-
-    return response.data;
-  } catch (error) {
-    console.error('Profile update error details:', error);
-
-    // More detailed error message
-    let errorMessage = 'Failed to update profile';
-    if (error.response) {
-      errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
-      console.error('Server response:', error.response.data);
-    } else if (error.request) {
-      errorMessage = 'No response from server';
-    } else {
-      errorMessage = error.message;
-    }
-
-    throw new Error(errorMessage);
-  }
-}, [API, user, fetchFreshProfile, storeMinimalUser]);
+  }, [API, user, fetchFreshProfile, storeMinimalUser]);
 
   // 12. COMBINED USER OBJECT
   const combinedUser = user ? {

@@ -377,14 +377,14 @@ body {
 .message-bubble.user .message-content {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-radius: 50px;
+    border-radius: 35px;
     padding: 20px;
 }
 
 .message-bubble.ai .message-content {
     background: #f8fafc;
     color: #334155;
-    border-radius: 50px;
+    border-radius: 30px;
     border: 1px solid #e2e8f0;
     text-align: left;
     width: 100%;
@@ -509,7 +509,7 @@ body {
     margin-top: 1.5rem;
     padding: 1.5rem;
     background: #f8fafc;
-    border-radius: 12px;
+    border-radius: 40px;
     border: 1px solid #e2e8f0;
 }
 
@@ -1010,5 +1010,250 @@ body {
         background: #667eea;
         color: white;
         border-color: #667eea;
+    }
+}
+
+/* ============================================
+   ⌨️ TYPEWRITER EFFECT CURSOR
+   ============================================ */
+
+.typing-cursor {
+    display: inline-block;
+    margin-left: 2px;
+    color: #667eea;
+    animation: blink 1s infinite;
+    font-weight: bold;
+}
+
+@keyframes blink {
+
+    0%,
+    49% {
+        opacity: 1;
+    }
+
+    50%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .typing-cursor {
+        color: #818cf8;
+    }
+}
+
+/* ============================================
+   📝 MARKDOWN CONTENT STYLING (ChatGPT-like)
+   ============================================ */
+
+.markdown-content {
+    font-family: "Google Sans Flex", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.7;
+    color: inherit;
+}
+
+/* Paragraphs */
+.markdown-paragraph {
+    margin: 0 0 1em 0;
+    line-height: 1.7;
+}
+
+.markdown-paragraph:last-child {
+    margin-bottom: 0;
+}
+
+/* Bold text */
+.markdown-bold {
+    font-weight: 600;
+    color: #1e293b;
+    background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .markdown-bold {
+        color: #f1f5f9;
+        background: linear-gradient(135deg, #667eea30 0%, #764ba230 100%);
+    }
+}
+
+/* Italic text */
+.markdown-italic {
+    font-style: italic;
+    color: #475569;
+}
+
+@media (prefers-color-scheme: dark) {
+    .markdown-italic {
+        color: #cbd5e1;
+    }
+}
+
+/* Lists */
+.markdown-list,
+.markdown-list-ordered {
+    margin: 0.75em 0;
+    padding-left: 1.5em;
+    line-height: 1.8;
+}
+
+.markdown-list-item {
+    margin: 0.5em 0;
+    padding-left: 0.25em;
+}
+
+.markdown-list-item::marker {
+    color: #667eea;
+    font-weight: 600;
+}
+
+/* Code blocks */
+.markdown-code-inline {
+    background: #f1f5f9;
+    color: #e11d48;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    border: 1px solid #e2e8f0;
+}
+
+@media (prefers-color-scheme: dark) {
+    .markdown-code-inline {
+        background: #1e293b;
+        color: #fb7185;
+        border-color: #475569;
+    }
+}
+
+.markdown-code-block {
+    display: block;
+    background: #f8fafc;
+    color: #334155;
+    padding: 1em;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    margin: 1em 0;
+}
+
+@media (prefers-color-scheme: dark) {
+    .markdown-code-block {
+        background: #0f172a;
+        color: #e2e8f0;
+        border-color: #334155;
+    }
+}
+
+/* Headings */
+.markdown-h1,
+.markdown-h2,
+.markdown-h3 {
+    margin: 1em 0 0.5em 0;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #1e293b;
+}
+
+.markdown-h1 {
+    font-size: 1.5em;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.3em;
+}
+
+.markdown-h2 {
+    font-size: 1.3em;
+}
+
+.markdown-h3 {
+    font-size: 1.1em;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    .markdown-h1,
+    .markdown-h2,
+    .markdown-h3 {
+        color: #f1f5f9;
+    }
+
+    .markdown-h1 {
+        border-bottom-color: #334155;
+    }
+}
+
+/* Blockquotes */
+.markdown-content blockquote {
+    border-left: 4px solid #667eea;
+    padding-left: 1em;
+    margin: 1em 0;
+    color: #64748b;
+    font-style: italic;
+}
+
+@media (prefers-color-scheme: dark) {
+    .markdown-content blockquote {
+        color: #94a3b8;
+    }
+}
+
+/* Links */
+.markdown-content a {
+    color: #667eea;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.markdown-content a:hover {
+    border-bottom-color: #667eea;
+}
+
+/* Horizontal rules */
+.markdown-content hr {
+    border: none;
+    border-top: 2px solid #e2e8f0;
+    margin: 1.5em 0;
+}
+
+@media (prefers-color-scheme: dark) {
+    .markdown-content hr {
+        border-top-color: #334155;
+    }
+}
+
+/* Tables (if needed) */
+.markdown-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+    border: 1px solid #e2e8f0;
+    padding: 0.5em;
+    text-align: left;
+}
+
+.markdown-content th {
+    background: #f8fafc;
+    font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    .markdown-content th,
+    .markdown-content td {
+        border-color: #334155;
+    }
+
+    .markdown-content th {
+        background: #1e293b;
     }
 }

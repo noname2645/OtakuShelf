@@ -106,158 +106,9 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  password: { type: String },
-  authType: { type: String, enum: ["local", "google"], required: true },
-  photo: { type: String },
-  name: { type: String },
-  profile: {
-    username: { type: String, unique: true, sparse: true },
-    bio: { type: String, default: "" },
-    joinDate: { type: Date, default: Date.now },
-    coverImage: { type: String, default: null },
-    stats: {
-      animeWatched: { type: Number, default: 0 },
-      hoursWatched: { type: Number, default: 0 },
-      currentlyWatching: { type: Number, default: 0 },
-      favorites: { type: Number, default: 0 },
-      animePlanned: { type: Number, default: 0 },
-      animeDropped: { type: Number, default: 0 },
-      totalEpisodes: { type: Number, default: 0 },
-      meanScore: { type: Number, default: 0 }
-    },
-    badges: [{
-      title: String,
-      description: String,
-      icon: String,
-      earnedDate: Date
-    }],
-    favoriteGenres: [{
-      name: String,
-      percentage: Number
-    }],
-    preferences: {
-      theme: { type: String, default: "light" },
-      privacy: { type: String, default: "public" }
-    }
-  }
-}, { timestamps: true });
+import User from './models/User.js';
+import AnimeList from './models/AnimeList.js';
 
-const User = mongoose.model("User", userSchema);
-
-// FIXED: Improved Jikan image fetching with better rate limiting
-const jikanImageCache = new Map();
-let lastJikanRequest = 0;
-const JIKAN_DELAY = 1000; // 1 second between requests
-
-const fetchJikanImage = async (malId) => {
-  if (jikanImageCache.has(malId)) {
-    return jikanImageCache.get(malId);
-  }
-
-  // Rate limiting
-  const now = Date.now();
-  const timeSinceLastRequest = now - lastJikanRequest;
-
-  if (timeSinceLastRequest < JIKAN_DELAY) {
-    await new Promise(resolve => setTimeout(resolve, JIKAN_DELAY - timeSinceLastRequest));
-  }
-
-  try {
-    lastJikanRequest = Date.now();
-
-    const res = await axios.get(
-      `https://api.jikan.moe/v4/anime/${malId}`,
-      {
-        headers: {
-          "User-Agent": "OtakuShelf/1.0",
-          "Accept": "application/json"
-        },
-        timeout: 10000
-      }
-    );
-
-    const image = res.data?.data?.images?.jpg?.large_image_url || null;
-    jikanImageCache.set(malId, image);
-    return image;
-  } catch (err) {
-    if (err.response?.status === 429) {
-      console.warn("Jikan rate limit hit. Waiting 5 seconds...");
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      return null;
-    }
-    if (err.response?.status === 404) {
-      console.log(`Jikan: Anime ${malId} not found`);
-      jikanImageCache.set(malId, null);
-      return null;
-    }
-    console.error(`Jikan fetch failed for MAL ID ${malId}:`, err.message);
-    jikanImageCache.set(malId, null);
-    return null;
-  }
-};
-
-const animeListSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  watching: [{
-    title: String,
-    animeId: String,
-    malId: String,
-    image: String,
-    totalEpisodes: Number,
-    episodes: Number,
-    addedDate: { type: Date, default: Date.now },
-    finishDate: Date,
-    userRating: Number,
-    episodesWatched: { type: Number, default: 0 },
-    status: { type: String, default: 'watching' },
-    genres: [String]
-  }],
-  completed: [{
-    title: String,
-    animeId: String,
-    malId: String,
-    image: String,
-    totalEpisodes: Number,
-    episodes: Number,
-    addedDate: { type: Date, default: Date.now },
-    finishDate: Date,
-    userRating: Number,
-    episodesWatched: { type: Number, default: 0 },
-    status: { type: String, default: 'completed' },
-    genres: [String]
-  }],
-  planned: [{
-    title: String,
-    animeId: String,
-    malId: String,
-    image: String,
-    totalEpisodes: Number,
-    episodes: Number,
-    addedDate: { type: Date, default: Date.now },
-    plannedDate: Date,
-    notes: String,
-    status: { type: String, default: 'planned' },
-    genres: [String]
-  }],
-  dropped: [{
-    title: String,
-    animeId: String,
-    malId: String,
-    image: String,
-    totalEpisodes: Number,
-    episodes: Number,
-    addedDate: { type: Date, default: Date.now },
-    droppedDate: Date,
-    reason: String,
-    episodesWatched: { type: Number, default: 0 },
-    status: { type: String, default: 'dropped' },
-    genres: [String]
-  }]
-});
-
-const AnimeList = mongoose.model("AnimeList", animeListSchema);
 
 passport.use(new GoogleStrategy(
   {
@@ -632,7 +483,8 @@ app.get("/api/profile/:userId", async (req, res) => {
         preferences: userObj.profile?.preferences || {}
       },
       recentlyWatched,
-      favoriteAnime
+      favoriteAnime,
+      watchlist: animeList?.planned?.slice(0, 10) || []
     };
 
     res.json(profileData);
@@ -1079,7 +931,7 @@ app.post('/api/list/import/mal', async (req, res) => {
             episodesWatched,
             status: category,
             genres: [],
-            userRating: userRating > 0 ? Math.round(userRating/2) : undefined,
+            userRating: userRating > 0 ? Math.round(userRating / 2) : undefined,
             addedDate: malStartDate || new Date(),
           };
 
