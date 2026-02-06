@@ -56,32 +56,42 @@ const ProfilePage = () => {
   ];
 
   // Add this function to prepare data for pie chart - FIXED to show all genres
+  // Add this function to prepare data for pie chart - FIXED to show all genres from user list
+  // Add this function to prepare data for pie chart - FIXED to show all genres
   const prepareChartData = (userGenres) => {
     if (!userGenres) userGenres = [];
 
+    // Create a map for fast lookup of user data
     const userGenreMap = {};
     userGenres.forEach(genre => {
-      userGenreMap[genre.name] = {
-        percentage: genre.percentage || 0,
-        count: genre.count || 0
-      };
+      if (genre && genre.name) {
+        userGenreMap[genre.name.toLowerCase()] = {
+          percentage: genre.percentage || 0,
+          count: genre.count || 0
+        };
+      }
     });
 
-    return ANIME_GENRES.map((genreName, index) => {
-      const colors = [
-        '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2',
-        '#EF476F', '#073B4C', '#7209B7', '#3A86FF', '#FB5607',
-        '#8338EC', '#FF006E', '#FFBE0B', '#3A86FF', '#FB5607',
-        '#FF595E', '#8AC926', '#1982C4', '#6A4C93'
-      ];
+    const colors = [
+      '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2',
+      '#EF476F', '#073B4C', '#7209B7', '#3A86FF', '#FB5607',
+      '#8338EC', '#FF006E', '#FFBE0B', '#3A86FF', '#FB5607',
+      '#FF595E', '#8AC926', '#1982C4', '#6A4C93'
+    ];
 
-      const userGenre = userGenreMap[genreName];
+    // Map over the STANDARD 19 GENRES to ensure they all appear
+    return ANIME_GENRES.map((genreName, index) => {
+      const userGenre = userGenreMap[genreName.toLowerCase()];
       const actualValue = userGenre ? userGenre.percentage : 0;
 
       return {
         name: genreName,
-        value: actualValue,  // Actual percentage (0 for unwatched)
-        displayValue: actualValue > 0 ? actualValue : 0.001, // Tiny value for pie rendering
+        value: actualValue,
+        // For Pie rendering: if 0, keep it 0 or tiny? 
+        // If we want it HIDDEN from pie but SHOWN in legend, we can control that in the Pie component prop.
+        // For now, let's keep 'displayValue' logic if we want tiny slices, OR we just let them be 0.
+        // The user wants 0% listed.
+        displayValue: actualValue > 0 ? actualValue : 0,
         count: userGenre ? userGenre.count : 0,
         color: colors[index % colors.length]
       };
@@ -95,6 +105,9 @@ const ProfilePage = () => {
   useEffect(() => {
     setChartData(prepareChartData(genres));
   }, [genres]);
+
+  // Check if we have effective data
+  const hasGenreData = chartData.some(g => g.value > 0);
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload }) => {
@@ -837,28 +850,29 @@ const ProfilePage = () => {
             <div className="genre-breakdown-container">
               {/* Pie Chart Column with Legend Below */}
               <div className="pie-chart-column">
+                {/* Always show if we have chartData (which we now always should) */}
                 {chartData.length > 0 ? (
                   <>
                     <div className="pie-chart-wrapper">
                       <ResponsiveContainer width="100%" height={400}>
                         <PieChart>
                           <Pie
-                            data={chartData}
+                            data={chartData.filter(d => d.value > 0)} // Only render slices > 0
                             cx="50%"
                             cy="50%"
                             labelLine={false}
                             outerRadius={180}
                             innerRadius={70}
                             fill="#8884d8"
-                            dataKey="displayValue"  // Use displayValue for sizing
+                            dataKey="value"
                             nameKey="name"
-                            label={renderCustomizedLabel}  // This will hide 0% labels
+                            label={renderCustomizedLabel}
                           >
-                            {chartData.map((entry, index) => (
+                            {/* We need to map colors from the filtered list */}
+                            {chartData.filter(d => d.value > 0).map((entry, index) => (
                               <Cell
                                 key={`cell-${index}`}
                                 fill={entry.color}
-                                opacity={entry.value === 0 ? 0.3 : 1}
                                 stroke="rgba(0, 0, 0, 0.3)"
                                 strokeWidth={1}
                               />
@@ -934,7 +948,7 @@ const ProfilePage = () => {
                       <div
                         className="legend-color"
                         style={{
-                          backgroundColor: genre.color,
+                          backgroundColor: genre.color || '#8884d8',
                           opacity: genre.value === 0 ? 0.5 : 1
                         }}
                       />

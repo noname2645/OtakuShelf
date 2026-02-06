@@ -608,6 +608,10 @@ app.post("/api/list/:userId", async (req, res) => {
 app.post('/api/list/import/mal', async (req, res) => {
   console.log('🔵 MAL IMPORT REQUEST RECEIVED');
 
+  // Initialize caching for this import session
+  const jikanImageCache = new Map();
+  let lastJikanRequest = 0;
+
   try {
     if (!req.files || !req.files.malFile) {
       console.log('❌ No file uploaded');
@@ -1105,30 +1109,39 @@ app.get("/api/list/:userId", async (req, res) => {
 
 async function calculateGenreBreakdown(userId) {
   const animeList = await AnimeList.findOne({ userId });
-  if (!animeList || !animeList.completed.length) return [];
+
+  const allItems = [
+    ...(animeList?.completed || []),
+    ...(animeList?.watching || [])
+  ];
+
+  if (!allItems.length) return [];
 
   const genreCount = {};
-  let total = 0;
+  const totalAnime = allItems.length;
 
-  for (const anime of animeList.completed) {
+  // Count how many anime have each genre
+  for (const anime of allItems) {
     if (anime.genres && Array.isArray(anime.genres)) {
       for (const genre of anime.genres) {
-        genreCount[genre] = (genreCount[genre] || 0) + 1;
-        total++;
+        const genreName = typeof genre === 'string' ? genre : genre?.name;
+        if (genreName) {
+          genreCount[genreName] = (genreCount[genreName] || 0) + 1;
+        }
       }
     }
   }
 
-  if (total === 0) return [];
+  if (Object.keys(genreCount).length === 0) return [];
 
+  // Calculate percentage based on total anime count
   const genreBreakdown = Object.entries(genreCount)
     .map(([name, count]) => ({
       name,
       count,
-      percentage: Math.round((count / total) * 100)
+      percentage: parseFloat(((count / totalAnime) * 100).toFixed(1))
     }))
-    .sort((a, b) => b.percentage - a.percentage)
-    .slice(0, 10);
+    .sort((a, b) => b.percentage - a.percentage);
 
   return genreBreakdown;
 }

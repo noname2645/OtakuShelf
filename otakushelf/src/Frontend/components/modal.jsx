@@ -69,16 +69,25 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
     const getAiredRange = () => {
         if (!anime) return "TBA";
+
+        // Helper to check if a date object is valid (has at least a year)
+        const isValidDateObj = (d) => d && (typeof d === 'string' || d.year);
+
         if (anime.format === "MOVIE") {
-            return anime.startDate ? formatAniListDate(anime.startDate) : "TBA";
+            return isValidDateObj(anime.startDate) ? formatAniListDate(anime.startDate) : "TBA";
         }
-        if (anime.startDate && anime.endDate) {
+
+        if (isValidDateObj(anime.startDate) && isValidDateObj(anime.endDate)) {
             return `${formatAniListDate(anime.startDate)} - ${formatAniListDate(anime.endDate)}`;
         }
-        if (anime.startDate) {
+
+        if (isValidDateObj(anime.startDate)) {
             const startDate = formatAniListDate(anime.startDate);
-            return `${startDate} - ${anime.status === 'RELEASING' ? 'Ongoing' : 'TBA'}`;
+            // If currently releasing or has no end date yet
+            const isOngoing = anime.status === 'RELEASING' || !anime.endDate;
+            return `${startDate} - ${isOngoing ? 'Ongoing' : '?'}`;
         }
+
         return "TBA";
     };
 
@@ -134,7 +143,17 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         // Fast studio extraction
         let studio = "N/A";
         if (anime.studios) {
-            if (anime.studios.edges) {
+            if (Array.isArray(anime.studios)) {
+                // Determine if it's an array of strings or objects
+                if (anime.studios.length > 0) {
+                    if (typeof anime.studios[0] === 'string') {
+                        studio = anime.studios.slice(0, 2).join(", ");
+                    } else {
+                        // Assume object has 'name' property (Jikan style)
+                        studio = anime.studios.slice(0, 2).map(s => s.name).filter(Boolean).join(", ");
+                    }
+                }
+            } else if (anime.studios.edges) {
                 const edges = anime.studios.edges.slice(0, 2); // Limit to 2 studios
                 studio = edges.map(edge => edge?.node?.name).filter(Boolean).join(", ") || "N/A";
             } else if (anime.studios.nodes) {

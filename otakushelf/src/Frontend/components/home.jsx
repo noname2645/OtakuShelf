@@ -147,6 +147,8 @@ const AnimeHomepage = () => {
             format: anime.format || null,
             season: anime.season || null,
             year: anime.year || anime.startDate?.year || null,
+            startDate: anime.startDate || anime.aired?.from || null,
+            endDate: anime.endDate || anime.aired?.to || null,
         };
     }, []);
 
