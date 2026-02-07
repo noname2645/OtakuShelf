@@ -815,25 +815,16 @@ app.post('/api/list/import/mal', async (req, res) => {
 
           // FIX THIS SECTION - Replace the existing image fetching code:
 
-          let imageUrl = null;
-
-          // Use a more reliable image source
-          if (malId) {
-            // Method 1: Try multiple image sources
-            imageUrl = await getAnimeImage(malId, title);
-          }
+          const metadata = await getAnimeMetadata(malId, title);
+          const imageUrl = metadata.image;
+          const fetchedGenres = metadata.genres || [];
 
           // NEW FUNCTION TO ADD (place it near other helper functions):
-          async function getAnimeImage(malId, title) {
+          async function getAnimeMetadata(malId, title) {
             // Try multiple sources in order
 
             // 1. First try: Jikan API (with proper rate limiting)
             try {
-              // Check cache first
-              if (jikanImageCache.has(malId)) {
-                return jikanImageCache.get(malId);
-              }
-
               // Rate limiting
               const now = Date.now();
               if (now - lastJikanRequest < 1500) { // 1.5 second delay
@@ -855,27 +846,17 @@ app.post('/api/list/import/mal', async (req, res) => {
                 res.data?.data?.images?.jpg?.small_image_url ||
                 null;
 
+              const genres = res.data?.data?.genres?.map(g => g.name) || [];
+
               if (image) {
-                jikanImageCache.set(malId, image);
-                return image;
+                // jikanImageCache is simple for now, but valid
+                return { image, genres };
               }
             } catch (error) {
               console.log(`Jikan failed for ${malId}: ${error.message}`);
             }
 
-            // 2. Second try: MyAnimeList CDN (direct URL)
-            try {
-              const malImageUrl = `https://cdn.myanimelist.net/images/anime/${malId}.jpg`;
-              // Test if image exists
-              const response = await axios.head(malImageUrl, { timeout: 3000 });
-              if (response.status === 200) {
-                return malImageUrl;
-              }
-            } catch (error) {
-              console.log(`MAL CDN failed for ${malId}`);
-            }
-
-            // 3. Third try: AniList API (alternative)
+            // 2. Second try: AniList API (alternative)
             try {
               const query = `
       query ($idMal: Int) {
@@ -885,6 +866,7 @@ app.post('/api/list/import/mal', async (req, res) => {
             large
             medium
           }
+          genres
         }
       }
     `;
@@ -905,16 +887,21 @@ app.post('/api/list/import/mal', async (req, res) => {
                 response.data?.data?.Media?.coverImage?.large ||
                 response.data?.data?.Media?.coverImage?.medium;
 
+              const genres = response.data?.data?.Media?.genres || [];
+
               if (image) {
-                return image;
+                return { image, genres };
               }
             } catch (error) {
               console.log(`AniList failed for ${malId}: ${error.message}`);
             }
 
-            // 4. Fallback: Use placeholder with anime title
+            // 3. Fallback: Use placeholder with anime title
             const encodedTitle = encodeURIComponent(title || 'Anime Poster');
-            return `https://placehold.co/300x400/667eea/ffffff?text=${encodedTitle}&font=roboto`;
+            return {
+              image: `https://placehold.co/300x400/667eea/ffffff?text=${encodedTitle}&font=roboto`,
+              genres: []
+            };
           }
 
           const malStartDate = malAnime.my_start_date && malAnime.my_start_date !== "0000-00-00"
@@ -934,7 +921,7 @@ app.post('/api/list/import/mal', async (req, res) => {
             episodes: totalEpisodes,
             episodesWatched,
             status: category,
-            genres: [],
+            genres: fetchedGenres,
             userRating: userRating > 0 ? Math.round(userRating / 2) : undefined,
             addedDate: malStartDate || new Date(),
           };
@@ -1107,12 +1094,18 @@ app.get("/api/list/:userId", async (req, res) => {
   }
 });
 
+// Genre Breakdown
+// Replace the calculateGenreBreakdown function in your server.js (around line 1106) with this:
+
 async function calculateGenreBreakdown(userId) {
   const animeList = await AnimeList.findOne({ userId });
 
+  // Include ALL categories - not just completed and watching
   const allItems = [
     ...(animeList?.completed || []),
-    ...(animeList?.watching || [])
+    ...(animeList?.watching || []),
+    ...(animeList?.planned || []),
+    ...(animeList?.dropped || [])
   ];
 
   if (!allItems.length) return [];
@@ -1120,26 +1113,45 @@ async function calculateGenreBreakdown(userId) {
   const genreCount = {};
   const totalAnime = allItems.length;
 
+  // Track which anime we've counted (to avoid duplicates)
+  const countedAnime = new Set();
+
   // Count how many anime have each genre
   for (const anime of allItems) {
+    // Skip if we've already counted this anime (prevent duplicates)
+    const animeId = anime._id?.toString() || anime.animeId?.toString() || anime.malId?.toString();
+    if (animeId && countedAnime.has(animeId)) {
+      continue;
+    }
+    if (animeId) {
+      countedAnime.add(animeId);
+    }
+
     if (anime.genres && Array.isArray(anime.genres)) {
+      // Track genres for this anime to avoid counting same genre twice per anime
+      const genresForThisAnime = new Set();
+
       for (const genre of anime.genres) {
         const genreName = typeof genre === 'string' ? genre : genre?.name;
-        if (genreName) {
+        if (genreName && !genresForThisAnime.has(genreName)) {
+          genresForThisAnime.add(genreName);
           genreCount[genreName] = (genreCount[genreName] || 0) + 1;
         }
       }
     }
   }
 
+  // Use the actual unique anime count
+  const actualAnimeCount = countedAnime.size || totalAnime;
+
   if (Object.keys(genreCount).length === 0) return [];
 
-  // Calculate percentage based on total anime count
+  // Calculate percentage based on total unique anime count
   const genreBreakdown = Object.entries(genreCount)
     .map(([name, count]) => ({
       name,
       count,
-      percentage: parseFloat(((count / totalAnime) * 100).toFixed(1))
+      percentage: parseFloat(((count / actualAnimeCount) * 100).toFixed(1))
     }))
     .sort((a, b) => b.percentage - a.percentage);
 
@@ -1300,6 +1312,115 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
   } catch (err) {
     console.error('Remove anime error:', err);
     res.status(500).json({ message: "Error removing anime", error: err.message });
+  }
+});
+
+// ADD THIS ENDPOINT TO YOUR server.js (after the other list endpoints, around line 1300)
+
+// Backfill genres for existing anime using AniList API
+app.post("/api/list/:userId/backfill-genres", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const animeList = await AnimeList.findOne({ userId });
+
+    if (!animeList) {
+      return res.status(404).json({ message: "List not found" });
+    }
+
+    let updated = 0;
+    let failed = 0;
+    const categories = ['watching', 'completed', 'planned', 'dropped'];
+
+    console.log('Starting genre backfill...');
+
+    for (const category of categories) {
+      console.log(`Processing ${category}: ${animeList[category].length} anime`);
+
+      for (const anime of animeList[category]) {
+        // Skip if already has genres
+        if (anime.genres && anime.genres.length > 0) {
+          console.log(`Skipping ${anime.title} - already has genres`);
+          continue;
+        }
+
+        try {
+          // Use anime ID to fetch from AniList
+          const animeId = anime.animeId || anime.malId;
+          if (!animeId) {
+            console.log(`Skipping ${anime.title} - no ID`);
+            continue;
+          }
+
+          console.log(`Fetching genres for: ${anime.title} (ID: ${animeId})`);
+
+          // Fetch from AniList GraphQL API
+          const query = `
+            query ($id: Int, $idMal: Int) {
+              Media(id: $id, idMal: $idMal, type: ANIME) {
+                genres
+              }
+            }
+          `;
+
+          const variables = anime.animeId && !anime.animeId.toString().startsWith('mal_')
+            ? { id: parseInt(anime.animeId) }
+            : anime.malId
+              ? { idMal: parseInt(anime.malId) }
+              : null;
+
+          if (!variables) {
+            console.log(`No valid ID for ${anime.title}`);
+            failed++;
+            continue;
+          }
+
+          const response = await axios.post('https://graphql.anilist.co', {
+            query,
+            variables
+          }, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 10000
+          });
+
+          if (response.data?.data?.Media?.genres) {
+            anime.genres = response.data.data.Media.genres;
+            console.log(`✓ Updated ${anime.title} with ${anime.genres.length} genres:`, anime.genres);
+            updated++;
+          } else {
+            console.log(`✗ No genres found for ${anime.title}`);
+            failed++;
+          }
+
+          // Rate limiting - AniList allows 90 requests per minute
+          // So we wait ~700ms between requests to be safe
+          await new Promise(resolve => setTimeout(resolve, 700));
+
+        } catch (error) {
+          console.error(`Failed to fetch genres for ${anime.title}:`, error.message);
+          failed++;
+
+          // If rate limited, wait longer
+          if (error.response?.status === 429) {
+            console.log('Rate limited, waiting 60 seconds...');
+            await new Promise(resolve => setTimeout(resolve, 60000));
+          }
+        }
+      }
+    }
+
+    await animeList.save();
+    console.log(`Backfill complete! Updated: ${updated}, Failed: ${failed}`);
+
+    res.json({
+      success: true,
+      message: `Updated genres for ${updated} anime (${failed} failed)`,
+      updated,
+      failed
+    });
+
+  } catch (error) {
+    console.error('Backfill error:', error);
+    res.status(500).json({ message: "Error backfilling genres", error: error.message });
   }
 });
 

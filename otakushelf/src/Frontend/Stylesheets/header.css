@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Zain:ital,wght@0,200;0,300;0,400;0,700;0,800;0,900;1,300;1,400&display=swap');
+
+
 .header {
     position: fixed;
     height: 65px;
@@ -14,29 +17,30 @@
     z-index: 1100;
     transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
     border-radius: 30px;
-      font-family: 'Bricolage Grotesque', sans-serif;
+    font-family: 'Bricolage Grotesque', sans-serif;
 }
 
 .otaku-ai-label {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #fff;
-  opacity: 0.9;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  animation: fadeIn 0.3s ease-in-out;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeIn 0.3s ease-in-out;
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-2px);
-  }
-  to {
-    opacity: 0.9;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-2px);
+    }
+
+    to {
+        opacity: 0.9;
+        transform: translateY(0);
+    }
 }
 
 
@@ -139,11 +143,9 @@
     align-items: center;
     gap: 0.6rem;
     padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2vw, 16px);
-    background: linear-gradient(
-        135deg,
-        rgba(48, 34, 34, 0.75) 0%,
-        rgba(35, 25, 25, 0.45) 100%
-    );
+    background: linear-gradient(135deg,
+            rgba(48, 34, 34, 0.75) 0%,
+            rgba(35, 25, 25, 0.45) 100%);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 20px;
@@ -162,7 +164,7 @@
     height: 55px;
     width: fit-content;
     max-width: 100%;
-    min-height: 44px; 
+    min-height: 44px;
 }
 
 
@@ -415,13 +417,11 @@
 
 /* Logo */
 .logo span {
-    font-family: "Hoshiko";
+    font-family: "Prompt", sans-serif;
     font-size: 38px;
-    /* Reduced from 45px */
     border-radius: 20px;
     cursor: pointer;
-    letter-spacing: 4px;
-    /* Reduced from 5px */
+    letter-spacing: 2px;
     background: linear-gradient(45deg, #ff6a00, #ffcc00, #ff0066, #ff33cc);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
