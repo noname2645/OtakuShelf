@@ -10,7 +10,7 @@ import BottomNavBar from './bottom.jsx';
 const API = import.meta.env.VITE_API_BASE_URL;
 
 // Stale-while-revalidate key
-const CACHE_KEY = 'animeSections_100_v3'; // Increment version to force fresh structure
+const CACHE_KEY = 'animeSections_100_v4'; // Increment version to force fresh structure
 const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
 const STALE_TIME = 1000 * 60 * 30; // 30 minutes until fresh fetch (but stale data shown immediately)
 
@@ -50,7 +50,8 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
                 // Only animate the first few items to prevent massive paint storms
                 animationDelay: index < 12 ? `${index * 0.05}s` : '0s',
                 opacity: index < 12 ? 0 : 1, // Start hidden only if animating
-                animation: index < 12 ? 'fadeInUp 0.5s ease-out forwards' : 'none'
+                animation: index < 12 ? 'fadeInUp 0.5s ease-out forwards' : 'none',
+                transform: index >= 12 ? 'none' : undefined // Prevent translateY for non-animated cards
             }}
         >
             <div className="home-card-image">
@@ -108,7 +109,10 @@ const AnimeHomepage = () => {
     const [sections, setSections] = useState({
         topAiring: [],
         mostWatched: [],
-        topMovies: []
+        topMovies: [],
+        trending: [],
+        topRated: [],
+        upcoming: []
     });
 
     // Search State
@@ -170,7 +174,10 @@ const AnimeHomepage = () => {
                         setSections({
                             topAiring: (parsed.topAiring || []).map(normalizeGridAnime).filter(Boolean),
                             mostWatched: (parsed.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                            topMovies: (parsed.topMovies || []).map(normalizeGridAnime).filter(Boolean)
+                            topMovies: (parsed.topMovies || []).map(normalizeGridAnime).filter(Boolean),
+                            trending: (parsed.trending || []).map(normalizeGridAnime).filter(Boolean),
+                            topRated: (parsed.topRated || []).map(normalizeGridAnime).filter(Boolean),
+                            upcoming: (parsed.upcoming || []).map(normalizeGridAnime).filter(Boolean)
                         });
                         setLoading(false); // Stop skeleton loader immediately
                         hasCachedData = true;
@@ -198,7 +205,10 @@ const AnimeHomepage = () => {
                 const newSections = {
                     topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
                     mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                    topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean)
+                    topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean),
+                    trending: (data.trending || []).map(normalizeGridAnime).filter(Boolean),
+                    topRated: (data.topRated || []).map(normalizeGridAnime).filter(Boolean),
+                    upcoming: (data.upcoming || []).map(normalizeGridAnime).filter(Boolean)
                 };
 
                 // Update State
@@ -209,7 +219,10 @@ const AnimeHomepage = () => {
                 localStorage.setItem(CACHE_KEY, JSON.stringify({
                     topAiring: data.topAiring || [],
                     mostWatched: data.mostWatched || [],
-                    topMovies: data.topMovies || []
+                    topMovies: data.topMovies || [],
+                    trending: data.trending || [],
+                    topRated: data.topRated || [],
+                    upcoming: data.upcoming || []
                 }));
                 localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
 
@@ -289,9 +302,18 @@ const AnimeHomepage = () => {
                 <Header showSearch={true} onSearchChange={setSearchQuery} />
                 <div className="loading-skeleton">
                     <div className="skeleton-hero"></div>
-                    <div className="skeleton-grid">
-                        {[...Array(8)].map((_, i) => <div key={i} className="skeleton-card"></div>)}
-                    </div>
+
+                    {/* Multiple sections to match actual layout */}
+                    {['TOP AIRING', 'TRENDING THIS WEEK', 'MOST WATCHED', 'TOP RATED ALL TIME', 'TOP MOVIES', 'UPCOMING RELEASES'].map((title, sectionIndex) => (
+                        <div key={sectionIndex} className="skeleton-section">
+                            <div className="skeleton-section-title"></div>
+                            <div className="skeleton-grid">
+                                {[...Array(12)].map((_, i) => (
+                                    <div key={i} className="skeleton-card"></div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
                 </div>
                 <BottomNavBar />
             </div>
@@ -336,13 +358,28 @@ const AnimeHomepage = () => {
                                     onOpenModal={openModal}
                                 />
                                 <AnimeSection
+                                    title="TRENDING THIS WEEK"
+                                    data={sections.trending}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
                                     title="MOST WATCHED"
                                     data={sections.mostWatched}
                                     onOpenModal={openModal}
                                 />
                                 <AnimeSection
+                                    title="TOP RATED ALL TIME"
+                                    data={sections.topRated}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
                                     title="TOP MOVIES"
                                     data={sections.topMovies}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
+                                    title="UPCOMING RELEASES"
+                                    data={sections.upcoming}
                                     onOpenModal={openModal}
                                 />
                             </>

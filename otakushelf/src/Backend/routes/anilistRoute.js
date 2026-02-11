@@ -1,8 +1,10 @@
-// routes/anilistRoute.js - Fixed Version
+// routes/anilistRoute.js
 import express from 'express';
 import axios from 'axios';
 
 const router = express.Router();
+
+const ANILIST_URL = "https://graphql.anilist.co";
 
 const axiosConfig = {
   headers: {
@@ -14,282 +16,236 @@ const axiosConfig = {
   }
 };
 
-// Reduced cache time and added fallback mechanism
+// Cache - initialized immediately
 let heroCache = { data: null, timestamp: 0 };
-const HERO_TTL = 6 * 60 * 60 * 1000; // 6 hours instead of 24
+const HERO_TTL = 6 * 60 * 60 * 1000; // 6 hours
 
-// Fallback cache for when primary query fails
-let fallbackCache = { data: null, timestamp: 0 };
-
-// Multiple query strategies for better reliability
-const getQueryStrategies = () => {
-  const currentYear = new Date().getFullYear();
-  const currentSeason = getCurrentSeason();
-  
-  return [
-    // Strategy 1: Current season with lower score threshold
-    {
-      name: "Current Season",
-      variables: { 
-        season: currentSeason, 
-        seasonYear: currentYear,
-        scoreThreshold: 60
-      }
-    },
-    // Strategy 2: Popular recent anime (last 2 years)
-    {
-      name: "Recent Popular",
-      variables: { 
-        startYear: currentYear - 1,
-        endYear: currentYear,
-        scoreThreshold: 65
-      }
-    },
-    // Strategy 3: All-time popular with trailers (no season restriction)
-    {
-      name: "All Time Popular",
-      variables: { 
-        scoreThreshold: 70
-      }
-    },
-    // Strategy 4: Most lenient - just popular anime with trailers
-    {
-      name: "Most Lenient",
-      variables: { 
-        scoreThreshold: 50
-      }
-    }
-  ];
-};
-
-// Get current season
-const getCurrentSeason = () => {
-  const month = new Date().getMonth() + 1;
-  if (month >= 12 || month <= 2) return 'WINTER';
-  if (month >= 3 && month <= 5) return 'SPRING';
-  if (month >= 6 && month <= 8) return 'SUMMER';
-  return 'FALL';
-};
-
-// Build dynamic query based on strategy
-const buildQuery = (strategy) => {
-  const { variables } = strategy;
-  
-  // Base query structure
-  let queryConditions = [
-    'type: ANIME',
-    'isAdult: false',
-    'status_in: [RELEASING, NOT_YET_RELEASED, FINISHED]'
-  ];
-
-  // Add conditional filters based on strategy
-  if (variables.season && variables.seasonYear) {
-    queryConditions.push(`season: $season`);
-    queryConditions.push(`seasonYear: $seasonYear`);
+// Helper to fetch from AniList
+async function fetchAniList(query, variables = {}) {
+  try {
+    const response = await axios.post(
+      ANILIST_URL,
+      { query, variables },
+      axiosConfig
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error("AniList API error:", error.message);
+    throw error;
   }
-  
-  if (variables.startYear && variables.endYear) {
-    queryConditions.push(`startDate_greater: "${variables.startYear}-01-01"`);
-    queryConditions.push(`startDate_lesser: "${variables.endYear}-12-31"`);
-  }
+}
 
-  if (variables.scoreThreshold) {
-    queryConditions.push(`averageScore_greater: ${variables.scoreThreshold}`);
-  }
-
-  return `
-    query ${variables.season ? '($season: MediaSeason, $seasonYear: Int)' : ''} {
-      Page(perPage: 100) {
-        pageInfo {
-          hasNextPage
-          total
-        }
-        media(
-          sort: [POPULARITY_DESC, TRENDING_DESC, SCORE_DESC]
-          ${queryConditions.join('\n          ')}
-        ) {
-          id
-          title { romaji english native }
-          description(asHtml: false)
-          status
-          season
-          seasonYear
-          episodes
-          averageScore
-          popularity
-          bannerImage
-          coverImage { large extraLarge }
-          genres
-          format  
-          startDate { year month day } 
-          endDate { year month day }   
-          studios {
-            nodes { name isAnimationStudio }
+// Main fetch function used by cache warm-up and route
+const fetchHeroAnime = async () => {
+  // Fetch from three different statuses for diversity
+  const releasingQuery = `
+      query {
+        Page(page: 1, perPage: 30) {
+          media(sort: [TRENDING_DESC, POPULARITY_DESC], type: ANIME, status: RELEASING, isAdult: false) {
+            id
+            idMal
+            title { romaji english native }
+            description(asHtml: false)
+            status
+            season
+            seasonYear
+            episodes
+            averageScore
+            popularity
+            bannerImage
+            coverImage { large extraLarge medium }
+            genres
+            format  
+            startDate { year month day } 
+            endDate { year month day }   
+            studios {
+              nodes { name isAnimationStudio }
+            }
+            trailer { id site thumbnail }
           }
-          trailer { id site thumbnail }
         }
       }
-    }
-  `;
-};
+    `;
 
-// Try multiple strategies until we get enough results
-const fetchAnimeWithStrategies = async () => {
-  const strategies = getQueryStrategies();
-  
-  for (const strategy of strategies) {
-    try {
-      console.log(`Trying strategy: ${strategy.name}`);
-      
-      const query = buildQuery(strategy);
-      const variables = {};
-      
-      // Only add variables that are needed for this strategy
-      if (strategy.variables.season) variables.season = strategy.variables.season;
-      if (strategy.variables.seasonYear) variables.seasonYear = strategy.variables.seasonYear;
-
-      const response = await axios.post(
-        'https://graphql.anilist.co',
-        { query, variables },
-        axiosConfig
-      );
-
-      const media = response.data?.data?.Page?.media || [];
-      console.log(`${strategy.name} returned ${media.length} results`);
-
-      // More lenient filtering - prioritize having trailers
-      const filtered = media.filter(anime => {
-        // Must have trailer
-        const hasTrailer = anime.trailer?.id && anime.trailer?.site;
-        
-        // Must have image (banner OR cover)
-        const hasImage = anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large;
-        
-        // More lenient score requirement (allow null scores for newer anime)
-        const hasDecentScore = !anime.averageScore || anime.averageScore >= 50;
-        
-        // Must have basic info
-        const hasBasicInfo = anime.title && (anime.title.english || anime.title.romaji);
-        
-        return hasTrailer && hasImage && hasDecentScore && hasBasicInfo;
-      });
-
-      console.log(`After filtering: ${filtered.length} results`);
-
-      // If we have enough results, use this strategy
-      if (filtered.length >= 10) {
-        // Shuffle and take top results
-        const shuffled = filtered.sort(() => Math.random() - 0.5);
-        const limited = shuffled.slice(0, 50); // Increased from 30 to 50
-
-        return limited.map(anime => ({
-          ...anime,
-          displayTitle: anime.title.english || anime.title.romaji || anime.title.native,
-          mainStudio: anime.studios?.nodes?.find(s => s.isAnimationStudio)?.name || 'Unknown Studio',
-          strategy: strategy.name // Debug info
-        }));
+  const finishedQuery = `
+      query {
+        Page(page: 1, perPage: 30) {
+          media(sort: [SCORE_DESC, POPULARITY_DESC], type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70) {
+            id
+            idMal
+            title { romaji english native }
+            description(asHtml: false)
+            status
+            season
+            seasonYear
+            episodes
+            averageScore
+            popularity
+            bannerImage
+            coverImage { large extraLarge medium }
+            genres
+            format  
+            startDate { year month day } 
+            endDate { year month day }   
+            studios {
+              nodes { name isAnimationStudio }
+            }
+            trailer { id site thumbnail }
+          }
+        }
       }
+    `;
 
-    } catch (error) {
-      console.error(`Strategy ${strategy.name} failed:`, error.message);
-      continue; // Try next strategy
-    }
+  const upcomingQuery = `
+      query {
+        Page(page: 1, perPage: 30) {
+          media(sort: [POPULARITY_DESC, TRENDING_DESC], type: ANIME, status: NOT_YET_RELEASED, isAdult: false) {
+            id
+            idMal
+            title { romaji english native }
+            description(asHtml: false)
+            status
+            season
+            seasonYear
+            episodes
+            averageScore
+            popularity
+            bannerImage
+            coverImage { large extraLarge medium }
+            genres
+            format  
+            startDate { year month day } 
+            endDate { year month day }   
+            studios {
+              nodes { name isAnimationStudio }
+            }
+            trailer { id site thumbnail }
+          }
+        }
+      }
+    `;
+
+  try {
+    console.log("Fetching diverse hero trailers data...");
+
+    // Fetch all three categories in parallel
+    const [releasingData, finishedData, upcomingData] = await Promise.all([
+      fetchAniList(releasingQuery).catch(() => ({ Page: { media: [] } })),
+      fetchAniList(finishedQuery).catch(() => ({ Page: { media: [] } })),
+      fetchAniList(upcomingQuery).catch(() => ({ Page: { media: [] } }))
+    ]);
+
+    const releasingMedia = releasingData?.Page?.media || [];
+    const finishedMedia = finishedData?.Page?.media || [];
+    const upcomingMedia = upcomingData?.Page?.media || [];
+
+    console.log(`Raw counts - Releasing: ${releasingMedia.length}, Finished: ${finishedMedia.length}, Upcoming: ${upcomingMedia.length}`);
+
+    // Filter for high quality results with trailers
+    const filterAnime = (anime) => {
+      const hasTrailer = anime.trailer?.id && anime.trailer?.site === 'youtube';
+      const hasImage = anime.bannerImage || anime.coverImage?.extraLarge;
+      const hasTitle = anime.title?.english || anime.title?.romaji;
+      return hasTrailer && hasImage && hasTitle;
+    };
+
+    const releasingFiltered = releasingMedia.filter(filterAnime);
+    const finishedFiltered = finishedMedia.filter(filterAnime);
+    const upcomingFiltered = upcomingMedia.filter(filterAnime);
+
+    console.log(`Filtered counts - Releasing: ${releasingFiltered.length}, Finished: ${finishedFiltered.length}, Upcoming: ${upcomingFiltered.length}`);
+
+    // Take equal amounts from each category (or as many as available)
+    const perCategory = 10;
+    const releasing = releasingFiltered.slice(0, perCategory);
+    const finished = finishedFiltered.slice(0, perCategory);
+    const upcoming = upcomingFiltered.slice(0, perCategory);
+
+    // Combine and shuffle for variety
+    const combined = [...releasing, ...finished, ...upcoming];
+    const shuffled = combined.sort(() => Math.random() - 0.5);
+
+    // Add display helper fields
+    const enhanced = shuffled.map(anime => ({
+      ...anime,
+      displayTitle: anime.title.english || anime.title.romaji || anime.title.native,
+      mainStudio: anime.studios?.nodes?.find(s => s.isAnimationStudio)?.name || 'Unknown Studio'
+    }));
+
+    console.log(`Final hero anime count: ${enhanced.length} (balanced mix)`);
+
+    return enhanced;
+  } catch (error) {
+    console.error("Error in fetchHeroAnime:", error.message);
+    return [];
   }
-
-  // If all strategies fail, return empty array
-  console.error("All strategies failed to fetch anime data");
-  return [];
 };
+
+// Warm up cache on server start
+const warmUpCache = async () => {
+  try {
+    const data = await fetchHeroAnime();
+    if (data.length > 0) {
+      heroCache = { data, timestamp: Date.now() };
+      console.log("Hero cache warmed up successfully!");
+    }
+  } catch (err) {
+    console.error("Failed to warm up hero cache:", err);
+  }
+};
+
+// Start warming up immediately (fire and forget)
+warmUpCache();
 
 router.get("/hero-trailers", async (req, res) => {
-  try {
-    const now = Date.now();
-    
-    // Check cache first
-    if (heroCache.data && heroCache.data.length > 0 && now - heroCache.timestamp < HERO_TTL) {
-      console.log("Returning cached data");
-      return res.json(heroCache.data);
-    }
+  const now = Date.now();
 
-    console.log("Fetching fresh data...");
-    const enhanced = await fetchAnimeWithStrategies();
-
-    if (enhanced.length > 0) {
-      // Update primary cache
-      heroCache = { data: enhanced, timestamp: now };
-      // Update fallback cache as backup
-      fallbackCache = { data: enhanced, timestamp: now };
-      
-      console.log(`Successfully fetched ${enhanced.length} anime with trailers`);
-      res.json(enhanced);
-    } else {
-      // If no results, try to use fallback cache
-      if (fallbackCache.data && fallbackCache.data.length > 0) {
-        console.log("Using fallback cache");
-        return res.json(fallbackCache.data);
-      }
-      
-      // Last resort: return minimal error response
-      console.log("No data available, returning empty array");
-      res.json([]);
-    }
-
-  } catch (err) {
-    console.error("Error fetching AniList hero trailers:", err.message);
-    
-    // Try to return cached data even on error
-    if (heroCache.data && heroCache.data.length > 0) {
-      console.log("Returning cached data due to error");
-      return res.json(heroCache.data);
-    }
-    
-    if (fallbackCache.data && fallbackCache.data.length > 0) {
-      console.log("Returning fallback cache due to error");
-      return res.json(fallbackCache.data);
-    }
-    
-    res.status(500).json({ 
-      error: "Failed to fetch hero trailers.",
-      fallback: []
-    });
+  // 1. Try Memory Cache
+  if (heroCache.data && heroCache.data.length > 0 && now - heroCache.timestamp < HERO_TTL) {
+    return res.json(heroCache.data);
   }
+
+  // 2. Fetch Fresh
+  const freshData = await fetchHeroAnime();
+
+  // 3. Update Cache & Respond
+  if (freshData.length > 0) {
+    heroCache = { data: freshData, timestamp: now };
+    return res.json(freshData);
+  }
+
+  // 4. Fallback: Return stale cache if available, else empty
+  if (heroCache.data && heroCache.data.length > 0) {
+    console.log("Returning stale cache due to fetch failure");
+    return res.json(heroCache.data);
+  }
+
+  res.json([]);
 });
 
-// Debug endpoint to check cache status
-router.get("/hero-trailers/debug", async (req, res) => {
+// Debug endpoint 
+router.get("/hero-trailers/debug", (req, res) => {
   const now = Date.now();
   res.json({
-    cache: {
-      hasData: !!heroCache.data,
-      count: heroCache.data?.length || 0,
-      age: now - heroCache.timestamp,
-      expired: now - heroCache.timestamp > HERO_TTL
-    },
-    fallback: {
-      hasData: !!fallbackCache.data,
-      count: fallbackCache.data?.length || 0,
-      age: now - fallbackCache.timestamp
-    }
+    hasData: !!heroCache.data,
+    count: heroCache.data?.length || 0,
+    ageMinutes: heroCache.timestamp ? (now - heroCache.timestamp) / 60000 : 0,
+    expired: now - heroCache.timestamp > HERO_TTL
   });
 });
 
-// Force refresh endpoint
+// Refresh endpoint
 router.post("/hero-trailers/refresh", async (req, res) => {
   try {
-    console.log("Force refreshing hero trailers...");
-    heroCache = { data: null, timestamp: 0 };
-    
-    const enhanced = await fetchAnimeWithStrategies();
-    
-    if (enhanced.length > 0) {
-      heroCache = { data: enhanced, timestamp: Date.now() };
-      fallbackCache = { data: enhanced, timestamp: Date.now() };
-      res.json({ success: true, count: enhanced.length });
+    const data = await fetchHeroAnime();
+    if (data.length > 0) {
+      heroCache = { data, timestamp: Date.now() };
+      res.json({ success: true, count: data.length });
     } else {
-      res.json({ success: false, count: 0 });
+      res.status(500).json({ success: false, error: "No data fetched" });
     }
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

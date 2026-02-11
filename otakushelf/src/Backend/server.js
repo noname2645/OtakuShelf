@@ -22,6 +22,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import aiChat from "./aiChat.js";
 
+// Security packages
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+
+
 const envFile =
   process.env.NODE_ENV === "production"
     ? ".env.production"
@@ -38,20 +44,87 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// Validate critical environment variables (FAIL FAST)
+function validateEnvVars() {
+  const required = ['JWT_SECRET', 'SESSION_SECRET', 'MONGO_URI'];
+  const missing = required.filter(key => !process.env[key]);
+
+  if (missing.length > 0) {
+    console.error('❌ Missing required environment variables:', missing);
+    process.exit(1);
+  }
+
+  if (process.env.JWT_SECRET.length < 32) {
+    console.error('❌ JWT_SECRET must be at least 32 characters');
+    process.exit(1);
+  }
+
+  if (process.env.SESSION_SECRET.length < 32) {
+    console.error('❌ SESSION_SECRET must be at least 32 characters');
+    process.exit(1);
+  }
+
+  console.log('✅ Environment variables validated');
+}
+
+validateEnvVars();
+
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const JWT_SECRET = process.env.JWT_SECRET; // No fallback!
 const isProduction = process.env.NODE_ENV === 'production';
 
 app.set('trust proxy', 1);
+
+// Security Headers (Helmet)
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled for development - enable in production with proper config
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+  }
+}));
+
+// MongoDB Injection Protection
+// Note: Temporarily disabled due to compatibility issue with Express version
+// TODO: Implement manual input validation or upgrade express-mongo-sanitize
+// app.use(mongoSanitize({
+//   replaceWith: '_'
+// }));
+
+// Request Size Limits (DoS Protection)
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Compression
+app.use(compression());
+
+// Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: 'Too many requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // 5 login attempts per 15 minutes
+  skipSuccessfulRequests: true,
+  message: 'Too many login attempts, please try again later.'
+});
+
+// Apply rate limiters
+// Note: Apply to specific routes instead of blanket /api/ to avoid conflicts
+// app.use('/api/', apiLimiter);
+
 
 app.use(fileUpload({
   limits: { fileSize: 10 * 1024 * 1024 },
   useTempFiles: false,
   createParentPath: true
 }));
-
-app.use('/uploads', express.static(uploadsDir));
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -60,38 +133,57 @@ const allowedOrigins = [
   "https://otakushelf-uuvw.onrender.com"
 ];
 
+// CORS Configuration (Stricter in production)
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
+    // In production, require origin header
+    if (isProduction && !origin) {
+      return callback(new Error('No origin header'), false);
+    }
+    // Allow localhost in development
+    if (!isProduction && !origin) {
+      return callback(null, true);
+    }
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log('Blocked origin:', origin);
-      callback(new Error("Not allowed by CORS"));
+      console.warn(`Blocked origin: ${origin}`);
+      callback(new Error("Not allowed by CORS"), false);
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  maxAge: 86400,
   optionsSuccessStatus: 200
 }));
 
-app.use(express.json());
-app.use(compression());
+// Static files AFTER CORS - with explicit CORS headers
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(uploadsDir));
 
-mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/animeApp", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+// Middleware already configured above with security settings
+
+// MongoDB Connection with Pooling
+mongoose.connect(process.env.MONGO_URI, {
+  maxPoolSize: 10,
+  minPoolSize: 2,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
 })
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.error("MongoDB Error:", err));
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || "mysecret",
+  secret: process.env.SESSION_SECRET, // No fallback!
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/animeApp",
+    mongoUrl: process.env.MONGO_URI,
     collectionName: 'sessions'
   }),
   cookie: {
@@ -1531,6 +1623,75 @@ wss.on('connection', (ws, req) => {
 
 server.keepAliveTimeout = 65 * 1000;
 server.headersTimeout = 66 * 1000;
+
+// Health Check Endpoint
+app.get('/health', async (req, res) => {
+  const health = {
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+    status: 'OK',
+    environment: isProduction ? 'production' : 'development',
+    checks: {
+      database: 'unknown',
+      memory: process.memoryUsage(),
+      cpu: process.cpuUsage()
+    }
+  };
+
+  try {
+    await mongoose.connection.db.admin().ping();
+    health.checks.database = 'connected';
+    res.status(200).json(health);
+  } catch (error) {
+    health.status = 'ERROR';
+    health.checks.database = 'disconnected';
+    res.status(503).json(health);
+  }
+});
+
+// Graceful Shutdown
+const gracefulShutdown = async (signal) => {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+
+  server.close(async () => {
+    console.log('HTTP server closed');
+
+    try {
+      await mongoose.connection.close();
+      console.log('MongoDB connection closed');
+
+      if (wss) {
+        wss.clients.forEach(client => client.close());
+        wss.close(() => console.log('WebSocket server closed'));
+      }
+
+      console.log('✅ Graceful shutdown completed');
+      process.exit(0);
+    } catch (err) {
+      console.error('❌ Error during shutdown:', err);
+      process.exit(1);
+    }
+  });
+
+  // Force shutdown after 30 seconds
+  setTimeout(() => {
+    console.error('⚠️ Forced shutdown after timeout');
+    process.exit(1);
+  }, 30000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Error handlers
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
 
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

@@ -1,3 +1,5 @@
 .env.local
 .env.development
 .env.production
+
+IMPLEMENTATION_SUMMARY.md
