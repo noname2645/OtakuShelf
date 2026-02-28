@@ -134,7 +134,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       return media.relations?.edges || [];
     } catch (error) {
       if (axios.isCancel(error)) {
-        console.log('AniList request cancelled');
+        // console.log('AniList request cancelled');
       } else {
         console.error("AniList fetch error:", error.response?.data || error.message);
       }
@@ -150,7 +150,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       return res.data.data || [];
     } catch (error) {
       if (axios.isCancel(error)) {
-        console.log('Jikan request cancelled');
+        // console.log('Jikan request cancelled');
       } else {
         console.error("Jikan fetch error:", error.message);
       }
@@ -166,7 +166,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       return res.data.data;
     } catch (error) {
       if (axios.isCancel(error)) {
-        console.log('Jikan details request cancelled');
+        // console.log('Jikan details request cancelled');
       } else {
         console.error(`Failed to fetch details for MAL ID ${malId}:`, error);
       }
@@ -194,10 +194,10 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       if (!node.title) return "Untitled";
       if (typeof node.title === 'string') return node.title;
       if (typeof node.title === 'object') {
-        return node.title.english || 
-               node.title.romaji || 
-               node.title.native || 
-               "Untitled";
+        return node.title.english ||
+          node.title.romaji ||
+          node.title.native ||
+          "Untitled";
       }
       return "Untitled";
     };
@@ -206,10 +206,10 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       // IDs
       id: node.id,
       idMal: node.idMal,
-      
+
       // Title as STRING, not object
       title: getTitleString(),
-      
+
       // Images
       coverImage: {
         extraLarge: node.coverImage?.extraLarge || imageUrl,
@@ -217,7 +217,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         medium: node.coverImage?.medium || imageUrl,
       },
       bannerImage: node.bannerImage || null,
-      
+
       // Details
       status: node.status,
       description: node.description,
@@ -225,14 +225,14 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       averageScore: node.averageScore,
       format: node.format,
       genres: node.genres || [],
-      
+
       // Trailer data
       trailer: node.trailer,
-      
+
       // Meta
       relationType: edge.relationType,
       source: "anilist",
-      
+
       // Original data for debugging
       _originalData: node
     };
@@ -245,20 +245,20 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
 
     // SAFELY extract title as a STRING
     const getTitleString = () => {
-      return details.title_english || 
-             details.title || 
-             details.title_japanese || 
-             "Untitled";
+      return details.title_english ||
+        details.title ||
+        details.title_japanese ||
+        "Untitled";
     };
 
     return {
       // IDs
       id: details.mal_id,
       idMal: details.mal_id,
-      
+
       // Title as STRING
       title: getTitleString(),
-      
+
       // Images
       coverImage: {
         extraLarge: details.images?.jpg?.large_image_url,
@@ -266,7 +266,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         medium: details.images?.jpg?.image_url
       },
       bannerImage: null,
-      
+
       // Details
       status: details.status,
       description: details.synopsis,
@@ -274,17 +274,17 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       averageScore: details.score ? Math.round(details.score * 10) : null,
       format: details.type,
       genres: details.genres?.map(g => g.name) || [],
-      
+
       // Trailer data
       trailer: details.trailer ? {
         id: details.trailer.youtube_id,
         site: "youtube"
       } : null,
-      
+
       // Meta
       relationType: relationName.toUpperCase().replace(/ /g, "_"),
       source: "jikan",
-      
+
       // Original data for debugging
       _originalData: details
     };
@@ -352,8 +352,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
         }
 
         if (isMounted && !controller.signal.aborted) {
-          // Filter out any null entries and log the data
-          console.log("Related anime data:", normalized.filter(Boolean));
+          // console.log("Related anime data:", normalized.filter(Boolean)); // verbose object dump
           setRelated(normalized.filter(Boolean));
         }
       } catch (err) {

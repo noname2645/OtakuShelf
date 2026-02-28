@@ -1,0 +1,2 @@
+/* Global mobile responsiveness — loaded last so it wins over page-level styles */
+@import './Stylesheets/mobile.css';

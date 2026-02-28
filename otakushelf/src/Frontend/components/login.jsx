@@ -45,11 +45,11 @@ const Login = () => {
         { withCredentials: true }
       );
 
-      console.log("Login response:", res.data);
+      // console.log("Login response:", res.data); // sensitive: contains token + user
       setMessage(res.data.message);
 
       if (res.data.user) {
-        login(res.data.user);
+        login(res.data.user, res.data.token);
         setEmail("");
         setPassword("");
         navigate("/");

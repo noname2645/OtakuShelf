@@ -251,7 +251,7 @@ const AIPage = () => {
 
     // 🆕 Handle Card Click
     const handleCardClick = (anime) => {
-        console.log("Card clicked:", anime);
+        // console.log("Card clicked:", anime); // verbose object dump
         setSelectedAnime(anime);
         setIsModalOpen(true);
     };

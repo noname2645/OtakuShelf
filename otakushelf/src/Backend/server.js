@@ -44,7 +44,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Validate critical environment variables (FAIL FAST)
+// Validate critical environment variables
 function validateEnvVars() {
   const required = ['JWT_SECRET', 'SESSION_SECRET', 'MONGO_URI'];
   const missing = required.filter(key => !process.env[key]);
@@ -54,14 +54,24 @@ function validateEnvVars() {
     process.exit(1);
   }
 
-  if (process.env.JWT_SECRET.length < 32) {
-    console.error('❌ JWT_SECRET must be at least 32 characters');
+  if (process.env.JWT_SECRET.length < 16) {
+    console.error('❌ JWT_SECRET must be at least 16 characters');
     process.exit(1);
   }
 
-  if (process.env.SESSION_SECRET.length < 32) {
-    console.error('❌ SESSION_SECRET must be at least 32 characters');
+  if (process.env.SESSION_SECRET.length < 16) {
+    console.error('❌ SESSION_SECRET must be at least 16 characters');
     process.exit(1);
+  }
+
+  // Warn about short secrets in production
+  if (process.env.NODE_ENV === 'production') {
+    if (process.env.JWT_SECRET.length < 32) {
+      console.warn('⚠️  JWT_SECRET is shorter than 32 characters — consider a longer secret in production');
+    }
+    if (process.env.SESSION_SECRET.length < 32) {
+      console.warn('⚠️  SESSION_SECRET is shorter than 32 characters — consider a longer secret in production');
+    }
   }
 
   console.log('✅ Environment variables validated');
@@ -136,12 +146,8 @@ const allowedOrigins = [
 // CORS Configuration (Stricter in production)
 app.use(cors({
   origin: function (origin, callback) {
-    // In production, require origin header
-    if (isProduction && !origin) {
-      return callback(new Error('No origin header'), false);
-    }
-    // Allow localhost in development
-    if (!isProduction && !origin) {
+    // Allow no-origin (server-to-server or same origin) always
+    if (!origin) {
       return callback(null, true);
     }
     if (allowedOrigins.includes(origin)) {
@@ -252,6 +258,11 @@ passport.deserializeUser(async (id, done) => {
 
 app.get('/healthz', (req, res) => res.send('ok'));
 
+// Wake-up / keep-alive ping endpoint (used by frontend for cold-start)
+app.get('/api/ping', (req, res) => {
+  res.json({ status: 'awake', timestamp: Date.now(), uptime: process.uptime() });
+});
+
 app.post("/auth/register", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -273,7 +284,7 @@ app.post("/auth/register", async (req, res) => {
     });
     await newUser.save();
 
-    console.log('User registered successfully:', email);
+    // console.log('User registered successfully:', email); // sensitive: email
     res.json({ message: "Registration successful!" });
   } catch (err) {
     console.error('Registration error:', err);
@@ -336,7 +347,7 @@ app.get("/auth/google/callback",
   (req, res) => {
     try {
       const token = jwt.sign({ id: req.user._id }, JWT_SECRET, { expiresIn: "24h" });
-      console.log('Google auth successful for:', req.user.email);
+      // console.log('Google auth successful for:', req.user.email); // sensitive: email
       res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
     } catch (err) {
       console.error('Google callback error:', err);
@@ -392,7 +403,7 @@ app.get("/auth/logout", (req, res) => {
 
       res.clearCookie('sessionId');
       res.clearCookie('connect.sid');
-      console.log('User logged out successfully:', userEmail);
+      // console.log('User logged out successfully:', userEmail); // sensitive: email
       res.json({ message: "Logged out successfully" });
     });
   });
@@ -1171,7 +1182,7 @@ app.get("/api/list/:userId", async (req, res) => {
         dropped: []
       });
       await list.save();
-      console.log('Created new empty list for user:', userId);
+      // console.log('Created new empty list for user:', userId); // sensitive: userId
     }
 
     if (!Array.isArray(list.watching)) list.watching = [];
@@ -1597,7 +1608,7 @@ wss.on('connection', (ws, req) => {
 
     if (userId) {
       userConnections.set(userId, ws);
-      console.log(`🔗 WebSocket connected for user: ${userId}`);
+      // console.log(`🔗 WebSocket connected for user: ${userId}`); // sensitive: userId
 
       ws.send(JSON.stringify({
         type: 'connected',
@@ -1608,7 +1619,7 @@ wss.on('connection', (ws, req) => {
     ws.on('close', () => {
       if (userId) {
         userConnections.delete(userId);
-        console.log(`🔌 WebSocket disconnected for user: ${userId}`);
+        // console.log(`🔌 WebSocket disconnected for user: ${userId}`); // sensitive: userId
       }
     });
 

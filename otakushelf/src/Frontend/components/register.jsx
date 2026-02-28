@@ -75,7 +75,7 @@ const Register = ({ onRegisterSuccess }) => {
         { withCredentials: true }
       );
 
-      console.log("Register response:", res.data);
+      // console.log("Register response:", res.data); // sensitive: contains user data
       setMessage(res.data.message);
 
       const loginRes = await axios.post(
@@ -87,10 +87,10 @@ const Register = ({ onRegisterSuccess }) => {
         { withCredentials: true }
       );
 
-      console.log("Login response:", loginRes.data);
+      // console.log("Login response:", loginRes.data); // sensitive: contains token + user
 
       if (loginRes.data.user) {
-        login(loginRes.data.user);
+        login(loginRes.data.user, loginRes.data.token);
         if (onRegisterSuccess) onRegisterSuccess(loginRes.data.user);
         navigate("/");
       }
@@ -127,7 +127,7 @@ const Register = ({ onRegisterSuccess }) => {
         </div>
 
         {message && <div className={getMessageClass()}>{message}</div>}
-        
+
         <div className="register-card">
           {/* Decorative Header */}
           <div className="card-header">
@@ -142,7 +142,7 @@ const Register = ({ onRegisterSuccess }) => {
             <div className="form-group">
               <div className="input-with-icon">
                 <span className="input-icon">
-                   <img src={emailIcon} alt="Email Icon" />
+                  <img src={emailIcon} alt="Email Icon" />
                 </span>
                 <input
                   id="email"
@@ -174,7 +174,7 @@ const Register = ({ onRegisterSuccess }) => {
                   minLength={6}
                 />
               </div>
-      
+
             </div>
 
             <div className="form-group">
