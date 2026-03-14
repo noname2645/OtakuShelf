@@ -165,12 +165,7 @@ export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
                     <>
                         <Link to="/login">
                             <button>
-                                <span className="button_login">Login</span>
-                            </button>
-                        </Link>
-                        <Link to="/register">
-                            <button>
-                                <span className="button_register">Register</span>
+                                <span className="button_login">Get Started</span>
                             </button>
                         </Link>
                     </>

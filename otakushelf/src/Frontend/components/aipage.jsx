@@ -7,6 +7,7 @@ import '../Stylesheets/aipage.css';
 import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
 import { useAuth } from "../components/AuthContext.jsx";
+import { motion, AnimatePresence } from "framer-motion";
 
 const AIPage = () => {
     const [input, setInput] = useState("");
@@ -323,26 +324,35 @@ const AIPage = () => {
                                 onScroll={checkScrollPosition}
                             >
                                 {messages.length === 0 && (
-                                    <div className="welcome-message">
-                                        <div className="welcome-icon">🎬</div>
+                                    <motion.div
+                                        className="welcome-message"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5, ease: "easeOut" }}
+                                    >
+                                        <motion.div
+                                            className="welcome-icon"
+                                            animate={{ y: [0, -10, 0] }}
+                                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                                        >🎬</motion.div>
                                         <h3>Welcome to OtakuShell AI Companion!</h3>
                                         <p>Now powered by Llama 3.1! I'll recommend perfect anime shows just for you!</p>
                                         <div className="companion-features">
-                                            <div className="feature">
-                                                <span>✨</span> Smart recommendations
-                                            </div>
-                                            <div className="feature">
-                                                <span>🎯</span> Based on your watch history
-                                            </div>
-                                            <div className="feature">
-                                                <span>🤖</span> Powered by Llama 3.1
-                                            </div>
+                                            <div className="feature"><span>✨</span> Smart recommendations</div>
+                                            <div className="feature"><span>🎯</span> Based on your watch history</div>
+                                            <div className="feature"><span>🤖</span> Powered by Llama 3.1</div>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 )}
 
                                 {messages.map((msg) => (
-                                    <div key={msg.id} className={`message-bubble ${msg.role} ${msg.mood || ''}`}>
+                                    <motion.div
+                                        key={msg.id}
+                                        className={`message-bubble ${msg.role} ${msg.mood || ''}`}
+                                        initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{ duration: 0.35, ease: "easeOut" }}
+                                    >
                                         <div className="message-header">
                                             <div className={`message-avatar ${msg.role}`}>
                                                 {msg.role === "user" ? (
@@ -410,7 +420,7 @@ const AIPage = () => {
                                                 </div>
                                             </div>
                                         )}
-                                    </div>
+                                    </motion.div>
                                 ))}
 
                                 {/* 🆕 Streaming message (typewriter effect) */}

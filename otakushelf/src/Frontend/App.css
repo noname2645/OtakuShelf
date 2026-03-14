@@ -1,2 +1,9 @@
 /* Global mobile responsiveness — loaded last so it wins over page-level styles */
 @import './Stylesheets/mobile.css';
+
+/* Framer Motion page transition wrapper — must not affect layout */
+.page-motion-wrapper {
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
+}

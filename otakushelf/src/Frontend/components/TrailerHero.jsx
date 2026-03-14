@@ -16,11 +16,31 @@ const TrailerHero = ({ onOpenModal }) => {
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [playerError, setPlayerError] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
-    const [announcements, setAnnouncements] = useState([]);
+    // ⚡ Initialize directly from cache so hero is instant on re-mount
+    const [announcements, setAnnouncements] = useState(() => {
+        try {
+            const cached = localStorage.getItem('hero_announcements');
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (_) { }
+        return [];
+    });
     const [isMobile, setIsMobile] = useState(false);
     const [safeAreaTop, setSafeAreaTop] = useState('0px');
     const [safeAreaBottom, setSafeAreaBottom] = useState('0px');
-    const [isFetchingData, setIsFetchingData] = useState(true);
+    // Only show loading spinner when we truly have nothing yet
+    const [isFetchingData, setIsFetchingData] = useState(() => {
+        try {
+            const cached = localStorage.getItem('hero_announcements');
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                return !(Array.isArray(parsed) && parsed.length > 0);
+            }
+        } catch (_) { }
+        return true;
+    });
 
     // Horizontal scroll functionality for main hero
     const isDragging = useRef(false);
@@ -320,46 +340,39 @@ const TrailerHero = ({ onOpenModal }) => {
         };
     };
 
-    // Fetch announcements — with cold-start handling
+    // Fetch announcements — cache-first, then background refresh
     useEffect(() => {
+        const CACHE_KEY = 'hero_announcements';
+        const CACHE_TTL = 30 * 60 * 1000; // 30 min before a fresh fetch
+
         const fetchAnnouncements = async () => {
-            if (announcements.length > 0) {
+            // Check if cache is fresh enough to skip the network call
+            const cacheTime = parseInt(localStorage.getItem(`${CACHE_KEY}_time`) || '0', 10);
+            const cacheIsStale = Date.now() - cacheTime > CACHE_TTL;
+
+            // If state is already populated from the lazy initializer and cache is fresh, we're done
+            if (announcements.length > 0 && !cacheIsStale) {
                 setIsFetchingData(false);
                 return;
             }
 
-            // First: instantly use cached data while server wakes up
-            const cached = localStorage.getItem('announcements');
-            if (cached) {
-                try {
-                    const parsed = JSON.parse(cached);
-                    if (Array.isArray(parsed) && parsed.length) {
-                        setAnnouncements(parsed.slice(0, 10));
-                        setIsFetchingData(false);
-                        // Still fetch fresh data in background
-                    }
-                } catch (parseError) {
-                    console.error("Error parsing cached announcements:", parseError);
-                }
-            }
-
+            // Background refresh — fetch fresh data even if cache exists
             try {
                 const data = await fetchWithRetry(`${API}/api/anilist/hero-trailers`);
                 if (data && data.length > 0) {
                     const normalizedAnnouncements = data
                         .map(normalizeHeroAnime)
                         .filter(anime => {
-                            const notTBA = anime.status?.toLowerCase() !== "not_yet_released" &&
-                                anime.status?.toLowerCase() !== "not_yet_aired";
-                            return notTBA;
+                            const s = anime.status?.toLowerCase();
+                            return s !== 'not_yet_released' && s !== 'not_yet_aired';
                         });
 
                     setAnnouncements(normalizedAnnouncements.slice(0, 10));
-                    localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(normalizedAnnouncements));
+                    localStorage.setItem(`${CACHE_KEY}_time`, String(Date.now()));
                 }
             } catch (err) {
-                console.error("Error fetching hero trailers (using cache or empty):", err.message);
-                // Cache already loaded above if available
+                console.error("Hero trailer fetch failed (using cache):", err.message);
             } finally {
                 setIsFetchingData(false);
             }

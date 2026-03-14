@@ -5,6 +5,7 @@ import Modal from "../components/modal.jsx";
 import TrailerHero from './TrailerHero.jsx';
 import { Header } from '../components/header.jsx';
 import BottomNavBar from './bottom.jsx';
+import { motion, AnimatePresence } from "framer-motion";
 
 // API base URL
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -38,27 +39,26 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
         '/placeholder-anime.jpg';
 
     return (
-        <div
+        <motion.div
             className="anime-card2"
             onClick={handleClick}
             style={{
-                // Inline styles for base sizing to reduce layout thrash
                 height: cardHeight,
                 width: cardWidth,
                 minHeight: cardHeight,
                 minWidth: cardWidth,
-                // Only animate the first few items to prevent massive paint storms
-                animationDelay: index < 12 ? `${index * 0.05}s` : '0s',
-                opacity: index < 12 ? 0 : 1, // Start hidden only if animating
-                animation: index < 12 ? 'fadeInUp 0.5s ease-out forwards' : 'none',
-                transform: index >= 12 ? 'none' : undefined // Prevent translateY for non-animated cards
             }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: Math.min(index, 8) * 0.06, ease: "easeOut" }}
+            whileHover={{ scale: 1.04, y: -4, transition: { duration: 0.2 } }}
+            whileTap={{ scale: 0.98 }}
         >
             <div className="home-card-image">
                 <img
                     src={imageSrc}
                     alt={anime?.title || "Anime"}
-                    loading="lazy" // Native lazy loading relies on browser to optimize
+                    loading="lazy"
                     width={isMobile ? 160 : 220}
                     height={isMobile ? 240 : 320}
                     decoding="async"
@@ -67,7 +67,7 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
                     <h3>{anime?.title || "Unknown Title"}</h3>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 });
 AnimeCard.displayName = 'AnimeCard';
@@ -80,7 +80,12 @@ const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
     if (!data || data.length === 0) return null;
 
     return (
-        <>
+        <motion.div
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+        >
             <div className="divider">
                 <span className="divider-content">{title}</span>
             </div>
@@ -92,13 +97,13 @@ const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
                                 key={`${title}-${anime.id || index}`}
                                 anime={anime}
                                 onClick={onOpenModal}
-                                index={index} // Index relative to current render
+                                index={index}
                             />
                         ))}
                     </div>
                 </div>
             </section>
-        </>
+        </motion.div>
     );
 });
 AnimeSection.displayName = 'AnimeSection';
@@ -387,14 +392,16 @@ const AnimeHomepage = () => {
                     </main>
                 </div>
 
-                {isModalOpen && selectedAnime && (
-                    <Modal
-                        isOpen={isModalOpen}
-                        onClose={closeModal}
-                        anime={selectedAnime}
-                        onOpenAnime={handleOpenRelatedAnime}
-                    />
-                )}
+                <AnimatePresence>
+                    {isModalOpen && selectedAnime && (
+                        <Modal
+                            isOpen={isModalOpen}
+                            onClose={closeModal}
+                            anime={selectedAnime}
+                            onOpenAnime={handleOpenRelatedAnime}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
         </>
     );

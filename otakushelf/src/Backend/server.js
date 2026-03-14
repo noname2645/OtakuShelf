@@ -21,6 +21,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import aiChat from "./aiChat.js";
+import nodemailer from 'nodemailer';
 
 // Security packages
 import helmet from 'helmet';
@@ -263,7 +264,7 @@ app.get('/api/ping', (req, res) => {
   res.json({ status: 'awake', timestamp: Date.now(), uptime: process.uptime() });
 });
 
-app.post("/auth/register", async (req, res) => {
+app.post("/auth/register", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -292,7 +293,7 @@ app.post("/auth/register", async (req, res) => {
   }
 });
 
-app.post("/auth/login", async (req, res) => {
+app.post("/auth/login", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -409,6 +410,107 @@ app.get("/auth/logout", (req, res) => {
   });
 });
 
+// ─── Forgot Password ───────────────────────────────────────────────────────
+app.post("/auth/forgot-password", authLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    // Always respond OK to prevent email enumeration
+    if (!user || user.authType !== 'local') {
+      return res.json({ message: "If that email exists, a reset link has been sent." });
+    }
+
+    // Generate a secure random token
+    const crypto = await import('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.passwordResetToken = hashedToken;
+    user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    await user.save();
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+    // Send email via Nodemailer (Gmail SMTP with App Password)
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS, // Gmail App Password
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"OtakuShelf" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: '🔑 OtakuShelf — Reset Your Password',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0d0d1a;color:#fff;border-radius:16px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#8b5cf6,#ec4899);padding:32px;text-align:center">
+            <h1 style="margin:0;font-size:28px">OtakuShelf</h1>
+            <p style="margin:8px 0 0;opacity:0.85">Password Reset Request</p>
+          </div>
+          <div style="padding:32px">
+            <p>Hey there, Otaku! 👋</p>
+            <p>We received a request to reset your password. Click the button below — this link expires in <strong>15 minutes</strong>.</p>
+            <div style="text-align:center;margin:32px 0">
+              <a href="${resetUrl}" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:16px">Reset Password</a>
+            </div>
+            <p style="font-size:13px;opacity:0.6">If you didn't request this, you can safely ignore this email. Your password won't be changed.</p>
+            <hr style="border-color:rgba(255,255,255,0.1);margin:24px 0">
+            <p style="font-size:12px;opacity:0.4;text-align:center">OtakuShelf · Your Anime Universe</p>
+          </div>
+        </div>
+      `,
+    });
+
+    res.json({ message: "If that email exists, a reset link has been sent." });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: "Failed to send reset email. Please try again." });
+  }
+});
+
+// ─── Reset Password ─────────────────────────────────────────────────────────
+app.post("/auth/reset-password", async (req, res) => {
+  try {
+    const { token, email, newPassword } = req.body;
+
+    if (!token || !email || !newPassword) {
+      return res.status(400).json({ message: "Token, email, and new password are required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    const crypto = await import('crypto');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: new Date() }, // Must not be expired
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset token. Please request a new one." });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 12);
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+    await user.save();
+
+    res.json({ message: "Password reset successfully! You can now log in." });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: "Server error during password reset" });
+  }
+});
+
 app.post("/api/profile/:userId/upload-photo", async (req, res) => {
   try {
     if (!req.files || !req.files.photo) {
@@ -417,6 +519,10 @@ app.post("/api/profile/:userId/upload-photo", async (req, res) => {
 
     const photo = req.files.photo;
     const { userId } = req.params;
+
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(photo.mimetype)) {
@@ -467,6 +573,10 @@ app.post("/api/profile/:userId/upload-cover", async (req, res) => {
     const cover = req.files.cover;
     const { userId } = req.params;
 
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(cover.mimetype)) {
       return res.status(400).json({ message: "Invalid image type. Use JPEG, PNG, or WebP" });
@@ -505,6 +615,10 @@ app.post("/api/profile/:userId/upload-cover", async (req, res) => {
 app.get("/api/profile/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
 
     const user = await User.findById(userId).select('-password');
     if (!user) {
@@ -602,6 +716,10 @@ app.put("/api/profile/:userId", async (req, res) => {
     const { userId } = req.params;
     const updateData = req.body;
 
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -649,6 +767,10 @@ app.post("/api/list/:userId", async (req, res) => {
   try {
     const { category, animeTitle, animeData } = req.body;
     const userId = req.params.userId;
+
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
 
     if (!["watching", "completed", "planned", "dropped"].includes(category)) {
       return res.status(400).json({ message: "Invalid category" });
@@ -728,10 +850,10 @@ app.post('/api/list/import/mal', async (req, res) => {
     const userId = req.body.userId;
     const clearExisting = req.body.clearExisting === 'true';
 
-    if (!userId) {
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
       return res.status(400).json({
         success: false,
-        message: 'User ID is required'
+        message: 'Valid User ID is required'
       });
     }
 
@@ -1167,8 +1289,8 @@ app.get("/api/list/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
 
-    if (!userId || typeof userId !== 'string' || userId.length < 10) {
-      return res.status(400).json({ message: "Invalid user ID" });
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
     }
 
     let list = await AnimeList.findOne({ userId });

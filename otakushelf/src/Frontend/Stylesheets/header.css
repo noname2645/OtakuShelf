@@ -357,62 +357,53 @@
 /* Auth Buttons */
 .auth-buttons {
     display: flex;
-    gap: 0.8rem;
-    /* Reduced from 1rem */
     align-items: center;
 }
 
-.auth-buttons button {
-    font-size: 15px;
-    /* Reduced from 17px */
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    border-radius: 25px;
-    /* Reduced from 30px */
-    background: #000000;
+/* Wrapper link — reset default link styles */
+.auth-buttons a {
+    text-decoration: none;
 }
 
+/* The outer button element */
+.auth-buttons button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* "Get Started" pill */
 .auth-buttons .button_login {
-    display: block;
-    box-sizing: border-box;
-    border: 2px solid #000000;
-    border-radius: 25px;
-    padding: 0.6em 1.3em;
-    /* Reduced from 0.75em 1.5em */
-    background: #04d42a;
-    color: #000000;
-    transform: translateY(-0.2em);
-    transition: transform 0.1s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.55em 1.4em;
+    border-radius: 50px;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+    box-shadow:
+        0 4px 20px rgba(139, 92, 246, 0.45),
+        0 1px 0 rgba(255, 255, 255, 0.12) inset;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    white-space: nowrap;
 }
 
 .auth-buttons button:hover .button_login {
-    transform: translateY(-0.33em);
+    transform: translateY(-2px);
+    box-shadow:
+        0 8px 28px rgba(139, 92, 246, 0.6),
+        0 1px 0 rgba(255, 255, 255, 0.16) inset;
 }
 
 .auth-buttons button:active .button_login {
-    transform: translateY(0);
-}
-
-.auth-buttons .button_register {
-    display: block;
-    box-sizing: border-box;
-    border: 1px solid #04d42a;
-    border-radius: 25px;
-    padding: 0.6em 1.3em;
-    /* Reduced from 0.75em 1.5em */
-    background: #000000;
-    color: #04d42a;
-    transform: translateY(-0.2em);
-    transition: transform 0.1s ease;
-}
-
-.auth-buttons button:hover .button_register {
-    transform: translateY(-0.33em);
-}
-
-.auth-buttons button:active .button_register {
-    transform: translateY(0);
+    transform: translateY(0px);
+    box-shadow: 0 3px 14px rgba(139, 92, 246, 0.4);
 }
 
 /* Logo */

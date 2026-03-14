@@ -1,20 +1,20 @@
-.bottom-button-bar {
-  /* Deep Solid Colors: No Transparency */
-  --nav-bg: #020617;
-  /* Solid Deepest Blue */
-  --nav-shadow: 0 10px 50px #000000;
-  --active-bg: #0f172a;
-  /* Solid Deep Blue Highlight */
-  --active-text: #ff5500;
-  /* Deep Vivid Orange */
-  --inactive-icon: #64748b;
-  /* Slate Grey */
-  --hover-icon: #e2e8f0;
+/* Wrapper: handles fixed positioning + centering — untouched by Framer Motion */
+.bottom-button-bar-wrapper {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 2000;
+}
+
+.bottom-button-bar {
+  /* Deep Solid Colors: No Transparency */
+  --nav-bg: #020617;
+  --nav-shadow: 0 10px 50px #000000;
+  --active-bg: #0f172a;
+  --active-text: #ff5500;
+  --inactive-icon: #64748b;
+  --hover-icon: #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -107,8 +107,11 @@
 
 /* Responsive adjustments */
 @media (max-width: 576px) {
-  .bottom-button-bar {
+  .bottom-button-bar-wrapper {
     bottom: 16px;
+  }
+
+  .bottom-button-bar {
     padding: 5px;
   }
 
