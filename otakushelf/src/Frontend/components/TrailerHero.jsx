@@ -657,6 +657,48 @@ const TrailerHero = ({ onOpenModal }) => {
                         </button>
                     </div>
                 )}
+
+                {/* Progress Bar & Next Previews */}
+                {!isMobile && announcements.length > 1 && (
+                    <div className="hero-bottom-controls">
+                        <div className="hero-next-previews">
+                            <div className="up-next-header">
+                                <span className="up-next-text">Up Next</span>
+                                <div className="progress-bar-container">
+                                    <motion.div 
+                                        className="progress-bar-fill"
+                                        key={currentAnime}
+                                        initial={{ width: "0%" }}
+                                        animate={{ width: "100%" }}
+                                        transition={{ duration: 30, ease: "linear" }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="preview-thumbnails">
+                                {[1, 2, 3, 4].map((offset) => {
+                                    const nextIndex = (currentAnime + offset) % announcements.length;
+                                    const nextAnime = announcements[nextIndex];
+                                    if (!nextAnime) return null;
+                                    return (
+                                        <div 
+                                            key={nextIndex} 
+                                            className="preview-thumb"
+                                            onClick={() => setCurrentAnime(nextIndex)}
+                                            style={{ backgroundImage: `url(${nextAnime.coverImage?.large || nextAnime.coverImage?.medium || nextAnime.bannerImage})` }}
+                                            title={getAnimeTitle(nextAnime)}
+                                        >
+                                            <div className="preview-overlay">
+                                                <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
+                                                    <path d="M8 5v14l11-7z"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </section>
 
             {/* Trailer Spacer */}

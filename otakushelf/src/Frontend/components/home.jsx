@@ -38,6 +38,9 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
         anime.bannerImage ||
         '/placeholder-anime.jpg';
 
+    // Extract dynamic color if available, fallback to brand color
+    const brandColor = anime.coverImage?.color || '#ff6b6b';
+
     return (
         <motion.div
             className="anime-card2"
@@ -47,6 +50,7 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
                 width: cardWidth,
                 minHeight: cardHeight,
                 minWidth: cardWidth,
+                '--brand-color': brandColor // Pass to CSS for glow effect
             }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -63,8 +67,36 @@ const AnimeCard = React.memo(({ anime, onClick, index }) => {
                     height={isMobile ? 240 : 320}
                     decoding="async"
                 />
+                
+                {/* Default Bottom Title */}
                 <div className="card-title-bottom">
                     <h3>{anime?.title || "Unknown Title"}</h3>
+                </div>
+
+                {/* Glassmorphism Hover Overlay */}
+                <div className="card-hover-overlay">
+                    <h3 className="hover-title">{anime?.title || "Unknown Title"}</h3>
+                    <div className="hover-stats">
+                        <span className="hover-score">⭐ {anime.averageScore ? `${(anime.averageScore / 10).toFixed(1)}/10` : 'N/A'}</span>
+                        <span className="hover-episodes">{anime.episodes ? `${anime.episodes} EPS` : 'TBA'}</span>
+                        <span className="hover-status">{anime.status?.replace(/_/g, ' ') || 'Unknown'}</span>
+                    </div>
+                    {anime.genres && anime.genres.length > 0 && (
+                        <div className="hover-genres">
+                            {anime.genres.slice(0, 3).map((g, i) => (
+                                <span key={i} className="genre-tag">{g}</span>
+                            ))}
+                        </div>
+                    )}
+                    {anime.description && (
+                        <p className="hover-synopsis">
+                            {anime.description.replace(/<[^>]*>/g, '').substring(0, 80)}...
+                        </p>
+                    )}
+                    <button className="hover-add-btn" onClick={(e) => {
+                        e.stopPropagation(); // prevent opening modal
+                        // Future: hook up to add to list logic
+                    }}>+ Add to List</button>
                 </div>
             </div>
         </motion.div>
@@ -74,35 +106,49 @@ AnimeCard.displayName = 'AnimeCard';
 
 // Section Component to manage its own "View More" state
 const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
-    // Only render what's needed
-    // const visibleData = useMemo(() => data.slice(0, visibleCount), [data, visibleCount]);
+    const scrollRef = useRef(null);
+
+    const scroll = (direction) => {
+        if (scrollRef.current) {
+            const { scrollLeft, clientWidth } = scrollRef.current;
+            const scrollAmount = clientWidth * 0.8; // Scroll 80% of visible width
+            scrollRef.current.scrollTo({
+                left: direction === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    };
 
     if (!data || data.length === 0) return null;
 
     return (
         <motion.div
+            className="anime-carousel-section"
             initial={{ opacity: 0, y: 32 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
         >
-            <div className="divider">
-                <span className="divider-content">{title}</span>
+            <div className="modern-section-header">
+                <div className="accent-bar"></div>
+                <h2 className="header-title">{title}</h2>
+                <button className="view-more-btn">Explore <span className="arrow">&rsaquo;</span></button>
             </div>
-            <section className="anime-section">
-                <div className="anime-section-container">
-                    <div className="anime-grid">
-                        {data.map((anime, index) => (
-                            <AnimeCard
-                                key={`${title}-${anime.id || index}`}
-                                anime={anime}
-                                onClick={onOpenModal}
-                                index={index}
-                            />
-                        ))}
-                    </div>
+            
+            <div className="carousel-wrapper">
+                <button className="carousel-btn prev-btn" onClick={() => scroll('left')}>‹</button>
+                <div className="anime-carousel" ref={scrollRef}>
+                    {data.map((anime, index) => (
+                        <AnimeCard
+                            key={`${title}-${anime.id || index}`}
+                            anime={anime}
+                            onClick={onOpenModal}
+                            index={index}
+                        />
+                    ))}
                 </div>
-            </section>
+                <button className="carousel-btn next-btn" onClick={() => scroll('right')}>›</button>
+            </div>
         </motion.div>
     );
 });
@@ -311,9 +357,12 @@ const AnimeHomepage = () => {
                     {/* Multiple sections to match actual layout */}
                     {['TOP AIRING', 'TRENDING THIS WEEK', 'MOST WATCHED', 'TOP RATED ALL TIME', 'TOP MOVIES', 'UPCOMING RELEASES'].map((title, sectionIndex) => (
                         <div key={sectionIndex} className="skeleton-section">
-                            <div className="skeleton-section-title"></div>
-                            <div className="skeleton-grid">
-                                {[...Array(12)].map((_, i) => (
+                            <div className="skeleton-section-header">
+                                <div className="skeleton-bar"></div>
+                                <div className="skeleton-title"></div>
+                            </div>
+                            <div className="skeleton-carousel">
+                                {[...Array(6)].map((_, i) => (
                                     <div key={i} className="skeleton-card"></div>
                                 ))}
                             </div>
