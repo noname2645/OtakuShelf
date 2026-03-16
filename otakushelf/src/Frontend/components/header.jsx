@@ -131,11 +131,17 @@ export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
 
     return (
         <header className={`header ${isScrolled ? "scrolled" : ""}`}>
+            <div className="logo">
+                <Link to="/">
+                    <span>OtakuShelf</span>
+                </Link>
+            </div>
+
             <div className="header-center">
                 {showSearch ? (
                     <div className={`InputContainer ${onSearchChange ? "active" : ""}`}>
                         <input
-                            placeholder="Quick Search (Title Only)"
+                            placeholder="Search anime..."
                             id="input"
                             className="input"
                             type="text"
@@ -153,11 +159,6 @@ export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
                 )}
             </div>
 
-            <div className="logo">
-                <Link to="/">
-                    <span>OtakuShelf</span>
-                </Link>
-            </div>
             <div className="auth-buttons">
                 {user ? (
                     <ProfileDropdown />

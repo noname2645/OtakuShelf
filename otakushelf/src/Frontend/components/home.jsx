@@ -15,98 +15,13 @@ const CACHE_KEY = 'animeSections_100_v4'; // Increment version to force fresh st
 const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
 const STALE_TIME = 1000 * 60 * 30; // 30 minutes until fresh fetch (but stale data shown immediately)
 
-// Optimized Anime Card Component
-const AnimeCard = React.memo(({ anime, onClick, index }) => {
-    const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
-
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    const handleClick = useCallback(() => {
-        onClick(anime);
-    }, [anime, onClick]);
-
-    const cardHeight = isMobile ? '240px' : '320px';
-    const cardWidth = isMobile ? '160px' : '220px';
-
-    // Prioritize high-quality images but fallback gracefully
-    const imageSrc = anime.coverImage?.extraLarge ||
-        anime.coverImage?.large ||
-        anime.bannerImage ||
-        '/placeholder-anime.jpg';
-
-    // Extract dynamic color if available, fallback to brand color
-    const brandColor = anime.coverImage?.color || '#ff6b6b';
-
-    return (
-        <motion.div
-            className="anime-card2"
-            onClick={handleClick}
-            style={{
-                height: cardHeight,
-                width: cardWidth,
-                minHeight: cardHeight,
-                minWidth: cardWidth,
-                '--brand-color': brandColor // Pass to CSS for glow effect
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: Math.min(index, 8) * 0.06, ease: "easeOut" }}
-            whileHover={{ scale: 1.04, y: -4, transition: { duration: 0.2 } }}
-            whileTap={{ scale: 0.98 }}
-        >
-            <div className="home-card-image">
-                <img
-                    src={imageSrc}
-                    alt={anime?.title || "Anime"}
-                    loading="lazy"
-                    width={isMobile ? 160 : 220}
-                    height={isMobile ? 240 : 320}
-                    decoding="async"
-                />
-                
-                {/* Default Bottom Title */}
-                <div className="card-title-bottom">
-                    <h3>{anime?.title || "Unknown Title"}</h3>
-                </div>
-
-                {/* Glassmorphism Hover Overlay */}
-                <div className="card-hover-overlay">
-                    <h3 className="hover-title">{anime?.title || "Unknown Title"}</h3>
-                    <div className="hover-stats">
-                        <span className="hover-score">⭐ {anime.averageScore ? `${(anime.averageScore / 10).toFixed(1)}/10` : 'N/A'}</span>
-                        <span className="hover-episodes">{anime.episodes ? `${anime.episodes} EPS` : 'TBA'}</span>
-                        <span className="hover-status">{anime.status?.replace(/_/g, ' ') || 'Unknown'}</span>
-                    </div>
-                    {anime.genres && anime.genres.length > 0 && (
-                        <div className="hover-genres">
-                            {anime.genres.slice(0, 3).map((g, i) => (
-                                <span key={i} className="genre-tag">{g}</span>
-                            ))}
-                        </div>
-                    )}
-                    {anime.description && (
-                        <p className="hover-synopsis">
-                            {anime.description.replace(/<[^>]*>/g, '').substring(0, 80)}...
-                        </p>
-                    )}
-                    <button className="hover-add-btn" onClick={(e) => {
-                        e.stopPropagation(); // prevent opening modal
-                        // Future: hook up to add to list logic
-                    }}>+ Add to List</button>
-                </div>
-            </div>
-        </motion.div>
-    );
-});
-AnimeCard.displayName = 'AnimeCard';
-
+import AnimeCard from './AnimeCardUI.jsx';
 // Section Component to manage its own "View More" state
 const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
     const scrollRef = useRef(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
 
     const scroll = (direction) => {
         if (scrollRef.current) {
@@ -118,6 +33,43 @@ const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
             });
         }
     };
+
+    const handleMouseDown = (e) => {
+        if (!scrollRef.current) return;
+        setStartX(e.pageX - scrollRef.current.offsetLeft);
+        setScrollLeft(scrollRef.current.scrollLeft);
+        // Don't set isDragging immediately on mouse down, wait for move
+    };
+
+    const handleMouseLeave = () => {
+        setIsDragging(false);
+    };
+
+    const handleMouseUp = () => {
+        // Small delay so onClick handles correctly before dragging resets
+        setTimeout(() => setIsDragging(false), 50);
+    };
+
+    const handleMouseMove = (e) => {
+        if (startX === 0 || !scrollRef.current) return;
+        
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 2;
+        
+        // Threshold: only start dragging if mouse moved more than 5 pixels
+        if (Math.abs(walk) > 5) {
+            setIsDragging(true);
+            e.preventDefault();
+            scrollRef.current.scrollLeft = scrollLeft - walk;
+        }
+    };
+
+    // Reset startX when mouse is up anywhere
+    useEffect(() => {
+        const handleGlobalMouseUp = () => setStartX(0);
+        window.addEventListener('mouseup', handleGlobalMouseUp);
+        return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+    }, []);
 
     if (!data || data.length === 0) return null;
 
@@ -135,15 +87,24 @@ const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
                 <button className="view-more-btn">Explore <span className="arrow">&rsaquo;</span></button>
             </div>
             
-            <div className="carousel-wrapper">
+            <div className={`carousel-wrapper ${isDragging ? 'dragging' : ''}`}>
                 <button className="carousel-btn prev-btn" onClick={() => scroll('left')}>‹</button>
-                <div className="anime-carousel" ref={scrollRef}>
+                <div 
+                    className="anime-carousel" 
+                    ref={scrollRef}
+                    onMouseDown={handleMouseDown}
+                    onMouseLeave={handleMouseLeave}
+                    onMouseUp={handleMouseUp}
+                    onMouseMove={handleMouseMove}
+                    style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                >
                     {data.map((anime, index) => (
                         <AnimeCard
                             key={`${title}-${anime.id || index}`}
                             anime={anime}
                             onClick={onOpenModal}
                             index={index}
+                            isDragging={isDragging}
                         />
                     ))}
                 </div>
@@ -399,6 +360,7 @@ const AnimeHomepage = () => {
                                                 anime={anime}
                                                 onClick={openModal}
                                                 index={index}
+                                                isGrid={true}
                                             />
                                         ))}
                                     </div>

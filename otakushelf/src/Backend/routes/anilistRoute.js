@@ -1,6 +1,7 @@
 // routes/anilistRoute.js
 import express from 'express';
 import axios from 'axios';
+import { success, error } from '../utils/responseHandler.js';
 
 const router = express.Router();
 
@@ -202,7 +203,7 @@ router.get("/hero-trailers", async (req, res) => {
 
   // 1. Try Memory Cache
   if (heroCache.data && heroCache.data.length > 0 && now - heroCache.timestamp < HERO_TTL) {
-    return res.json(heroCache.data);
+    return success(res, "Hero trailers fetched from cache", heroCache.data);
   }
 
   // 2. Fetch Fresh
@@ -211,27 +212,28 @@ router.get("/hero-trailers", async (req, res) => {
   // 3. Update Cache & Respond
   if (freshData.length > 0) {
     heroCache = { data: freshData, timestamp: now };
-    return res.json(freshData);
+    return success(res, "Hero trailers fetched successfully", freshData);
   }
 
   // 4. Fallback: Return stale cache if available, else empty
   if (heroCache.data && heroCache.data.length > 0) {
     console.log("Returning stale cache due to fetch failure");
-    return res.json(heroCache.data);
+    return success(res, "Returning stale cache due to fetch failure", heroCache.data);
   }
 
-  res.json([]);
+  return success(res, "No hero trailers found", []);
 });
 
 // Debug endpoint 
 router.get("/hero-trailers/debug", (req, res) => {
   const now = Date.now();
-  res.json({
+  const debugData = {
     hasData: !!heroCache.data,
     count: heroCache.data?.length || 0,
     ageMinutes: heroCache.timestamp ? (now - heroCache.timestamp) / 60000 : 0,
     expired: now - heroCache.timestamp > HERO_TTL
-  });
+  };
+  return success(res, "Hero cache debug info fetched successfully", debugData);
 });
 
 // Refresh endpoint
@@ -240,12 +242,12 @@ router.post("/hero-trailers/refresh", async (req, res) => {
     const data = await fetchHeroAnime();
     if (data.length > 0) {
       heroCache = { data, timestamp: Date.now() };
-      res.json({ success: true, count: data.length });
+      return success(res, "Hero cache refreshed successfully", { count: data.length });
     } else {
-      res.status(500).json({ success: false, error: "No data fetched" });
+      return error(res, "No data fetched", 500);
     }
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    return error(res, err.message, 500);
   }
 });
 

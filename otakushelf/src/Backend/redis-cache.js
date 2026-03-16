@@ -298,10 +298,9 @@ async function getCacheStats() {
 app.get('/health', async (req, res) => {
     const cacheStats = await getCacheStats();
 
-    res.json({
+    res.sendSuccess("Cache health check passed", {
         uptime: process.uptime(),
-        cache: cacheStats,
-        // ... other health checks
+        cache: cacheStats
     });
 });
 

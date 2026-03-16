@@ -1,5 +1,6 @@
 import express from "express";
 import fetch from "node-fetch";
+import { success, error } from './utils/responseHandler.js';
 
 const router = express.Router();
 
@@ -491,9 +492,7 @@ router.post("/anime-chat", async (req, res) => {
         const { query, anime } = req.body;
 
         if (!query || !anime) {
-            return res.status(400).json({
-                error: "query and anime fields are required"
-            });
+            return error(res, "query and anime fields are required", 400);
         }
 
         // 1️⃣ Fetch canonical anime data
@@ -505,7 +504,7 @@ router.post("/anime-chat", async (req, res) => {
         // 3️⃣ Ask Mistral
         const answer = await askMistral(prompt);
 
-        res.json({
+        return success(res, "Anime-specific chat response generated", {
             answer,
             source: "AniList + Mistral",
             hasData: !!animeData
@@ -513,10 +512,7 @@ router.post("/anime-chat", async (req, res) => {
 
     } catch (err) {
         console.error("AI Chat Error:", err);
-        res.status(500).json({
-            error: "Failed to generate response",
-            details: process.env.NODE_ENV === 'development' ? err.message : undefined
-        });
+        return error(res, "Failed to generate response", 500, process.env.NODE_ENV === 'development' ? err.message : undefined);
     }
 });
 
@@ -526,9 +522,7 @@ router.post("/chat", async (req, res) => {
         const { message, history = [], context = {}, userId } = req.body;
 
         if (!message) {
-            return res.status(400).json({
-                error: "message field is required"
-            });
+            return error(res, "message field is required", 400);
         }
 
         console.log(`AI Chat request from user ${userId || 'anonymous'}:`, message.substring(0, 100));
@@ -575,20 +569,17 @@ router.post("/chat", async (req, res) => {
 
         console.log(`AI Chat response sent, mood: ${mood}, suggestions: ${suggestions.length}`);
 
-        res.json(responseData);
+        return success(res, "General chat response generated", responseData);
 
     } catch (err) {
         console.error("General Chat Error:", err);
-        res.status(500).json({
-            error: "Failed to generate response",
-            details: process.env.NODE_ENV === 'development' ? err.message : undefined
-        });
+        return error(res, "Failed to generate response", 500, process.env.NODE_ENV === 'development' ? err.message : undefined);
     }
 });
 
 // Route 3: Health check
 router.get("/health", (req, res) => {
-    res.json({
+    return success(res, "AI Chat service is healthy", {
         status: "healthy",
         service: "AI Chat",
         model: "Mistral",
@@ -602,16 +593,16 @@ router.post("/anime-info", async (req, res) => {
         const { anime } = req.body;
 
         if (!anime) {
-            return res.status(400).json({ error: "anime field is required" });
+            return error(res, "anime field is required", 400);
         }
 
         const animeData = await fetchAnimeContext(anime);
 
         if (!animeData) {
-            return res.status(404).json({ error: "Anime not found" });
+            return error(res, "Anime not found", 404);
         }
 
-        res.json({
+        res.sendSuccess("Anime info fetched successfully", {
             title: animeData.title.english || animeData.title.romaji,
             description: animeData.description ? animeData.description.replace(/<[^>]*>/g, '') : 'No description',
             genres: animeData.genres,
@@ -621,7 +612,7 @@ router.post("/anime-info", async (req, res) => {
         });
     } catch (err) {
         console.error("Anime info error:", err);
-        res.status(500).json({ error: "Failed to fetch anime info" });
+        res.sendError("Failed to fetch anime info", 500);
     }
 });
 

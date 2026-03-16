@@ -12,12 +12,32 @@
     right: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0 2rem;
+    justify-content: space-between; /* Parent distribution */
+    padding: 0 1.5rem;
     z-index: 1100;
-    transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.3s ease;
     border-radius: 30px;
     font-family: 'Bricolage Grotesque', sans-serif;
+}
+
+.logo, .header-center, .auth-buttons {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    flex: 1;
+    justify-content: flex-start;
+}
+
+.header-center {
+    flex: 2;
+    justify-content: center;
+}
+
+.auth-buttons {
+    flex: 1;
+    justify-content: flex-end;
 }
 
 .otaku-ai-label {
@@ -62,12 +82,7 @@
     height: 65px;
 }
 
-.header-center {
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-}
+/* Center slot styling restored to floating absolute */
 
 /* Enhanced Search Input Styles */
 .InputContainer {
@@ -430,23 +445,43 @@
 @media (max-width: 768px) {
     .header {
         width: 95% !important;
-        height: 35px !important;
-        padding: 0 0.8rem !important;
+        min-height: 55px !important;
+        height: auto !important;
+        padding: 8px 1.2rem !important;
         border-radius: 15px !important;
+        justify-content: space-between !important;
     }
 
+    .header-center {
+        position: static !important;
+        transform: none !important;
+        flex: 2 !important;
+        display: flex;
+        justify-content: center;
+    }
+
+    .logo, .auth-buttons {
+        flex: 1 !important;
+        display: flex;
+    }
+
+    .logo { justify-content: flex-start !important; }
+    .auth-buttons { justify-content: flex-end !important; }
+
     .logo span {
-        font-size: 26px !important;
-        letter-spacing: 2px !important;
+        font-size: 20px !important; /* Smaller to prevent overlap */
+        letter-spacing: 0px !important;
     }
 
     .InputContainer {
-        width: 140px !important;
+        width: 100% !important;
+        max-width: 140px !important;
     }
 
     .InputContainer.active {
-        width: 300px !important;
-        transform: scale(1.02) !important;
+        width: 100% !important;
+        max-width: 160px !important;
+        transform: none !important;
     }
 
     .input {
@@ -529,21 +564,40 @@
 /* Mobile (576px and below) */
 @media (max-width: 576px) {
     .header {
-        height: 30px !important;
-        padding: 0 0.6rem !important;
+        min-height: 55px !important;
+        height: auto !important;
+        padding: 8px 0.6rem !important;
     }
 
+    .header-center {
+        position: static !important;
+        transform: none !important;
+        flex: 2 !important;
+        display: flex;
+        justify-content: center;
+    }
+
+    .logo, .profile-container {
+        flex: 1 !important;
+        display: flex;
+    }
+
+    .logo { justify-content: flex-start !important; }
+    .profile-container { justify-content: flex-end !important; }
+
     .logo span {
-        font-size: 22px !important;
-        letter-spacing: 1px !important;
+        font-size: 18px !important;
+        letter-spacing: 0px !important;
     }
 
     .InputContainer {
-        width: 120px !important;
+        width: 100% !important;
+        max-width: 140px !important;
     }
 
     .InputContainer.active {
-        width: 120px !important;
+        width: 100% !important;
+        max-width: 200px !important;
     }
 
     /* Hide logo text on very small screens */
@@ -593,7 +647,8 @@
     }
 
     .InputContainer {
-        width: 100px !important;
+        width: 100% !important;
+        max-width: 120px !important;
     }
 }
 

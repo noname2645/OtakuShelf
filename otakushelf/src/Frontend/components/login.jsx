@@ -113,6 +113,10 @@ const Login = () => {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       >
+        {/* Back to home */}
+        <Link to="/" className="login-back-home">
+          <span className="login-back-arrow">←</span> Home
+        </Link>
         {/* Floating icon */}
         <motion.div className="login-card-header"
           initial={{ y: -30, opacity: 0 }}
@@ -129,6 +133,7 @@ const Login = () => {
           transition={{ delay: 0.38, duration: 0.4 }}
         >
           <h1 className="login-auth-title">Welcome Back</h1>
+          <p className="login-auth-subtitle">Sign in to your OtakuShelf account</p>
         </motion.div>
 
         {/* Staggered form */}
@@ -159,14 +164,8 @@ const Login = () => {
                 className="login-form-input" disabled={isLoading} required
               />
             </div>
-            {/* Forgot password link */}
             <div style={{ textAlign: "right", marginTop: "6px" }}>
-              <Link to="/forgot-password" style={{ fontSize: "13px", color: "rgba(167,139,250,0.85)", textDecoration: "none" }}
-                onMouseEnter={e => e.target.style.color = "#ec4899"}
-                onMouseLeave={e => e.target.style.color = "rgba(167,139,250,0.85)"}
-              >
-                Forgot password?
-              </Link>
+              <Link to="/forgot-password" className="login-forgot-link">Forgot password?</Link>
             </div>
           </motion.div>
 
@@ -220,11 +219,6 @@ const Login = () => {
             <Link to="/register" className="login-auth-link">
               <span className="login-link-text">Join Now</span>
               <span className="login-link-arrow">→</span>
-            </Link>
-          </p>
-          <p className="login-footer-text" style={{ marginTop: "8px" }}>
-            <Link to="/forgot-password" style={{ color: "rgba(167,139,250,0.65)", fontSize: "13px", textDecoration: "none" }}>
-              Forgot your password?
             </Link>
           </p>
         </motion.div>

@@ -22,11 +22,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import aiChat from "./aiChat.js";
 import nodemailer from 'nodemailer';
+import { success, error } from './utils/responseHandler.js';
 
 // Security packages
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import mongoSanitize from 'express-mongo-sanitize';
 
 
 const envFile =
@@ -205,6 +205,13 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Standardized Response Middleware
+app.use((req, res, next) => {
+  res.sendSuccess = (message, data = null, statusCode = 200) => success(res, message, data, statusCode);
+  res.sendError = (message, statusCode = 500, data = null) => error(res, message, statusCode, data);
+  next();
+});
+
 import User from './models/User.js';
 import AnimeList from './models/AnimeList.js';
 
@@ -257,11 +264,11 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-app.get('/healthz', (req, res) => res.send('ok'));
+app.get('/healthz', (req, res) => res.sendSuccess('System is healthy', 'ok'));
 
 // Wake-up / keep-alive ping endpoint (used by frontend for cold-start)
 app.get('/api/ping', (req, res) => {
-  res.json({ status: 'awake', timestamp: Date.now(), uptime: process.uptime() });
+  res.sendSuccess('Server is awake', { status: 'awake', timestamp: Date.now(), uptime: process.uptime() });
 });
 
 app.post("/auth/register", authLimiter, async (req, res) => {
@@ -286,10 +293,10 @@ app.post("/auth/register", authLimiter, async (req, res) => {
     await newUser.save();
 
     // console.log('User registered successfully:', email); // sensitive: email
-    res.json({ message: "Registration successful!" });
+    res.sendSuccess("Registration successful!");
   } catch (err) {
     console.error('Registration error:', err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.sendError("Server error", 500, err.message);
   }
 });
 
@@ -318,13 +325,12 @@ app.post("/auth/login", authLimiter, async (req, res) => {
     req.login(user, (err) => {
       if (err) {
         console.error("Session login error:", err);
-        return res.status(500).json({ message: "Session error" });
+        return res.sendError("Session error", 500);
       }
 
       const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "24h" });
 
-      res.json({
-        message: "Login successful!",
+      res.sendSuccess("Login successful!", {
         user: {
           _id: user._id,
           email: user.email,
@@ -337,7 +343,7 @@ app.post("/auth/login", authLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.sendError("Server error", 500, err.message);
   }
 });
 
@@ -364,8 +370,8 @@ app.get("/auth/me", (req, res) => {
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
       return User.findById(decoded.id).then(user => {
-        if (!user) return res.status(401).json({ message: "Invalid token" });
-        res.json({
+        if (!user) return res.sendError("Invalid token", 401);
+        res.sendSuccess("User authenticated", {
           user: {
             _id: user._id,
             email: user.email,
@@ -376,14 +382,14 @@ app.get("/auth/me", (req, res) => {
         });
       });
     } catch (err) {
-      return res.status(401).json({ message: "Invalid token", error: err.message });
+      return res.sendError("Invalid token", 401, err.message);
     }
   }
 
   if (req.isAuthenticated() && req.user) {
-    return res.json({ user: req.user });
+    return res.sendSuccess("User authenticated", { user: req.user });
   } else {
-    return res.status(401).json({ message: "Not authenticated" });
+    return res.sendError("Not authenticated", 401);
   }
 });
 
@@ -393,19 +399,19 @@ app.get("/auth/logout", (req, res) => {
   req.logout((err) => {
     if (err) {
       console.error("Logout error:", err);
-      return res.status(500).json({ message: "Logout error" });
+      return res.sendError("Logout error", 500);
     }
 
     req.session.destroy((err) => {
       if (err) {
         console.error("Session destroy error:", err);
-        return res.status(500).json({ message: "Session destroy error" });
+        return res.sendError("Session destroy error", 500);
       }
 
       res.clearCookie('sessionId');
       res.clearCookie('connect.sid');
       // console.log('User logged out successfully:', userEmail); // sensitive: email
-      res.json({ message: "Logged out successfully" });
+      res.sendSuccess("Logged out successfully");
     });
   });
 });
@@ -547,20 +553,14 @@ app.post("/api/profile/:userId/upload-photo", async (req, res) => {
       { new: true, select: '-password' }
     );
 
-    res.json({
-      success: true,
-      message: "Photo uploaded successfully",
+    res.sendSuccess("Photo uploaded successfully", {
       photo: photoUrl,
       user: updatedUser
     });
 
   } catch (err) {
     console.error('Photo upload error:', err);
-    res.status(500).json({
-      success: false,
-      message: "Error uploading photo",
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
+    res.sendError("Error uploading photo", 500, process.env.NODE_ENV === 'development' ? err.message : undefined);
   }
 });
 
@@ -596,19 +596,14 @@ app.post("/api/profile/:userId/upload-cover", async (req, res) => {
       { new: true, select: '-password' }
     );
 
-    res.json({
-      success: true,
-      message: "Cover image uploaded successfully",
+    res.sendSuccess("Cover image uploaded successfully", {
       coverImage: coverUrl,
       user: updatedUser
     });
 
   } catch (err) {
     console.error('Cover upload error:', err);
-    res.status(500).json({
-      success: false,
-      message: "Error uploading cover image"
-    });
+    res.sendError("Error uploading cover image", 500);
   }
 });
 
@@ -704,10 +699,10 @@ app.get("/api/profile/:userId", async (req, res) => {
       watchlist: animeList?.planned?.slice(0, 10) || []
     };
 
-    res.json(profileData);
+    res.sendSuccess("Profile fetched successfully", profileData);
   } catch (err) {
     console.error('Profile fetch error:', err);
-    res.status(500).json({ message: "Error fetching profile", error: err.message });
+    res.sendError("Error fetching profile", 500, err.message);
   }
 });
 
@@ -753,13 +748,10 @@ app.put("/api/profile/:userId", async (req, res) => {
       { new: true, select: '-password' }
     );
 
-    res.json({
-      message: "Profile updated successfully",
-      user: updatedUser
-    });
+    res.sendSuccess("Profile updated successfully", updatedUser);
   } catch (err) {
     console.error('Profile update error:', err);
-    res.status(500).json({ message: "Error updating profile", error: err.message });
+    res.sendError("Error updating profile", 500, err.message);
   }
 });
 
@@ -822,10 +814,10 @@ app.post("/api/list/:userId", async (req, res) => {
 
     list[category].push(animeEntry);
     await list.save();
-    res.json({ message: "Anime list updated", list });
+    res.sendSuccess("Anime list updated", list);
   } catch (err) {
     console.error('Update list error:', err);
-    res.status(500).json({ message: "Error updating list", error: err.message });
+    res.sendError("Error updating list", 500, err.message);
   }
 });
 
@@ -1246,9 +1238,7 @@ app.post('/api/list/import/mal', async (req, res) => {
       }));
     }
 
-    res.json({
-      success: true,
-      message: finalMessage,
+    res.sendSuccess(finalMessage, {
       imported: imported,
       skipped: skipped,
       errors: errors.length,
@@ -1277,11 +1267,7 @@ app.post('/api/list/import/mal', async (req, res) => {
       console.error('Failed to send WebSocket error:', wsError);
     }
 
-    res.status(500).json({
-      success: false,
-      message: 'Import failed',
-      error: error.message
-    });
+    res.sendError("Import failed", 500, error.message);
   }
 });
 
@@ -1312,10 +1298,10 @@ app.get("/api/list/:userId", async (req, res) => {
     if (!Array.isArray(list.planned)) list.planned = [];
     if (!Array.isArray(list.dropped)) list.dropped = [];
 
-    res.json(list);
+    res.sendSuccess("Anime list fetched successfully", list);
   } catch (err) {
     console.error('Fetch list error:', err);
-    res.status(500).json({ message: "Error fetching list", error: err.message });
+    res.sendError("Error fetching list", 500, err.message);
   }
 });
 
@@ -1448,10 +1434,10 @@ app.get("/api/profile/:userId/badges", async (req, res) => {
       });
     }
 
-    res.json(badges);
+    res.sendSuccess("Badges fetched successfully", badges);
   } catch (err) {
     console.error('Badges fetch error:', err);
-    res.status(500).json({ message: "Error fetching badges", error: err.message });
+    res.sendError("Error fetching badges", 500, err.message);
   }
 });
 
@@ -1503,10 +1489,10 @@ app.put("/api/list/:userId/:animeId", async (req, res) => {
     }
 
     await list.save();
-    res.json({ message: "Anime updated", list });
+    res.sendSuccess("Anime updated successfully", list);
   } catch (err) {
     console.error("PUT UPDATE ERROR:", err);
-    res.status(500).json({ error: err.message });
+    res.sendError(err.message, 500);
   }
 });
 
@@ -1533,10 +1519,10 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
     }
 
     await list.save();
-    res.json({ message: "Anime removed", list });
+    res.sendSuccess("Anime removed successfully", list);
   } catch (err) {
     console.error('Remove anime error:', err);
-    res.status(500).json({ message: "Error removing anime", error: err.message });
+    res.sendError("Error removing anime", 500, err.message);
   }
 });
 
@@ -1636,16 +1622,14 @@ app.post("/api/list/:userId/backfill-genres", async (req, res) => {
     await animeList.save();
     console.log(`Backfill complete! Updated: ${updated}, Failed: ${failed}`);
 
-    res.json({
-      success: true,
-      message: `Updated genres for ${updated} anime (${failed} failed)`,
+    res.sendSuccess(`Updated genres for ${updated} anime (${failed} failed)`, {
       updated,
       failed
     });
 
   } catch (error) {
     console.error('Backfill error:', error);
-    res.status(500).json({ message: "Error backfilling genres", error: error.message });
+    res.sendError("Error backfilling genres", 500, error.message);
   }
 });
 
@@ -1705,13 +1689,13 @@ function cleanupOldUploads() {
 
 setInterval(cleanupOldUploads, 24 * 60 * 60 * 1000);
 
+app.use((req, res) => {
+  res.sendError("Route not found", 404);
+});
+
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
+  res.sendError("Internal server error", 500, process.env.NODE_ENV === 'development' ? err.message : undefined);
 });
 
 const server = http.createServer(app);
@@ -1774,11 +1758,11 @@ app.get('/health', async (req, res) => {
   try {
     await mongoose.connection.db.admin().ping();
     health.checks.database = 'connected';
-    res.status(200).json(health);
+    res.sendSuccess("Health check passed", health);
   } catch (error) {
     health.status = 'ERROR';
     health.checks.database = 'disconnected';
-    res.status(503).json(health);
+    res.sendError("Health check failed", 503, health);
   }
 });
 

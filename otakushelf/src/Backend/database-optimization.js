@@ -276,7 +276,7 @@ app.get('/api/admin/db-stats', async (req, res) => {
             })
         );
 
-        res.json({
+        res.sendSuccess("Database statistics fetched successfully", {
             database: stats.db,
             collections: stats.collections,
             dataSize: stats.dataSize,
@@ -285,7 +285,7 @@ app.get('/api/admin/db-stats', async (req, res) => {
             details: collectionStats
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.sendError("Error fetching database statistics", 500, error.message);
     }
 });
 
