@@ -6,6 +6,7 @@ import Trailer from "./trailer";
 import { Plus, Check } from 'lucide-react';
 import { useAuth } from "../components/AuthContext.jsx";
 import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Performance constants - computed once
 const IS_MOBILE = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
@@ -307,7 +308,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         }
     }, [anime?.id, animeData?.trailerVideoId]);
 
-    // EARLY RETURN
+    // EARLY RETURN — AnimatePresence handles exit, so we still return null when closed
     if (!isOpen || !anime) return null;
 
     // ACTION FUNCTIONS
@@ -342,8 +343,22 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
     return (
         <>
-            <div className="modal-overlay" onClick={onClose}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <motion.div
+                className="modal-overlay"
+                onClick={onClose}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22 }}
+            >
+                <motion.div
+                    className="modal-content"
+                    onClick={(e) => e.stopPropagation()}
+                    initial={{ opacity: 0, y: 40, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 30, scale: 0.97 }}
+                    transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                >
                     {/* Banner image background */}
                     <div
                         className="modal-background"
@@ -448,165 +463,203 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                             </div>
 
                             <div className="tab-content">
-                                {/* Direct rendering - no animations */}
-                                {activeTab === "info" && (
-                                    <div className="info-tab-content">
-                                        <div className="stats-grid2">
-                                            <div className="stat-item">
-                                                <span className="stat-label desktop-only">Episodes :</span>
-                                                <span className="stat-value">{animeData.episodes} Episodes</span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="stat-label desktop-only">Score :</span>
-                                                <span className="stat-value score">⭐ {animeData.score || "N/A"}</span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="stat-label desktop-only">Age Rating :</span>
-                                                <span className="stat-value age-rating">{animeData.rating}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="synopsis-section">
-                                            <p className="synopsis-text">
-                                                {truncateSynopsis(animeData.synopsis, SYNOPSIS_LIMIT)}
-                                            </p>
-
-                                            {animeData.synopsis.length > SYNOPSIS_LIMIT && (
-                                                <button
-                                                    className="read-more-btn"
-                                                    onClick={() => setSynopsisModalOpen(true)}
-                                                >
-                                                    Read More
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        <div className="anime-info-vertical">
-                                            <div className="info-row status-row">
-                                                <strong className="info-label">
-                                                    <span className="label-icon"></span>
-                                                    Status :
-                                                </strong>
-                                                <span
-                                                    className="info-value status-value"
-                                                    style={{ color: getStatusColor(animeData.status) }}
-                                                >
-                                                    <span
-                                                        className="status-indicator"
-                                                        style={{
-                                                            backgroundColor: getStatusColor(animeData.status)
-                                                        }}
-                                                    ></span>
-                                                    {animeData.status}
-                                                </span>
-                                            </div>
-
-                                            <div className="info-row genre-row">
-                                                <strong className="info-label">
-                                                    <span className="label-icon"></span>
-                                                    Genre:
-                                                </strong>
-                                                <div className="genre-tags">
-                                                    {animeData.genres.length > 0 ? (
-                                                        animeData.genres.map((genre, i) => (
-                                                            <span
-                                                                key={i}
-                                                                className="genre-pill"
-                                                                style={{ background: getGenreColor(genre) }}
-                                                            >
-                                                                {genre}
-                                                            </span>
-                                                        ))
-                                                    ) : (
-                                                        <span className="genre-pill no-genre">N/A</span>
-                                                    )}
+                                <AnimatePresence mode="wait">
+                                    {activeTab === "info" && (
+                                        <motion.div
+                                            key="info"
+                                            className="info-tab-content"
+                                            initial={{ opacity: 0, x: -12 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 12 }}
+                                            transition={{ duration: 0.25 }}
+                                        >
+                                            <div className="stats-grid2">
+                                                <div className="stat-item">
+                                                    <span className="stat-label desktop-only">Episodes :</span>
+                                                    <span className="stat-value">{animeData.episodes} Episodes</span>
+                                                </div>
+                                                <div className="stat-item">
+                                                    <span className="stat-label desktop-only">Score :</span>
+                                                    <span className="stat-value score">⭐ {animeData.score || "N/A"}</span>
+                                                </div>
+                                                <div className="stat-item">
+                                                    <span className="stat-label desktop-only">Age Rating :</span>
+                                                    <span className="stat-value age-rating">{animeData.rating}</span>
                                                 </div>
                                             </div>
 
-                                            <div className="info-row studio-row">
-                                                <strong className="info-label">
-                                                    <span className="label-icon"></span>
-                                                    Studio :
-                                                </strong>
-                                                <span className="info-value studio-value">
-                                                    {animeData.studio}
-                                                </span>
+                                            <div className="synopsis-section">
+                                                <p className="synopsis-text">
+                                                    {truncateSynopsis(animeData.synopsis, SYNOPSIS_LIMIT)}
+                                                </p>
+
+                                                {animeData.synopsis.length > SYNOPSIS_LIMIT && (
+                                                    <button
+                                                        className="read-more-btn"
+                                                        onClick={() => setSynopsisModalOpen(true)}
+                                                    >
+                                                        Read More
+                                                    </button>
+                                                )}
                                             </div>
-                                        </div>
-                                    </div>
-                                )}
 
-                                {activeTab === 'related' && (
-                                    <div className="related-tab-wrapper">
-                                        <RelatedTab
-                                            animeId={anime.id}
-                                            animeMalId={anime.idMal}
-                                            onSelect={(selectedAnime) => {
-                                                if (typeof onOpenAnime === "function") {
-                                                    // Ensure we're passing a properly structured anime object
-                                                    const normalizedAnime = {
-                                                        id: selectedAnime.id,
-                                                        idMal: selectedAnime.idMal,
-                                                        title: selectedAnime.title, // This should be a string now
-                                                        coverImage: selectedAnime.coverImage,
-                                                        bannerImage: selectedAnime.bannerImage,
-                                                        description: selectedAnime.description,
-                                                        episodes: selectedAnime.episodes,
-                                                        format: selectedAnime.format,
-                                                        status: selectedAnime.status,
-                                                        genres: selectedAnime.genres,
-                                                        averageScore: selectedAnime.averageScore,
-                                                        trailer: selectedAnime.trailer,
-                                                        studios: selectedAnime.studios,
-                                                        ...selectedAnime._originalData
-                                                    };
-                                                    onOpenAnime(normalizedAnime);
-                                                    setActiveTab("info");
-                                                    setTrailerVideoId(null);
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                )}
+                                            <div className="anime-info-vertical">
+                                                <div className="info-row status-row">
+                                                    <strong className="info-label">
+                                                        <span className="label-icon"></span>
+                                                        Status :
+                                                    </strong>
+                                                    <span
+                                                        className="info-value status-value"
+                                                        style={{ color: getStatusColor(animeData.status) }}
+                                                    >
+                                                        <span
+                                                            className="status-indicator"
+                                                            style={{
+                                                                backgroundColor: getStatusColor(animeData.status)
+                                                            }}
+                                                        ></span>
+                                                        {animeData.status}
+                                                    </span>
+                                                </div>
 
-                                {activeTab === 'trailer' && (
-                                    <div className="trailer-tab-wrapper">
-                                        {currentTrailerVideoId ? (
-                                            <Trailer
-                                                key={`trailer-${anime.id}-${currentTrailerVideoId}`}
-                                                videoId={currentTrailerVideoId}
+                                                <div className="info-row genre-row">
+                                                    <strong className="info-label">
+                                                        <span className="label-icon"></span>
+                                                        Genre:
+                                                    </strong>
+                                                    <div className="genre-tags">
+                                                        {animeData.genres.length > 0 ? (
+                                                            animeData.genres.map((genre, i) => (
+                                                                <span
+                                                                    key={i}
+                                                                    className="genre-pill"
+                                                                    style={{ background: getGenreColor(genre) }}
+                                                                >
+                                                                    {genre}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span className="genre-pill no-genre">N/A</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="info-row studio-row">
+                                                    <strong className="info-label">
+                                                        <span className="label-icon"></span>
+                                                        Studio :
+                                                    </strong>
+                                                    <span className="info-value studio-value">
+                                                        {animeData.studio}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {activeTab === 'related' && (
+                                        <motion.div
+                                            key="related"
+                                            className="related-tab-wrapper"
+                                            initial={{ opacity: 0, x: -12 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 12 }}
+                                            transition={{ duration: 0.25 }}
+                                        >
+                                            <RelatedTab
+                                                animeId={anime.id}
+                                                animeMalId={anime.idMal}
+                                                onSelect={(selectedAnime) => {
+                                                    if (typeof onOpenAnime === "function") {
+                                                        // Ensure we're passing a properly structured anime object
+                                                        const normalizedAnime = {
+                                                            id: selectedAnime.id,
+                                                            idMal: selectedAnime.idMal,
+                                                            title: selectedAnime.title, // This should be a string now
+                                                            coverImage: selectedAnime.coverImage,
+                                                            bannerImage: selectedAnime.bannerImage,
+                                                            description: selectedAnime.description,
+                                                            episodes: selectedAnime.episodes,
+                                                            format: selectedAnime.format,
+                                                            status: selectedAnime.status,
+                                                            genres: selectedAnime.genres,
+                                                            averageScore: selectedAnime.averageScore,
+                                                            trailer: selectedAnime.trailer,
+                                                            studios: selectedAnime.studios,
+                                                            ...selectedAnime._originalData
+                                                        };
+                                                        onOpenAnime(normalizedAnime);
+                                                        setActiveTab("info");
+                                                        setTrailerVideoId(null);
+                                                    }
+                                                }}
                                             />
-                                        ) : (
-                                            <div className="no-trailer">
-                                                <p>No trailer available for this anime.</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                        </motion.div>
+                                    )}
+
+                                    {activeTab === 'trailer' && (
+                                        <motion.div
+                                            key="trailer"
+                                            className="trailer-tab-wrapper"
+                                            initial={{ opacity: 0, x: -12 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 12 }}
+                                            transition={{ duration: 0.25 }}
+                                        >
+                                            {currentTrailerVideoId ? (
+                                                <Trailer
+                                                    key={`trailer-${anime.id}-${currentTrailerVideoId}`}
+                                                    videoId={currentTrailerVideoId}
+                                                />
+                                            ) : (
+                                                <div className="no-trailer">
+                                                    <p>No trailer available for this anime.</p>
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
 
-            {/* Synopsis Modal */}
-            {synopsisModalOpen && (
-                <div className="synopsis-modal-overlay" onClick={() => setSynopsisModalOpen(false)}>
-                    <div className="synopsis-modal-content" onClick={(e) => e.stopPropagation()}>
-                        <button className="synopsis-modal-close" onClick={() => setSynopsisModalOpen(false)}>
-                            <span className="close-icon">✖</span>
-                        </button>
+            {/* Synopsis Modal — animated */}
+            <AnimatePresence>
+                {synopsisModalOpen && (
+                    <motion.div
+                        className="synopsis-modal-overlay"
+                        onClick={() => setSynopsisModalOpen(false)}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <motion.div
+                            className="synopsis-modal-content"
+                            onClick={(e) => e.stopPropagation()}
+                            initial={{ opacity: 0, y: 30, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        >
+                            <button className="synopsis-modal-close" onClick={() => setSynopsisModalOpen(false)}>
+                                <span className="close-icon">✖</span>
+                            </button>
 
-                        <div className="synopsis-modal-header">
-                            <h3>{animeData.title} - Synopsis</h3>
-                        </div>
+                            <div className="synopsis-modal-header">
+                                <h3>{animeData.title} - Synopsis</h3>
+                            </div>
 
-                        <div className="synopsis-modal-body">
-                            <p className="full-synopsis-text">{animeData.synopsis}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            <div className="synopsis-modal-body">
+                                <p className="full-synopsis-text">{animeData.synopsis}</p>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </>
     );
 };

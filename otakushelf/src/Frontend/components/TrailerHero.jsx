@@ -16,10 +16,31 @@ const TrailerHero = ({ onOpenModal }) => {
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [playerError, setPlayerError] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
-    const [announcements, setAnnouncements] = useState([]);
+    // ⚡ Initialize directly from cache so hero is instant on re-mount
+    const [announcements, setAnnouncements] = useState(() => {
+        try {
+            const cached = localStorage.getItem('hero_announcements');
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (_) { }
+        return [];
+    });
     const [isMobile, setIsMobile] = useState(false);
     const [safeAreaTop, setSafeAreaTop] = useState('0px');
     const [safeAreaBottom, setSafeAreaBottom] = useState('0px');
+    // Only show loading spinner when we truly have nothing yet
+    const [isFetchingData, setIsFetchingData] = useState(() => {
+        try {
+            const cached = localStorage.getItem('hero_announcements');
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                return !(Array.isArray(parsed) && parsed.length > 0);
+            }
+        } catch (_) { }
+        return true;
+    });
 
     // Horizontal scroll functionality for main hero
     const isDragging = useRef(false);
@@ -35,18 +56,18 @@ const TrailerHero = ({ onOpenModal }) => {
         const checkMobile = () => {
             const mobile = window.innerWidth <= 768;
             setIsMobile(mobile);
-            
+
             // Get safe area insets for modern phones (notch, home indicator)
             if (CSS.supports('padding-top: env(safe-area-inset-top)')) {
                 setSafeAreaTop('env(safe-area-inset-top)');
                 setSafeAreaBottom('env(safe-area-inset-bottom)');
             }
         };
-        
+
         checkMobile();
         window.addEventListener('resize', checkMobile);
         window.addEventListener('orientationchange', checkMobile);
-        
+
         return () => {
             window.removeEventListener('resize', checkMobile);
             window.removeEventListener('orientationchange', checkMobile);
@@ -78,14 +99,20 @@ const TrailerHero = ({ onOpenModal }) => {
         return anime.title || 'Unknown Title';
     };
 
-    // Fetch with retry logic
-    const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
+    // Fetch with retry logic — handles Render cold-start (first attempt fast, then longer)
+    const fetchWithRetry = async (url, retries = 4) => {
         for (let i = 0; i < retries; i++) {
             try {
-                const response = await axios.get(url, { timeout: 10000 });
+                // Progressive timeout: 10s, 25s, 30s, 35s
+                const timeout = i === 0 ? 10000 : 25000 + (i * 5000);
+                const response = await axios.get(url, { timeout });
                 return response.data;
             } catch (error) {
-                if (i === retries - 1) throw error;
+                const isLast = i === retries - 1;
+                if (isLast) throw error;
+                // Exponential backoff: 2s, 4s, 8s
+                const delay = 2000 * Math.pow(2, i);
+                console.log(`Hero fetch retry ${i + 1}/${retries - 1} in ${delay / 1000}s (server may be waking up)...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
@@ -200,7 +227,7 @@ const TrailerHero = ({ onOpenModal }) => {
                         try {
                             const quality = isMobile ? 'hd720' : 'hd1080';
                             event.target.setPlaybackQuality(quality);
-                            
+
                             if (hasUserInteracted) {
                                 event.target.playVideo();
                             }
@@ -313,38 +340,41 @@ const TrailerHero = ({ onOpenModal }) => {
         };
     };
 
-    // Fetch announcements
+    // Fetch announcements — cache-first, then background refresh
     useEffect(() => {
-        const fetchAnnouncements = async () => {
-            if (announcements.length > 0) return;
+        const CACHE_KEY = 'hero_announcements';
+        const CACHE_TTL = 30 * 60 * 1000; // 30 min before a fresh fetch
 
+        const fetchAnnouncements = async () => {
+            // Check if cache is fresh enough to skip the network call
+            const cacheTime = parseInt(localStorage.getItem(`${CACHE_KEY}_time`) || '0', 10);
+            const cacheIsStale = Date.now() - cacheTime > CACHE_TTL;
+
+            // If state is already populated from the lazy initializer and cache is fresh, we're done
+            if (announcements.length > 0 && !cacheIsStale) {
+                setIsFetchingData(false);
+                return;
+            }
+
+            // Background refresh — fetch fresh data even if cache exists
             try {
                 const data = await fetchWithRetry(`${API}/api/anilist/hero-trailers`);
-                const sorted = data.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                if (data && data.length > 0) {
+                    const normalizedAnnouncements = data
+                        .map(normalizeHeroAnime)
+                        .filter(anime => {
+                            const s = anime.status?.toLowerCase();
+                            return s !== 'not_yet_released' && s !== 'not_yet_aired';
+                        });
 
-                const normalizedAnnouncements = sorted
-                    .map(normalizeHeroAnime)
-                    .filter(anime => {
-                        const notTBA = anime.status?.toLowerCase() !== "not_yet_released" &&
-                            anime.status?.toLowerCase() !== "not_yet_aired";
-                        return notTBA;
-                    });
-
-                setAnnouncements(normalizedAnnouncements.slice(0, 10));
-                localStorage.setItem('announcements', JSON.stringify(normalizedAnnouncements));
-            } catch (err) {
-                console.error("Error fetching announcements after retries:", err);
-                const cached = localStorage.getItem('announcements');
-                if (cached) {
-                    try {
-                        const parsed = JSON.parse(cached);
-                        if (Array.isArray(parsed) && parsed.length) {
-                            setAnnouncements(parsed.slice(0, 10));
-                        }
-                    } catch (parseError) {
-                        console.error("Error parsing cached announcements:", parseError);
-                    }
+                    setAnnouncements(normalizedAnnouncements.slice(0, 10));
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(normalizedAnnouncements));
+                    localStorage.setItem(`${CACHE_KEY}_time`, String(Date.now()));
                 }
+            } catch (err) {
+                console.error("Hero trailer fetch failed (using cache):", err.message);
+            } finally {
+                setIsFetchingData(false);
             }
         };
 
@@ -448,10 +478,10 @@ const TrailerHero = ({ onOpenModal }) => {
             .replace(/&#x27;/g, "'")
             .replace(/&nbsp;/g, ' ')
             .trim();
-        
+
         const mobileMaxLength = isMobile ? 250 : 180;
-        return cleanText.length > mobileMaxLength 
-            ? cleanText.substring(0, mobileMaxLength) + "..." 
+        return cleanText.length > mobileMaxLength
+            ? cleanText.substring(0, mobileMaxLength) + "..."
             : cleanText;
     };
 
@@ -464,8 +494,24 @@ const TrailerHero = ({ onOpenModal }) => {
         }
     };
 
-    // If no announcements, don't render
+    // Show skeleton loader while fetching
     const currentAnimeData = announcements[currentAnime];
+    if (isFetchingData && !currentAnimeData) {
+        return (
+            <section className="trailer-hero-section trailer-hero-skeleton">
+                <div className="trailer-skeleton-bg" />
+                <div className="gradient-overlay" />
+                <div className="trailer-skeleton-content">
+                    <div className="skeleton-title" />
+                    <div className="skeleton-meta" />
+                    <div className="skeleton-desc" />
+                    <div className="skeleton-btn" />
+                </div>
+            </section>
+        );
+    }
+
+    // If no announcements and done fetching, render nothing
     if (!currentAnimeData) return null;
 
     const currentAnimeHasTrailer = hasTrailer(currentAnimeData);
@@ -477,7 +523,7 @@ const TrailerHero = ({ onOpenModal }) => {
             <section
                 ref={heroRef}
                 className="trailer-hero-section"
-                style={{ 
+                style={{
                     opacity: opacity,
                     paddingTop: safeAreaTop,
                     paddingBottom: safeAreaBottom
@@ -503,8 +549,8 @@ const TrailerHero = ({ onOpenModal }) => {
 
                 {/* User Interaction Prompt */}
                 {currentAnimeHasTrailer && !hasUserInteracted && !playerError && (
-                    <div 
-                        className="user-interaction-prompt" 
+                    <div
+                        className="user-interaction-prompt"
                         onClick={() => setHasUserInteracted(true)}
                         style={{ fontSize: isMobile ? '0.9rem' : '1.1rem' }}
                     >
@@ -514,8 +560,8 @@ const TrailerHero = ({ onOpenModal }) => {
 
                 {/* Mute/Unmute Button */}
                 {currentAnimeHasTrailer && isPlayerReady && !playerError && (
-                    <button 
-                        onClick={toggleMute} 
+                    <button
+                        onClick={toggleMute}
                         className="mute-button"
                     >
                         {isMuted ? '🔇' : '🔊'}
@@ -524,7 +570,7 @@ const TrailerHero = ({ onOpenModal }) => {
 
                 {/* No Trailer Indicator */}
                 {!currentAnimeHasTrailer && (
-                    <div 
+                    <div
                         className="no-trailer-indicator"
                         style={{
                             top: `calc(${safeAreaTop} + 10px)`,
@@ -575,8 +621,8 @@ const TrailerHero = ({ onOpenModal }) => {
                         <strong>Genres:</strong> {formatGenres(currentAnimeData.genres)}
                     </div>
 
-                    <button 
-                        onClick={() => onOpenModal(currentAnimeData)} 
+                    <button
+                        onClick={() => onOpenModal(currentAnimeData)}
                         className="details-button"
                         style={{
                             width: isMobile ? '100%' : 'auto',
@@ -611,12 +657,54 @@ const TrailerHero = ({ onOpenModal }) => {
                         </button>
                     </div>
                 )}
+
+                {/* Progress Bar & Next Previews */}
+                {!isMobile && announcements.length > 1 && (
+                    <div className="hero-bottom-controls">
+                        <div className="hero-next-previews">
+                            <div className="up-next-header">
+                                <span className="up-next-text">Up Next</span>
+                                <div className="progress-bar-container">
+                                    <motion.div 
+                                        className="progress-bar-fill"
+                                        key={currentAnime}
+                                        initial={{ width: "0%" }}
+                                        animate={{ width: "100%" }}
+                                        transition={{ duration: 30, ease: "linear" }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="preview-thumbnails">
+                                {[1, 2, 3, 4].map((offset) => {
+                                    const nextIndex = (currentAnime + offset) % announcements.length;
+                                    const nextAnime = announcements[nextIndex];
+                                    if (!nextAnime) return null;
+                                    return (
+                                        <div 
+                                            key={nextIndex} 
+                                            className="preview-thumb"
+                                            onClick={() => setCurrentAnime(nextIndex)}
+                                            style={{ backgroundImage: `url(${nextAnime.coverImage?.large || nextAnime.coverImage?.medium || nextAnime.bannerImage})` }}
+                                            title={getAnimeTitle(nextAnime)}
+                                        >
+                                            <div className="preview-overlay">
+                                                <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
+                                                    <path d="M8 5v14l11-7z"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </section>
 
             {/* Trailer Spacer */}
-            <div 
-                className="trailer-spacer" 
-                style={{ 
+            <div
+                className="trailer-spacer"
+                style={{
                     height: `calc(100vh - ${safeAreaTop} - ${safeAreaBottom})`,
                     marginTop: safeAreaTop
                 }}

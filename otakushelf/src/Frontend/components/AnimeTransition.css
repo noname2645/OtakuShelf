@@ -1,0 +1,116 @@
+/* ─── Anime Page Transition Overlay ──────────────────────────────────────── */
+
+.anime-transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* ─── Speed Lines ─────────────────────────────────────────────────────────── */
+.speed-lines-container {
+    position: absolute;
+    inset: -15%;
+    width: 130%;
+    height: 130%;
+    transform-origin: center;
+}
+
+.speed-lines-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ─── Center Energy Burst ─────────────────────────────────────────────────── */
+.center-burst {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* ─── Sword Slash Lines ───────────────────────────────────────────────────── */
+.slash-line {
+    position: absolute;
+    top: -20%;
+    left: 0;
+    right: 0;
+    height: 140%;
+    width: 100%;
+    transform-origin: left center;
+    pointer-events: none;
+}
+
+.slash-line-2 {
+    top: -10%;
+    height: 120%;
+    margin-top: 8px;
+}
+
+/* ─── Flash Overlay ───────────────────────────────────────────────────────── */
+.flash-overlay {
+    position: absolute;
+    inset: 0;
+    background: white;
+    pointer-events: none;
+}
+
+/* ─── Floating Kanji Characters ───────────────────────────────────────────── */
+.energy-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.energy-char {
+    position: absolute;
+    font-family: 'Noto Serif JP', 'Yu Mincho', 'MS Mincho', serif;
+    font-size: clamp(1.8rem, 4vw, 3.5rem);
+    font-weight: 900;
+    line-height: 1;
+    user-select: none;
+    pointer-events: none;
+    filter: blur(0px);
+}
+
+/* ─── Corner Spark Accents ────────────────────────────────────────────────── */
+.corner-spark {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(1px);
+}
+
+.corner-spark-0 {
+    top: 8%;
+    left: 8%;
+}
+
+.corner-spark-1 {
+    top: 8%;
+    right: 8%;
+}
+
+.corner-spark-2 {
+    bottom: 8%;
+    left: 8%;
+}
+
+.corner-spark-3 {
+    bottom: 8%;
+    right: 8%;
+}
+
+/* ─── Page-level enter / exit ─────────────────────────────────────────────── */
+.page-motion-wrapper {
+    width: 100%;
+    min-height: 100vh;
+}

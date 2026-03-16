@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
@@ -11,10 +11,39 @@ export const useAuth = () => {
   return context;
 };
 
+// Detect network errors (covers Render cold-start, timeouts, etc.)
+const isNetworkError = (error) => {
+  if (!error.response) return true; // No response = network issue
+  const networkCodes = ['ECONNABORTED', 'NETWORK_ERROR', 'ERR_NETWORK', 'ERR_CONNECTION_REFUSED', 'ETIMEDOUT', 'ECONNRESET'];
+  return networkCodes.includes(error.code);
+};
+
+// Axios instance with retries for cold-start on Render
+const createApiCall = (url, options = {}, retries = 3, baseDelay = 3000) => {
+  return new Promise(async (resolve, reject) => {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const timeout = i === 0 ? 8000 : 20000; // First try fast, then wait longer (cold-start)
+        const response = await axios.get(url, { ...options, timeout });
+        return resolve(response);
+      } catch (err) {
+        const isLast = i === retries;
+        if (isLast || !isNetworkError(err)) {
+          return reject(err);
+        }
+        const delay = baseDelay * Math.pow(2, i); // Exponential backoff: 3s, 6s, 12s
+        console.log(`Auth retry ${i + 1}/${retries} in ${delay / 1000}s...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  });
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const initDone = useRef(false);
 
   const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -26,20 +55,23 @@ export const AuthProvider = ({ children }) => {
       }
 
       const minimalData = {
-        id: userData._id,
+        id: userData._id || userData.id,
         email: userData.email,
         name: userData.name || userData.email?.split('@')[0] || 'User',
-        photo: safePhoto // This should be a URL or null
+        photo: safePhoto
       };
 
       localStorage.setItem("user", JSON.stringify(minimalData));
     } catch (error) {
       console.error('Storage error, using minimal storage:', error);
-      localStorage.setItem("user_id", userData._id);
+      try {
+        localStorage.setItem("user_id", userData._id || userData.id);
+      } catch (e) {
+        // Silent fail
+      }
     }
   }, []);
 
-  // 2. LOAD FROM STORAGE - Safely restore minimal data
   const loadFromStorage = useCallback(() => {
     try {
       const userString = localStorage.getItem("user");
@@ -47,7 +79,6 @@ export const AuthProvider = ({ children }) => {
         return JSON.parse(userString);
       }
 
-      // Fallback to separate fields
       const userId = localStorage.getItem("user_id");
       if (userId) {
         return {
@@ -58,185 +89,183 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error loading from storage:', error);
-      // Clear corrupted data
       localStorage.removeItem("user");
       localStorage.removeItem("user_profile");
     }
     return null;
   }, []);
 
-  // 3. CLEAR ALL STORAGE
   const clearStorage = useCallback(() => {
-    const keysToKeep = ['settings', 'theme']; // Keep non-auth data
-
+    const keysToRemove = [];
     Object.keys(localStorage).forEach(key => {
-      if (!keysToKeep.includes(key) && key.startsWith('user')) {
-        localStorage.removeItem(key);
+      if (key.startsWith('user') || key === 'token') {
+        keysToRemove.push(key);
       }
     });
-
-    localStorage.removeItem("token");
+    keysToRemove.forEach(key => localStorage.removeItem(key));
     setUser(null);
     setProfile(null);
   }, []);
 
-  // 4. FETCH FRESH PROFILE DATA
-  const fetchFreshProfile = useCallback(async (userId) => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${API}/api/profile/${userId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        timeout: 8000
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('Profile fetch error:', error);
-      return null;
-    }
-  }, [API]);
-
-  // Helper to ensure photo URLs are absolute
   const fixPhotoUrl = useCallback((url) => {
     if (!url) return null;
     if (url.startsWith('http') || url.startsWith('data:')) return url;
     if (url.startsWith('/uploads/')) {
-      // Remove /api from the end of API URL if present to get base URL
-      const backendBaseUrl = API.endsWith('/api')
-        ? API.slice(0, -4)
-        : API.replace('/api', '');
-      return `${backendBaseUrl}${url}`;
+      return `${API}${url}`;
     }
     return url;
   }, [API]);
 
-  // 5. HANDLE TOKEN FROM URL (Google OAuth)
+  const fetchFreshProfile = useCallback(async (userId) => {
+    if (!userId) return null;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await createApiCall(
+        `${API}/api/profile/${userId}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+        2,
+        2000
+      );
+      return response.data;
+    } catch (error) {
+      console.log('Profile fetch failed (non-critical):', error.message);
+      return null;
+    }
+  }, [API]);
+
+  // Handle OAuth token from URL redirect (Google login)
   const handleTokenFromUrl = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
 
-    if (token) {
-      console.log('Processing token from URL');
-      localStorage.setItem("token", token);
+    if (!token) return false;
 
-      // Clean URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+    console.log('Processing OAuth token from URL...');
+    localStorage.setItem("token", token);
+    window.history.replaceState({}, document.title, window.location.pathname);
 
-      try {
-        // Get user info
-        const response = await axios.get(`${API}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (response.data.user) {
-          const userData = response.data.user;
-          // FIX URL
-          userData.photo = fixPhotoUrl(userData.photo);
-
-          const profileData = await fetchFreshProfile(userData._id);
-
-          setUser(userData);
-          setProfile(profileData);
-          storeMinimalUser(userData);
-
-          return true;
-        }
-      } catch (error) {
-        console.error('URL token auth failed:', error);
-        clearStorage();
-      }
-    }
-    return false;
-  }, [API, fetchFreshProfile, storeMinimalUser, clearStorage, fixPhotoUrl]);
-
-  // 6. MAIN AUTH CHECK
-  const checkAuthStatus = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        // No token, check for stored user (offline mode)
-        let storedUser = loadFromStorage();
-        if (storedUser) {
-          // FIX URL for stored user too
-          storedUser.photo = fixPhotoUrl(storedUser.photo);
-
-          setUser(storedUser);
-          // Try to fetch profile but don't fail if offline
-          fetchFreshProfile(storedUser.id)
-            .then(setProfile)
-            .catch(() => console.log('Offline mode: using stored user only'));
-        }
-        setLoading(false);
-        return;
-      }
-
-      // Validate token with server
-      const response = await axios.get(`${API}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 5000
-      });
+      const response = await createApiCall(
+        `${API}/auth/me`,
+        { headers: { Authorization: `Bearer ${token}` } },
+        3,
+        3000
+      );
 
       if (response.data.user) {
         const userData = response.data.user;
-        // FIX URL
         userData.photo = fixPhotoUrl(userData.photo);
 
-        const profileData = await fetchFreshProfile(userData._id);
+        setUser(userData);
+        storeMinimalUser(userData);
+
+        // Fetch profile asynchronously
+        fetchFreshProfile(userData._id).then(profileData => {
+          if (profileData) setProfile(profileData);
+        });
+
+        return true;
+      }
+    } catch (error) {
+      console.error('OAuth token validation failed:', error.message);
+      // Keep the token stored — user might be offline, let checkAuthStatus retry
+      const storedUser = loadFromStorage();
+      if (storedUser) {
+        setUser(storedUser);
+      }
+    }
+    return false;
+  }, [API, fetchFreshProfile, storeMinimalUser, loadFromStorage, fixPhotoUrl]);
+
+  // Main auth check — handles Render cold-starts with retries
+  const checkAuthStatus = useCallback(async () => {
+    const token = localStorage.getItem("token");
+
+    // No token — use stored user (offline/not logged in)
+    if (!token) {
+      const storedUser = loadFromStorage();
+      if (storedUser) {
+        storedUser.photo = fixPhotoUrl(storedUser.photo);
+        setUser(storedUser);
+        // Try profile fetch in background
+        fetchFreshProfile(storedUser.id).then(p => { if (p) setProfile(p); }).catch(() => { });
+      }
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // With retries for Render cold-start (up to ~21 seconds total wait)
+      const response = await createApiCall(
+        `${API}/auth/me`,
+        { headers: { Authorization: `Bearer ${token}` } },
+        3,
+        3000
+      );
+
+      if (response.data.user) {
+        const userData = response.data.user;
+        userData.photo = fixPhotoUrl(userData.photo);
 
         setUser(userData);
-        setProfile(profileData);
         storeMinimalUser(userData);
+
+        // Fetch profile in background
+        fetchFreshProfile(userData._id).then(profileData => {
+          if (profileData) setProfile(profileData);
+        });
       } else {
         clearStorage();
       }
     } catch (error) {
       console.error('Auth check failed:', error.message);
 
-      // If network error, try to use stored data
-      if (error.code === 'ECONNABORTED' || error.code === 'NETWORK_ERROR') {
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        // Invalid token — clear it
+        clearStorage();
+      } else {
+        // Network error or server error — use cached data (offline mode)
         const storedUser = loadFromStorage();
         if (storedUser) {
           storedUser.photo = fixPhotoUrl(storedUser.photo);
           setUser(storedUser);
-          console.log('Using cached data (offline mode)');
+          console.log('Using cached auth (server unreachable)');
+        } else {
+          // No cached data, definitely logged out
+          setUser(null);
         }
-      } else if (error.response?.status === 401) {
-        clearStorage();
       }
     } finally {
       setLoading(false);
     }
   }, [API, fetchFreshProfile, storeMinimalUser, clearStorage, loadFromStorage, fixPhotoUrl]);
 
-  // 7. INITIALIZE AUTH
+  // Initialize auth on mount
   useEffect(() => {
+    if (initDone.current) return;
+    initDone.current = true;
+
     const initialize = async () => {
-      // First clear any overly large data
       clearStorageOverflow();
-
-      // Handle OAuth callback if present
       const hadUrlToken = await handleTokenFromUrl();
-
-      // If no URL token, check existing auth
       if (!hadUrlToken) {
         await checkAuthStatus();
+      } else {
+        setLoading(false);
       }
     };
 
     initialize();
   }, [handleTokenFromUrl, checkAuthStatus]);
 
-  // 8. CLEAR STORAGE OVERFLOW UTILITY
   const clearStorageOverflow = () => {
     try {
-      // Check total localStorage size
       let totalSize = 0;
       Object.keys(localStorage).forEach(key => {
-        totalSize += localStorage.getItem(key).length * 2; // Approx bytes
+        const val = localStorage.getItem(key);
+        if (val) totalSize += val.length * 2;
       });
 
-      // If over 4MB, clear non-essential data
       if (totalSize > 4 * 1024 * 1024) {
         console.warn('LocalStorage near limit, clearing non-essential data');
         Object.keys(localStorage).forEach(key => {
@@ -245,59 +274,58 @@ export const AuthProvider = ({ children }) => {
           }
         });
       }
-    } catch (error) {
-      // Silent fail - just continue
+    } catch (e) {
+      // Silent fail
     }
   };
 
-  // 9. LOGIN FUNCTION
+  // Login — stores token and user, fetches profile
   const login = useCallback(async (userData, authToken) => {
     if (authToken) {
       localStorage.setItem("token", authToken);
     }
 
-    // FIX URL
     userData.photo = fixPhotoUrl(userData.photo);
 
-    const profileData = await fetchFreshProfile(userData._id);
-
     setUser(userData);
-    setProfile(profileData);
     storeMinimalUser(userData);
+
+    // Fetch profile in background
+    const userId = userData._id || userData.id;
+    if (userId) {
+      fetchFreshProfile(userId).then(profileData => {
+        if (profileData) setProfile(profileData);
+      }).catch(() => { });
+    }
   }, [fetchFreshProfile, storeMinimalUser, fixPhotoUrl]);
 
-  // 10. LOGOUT FUNCTION
+  // Logout — clean server session + local state
   const logout = useCallback(async () => {
     try {
-      await axios.get(`${API}/auth/logout`, { timeout: 3000 });
+      const token = localStorage.getItem("token");
+      await axios.get(`${API}/auth/logout`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        timeout: 5000
+      });
     } catch (error) {
       // Continue even if server logout fails
+      console.log('Server logout failed (continuing local logout)');
     } finally {
       clearStorage();
       window.location.href = '/';
     }
   }, [API, clearStorage]);
 
-  // 11. UPDATE PROFILE FUNCTION (FIXED)
+  // Update profile — secure with auth token
   const updateProfile = useCallback(async (profileData) => {
     try {
-      // Get user ID safely
-      const currentUser = user || JSON.parse(localStorage.getItem("user")) || {};
+      const currentUser = user || JSON.parse(localStorage.getItem("user") || '{}');
       const userId = currentUser.id || currentUser._id;
 
-      if (!userId) {
-        console.error('Cannot update profile: No user ID found');
-        throw new Error('User not authenticated');
-      }
+      if (!userId) throw new Error('User not authenticated');
 
       const token = localStorage.getItem("token");
-      if (!token) {
-        console.error('Cannot update profile: No token found');
-        throw new Error('Authentication token missing');
-      }
-
-      console.log('Updating profile for user:', userId);
-      console.log('Update data:', profileData);
+      if (!token) throw new Error('Authentication token missing');
 
       const response = await axios.put(
         `${API}/api/profile/${userId}`,
@@ -307,54 +335,34 @@ export const AuthProvider = ({ children }) => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          timeout: 10000
+          timeout: 15000
         }
       );
 
-      console.log('Profile update response:', response.data);
-
       if (response.data.user) {
-        const updatedUser = {
-          ...currentUser,
-          ...response.data.user
-        };
-
-        // FIX URL
+        const updatedUser = { ...currentUser, ...response.data.user };
         updatedUser.photo = fixPhotoUrl(updatedUser.photo);
-
-        // Update state
         setUser(updatedUser);
-
-        // Update localStorage
         storeMinimalUser(updatedUser);
 
-        // Fetch fresh profile data to ensure consistency
         const freshProfile = await fetchFreshProfile(userId);
-        if (freshProfile) {
-          setProfile(freshProfile);
-        }
+        if (freshProfile) setProfile(freshProfile);
       }
 
       return response.data;
     } catch (error) {
-      console.error('Profile update error details:', error);
-
-      // More detailed error message
       let errorMessage = 'Failed to update profile';
       if (error.response) {
         errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
-        console.error('Server response:', error.response.data);
       } else if (error.request) {
         errorMessage = 'No response from server';
       } else {
         errorMessage = error.message;
       }
-
       throw new Error(errorMessage);
     }
-  }, [API, user, fetchFreshProfile, storeMinimalUser]);
+  }, [API, user, fetchFreshProfile, storeMinimalUser, fixPhotoUrl]);
 
-  // 12. COMBINED USER OBJECT
   const combinedUser = user ? {
     ...user,
     profile: profile?.profile || {},
@@ -370,7 +378,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     checkAuthStatus,
     updateProfile,
-    refreshProfile: () => user && fetchFreshProfile(user.id).then(setProfile),
+    refreshProfile: () => {
+      const uid = user?.id || user?._id;
+      if (uid) fetchFreshProfile(uid).then(p => { if (p) setProfile(p); });
+    },
     updateUserState: (updates) => {
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);

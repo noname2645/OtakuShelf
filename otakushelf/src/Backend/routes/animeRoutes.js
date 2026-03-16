@@ -1,6 +1,7 @@
 // animeRoutes.js
 import express from 'express';
 import axios from 'axios';
+import { success, error } from '../utils/responseHandler.js';
 
 const router = express.Router();
 let cache = { data: null, timestamp: 0 };
@@ -17,11 +18,11 @@ async function fetchAniList(query, variables = {}) {
   return response.data.data;
 }
 
-// Enhanced Anime Sections (Airing, Popular, Movies) 
+// Enhanced Anime Sections (Airing, Popular, Movies, Trending, Top Rated, Upcoming) 
 router.get('/anime-sections', async (req, res) => {
   const now = Date.now();
   if (cache.data && now - cache.timestamp < 1000 * 60 * 10) {
-    return res.json(cache.data);
+    return success(res, "Anime sections fetched from cache", cache.data);
   }
 
   try {
@@ -48,7 +49,6 @@ router.get('/anime-sections', async (req, res) => {
         season
         seasonYear
         format
-        duration
         popularity
         startDate {
           year
@@ -72,40 +72,71 @@ router.get('/anime-sections', async (req, res) => {
           site
           thumbnail
         }
-        isAdult
-        source
       }
 
       query {
-        airing1: Page(page: 1, perPage: 50) {
+        airing1: Page(page: 1, perPage: 30) {
           media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {
             ...mediaFields
           }
         }
-        airing2: Page(page: 2, perPage: 50) {
+        airing2: Page(page: 2, perPage: 30) {
           media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {
             ...mediaFields
           }
         }
         
-        mostWatched1: Page(page: 1, perPage: 50) {
+        mostWatched1: Page(page: 1, perPage: 30) {
           media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
             ...mediaFields
           }
         }
-        mostWatched2: Page(page: 2, perPage: 50) {
+        mostWatched2: Page(page: 2, perPage: 30) {
           media(type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
             ...mediaFields
           }
         }
         
-        movies1: Page(page: 1, perPage: 50) {
+        movies1: Page(page: 1, perPage: 30) {
           media(type: ANIME, format: MOVIE, sort: POPULARITY_DESC, isAdult: false) {
             ...mediaFields
           }
         }
-        movies2: Page(page: 2, perPage: 50) {
+        movies2: Page(page: 2, perPage: 30) {
           media(type: ANIME, format: MOVIE, sort: POPULARITY_DESC, isAdult: false) {
+            ...mediaFields
+          }
+        }
+
+        trending1: Page(page: 1, perPage: 30) {
+          media(type: ANIME, sort: TRENDING_DESC, isAdult: false) {
+            ...mediaFields
+          }
+        }
+        trending2: Page(page: 2, perPage: 30) {
+          media(type: ANIME, sort: TRENDING_DESC, isAdult: false) {
+            ...mediaFields
+          }
+        }
+
+        topRated1: Page(page: 1, perPage: 30) {
+          media(type: ANIME, sort: SCORE_DESC, isAdult: false, averageScore_greater: 75) {
+            ...mediaFields
+          }
+        }
+        topRated2: Page(page: 2, perPage: 30) {
+          media(type: ANIME, sort: SCORE_DESC, isAdult: false, averageScore_greater: 75) {
+            ...mediaFields
+          }
+        }
+
+        upcoming1: Page(page: 1, perPage: 30) {
+          media(type: ANIME, status: NOT_YET_RELEASED, sort: POPULARITY_DESC, isAdult: false) {
+            ...mediaFields
+          }
+        }
+        upcoming2: Page(page: 2, perPage: 30) {
+          media(type: ANIME, status: NOT_YET_RELEASED, sort: POPULARITY_DESC, isAdult: false) {
             ...mediaFields
           }
         }
@@ -142,24 +173,28 @@ router.get('/anime-sections', async (req, res) => {
     const airingList = [...(data.airing1?.media || []), ...(data.airing2?.media || [])];
     const watchedList = [...(data.mostWatched1?.media || []), ...(data.mostWatched2?.media || [])];
     const moviesList = [...(data.movies1?.media || []), ...(data.movies2?.media || [])];
+    const trendingList = [...(data.trending1?.media || []), ...(data.trending2?.media || [])];
+    const topRatedList = [...(data.topRated1?.media || []), ...(data.topRated2?.media || [])];
+    const upcomingList = [...(data.upcoming1?.media || []), ...(data.upcoming2?.media || [])];
 
-    console.log(`Fetched counts - Airing: ${airingList.length}, Watched: ${watchedList.length}, Movies: ${moviesList.length}`);
+    console.log(`Fetched counts - Airing: ${airingList.length}, Watched: ${watchedList.length}, Movies: ${moviesList.length}, Trending: ${trendingList.length}, Top Rated: ${topRatedList.length}, Upcoming: ${upcomingList.length}`);
 
     cache = {
       data: {
         topAiring: processMediaArray(airingList),
         mostWatched: processMediaArray(watchedList),
         topMovies: processMediaArray(moviesList),
+        trending: processMediaArray(trendingList),
+        topRated: processMediaArray(topRatedList),
+        upcoming: processMediaArray(upcomingList),
       },
       timestamp: now,
     };
 
-    // console.log('API Response Sample (topAiring[0]):', cache.data.topAiring[0]);
-
-    res.json(cache.data);
-  } catch (error) {
-    console.error("AniList error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to fetch anime sections" });
+    return success(res, "Anime sections fetched successfully", cache.data);
+  } catch (err) {
+    console.error("AniList error:", err.response?.data || err.message);
+    return error(res, "Failed to fetch anime sections", 500);
   }
 });
 
@@ -168,7 +203,7 @@ router.get('/search', async (req, res) => {
   const q = req.query.q;
   const limit = parseInt(req.query.limit) || 20;
 
-  if (!q) return res.status(400).json({ error: "Missing search query" });
+  if (!q) return error(res, "Missing search query", 400);
 
   try {
     const query = `
@@ -256,10 +291,10 @@ router.get('/search', async (req, res) => {
 
     // console.log('Search Results Sample:', safeResults[0]);
 
-    res.json(safeResults);
-  } catch (error) {
-    console.error("AniList search error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Search failed" });
+    return success(res, "Search results fetched successfully", safeResults);
+  } catch (err) {
+    console.error("AniList search error:", err.response?.data || err.message);
+    return error(res, "Search failed", 500);
   }
 });
 
@@ -369,7 +404,7 @@ router.get('/anime/:id', async (req, res) => {
     const data = await fetchAniList(query, { id: parseInt(id) });
 
     if (!data.Media) {
-      return res.status(404).json({ error: "Anime not found" });
+      return error(res, "Anime not found", 404);
     }
 
     // Process trailer
@@ -391,10 +426,10 @@ router.get('/anime/:id', async (req, res) => {
       trailer: processTrailer(data.Media.trailer)
     };
 
-    res.json(processedAnime);
-  } catch (error) {
-    console.error("AniList single anime error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to fetch anime details" });
+    return success(res, "Anime details fetched successfully", processedAnime);
+  } catch (err) {
+    console.error("AniList single anime error:", err.response?.data || err.message);
+    return error(res, "Failed to fetch anime details", 500);
   }
 });
 

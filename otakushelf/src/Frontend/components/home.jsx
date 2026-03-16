@@ -5,99 +5,112 @@ import Modal from "../components/modal.jsx";
 import TrailerHero from './TrailerHero.jsx';
 import { Header } from '../components/header.jsx';
 import BottomNavBar from './bottom.jsx';
+import { motion, AnimatePresence } from "framer-motion";
 
 // API base URL
 const API = import.meta.env.VITE_API_BASE_URL;
 
 // Stale-while-revalidate key
-const CACHE_KEY = 'animeSections_100_v3'; // Increment version to force fresh structure
+const CACHE_KEY = 'animeSections_100_v4'; // Increment version to force fresh structure
 const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
 const STALE_TIME = 1000 * 60 * 30; // 30 minutes until fresh fetch (but stale data shown immediately)
 
-// Optimized Anime Card Component
-const AnimeCard = React.memo(({ anime, onClick, index }) => {
-    const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
-
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    const handleClick = useCallback(() => {
-        onClick(anime);
-    }, [anime, onClick]);
-
-    const cardHeight = isMobile ? '240px' : '320px';
-    const cardWidth = isMobile ? '160px' : '220px';
-
-    // Prioritize high-quality images but fallback gracefully
-    const imageSrc = anime.coverImage?.extraLarge ||
-        anime.coverImage?.large ||
-        anime.bannerImage ||
-        '/placeholder-anime.jpg';
-
-    return (
-        <div
-            className="anime-card2"
-            onClick={handleClick}
-            style={{
-                // Inline styles for base sizing to reduce layout thrash
-                height: cardHeight,
-                width: cardWidth,
-                minHeight: cardHeight,
-                minWidth: cardWidth,
-                // Only animate the first few items to prevent massive paint storms
-                animationDelay: index < 12 ? `${index * 0.05}s` : '0s',
-                opacity: index < 12 ? 0 : 1, // Start hidden only if animating
-                animation: index < 12 ? 'fadeInUp 0.5s ease-out forwards' : 'none'
-            }}
-        >
-            <div className="home-card-image">
-                <img
-                    src={imageSrc}
-                    alt={anime?.title || "Anime"}
-                    loading="lazy" // Native lazy loading relies on browser to optimize
-                    width={isMobile ? 160 : 220}
-                    height={isMobile ? 240 : 320}
-                    decoding="async"
-                />
-                <div className="card-title-bottom">
-                    <h3>{anime?.title || "Unknown Title"}</h3>
-                </div>
-            </div>
-        </div>
-    );
-});
-AnimeCard.displayName = 'AnimeCard';
-
+import AnimeCard from './AnimeCardUI.jsx';
 // Section Component to manage its own "View More" state
 const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
-    // Only render what's needed
-    // const visibleData = useMemo(() => data.slice(0, visibleCount), [data, visibleCount]);
+    const scrollRef = useRef(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
+
+    const scroll = (direction) => {
+        if (scrollRef.current) {
+            const { scrollLeft, clientWidth } = scrollRef.current;
+            const scrollAmount = clientWidth * 0.8; // Scroll 80% of visible width
+            scrollRef.current.scrollTo({
+                left: direction === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    const handleMouseDown = (e) => {
+        if (!scrollRef.current) return;
+        setStartX(e.pageX - scrollRef.current.offsetLeft);
+        setScrollLeft(scrollRef.current.scrollLeft);
+        // Don't set isDragging immediately on mouse down, wait for move
+    };
+
+    const handleMouseLeave = () => {
+        setIsDragging(false);
+    };
+
+    const handleMouseUp = () => {
+        // Small delay so onClick handles correctly before dragging resets
+        setTimeout(() => setIsDragging(false), 50);
+    };
+
+    const handleMouseMove = (e) => {
+        if (startX === 0 || !scrollRef.current) return;
+        
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 2;
+        
+        // Threshold: only start dragging if mouse moved more than 5 pixels
+        if (Math.abs(walk) > 5) {
+            setIsDragging(true);
+            e.preventDefault();
+            scrollRef.current.scrollLeft = scrollLeft - walk;
+        }
+    };
+
+    // Reset startX when mouse is up anywhere
+    useEffect(() => {
+        const handleGlobalMouseUp = () => setStartX(0);
+        window.addEventListener('mouseup', handleGlobalMouseUp);
+        return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+    }, []);
 
     if (!data || data.length === 0) return null;
 
     return (
-        <>
-            <div className="divider">
-                <span className="divider-content">{title}</span>
+        <motion.div
+            className="anime-carousel-section"
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+            <div className="modern-section-header">
+                <div className="accent-bar"></div>
+                <h2 className="header-title">{title}</h2>
+                <button className="view-more-btn">Explore <span className="arrow">&rsaquo;</span></button>
             </div>
-            <section className="anime-section">
-                <div className="anime-section-container">
-                    <div className="anime-grid">
-                        {data.map((anime, index) => (
-                            <AnimeCard
-                                key={`${title}-${anime.id || index}`}
-                                anime={anime}
-                                onClick={onOpenModal}
-                                index={index} // Index relative to current render
-                            />
-                        ))}
-                    </div>
+            
+            <div className={`carousel-wrapper ${isDragging ? 'dragging' : ''}`}>
+                <button className="carousel-btn prev-btn" onClick={() => scroll('left')}>‹</button>
+                <div 
+                    className="anime-carousel" 
+                    ref={scrollRef}
+                    onMouseDown={handleMouseDown}
+                    onMouseLeave={handleMouseLeave}
+                    onMouseUp={handleMouseUp}
+                    onMouseMove={handleMouseMove}
+                    style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                >
+                    {data.map((anime, index) => (
+                        <AnimeCard
+                            key={`${title}-${anime.id || index}`}
+                            anime={anime}
+                            onClick={onOpenModal}
+                            index={index}
+                            isDragging={isDragging}
+                        />
+                    ))}
                 </div>
-            </section>
-        </>
+                <button className="carousel-btn next-btn" onClick={() => scroll('right')}>›</button>
+            </div>
+        </motion.div>
     );
 });
 AnimeSection.displayName = 'AnimeSection';
@@ -108,7 +121,10 @@ const AnimeHomepage = () => {
     const [sections, setSections] = useState({
         topAiring: [],
         mostWatched: [],
-        topMovies: []
+        topMovies: [],
+        trending: [],
+        topRated: [],
+        upcoming: []
     });
 
     // Search State
@@ -170,7 +186,10 @@ const AnimeHomepage = () => {
                         setSections({
                             topAiring: (parsed.topAiring || []).map(normalizeGridAnime).filter(Boolean),
                             mostWatched: (parsed.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                            topMovies: (parsed.topMovies || []).map(normalizeGridAnime).filter(Boolean)
+                            topMovies: (parsed.topMovies || []).map(normalizeGridAnime).filter(Boolean),
+                            trending: (parsed.trending || []).map(normalizeGridAnime).filter(Boolean),
+                            topRated: (parsed.topRated || []).map(normalizeGridAnime).filter(Boolean),
+                            upcoming: (parsed.upcoming || []).map(normalizeGridAnime).filter(Boolean)
                         });
                         setLoading(false); // Stop skeleton loader immediately
                         hasCachedData = true;
@@ -198,7 +217,10 @@ const AnimeHomepage = () => {
                 const newSections = {
                     topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
                     mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                    topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean)
+                    topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean),
+                    trending: (data.trending || []).map(normalizeGridAnime).filter(Boolean),
+                    topRated: (data.topRated || []).map(normalizeGridAnime).filter(Boolean),
+                    upcoming: (data.upcoming || []).map(normalizeGridAnime).filter(Boolean)
                 };
 
                 // Update State
@@ -209,7 +231,10 @@ const AnimeHomepage = () => {
                 localStorage.setItem(CACHE_KEY, JSON.stringify({
                     topAiring: data.topAiring || [],
                     mostWatched: data.mostWatched || [],
-                    topMovies: data.topMovies || []
+                    topMovies: data.topMovies || [],
+                    trending: data.trending || [],
+                    topRated: data.topRated || [],
+                    upcoming: data.upcoming || []
                 }));
                 localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
 
@@ -289,9 +314,21 @@ const AnimeHomepage = () => {
                 <Header showSearch={true} onSearchChange={setSearchQuery} />
                 <div className="loading-skeleton">
                     <div className="skeleton-hero"></div>
-                    <div className="skeleton-grid">
-                        {[...Array(8)].map((_, i) => <div key={i} className="skeleton-card"></div>)}
-                    </div>
+
+                    {/* Multiple sections to match actual layout */}
+                    {['TOP AIRING', 'TRENDING THIS WEEK', 'MOST WATCHED', 'TOP RATED ALL TIME', 'TOP MOVIES', 'UPCOMING RELEASES'].map((title, sectionIndex) => (
+                        <div key={sectionIndex} className="skeleton-section">
+                            <div className="skeleton-section-header">
+                                <div className="skeleton-bar"></div>
+                                <div className="skeleton-title"></div>
+                            </div>
+                            <div className="skeleton-carousel">
+                                {[...Array(6)].map((_, i) => (
+                                    <div key={i} className="skeleton-card"></div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
                 </div>
                 <BottomNavBar />
             </div>
@@ -323,6 +360,7 @@ const AnimeHomepage = () => {
                                                 anime={anime}
                                                 onClick={openModal}
                                                 index={index}
+                                                isGrid={true}
                                             />
                                         ))}
                                     </div>
@@ -336,8 +374,18 @@ const AnimeHomepage = () => {
                                     onOpenModal={openModal}
                                 />
                                 <AnimeSection
+                                    title="TRENDING THIS WEEK"
+                                    data={sections.trending}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
                                     title="MOST WATCHED"
                                     data={sections.mostWatched}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
+                                    title="TOP RATED ALL TIME"
+                                    data={sections.topRated}
                                     onOpenModal={openModal}
                                 />
                                 <AnimeSection
@@ -345,19 +393,26 @@ const AnimeHomepage = () => {
                                     data={sections.topMovies}
                                     onOpenModal={openModal}
                                 />
+                                <AnimeSection
+                                    title="UPCOMING RELEASES"
+                                    data={sections.upcoming}
+                                    onOpenModal={openModal}
+                                />
                             </>
                         )}
                     </main>
                 </div>
 
-                {isModalOpen && selectedAnime && (
-                    <Modal
-                        isOpen={isModalOpen}
-                        onClose={closeModal}
-                        anime={selectedAnime}
-                        onOpenAnime={handleOpenRelatedAnime}
-                    />
-                )}
+                <AnimatePresence>
+                    {isModalOpen && selectedAnime && (
+                        <Modal
+                            isOpen={isModalOpen}
+                            onClose={closeModal}
+                            anime={selectedAnime}
+                            onOpenAnime={handleOpenRelatedAnime}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
         </>
     );

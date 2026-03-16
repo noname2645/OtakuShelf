@@ -1,0 +1,665 @@
+/*
+ * =========================================================
+ *  OTAKUSHELF — GLOBAL MOBILE RESPONSIVENESS STYLESHEET
+ *  Applied as the final layer on top of all page stylesheets
+ * =========================================================
+ */
+
+/* ── Safe-area support (iPhone notch, Android chin) ── */
+:root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+
+    /* Touch-friendly minimum sizes */
+    --touch-target: 44px;
+}
+
+/* ── Prevent horizontal scroll everywhere ── */
+html,
+body {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+/* ── Smooth scrolling ── */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ── Base touch improvements ── */
+button,
+a,
+input,
+select,
+textarea {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ======================================================
+   HEADER  (fixes profile button overflow on small screens)
+   ====================================================== */
+@media (max-width: 480px) {
+    .header {
+        top: 8px !important;
+        padding: 0 0.5rem !important;
+        width: 97% !important;
+        height: 48px !important;
+        border-radius: 24px !important;
+    }
+
+    .logo span {
+        font-size: 20px !important;
+        letter-spacing: 1px !important;
+    }
+
+    /* Hide "Welcome" + username text, show only avatar */
+    .profile-info {
+        display: none !important;
+    }
+
+    .dropdown-arrow {
+        display: none !important;
+    }
+
+    .profile-button {
+        padding: 6px !important;
+        border-radius: 50% !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        justify-content: center !important;
+    }
+
+    /* Search bar collapses to icon-only on tiny screens */
+    .InputContainer {
+        width: 36px !important;
+        overflow: hidden !important;
+        border-radius: 50% !important;
+    }
+
+    .InputContainer.active {
+        width: calc(100vw - 180px) !important;
+        border-radius: 20px !important;
+        overflow: visible !important;
+    }
+
+    .input {
+        padding: 0 12px 0 36px !important;
+    }
+
+    /* Auth buttons: icon only */
+    .auth-buttons {
+        gap: 6px !important;
+    }
+
+    .auth-buttons .button_login,
+    .auth-buttons .button_register {
+        padding: 0.3em 0.7em !important;
+        font-size: 0.75rem !important;
+    }
+
+    /* Dropdown: full-width on phone */
+    .profile-dropdown {
+        left: 0 !important;
+        right: 0 !important;
+        width: calc(100vw - 20px) !important;
+        top: 58px !important;
+    }
+}
+
+/* ======================================================
+   BOTTOM NAV — Safe area + slightly smaller
+   ====================================================== */
+.bottom-button-bar {
+    padding-bottom: calc(8px + var(--safe-bottom)) !important;
+    margin-bottom: 0;
+}
+
+@media (max-width: 400px) {
+    .bottom-button-bar {
+        gap: 4px !important;
+        min-width: 260px !important;
+        padding: 6px 4px !important;
+    }
+
+    .nav-item {
+        min-width: 40px !important;
+        height: 40px !important;
+        padding: 6px !important;
+    }
+
+    .icon-wrapper svg {
+        width: 20px !important;
+        height: 20px !important;
+    }
+
+    .nav-label {
+        font-size: 0.8rem !important;
+    }
+}
+
+/* ======================================================
+   HOME — Hero + Sections
+   ====================================================== */
+
+/* Ensure hero content doesn't overlap the bottom nav */
+.main-content {
+    padding-bottom: calc(90px + var(--safe-bottom)) !important;
+}
+
+/* Section headings on mobile */
+@media (max-width: 768px) {
+    .anime-sections .divider .divider-content {
+        font-size: clamp(1.4rem, 5vw, 2.5rem) !important;
+    }
+
+    .anime-sections {
+        padding: 0 8px !important;
+    }
+}
+
+/* 2-column grid on very small phones */
+@media (max-width: 380px) {
+    .anime-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    .anime-card2 {
+        height: 190px !important;
+        max-width: 100% !important;
+        border-radius: 10px !important;
+    }
+
+    .skeleton-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .skeleton-card {
+        height: 190px !important;
+    }
+}
+
+/* Ensure search overlay is usable on mobile  */
+@media (max-width: 768px) {
+    .search-overlay {
+        padding-top: 70px !important;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .search-results-header {
+        padding: 0 10px !important;
+        margin-bottom: 15px !important;
+    }
+
+    .search-results-title {
+        font-size: 1.2rem !important;
+    }
+
+    .close-search-button {
+        width: 40px !important;
+        height: 40px !important;
+    }
+}
+
+/* ======================================================
+   MODAL — Make it a full-screen sheet on phones
+   ====================================================== */
+@media (max-width: 576px) {
+    .modal-overlay {
+        align-items: flex-end !important;
+        padding: 0 !important;
+    }
+
+    .modal-content {
+        border-radius: 24px 24px 0 0 !important;
+        width: 100% !important;
+        height: 92vh !important;
+        max-height: 92vh !important;
+        padding: 12px 10px !important;
+        padding-bottom: calc(12px + var(--safe-bottom)) !important;
+    }
+
+    /* Top drag handle indicator */
+    .modal-content::before {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+        margin: 0 auto 10px;
+    }
+
+    .modal-body {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* Stats scroll horizontally */
+    .stats-grid2 {
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 8px !important;
+    }
+
+    /* Genre pills a bit larger to tap */
+    .genre-pill {
+        font-size: 0.75rem !important;
+        padding: 5px 12px !important;
+    }
+}
+
+/* Fix modal image centering on all mobiles */
+@media (max-width: 768px) {
+
+    .modal-image-wrapper,
+    .image-container {
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+}
+
+/* ======================================================
+   AI CHAT PAGE
+   ====================================================== */
+@media (max-width: 768px) {
+    .ai-page-container {
+        padding-top: 65px !important;
+    }
+
+    .ai-page-wrapper {
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .ai-companion-box {
+        border-radius: 0 !important;
+        height: calc(100vh - 65px - 80px) !important;
+        /* Viewport minus header minus bottom nav */
+        margin-bottom: 0 !important;
+    }
+
+    .messages-box {
+        padding: 1rem !important;
+    }
+
+    .message-bubble {
+        max-width: 90% !important;
+    }
+
+    .message-bubble.ai .message-content {
+        padding: 14px 16px !important;
+        font-size: 0.95rem !important;
+    }
+
+    .message-bubble.user .message-content {
+        padding: 12px 16px !important;
+    }
+
+    .input-wrapper {
+        margin: 8px !important;
+    }
+
+    /* Quick prompts smaller */
+    .prompt-chip {
+        font-size: 0.8rem !important;
+        padding: 6px 12px !important;
+    }
+
+    /* Welcome screen */
+    .welcome-message {
+        padding: 20px !important;
+        margin-top: 10px !important;
+    }
+
+    .welcome-message h3 {
+        font-size: 1.4rem !important;
+    }
+
+    .companion-features {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 10px !important;
+        margin-top: 20px !important;
+    }
+
+    /* Recommendation cards: 2 per row */
+    .anime-cards-grid .anime-card {
+        flex: 0 0 calc(50% - 6px) !important;
+        max-width: 50% !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .ai-companion-box {
+        height: calc(100vh - 55px - 75px) !important;
+    }
+
+    /* 1 card per row on tiny screens */
+    .anime-cards-grid .anime-card {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* ======================================================
+   LIST PAGE
+   ====================================================== */
+@media (max-width: 768px) {
+    .enhanced-anime-list {
+        padding: 0.8rem !important;
+    }
+
+    .list-header {
+        padding: 1rem 0.5rem 0.5rem !important;
+    }
+
+    .list-header h1 {
+        font-size: 1.8rem !important;
+    }
+
+    .list-tabs {
+        gap: 8px !important;
+        margin-top: 20px !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+    }
+
+    .list-tabs button {
+        padding: 8px 16px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Cards: 2 columns on mobile */
+    .anime-list-grid,
+    .anime-grid-list {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+    }
+
+    .anime-card3 {
+        width: 100% !important;
+        height: 280px !important;
+    }
+
+    /* Import section */
+    .import-section {
+        width: 100% !important;
+    }
+
+    .import-btn {
+        width: 100% !important;
+        font-size: 0.85rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .anime-card3 {
+        height: 240px !important;
+    }
+
+    .list-tabs {
+        gap: 6px !important;
+    }
+
+    .list-tabs button {
+        padding: 7px 12px !important;
+        font-size: 0.75rem !important;
+    }
+
+    /* Import modal full-screen on phone */
+    .import-modal-overlay {
+        padding: 0 !important;
+        align-items: flex-end !important;
+    }
+
+    .import-modal {
+        border-radius: 20px 20px 0 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+}
+
+/* ======================================================
+   ADVANCED SEARCH
+   ====================================================== */
+@media (max-width: 768px) {
+
+    /* Filters panel */
+    .filters-panel,
+    .search-filters {
+        padding: 12px !important;
+    }
+
+    .filter-group {
+        margin-bottom: 12px !important;
+    }
+
+    /* Results grid */
+    .search-results-grid,
+    .results-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .search-results-grid,
+    .results-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+}
+
+/* ======================================================
+   PROFILE PAGE
+   ====================================================== */
+@media (max-width: 768px) {
+
+    /* Profile header card */
+    .profile-header-card,
+    .profile-card {
+        margin: 70px 10px 10px !important;
+        padding: 20px 16px !important;
+    }
+
+    /* Stats grid on profile */
+    .profile-stats,
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    /* Profile avatar */
+    .profile-avatar-large,
+    .avatar-container {
+        width: 80px !important;
+        height: 80px !important;
+    }
+
+    /* Edit form */
+    .profile-edit-form input,
+    .profile-edit-form textarea {
+        font-size: 16px !important;
+        /* Prevent iOS zoom */
+    }
+
+    /* Badges grid */
+    .badges-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .profile-stats,
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .badges-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ======================================================
+   LOGIN & REGISTER — Full-screen beautiful form
+   ====================================================== */
+@media (max-width: 576px) {
+
+    /* Login card: full-height on mobile */
+    .login-container,
+    .register-container {
+        min-height: 100vh !important;
+        padding: 0 !important;
+    }
+
+    .login-card,
+    .register-card {
+        border-radius: 0 !important;
+        min-height: 100vh !important;
+        padding: 80px 24px 40px !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Inputs: big enough to not trigger zoom */
+    .form-input,
+    .auth-form input {
+        font-size: 16px !important;
+        height: 52px !important;
+    }
+
+    /* Buttons full-width */
+    .btn-primary,
+    .google-btn {
+        width: 100% !important;
+    }
+}
+
+/* ======================================================
+   TRAILER HERO — Safe top padding on phones
+   ====================================================== */
+@media (max-width: 768px) {
+    .content-overlay {
+        left: 5% !important;
+        right: 5% !important;
+        bottom: 25% !important;
+        max-width: 90% !important;
+    }
+
+    .anime-title {
+        font-size: clamp(1.4rem, 5vw, 2rem) !important;
+    }
+
+    .anime-description {
+        font-size: 0.9rem !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 3 !important;
+        line-clamp: 3 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+    }
+
+    .genres {
+        font-size: 0.85rem !important;
+    }
+
+    .details-button {
+        padding: 0.7rem 1.5rem !important;
+        font-size: 0.9rem !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .anime-title {
+        font-size: 1.2rem !important;
+    }
+
+    .anime-description {
+        font-size: 0.8rem !important;
+        -webkit-line-clamp: 2 !important;
+        line-clamp: 2 !important;
+    }
+
+    .details-button {
+        padding: 0.6rem 1.2rem !important;
+        font-size: 0.85rem !important;
+    }
+}
+
+/* ======================================================
+   TYPOGRAPHY SMOOTHING
+   ====================================================== */
+@media (max-width: 768px) {
+    h1 {
+        font-size: clamp(1.6rem, 6vw, 2.5rem) !important;
+    }
+
+    h2 {
+        font-size: clamp(1.4rem, 5vw, 2rem) !important;
+    }
+
+    h3 {
+        font-size: clamp(1.1rem, 4vw, 1.5rem) !important;
+    }
+}
+
+/* ======================================================
+   GLOBAL TOUCH IMPROVEMENTS
+   ====================================================== */
+@media (hover: none) and (pointer: coarse) {
+
+    /* Ensure minimum tap targets everywhere */
+    button,
+    [role="button"],
+    a {
+        min-height: var(--touch-target);
+    }
+
+    /* Remove hover effects */
+    .anime-card2:hover img,
+    .anime-card3:hover .poster-img.grayscale {
+        transform: none !important;
+        filter: none !important;
+    }
+
+    /* Faster transitions on touch */
+    * {
+        transition-duration: 0.15s !important;
+    }
+}
+
+/* ======================================================
+   LANDSCAPE PHONE FIXES
+   ====================================================== */
+@media (max-height: 450px) and (orientation: landscape) {
+    .ai-companion-box {
+        height: calc(100vh - 50px - 60px) !important;
+    }
+
+    .content-overlay {
+        bottom: 5% !important;
+    }
+
+    .modal-content {
+        max-height: 98vh !important;
+    }
+
+    .bottom-button-bar {
+        padding: 4px 6px !important;
+        bottom: 8px !important;
+    }
+
+    .nav-item {
+        height: 36px !important;
+        min-width: 36px !important;
+    }
+}

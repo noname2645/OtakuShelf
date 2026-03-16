@@ -21,6 +21,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import aiChat from "./aiChat.js";
+import nodemailer from 'nodemailer';
+import { success, error } from './utils/responseHandler.js';
+
+// Security packages
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+
 
 const envFile =
   process.env.NODE_ENV === "production"
@@ -38,20 +45,97 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// Validate critical environment variables
+function validateEnvVars() {
+  const required = ['JWT_SECRET', 'SESSION_SECRET', 'MONGO_URI'];
+  const missing = required.filter(key => !process.env[key]);
+
+  if (missing.length > 0) {
+    console.error('❌ Missing required environment variables:', missing);
+    process.exit(1);
+  }
+
+  if (process.env.JWT_SECRET.length < 16) {
+    console.error('❌ JWT_SECRET must be at least 16 characters');
+    process.exit(1);
+  }
+
+  if (process.env.SESSION_SECRET.length < 16) {
+    console.error('❌ SESSION_SECRET must be at least 16 characters');
+    process.exit(1);
+  }
+
+  // Warn about short secrets in production
+  if (process.env.NODE_ENV === 'production') {
+    if (process.env.JWT_SECRET.length < 32) {
+      console.warn('⚠️  JWT_SECRET is shorter than 32 characters — consider a longer secret in production');
+    }
+    if (process.env.SESSION_SECRET.length < 32) {
+      console.warn('⚠️  SESSION_SECRET is shorter than 32 characters — consider a longer secret in production');
+    }
+  }
+
+  console.log('✅ Environment variables validated');
+}
+
+validateEnvVars();
+
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const JWT_SECRET = process.env.JWT_SECRET; // No fallback!
 const isProduction = process.env.NODE_ENV === 'production';
 
 app.set('trust proxy', 1);
+
+// Security Headers (Helmet)
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled for development - enable in production with proper config
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+  }
+}));
+
+// MongoDB Injection Protection
+// Note: Temporarily disabled due to compatibility issue with Express version
+// TODO: Implement manual input validation or upgrade express-mongo-sanitize
+// app.use(mongoSanitize({
+//   replaceWith: '_'
+// }));
+
+// Request Size Limits (DoS Protection)
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Compression
+app.use(compression());
+
+// Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: 'Too many requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // 5 login attempts per 15 minutes
+  skipSuccessfulRequests: true,
+  message: 'Too many login attempts, please try again later.'
+});
+
+// Apply rate limiters
+// Note: Apply to specific routes instead of blanket /api/ to avoid conflicts
+// app.use('/api/', apiLimiter);
+
 
 app.use(fileUpload({
   limits: { fileSize: 10 * 1024 * 1024 },
   useTempFiles: false,
   createParentPath: true
 }));
-
-app.use('/uploads', express.static(uploadsDir));
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -60,38 +144,53 @@ const allowedOrigins = [
   "https://otakushelf-uuvw.onrender.com"
 ];
 
+// CORS Configuration (Stricter in production)
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
+    // Allow no-origin (server-to-server or same origin) always
+    if (!origin) {
+      return callback(null, true);
+    }
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log('Blocked origin:', origin);
-      callback(new Error("Not allowed by CORS"));
+      console.warn(`Blocked origin: ${origin}`);
+      callback(new Error("Not allowed by CORS"), false);
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  maxAge: 86400,
   optionsSuccessStatus: 200
 }));
 
-app.use(express.json());
-app.use(compression());
+// Static files AFTER CORS - with explicit CORS headers
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(uploadsDir));
 
-mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/animeApp", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+// Middleware already configured above with security settings
+
+// MongoDB Connection with Pooling
+mongoose.connect(process.env.MONGO_URI, {
+  maxPoolSize: 10,
+  minPoolSize: 2,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
 })
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.error("MongoDB Error:", err));
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || "mysecret",
+  secret: process.env.SESSION_SECRET, // No fallback!
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/animeApp",
+    mongoUrl: process.env.MONGO_URI,
     collectionName: 'sessions'
   }),
   cookie: {
@@ -105,6 +204,13 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Standardized Response Middleware
+app.use((req, res, next) => {
+  res.sendSuccess = (message, data = null, statusCode = 200) => success(res, message, data, statusCode);
+  res.sendError = (message, statusCode = 500, data = null) => error(res, message, statusCode, data);
+  next();
+});
 
 import User from './models/User.js';
 import AnimeList from './models/AnimeList.js';
@@ -158,9 +264,14 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-app.get('/healthz', (req, res) => res.send('ok'));
+app.get('/healthz', (req, res) => res.sendSuccess('System is healthy', 'ok'));
 
-app.post("/auth/register", async (req, res) => {
+// Wake-up / keep-alive ping endpoint (used by frontend for cold-start)
+app.get('/api/ping', (req, res) => {
+  res.sendSuccess('Server is awake', { status: 'awake', timestamp: Date.now(), uptime: process.uptime() });
+});
+
+app.post("/auth/register", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -181,15 +292,15 @@ app.post("/auth/register", async (req, res) => {
     });
     await newUser.save();
 
-    console.log('User registered successfully:', email);
-    res.json({ message: "Registration successful!" });
+    // console.log('User registered successfully:', email); // sensitive: email
+    res.sendSuccess("Registration successful!");
   } catch (err) {
     console.error('Registration error:', err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.sendError("Server error", 500, err.message);
   }
 });
 
-app.post("/auth/login", async (req, res) => {
+app.post("/auth/login", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -214,13 +325,12 @@ app.post("/auth/login", async (req, res) => {
     req.login(user, (err) => {
       if (err) {
         console.error("Session login error:", err);
-        return res.status(500).json({ message: "Session error" });
+        return res.sendError("Session error", 500);
       }
 
       const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "24h" });
 
-      res.json({
-        message: "Login successful!",
+      res.sendSuccess("Login successful!", {
         user: {
           _id: user._id,
           email: user.email,
@@ -233,7 +343,7 @@ app.post("/auth/login", async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.sendError("Server error", 500, err.message);
   }
 });
 
@@ -244,7 +354,7 @@ app.get("/auth/google/callback",
   (req, res) => {
     try {
       const token = jwt.sign({ id: req.user._id }, JWT_SECRET, { expiresIn: "24h" });
-      console.log('Google auth successful for:', req.user.email);
+      // console.log('Google auth successful for:', req.user.email); // sensitive: email
       res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
     } catch (err) {
       console.error('Google callback error:', err);
@@ -260,8 +370,8 @@ app.get("/auth/me", (req, res) => {
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
       return User.findById(decoded.id).then(user => {
-        if (!user) return res.status(401).json({ message: "Invalid token" });
-        res.json({
+        if (!user) return res.sendError("Invalid token", 401);
+        res.sendSuccess("User authenticated", {
           user: {
             _id: user._id,
             email: user.email,
@@ -272,14 +382,14 @@ app.get("/auth/me", (req, res) => {
         });
       });
     } catch (err) {
-      return res.status(401).json({ message: "Invalid token", error: err.message });
+      return res.sendError("Invalid token", 401, err.message);
     }
   }
 
   if (req.isAuthenticated() && req.user) {
-    return res.json({ user: req.user });
+    return res.sendSuccess("User authenticated", { user: req.user });
   } else {
-    return res.status(401).json({ message: "Not authenticated" });
+    return res.sendError("Not authenticated", 401);
   }
 });
 
@@ -289,21 +399,122 @@ app.get("/auth/logout", (req, res) => {
   req.logout((err) => {
     if (err) {
       console.error("Logout error:", err);
-      return res.status(500).json({ message: "Logout error" });
+      return res.sendError("Logout error", 500);
     }
 
     req.session.destroy((err) => {
       if (err) {
         console.error("Session destroy error:", err);
-        return res.status(500).json({ message: "Session destroy error" });
+        return res.sendError("Session destroy error", 500);
       }
 
       res.clearCookie('sessionId');
       res.clearCookie('connect.sid');
-      console.log('User logged out successfully:', userEmail);
-      res.json({ message: "Logged out successfully" });
+      // console.log('User logged out successfully:', userEmail); // sensitive: email
+      res.sendSuccess("Logged out successfully");
     });
   });
+});
+
+// ─── Forgot Password ───────────────────────────────────────────────────────
+app.post("/auth/forgot-password", authLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    // Always respond OK to prevent email enumeration
+    if (!user || user.authType !== 'local') {
+      return res.json({ message: "If that email exists, a reset link has been sent." });
+    }
+
+    // Generate a secure random token
+    const crypto = await import('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.passwordResetToken = hashedToken;
+    user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    await user.save();
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+    // Send email via Nodemailer (Gmail SMTP with App Password)
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS, // Gmail App Password
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"OtakuShelf" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: '🔑 OtakuShelf — Reset Your Password',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0d0d1a;color:#fff;border-radius:16px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#8b5cf6,#ec4899);padding:32px;text-align:center">
+            <h1 style="margin:0;font-size:28px">OtakuShelf</h1>
+            <p style="margin:8px 0 0;opacity:0.85">Password Reset Request</p>
+          </div>
+          <div style="padding:32px">
+            <p>Hey there, Otaku! 👋</p>
+            <p>We received a request to reset your password. Click the button below — this link expires in <strong>15 minutes</strong>.</p>
+            <div style="text-align:center;margin:32px 0">
+              <a href="${resetUrl}" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:16px">Reset Password</a>
+            </div>
+            <p style="font-size:13px;opacity:0.6">If you didn't request this, you can safely ignore this email. Your password won't be changed.</p>
+            <hr style="border-color:rgba(255,255,255,0.1);margin:24px 0">
+            <p style="font-size:12px;opacity:0.4;text-align:center">OtakuShelf · Your Anime Universe</p>
+          </div>
+        </div>
+      `,
+    });
+
+    res.json({ message: "If that email exists, a reset link has been sent." });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: "Failed to send reset email. Please try again." });
+  }
+});
+
+// ─── Reset Password ─────────────────────────────────────────────────────────
+app.post("/auth/reset-password", async (req, res) => {
+  try {
+    const { token, email, newPassword } = req.body;
+
+    if (!token || !email || !newPassword) {
+      return res.status(400).json({ message: "Token, email, and new password are required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    const crypto = await import('crypto');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: new Date() }, // Must not be expired
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset token. Please request a new one." });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 12);
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+    await user.save();
+
+    res.json({ message: "Password reset successfully! You can now log in." });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: "Server error during password reset" });
+  }
 });
 
 app.post("/api/profile/:userId/upload-photo", async (req, res) => {
@@ -314,6 +525,10 @@ app.post("/api/profile/:userId/upload-photo", async (req, res) => {
 
     const photo = req.files.photo;
     const { userId } = req.params;
+
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(photo.mimetype)) {
@@ -338,20 +553,14 @@ app.post("/api/profile/:userId/upload-photo", async (req, res) => {
       { new: true, select: '-password' }
     );
 
-    res.json({
-      success: true,
-      message: "Photo uploaded successfully",
+    res.sendSuccess("Photo uploaded successfully", {
       photo: photoUrl,
       user: updatedUser
     });
 
   } catch (err) {
     console.error('Photo upload error:', err);
-    res.status(500).json({
-      success: false,
-      message: "Error uploading photo",
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
+    res.sendError("Error uploading photo", 500, process.env.NODE_ENV === 'development' ? err.message : undefined);
   }
 });
 
@@ -363,6 +572,10 @@ app.post("/api/profile/:userId/upload-cover", async (req, res) => {
 
     const cover = req.files.cover;
     const { userId } = req.params;
+
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(cover.mimetype)) {
@@ -383,25 +596,24 @@ app.post("/api/profile/:userId/upload-cover", async (req, res) => {
       { new: true, select: '-password' }
     );
 
-    res.json({
-      success: true,
-      message: "Cover image uploaded successfully",
+    res.sendSuccess("Cover image uploaded successfully", {
       coverImage: coverUrl,
       user: updatedUser
     });
 
   } catch (err) {
     console.error('Cover upload error:', err);
-    res.status(500).json({
-      success: false,
-      message: "Error uploading cover image"
-    });
+    res.sendError("Error uploading cover image", 500);
   }
 });
 
 app.get("/api/profile/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
 
     const user = await User.findById(userId).select('-password');
     if (!user) {
@@ -487,10 +699,10 @@ app.get("/api/profile/:userId", async (req, res) => {
       watchlist: animeList?.planned?.slice(0, 10) || []
     };
 
-    res.json(profileData);
+    res.sendSuccess("Profile fetched successfully", profileData);
   } catch (err) {
     console.error('Profile fetch error:', err);
-    res.status(500).json({ message: "Error fetching profile", error: err.message });
+    res.sendError("Error fetching profile", 500, err.message);
   }
 });
 
@@ -498,6 +710,10 @@ app.put("/api/profile/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     const updateData = req.body;
+
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
 
     const user = await User.findById(userId);
     if (!user) {
@@ -532,13 +748,10 @@ app.put("/api/profile/:userId", async (req, res) => {
       { new: true, select: '-password' }
     );
 
-    res.json({
-      message: "Profile updated successfully",
-      user: updatedUser
-    });
+    res.sendSuccess("Profile updated successfully", updatedUser);
   } catch (err) {
     console.error('Profile update error:', err);
-    res.status(500).json({ message: "Error updating profile", error: err.message });
+    res.sendError("Error updating profile", 500, err.message);
   }
 });
 
@@ -546,6 +759,10 @@ app.post("/api/list/:userId", async (req, res) => {
   try {
     const { category, animeTitle, animeData } = req.body;
     const userId = req.params.userId;
+
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
 
     if (!["watching", "completed", "planned", "dropped"].includes(category)) {
       return res.status(400).json({ message: "Invalid category" });
@@ -597,10 +814,10 @@ app.post("/api/list/:userId", async (req, res) => {
 
     list[category].push(animeEntry);
     await list.save();
-    res.json({ message: "Anime list updated", list });
+    res.sendSuccess("Anime list updated", list);
   } catch (err) {
     console.error('Update list error:', err);
-    res.status(500).json({ message: "Error updating list", error: err.message });
+    res.sendError("Error updating list", 500, err.message);
   }
 });
 
@@ -625,10 +842,10 @@ app.post('/api/list/import/mal', async (req, res) => {
     const userId = req.body.userId;
     const clearExisting = req.body.clearExisting === 'true';
 
-    if (!userId) {
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
       return res.status(400).json({
         success: false,
-        message: 'User ID is required'
+        message: 'Valid User ID is required'
       });
     }
 
@@ -1021,9 +1238,7 @@ app.post('/api/list/import/mal', async (req, res) => {
       }));
     }
 
-    res.json({
-      success: true,
-      message: finalMessage,
+    res.sendSuccess(finalMessage, {
       imported: imported,
       skipped: skipped,
       errors: errors.length,
@@ -1052,11 +1267,7 @@ app.post('/api/list/import/mal', async (req, res) => {
       console.error('Failed to send WebSocket error:', wsError);
     }
 
-    res.status(500).json({
-      success: false,
-      message: 'Import failed',
-      error: error.message
-    });
+    res.sendError("Import failed", 500, error.message);
   }
 });
 
@@ -1064,8 +1275,8 @@ app.get("/api/list/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
 
-    if (!userId || typeof userId !== 'string' || userId.length < 10) {
-      return res.status(400).json({ message: "Invalid user ID" });
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
     }
 
     let list = await AnimeList.findOne({ userId });
@@ -1079,7 +1290,7 @@ app.get("/api/list/:userId", async (req, res) => {
         dropped: []
       });
       await list.save();
-      console.log('Created new empty list for user:', userId);
+      // console.log('Created new empty list for user:', userId); // sensitive: userId
     }
 
     if (!Array.isArray(list.watching)) list.watching = [];
@@ -1087,10 +1298,10 @@ app.get("/api/list/:userId", async (req, res) => {
     if (!Array.isArray(list.planned)) list.planned = [];
     if (!Array.isArray(list.dropped)) list.dropped = [];
 
-    res.json(list);
+    res.sendSuccess("Anime list fetched successfully", list);
   } catch (err) {
     console.error('Fetch list error:', err);
-    res.status(500).json({ message: "Error fetching list", error: err.message });
+    res.sendError("Error fetching list", 500, err.message);
   }
 });
 
@@ -1223,10 +1434,10 @@ app.get("/api/profile/:userId/badges", async (req, res) => {
       });
     }
 
-    res.json(badges);
+    res.sendSuccess("Badges fetched successfully", badges);
   } catch (err) {
     console.error('Badges fetch error:', err);
-    res.status(500).json({ message: "Error fetching badges", error: err.message });
+    res.sendError("Error fetching badges", 500, err.message);
   }
 });
 
@@ -1278,10 +1489,10 @@ app.put("/api/list/:userId/:animeId", async (req, res) => {
     }
 
     await list.save();
-    res.json({ message: "Anime updated", list });
+    res.sendSuccess("Anime updated successfully", list);
   } catch (err) {
     console.error("PUT UPDATE ERROR:", err);
-    res.status(500).json({ error: err.message });
+    res.sendError(err.message, 500);
   }
 });
 
@@ -1308,10 +1519,10 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
     }
 
     await list.save();
-    res.json({ message: "Anime removed", list });
+    res.sendSuccess("Anime removed successfully", list);
   } catch (err) {
     console.error('Remove anime error:', err);
-    res.status(500).json({ message: "Error removing anime", error: err.message });
+    res.sendError("Error removing anime", 500, err.message);
   }
 });
 
@@ -1411,16 +1622,14 @@ app.post("/api/list/:userId/backfill-genres", async (req, res) => {
     await animeList.save();
     console.log(`Backfill complete! Updated: ${updated}, Failed: ${failed}`);
 
-    res.json({
-      success: true,
-      message: `Updated genres for ${updated} anime (${failed} failed)`,
+    res.sendSuccess(`Updated genres for ${updated} anime (${failed} failed)`, {
       updated,
       failed
     });
 
   } catch (error) {
     console.error('Backfill error:', error);
-    res.status(500).json({ message: "Error backfilling genres", error: error.message });
+    res.sendError("Error backfilling genres", 500, error.message);
   }
 });
 
@@ -1480,13 +1689,13 @@ function cleanupOldUploads() {
 
 setInterval(cleanupOldUploads, 24 * 60 * 60 * 1000);
 
+app.use((req, res) => {
+  res.sendError("Route not found", 404);
+});
+
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
+  res.sendError("Internal server error", 500, process.env.NODE_ENV === 'development' ? err.message : undefined);
 });
 
 const server = http.createServer(app);
@@ -1505,7 +1714,7 @@ wss.on('connection', (ws, req) => {
 
     if (userId) {
       userConnections.set(userId, ws);
-      console.log(`🔗 WebSocket connected for user: ${userId}`);
+      // console.log(`🔗 WebSocket connected for user: ${userId}`); // sensitive: userId
 
       ws.send(JSON.stringify({
         type: 'connected',
@@ -1516,7 +1725,7 @@ wss.on('connection', (ws, req) => {
     ws.on('close', () => {
       if (userId) {
         userConnections.delete(userId);
-        console.log(`🔌 WebSocket disconnected for user: ${userId}`);
+        // console.log(`🔌 WebSocket disconnected for user: ${userId}`); // sensitive: userId
       }
     });
 
@@ -1531,6 +1740,75 @@ wss.on('connection', (ws, req) => {
 
 server.keepAliveTimeout = 65 * 1000;
 server.headersTimeout = 66 * 1000;
+
+// Health Check Endpoint
+app.get('/health', async (req, res) => {
+  const health = {
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+    status: 'OK',
+    environment: isProduction ? 'production' : 'development',
+    checks: {
+      database: 'unknown',
+      memory: process.memoryUsage(),
+      cpu: process.cpuUsage()
+    }
+  };
+
+  try {
+    await mongoose.connection.db.admin().ping();
+    health.checks.database = 'connected';
+    res.sendSuccess("Health check passed", health);
+  } catch (error) {
+    health.status = 'ERROR';
+    health.checks.database = 'disconnected';
+    res.sendError("Health check failed", 503, health);
+  }
+});
+
+// Graceful Shutdown
+const gracefulShutdown = async (signal) => {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+
+  server.close(async () => {
+    console.log('HTTP server closed');
+
+    try {
+      await mongoose.connection.close();
+      console.log('MongoDB connection closed');
+
+      if (wss) {
+        wss.clients.forEach(client => client.close());
+        wss.close(() => console.log('WebSocket server closed'));
+      }
+
+      console.log('✅ Graceful shutdown completed');
+      process.exit(0);
+    } catch (err) {
+      console.error('❌ Error during shutdown:', err);
+      process.exit(1);
+    }
+  });
+
+  // Force shutdown after 30 seconds
+  setTimeout(() => {
+    console.error('⚠️ Forced shutdown after timeout');
+    process.exit(1);
+  }, 30000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Error handlers
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
 
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

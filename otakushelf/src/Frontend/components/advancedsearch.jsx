@@ -5,6 +5,7 @@ import Modal from "./modal.jsx";
 import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
 import "../Stylesheets/home.css";
+import AnimeCardUI from "./AnimeCardUI.jsx";
 
 // Create a clean axios instance for AniList without auth headers
 const anilistClient = axios.create({
@@ -731,36 +732,18 @@ function AdvancedSearch() {
             </div>
           )}
 
-          {/* Optimized Anime Grid */}
+          {/* Optimized Anime Grid using shared component */}
           <div className={styles.animeGrid}>
-            {searchResults.map(anime => {
-              const imageUrl = anime.coverImage?.extraLarge ||
-                anime.coverImage?.large ||
-                "/placeholder-anime.jpg";
-
-              return (
-                <div
-                  key={anime.id}
-                  className={styles.animeCard}
-                  onClick={() => showAnimeDetails(anime)}
-                >
-                  <div className={styles.homeCardImage2}>
-                    <img
-                      src={imageUrl}
-                      alt={anime.title || "Anime"}
-                      loading="lazy"
-                      onError={(e) => {
-                        console.log("Image failed to load:", imageUrl);
-                        e.currentTarget.src = "/placeholder-anime.jpg";
-                      }}
-                    />
-                    <div className={styles.cardTitleBottom}>
-                      <h3>{anime.title || "Untitled Anime"}</h3>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {searchResults.map((anime, index) => (
+              <div key={anime.id} className={styles.animeCard}>
+                <AnimeCardUI 
+                   anime={anime} 
+                   index={index} 
+                   isGrid={true} 
+                   onClick={showAnimeDetails} 
+                />
+              </div>
+            ))}
           </div>
 
           {/* Loading States */}
