@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import api from '../api.js';
 
 const AuthContext = createContext();
 
@@ -24,7 +24,7 @@ const createApiCall = (url, options = {}, retries = 3, baseDelay = 3000) => {
     for (let i = 0; i <= retries; i++) {
       try {
         const timeout = i === 0 ? 8000 : 20000; // First try fast, then wait longer (cold-start)
-        const response = await axios.get(url, { ...options, timeout });
+        const response = await api.get(url, { ...options, timeout });
         return resolve(response);
       } catch (err) {
         const isLast = i === retries;
@@ -119,19 +119,13 @@ export const AuthProvider = ({ children }) => {
   const fetchFreshProfile = useCallback(async (userId) => {
     if (!userId) return null;
     try {
-      const token = localStorage.getItem("token");
-      const response = await createApiCall(
-        `${API}/api/profile/${userId}`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-        2,
-        2000
-      );
-      return response.data;
+      const response = await api.get(`/api/profile/${userId}`);
+      return response.data.data; // Standardized response
     } catch (error) {
       console.log('Profile fetch failed (non-critical):', error.message);
       return null;
     }
-  }, [API]);
+  }, []);
 
   // Handle OAuth token from URL redirect (Google login)
   const handleTokenFromUrl = useCallback(async () => {
@@ -147,13 +141,14 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await createApiCall(
         `${API}/auth/me`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        {},
         3,
         3000
       );
 
-      if (response.data.user) {
-        const userData = response.data.user;
+      const resData = response.data.data;
+      if (resData && resData.user) {
+        const userData = resData.user;
         userData.photo = fixPhotoUrl(userData.photo);
 
         setUser(userData);
@@ -198,13 +193,14 @@ export const AuthProvider = ({ children }) => {
       // With retries for Render cold-start (up to ~21 seconds total wait)
       const response = await createApiCall(
         `${API}/auth/me`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        {},
         3,
         3000
       );
 
-      if (response.data.user) {
-        const userData = response.data.user;
+      const resData = response.data.data;
+      if (resData && resData.user) {
+        const userData = resData.user;
         userData.photo = fixPhotoUrl(userData.photo);
 
         setUser(userData);
@@ -302,11 +298,7 @@ export const AuthProvider = ({ children }) => {
   // Logout — clean server session + local state
   const logout = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-      await axios.get(`${API}/auth/logout`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        timeout: 5000
-      });
+      await api.get('/auth/logout');
     } catch (error) {
       // Continue even if server logout fails
       console.log('Server logout failed (continuing local logout)');
@@ -327,20 +319,11 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem("token");
       if (!token) throw new Error('Authentication token missing');
 
-      const response = await axios.put(
-        `${API}/api/profile/${userId}`,
-        profileData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 15000
-        }
-      );
-
-      if (response.data.user) {
-        const updatedUser = { ...currentUser, ...response.data.user };
+      const response = await api.put(`/api/profile/${userId}`, profileData);
+ 
+      const resData = response.data.data;
+      if (resData && resData.user) {
+        const updatedUser = { ...currentUser, ...resData.user };
         updatedUser.photo = fixPhotoUrl(updatedUser.photo);
         setUser(updatedUser);
         storeMinimalUser(updatedUser);

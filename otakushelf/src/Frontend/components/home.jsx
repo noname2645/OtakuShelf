@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const API = import.meta.env.VITE_API_BASE_URL;
 
 // Stale-while-revalidate key
-const CACHE_KEY = 'animeSections_100_v4'; // Increment version to force fresh structure
+const CACHE_KEY = 'animeSections_100_v5'; // Increment version to force fresh structure after API standard changes
 const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
 const STALE_TIME = 1000 * 60 * 30; // 30 minutes until fresh fetch (but stale data shown immediately)
 
@@ -212,7 +212,7 @@ const AnimeHomepage = () => {
                 // If we did have cache, we are just silently updating
                 console.log("Fetching fresh data...");
                 const response = await axios.get(`${API}/api/anime/anime-sections`, { timeout: 15000 });
-                const data = response.data;
+                const data = response.data.data; // Access the "data" property from the standardized response
 
                 const newSections = {
                     topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
@@ -275,8 +275,8 @@ const AnimeHomepage = () => {
                 const res = await axios.get(`${API}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=20`, {
                     signal: controllerRef.current.signal
                 });
-                if (res.data) {
-                    setSearchResults(res.data.map(normalizeGridAnime).filter(Boolean));
+                if (res.data && res.data.data) {
+                    setSearchResults(res.data.data.map(normalizeGridAnime).filter(Boolean));
                 }
             } catch (err) {
                 if (!axios.isCancel(err)) console.error("Search error", err);

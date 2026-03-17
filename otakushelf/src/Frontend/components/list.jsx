@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import axios from 'axios';
+import api from '../api.js';
 import "../Stylesheets/list.css";
 import { Star } from 'lucide-react';
 import { Navigate } from "react-router-dom";
@@ -151,18 +151,19 @@ const EnhancedAnimeList = () => {
     formData.append('clearExisting', (importOption === 'replace').toString());
 
     try {
-      const response = await axios.post(`${API}/api/list/import/mal`, formData, {
+      const response = await api.post(`${API}/api/list/import/mal`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          'Content-Type': 'multipart/form-data'
         }
       });
 
-      if (response.data.success) {
-        alert(`✅ Success! ${response.data.message}`);
+      const resData = response.data;
+
+      if (resData.status === "success") {
+        alert(`✅ Success! ${resData.message}`);
         fetchAnimeList();
       } else {
-        alert(`❌ Import failed: ${response.data.message}`);
+        alert(`❌ Import failed: ${resData.message}`);
       }
     } catch (error) {
       console.error('Import error:', error);
@@ -202,13 +203,9 @@ const EnhancedAnimeList = () => {
       }
 
       const userId = user._id;
-      const response = await axios.get(`${API}/api/list/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        }
-      });
+      const response = await api.get(`${API}/api/list/${userId}`);
 
-      let listData = response.data;
+      let listData = response.data.data; // Standardized response
 
       const normalizedList = {
         watching: [],
@@ -377,11 +374,7 @@ const EnhancedAnimeList = () => {
         }
 
         const userId = user._id;
-        await axios.delete(`${API}/api/list/${userId}/${animeId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-          }
-        });
+        await api.delete(`${API}/api/list/${userId}/${animeId}`);
 
         setAnimeList(prev => {
           const newList = { ...prev };
@@ -440,16 +433,11 @@ const EnhancedAnimeList = () => {
     updateAnimeInList(animeId, { episodesWatched: updatedEpisodes });
 
     try {
-      await axios.put(
+      await api.put(
         `${API}/api/list/${userId}/${animeId}`,
         {
           episodesWatched: updatedEpisodes,
           category: activeTab
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-          }
         }
       );
 
@@ -520,14 +508,9 @@ const EnhancedAnimeList = () => {
         moveAnimeBetweenCategories(animeId, currentStatus, newStatus);
       }
 
-      await axios.put(
+      await api.put(
         `${API}/api/list/${userId}/${animeId}`,
-        payload,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-          }
-        }
+        payload
       );
     } catch (err) {
       console.error("Failed to update status", err);
@@ -615,16 +598,11 @@ const EnhancedAnimeList = () => {
     updateAnimeInList(animeId, { userRating: newRating });
 
     try {
-      await axios.put(
+      await api.put(
         `${API}/api/list/${userId}/${animeId}`,
         {
           userRating: newRating,
           status: anime.status || activeTab
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-          }
         }
       );
     } catch (err) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../Stylesheets/profile.css';
+import api from '../api.js';
 import { Header } from '../components/header';
 import BottomNavBar from "../components/bottom.jsx";
 import { useAuth } from '../components/AuthContext';
@@ -65,12 +66,8 @@ const ProfilePage = () => {
       setBackfilling(true);
       const token = localStorage.getItem("token");
 
-      const response = await fetch(`${API}/api/list/${user._id}/backfill-genres`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-
-      const data = await response.json();
+      const response = await api.post(`${API}/api/list/${user._id}/backfill-genres`);
+      const data = response.data;
 
       if (data.success) {
         alert(`Success! Updated genres for ${data.updated} anime. ${data.failed > 0 ? `Failed: ${data.failed}` : ''}`);
@@ -170,15 +167,8 @@ const ProfilePage = () => {
       const token = localStorage.getItem("token");
 
       // Fetch profile data
-      const response = await fetch(`${API}/api/profile/${user._id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile');
-      }
-
-      const data = await response.json();
+      const response = await api.get(`${API}/api/profile/${user._id}`);
+      const data = response.data.data;
 
       if (data) {
         // Helper function to fix image URLs
@@ -281,26 +271,11 @@ const ProfilePage = () => {
       const formData = new FormData();
       formData.append("cover", file);
 
-      const response = await fetch(`${API}/api/profile/${user._id}/upload-cover`, {
-        method: "POST",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: formData
+      const response = await api.post(`${API}/api/profile/${user._id}/upload-cover`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
       });
 
-      if (!response.ok) {
-        let errorMsg = 'Upload failed';
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData.message || errorMsg;
-        } catch (e) {
-          errorMsg = `Server error: ${response.status}`;
-        }
-        throw new Error(errorMsg);
-      }
-
-      const data = await response.json();
+      const data = response.data.data;
 
       if (data.coverImage) {
         let coverUrl = data.coverImage;
@@ -340,18 +315,7 @@ const ProfilePage = () => {
         }
       };
 
-      const response = await fetch(`${API}/api/profile/${user._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(updateData)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
+      const response = await api.put(`${API}/api/profile/${user._id}`, updateData);
 
       if (updateProfile) {
         await updateProfile(updateData);
@@ -425,24 +389,11 @@ const ProfilePage = () => {
 
       setLoading(true);
 
-      const response = await fetch(`${API}/api/profile/${userId}/upload-photo`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData
+      const response = await api.post(`${API}/api/profile/${userId}/upload-photo`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
       });
 
-      if (!response.ok) {
-        let errorMsg = 'Upload failed';
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData.message || errorMsg;
-        } catch (e) {
-          errorMsg = `Server error: ${response.status}`;
-        }
-        throw new Error(errorMsg);
-      }
-
-      const result = await response.json();
+      const result = response.data.data;
 
       let photoUrl = result.photo;
 

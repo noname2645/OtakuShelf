@@ -358,8 +358,10 @@ const TrailerHero = ({ onOpenModal }) => {
 
             // Background refresh — fetch fresh data even if cache exists
             try {
-                const data = await fetchWithRetry(`${API}/api/anilist/hero-trailers`);
-                if (data && data.length > 0) {
+                const response = await fetchWithRetry(`${API}/api/anilist/hero-trailers`);
+                const data = response.data; // Standardized response contains "data" property
+                
+                if (data && Array.isArray(data) && data.length > 0) {
                     const normalizedAnnouncements = data
                         .map(normalizeHeroAnime)
                         .filter(anime => {

@@ -23,6 +23,7 @@ import { fileURLToPath } from 'url';
 import aiChat from "./aiChat.js";
 import nodemailer from 'nodemailer';
 import { success, error } from './utils/responseHandler.js';
+import { authenticateToken, authorizeUser } from './utils/authMiddleware.js';
 
 // Security packages
 import helmet from 'helmet';
@@ -517,7 +518,7 @@ app.post("/auth/reset-password", async (req, res) => {
   }
 });
 
-app.post("/api/profile/:userId/upload-photo", async (req, res) => {
+app.post("/api/profile/:userId/upload-photo", authenticateToken, authorizeUser, async (req, res) => {
   try {
     if (!req.files || !req.files.photo) {
       return res.status(400).json({ message: "No photo uploaded" });
@@ -564,7 +565,7 @@ app.post("/api/profile/:userId/upload-photo", async (req, res) => {
   }
 });
 
-app.post("/api/profile/:userId/upload-cover", async (req, res) => {
+app.post("/api/profile/:userId/upload-cover", authenticateToken, authorizeUser, async (req, res) => {
   try {
     if (!req.files || !req.files.cover) {
       return res.status(400).json({ message: "No cover image uploaded" });
@@ -607,7 +608,7 @@ app.post("/api/profile/:userId/upload-cover", async (req, res) => {
   }
 });
 
-app.get("/api/profile/:userId", async (req, res) => {
+app.get("/api/profile/:userId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -706,7 +707,7 @@ app.get("/api/profile/:userId", async (req, res) => {
   }
 });
 
-app.put("/api/profile/:userId", async (req, res) => {
+app.put("/api/profile/:userId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { userId } = req.params;
     const updateData = req.body;
@@ -755,7 +756,7 @@ app.put("/api/profile/:userId", async (req, res) => {
   }
 });
 
-app.post("/api/list/:userId", async (req, res) => {
+app.post("/api/list/:userId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { category, animeTitle, animeData } = req.body;
     const userId = req.params.userId;
@@ -822,7 +823,7 @@ app.post("/api/list/:userId", async (req, res) => {
 });
 
 // FIXED: MAL Import Route with better error handling
-app.post('/api/list/import/mal', async (req, res) => {
+app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, res) => {
   console.log('🔵 MAL IMPORT REQUEST RECEIVED');
 
   // Initialize caching for this import session
@@ -1271,7 +1272,7 @@ app.post('/api/list/import/mal', async (req, res) => {
   }
 });
 
-app.get("/api/list/:userId", async (req, res) => {
+app.get("/api/list/:userId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const userId = req.params.userId;
 
@@ -1408,7 +1409,7 @@ async function getFavoriteAnime(userId, limit = 4) {
   }));
 }
 
-app.get("/api/profile/:userId/badges", async (req, res) => {
+app.get("/api/profile/:userId/badges", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { userId } = req.params;
     const animeList = await AnimeList.findOne({ userId });
@@ -1441,7 +1442,7 @@ app.get("/api/profile/:userId/badges", async (req, res) => {
   }
 });
 
-app.put("/api/list/:userId/:animeId", async (req, res) => {
+app.put("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { episodesWatched, status, userRating } = req.body; // Add userRating
     const { userId, animeId } = req.params;
@@ -1496,7 +1497,7 @@ app.put("/api/list/:userId/:animeId", async (req, res) => {
   }
 });
 
-app.delete("/api/list/:userId/:animeId", async (req, res) => {
+app.delete("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const list = await AnimeList.findOne({ userId: req.params.userId });
 
@@ -1529,7 +1530,7 @@ app.delete("/api/list/:userId/:animeId", async (req, res) => {
 // ADD THIS ENDPOINT TO YOUR server.js (after the other list endpoints, around line 1300)
 
 // Backfill genres for existing anime using AniList API
-app.post("/api/list/:userId/backfill-genres", async (req, res) => {
+app.post("/api/list/:userId/backfill-genres", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { userId } = req.params;
     const animeList = await AnimeList.findOne({ userId });

@@ -5,7 +5,7 @@ import RelatedTab from "./relatedsection.jsx";
 import Trailer from "./trailer";
 import { Plus, Check } from 'lucide-react';
 import { useAuth } from "../components/AuthContext.jsx";
-import axios from "axios";
+import api from "../api.js";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Performance constants - computed once
@@ -231,8 +231,8 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         if (!user || !anime) return;
 
         try {
-            const response = await axios.get(`${API}/api/list/${user._id || user.id}`);
-            const userList = response.data;
+            const response = await api.get(`${API}/api/list/${user._id || user.id}`);
+            const userList = response.data.data; // Standardized response
             const categories = ['watching', 'completed', 'planned', 'dropped'];
             let foundStatus = null;
 
@@ -320,7 +320,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
         setIsAddingToList(true);
         try {
-            await axios.post(`${API}/api/list/${user._id || user.id}`, {
+            await api.post(`${API}/api/list/${user._id || user.id}`, {
                 category: status,
                 animeTitle: animeData.title,
                 animeData: anime
