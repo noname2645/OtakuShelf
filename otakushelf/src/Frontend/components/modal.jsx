@@ -266,8 +266,9 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     useEffect(() => {
         if (!isOpen || !anime) return;
 
-        // Add modal-open class
+        // Add modal-open class to both body and html for maximum compatibility
         document.body.classList.add('modal-open');
+        document.documentElement.classList.add('modal-open');
 
         // Update title classes (delayed for performance)
         if (titleRef.current && animeData) {
@@ -291,11 +292,16 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             const timeoutId = setTimeout(() => {
                 checkIfInList();
             }, 200);
-            return () => clearTimeout(timeoutId);
+            return () => {
+                clearTimeout(timeoutId);
+                document.body.classList.remove('modal-open');
+                document.documentElement.classList.remove('modal-open');
+            };
         }
 
         return () => {
             document.body.classList.remove('modal-open');
+            document.documentElement.classList.remove('modal-open');
         };
     }, [isOpen, anime, animeData, user]);
 
