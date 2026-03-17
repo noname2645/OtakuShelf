@@ -1,10 +1,10 @@
 .anime-card {
   position: relative;
-  aspect-ratio: 2/3;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  /* Softer than beige, compatible with dark theme */
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   text-align: center;
@@ -13,8 +13,8 @@
 
 .anime-card:hover {
   transform: translateY(-6px);
-  border-color: #ff6a00;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 106, 0, 0.2);
+  border-color: #4facfe;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5), 0 0 15px rgba(79, 172, 254, 0.2);
 }
 
 .card-image {
@@ -52,24 +52,23 @@
   right: 0;
   padding: 15px 10px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent);
-  color: #ff6a00;
+  color: #fff;
   z-index: 1;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(0px);
-  /* Home css has 7px but might look weird if small */
 }
 
 .card-title-bottom h3 {
   font-family: "Outfit", sans-serif;
   letter-spacing: 1px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   text-align: center;
-  line-height: 1.4;
+  line-height: 1.3;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #ff6a00;
-  text-shadow: 0 0 8px rgba(190, 79, 0, 0.5);
+  color: #fff;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;

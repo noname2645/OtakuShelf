@@ -319,9 +319,7 @@ body {
 
 /* NEW: Simple staggered animation that triggers automatically */
 .animeCard {
-  animation: fadeInUp 0.5s ease-out forwards;
-  opacity: 0;
-  transform: translateY(20px);
+  opacity: 1; /* Let the internal AnimeCardUI handle its own animation */
 }
 
 /* Staggered delays */
@@ -420,7 +418,7 @@ body {
 
 .animeCard:hover {
   z-index: 60;
-  box-shadow: 0 15px 35px -10px var(--brand-color, rgba(52, 152, 219, 0.6));
+  /* Shadow is handled by the internal AnimeCardUI component to avoid double-glow */
 }
 
 .homeCardImage2 {
@@ -956,7 +954,7 @@ body {
   }
 
   .animeCard {
-    background: rgba(15, 15, 25, 0.7);
+    background: transparent;
   }
 }
 

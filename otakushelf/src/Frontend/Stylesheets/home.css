@@ -144,13 +144,11 @@
   overflow: hidden;
   z-index: 50;
   pointer-events: auto;
-  border: 1px solid beige;
   height: 320px;
   width: 100%;
   border-radius: 20px;
   transition: all 0.3s ease;
   animation: fadeInUp 0.5s ease-out forwards;
-  transform: translateY(20px);
   align-self: start;
 }
 
@@ -633,8 +631,8 @@
 
 .anime-card2:hover {
   z-index: 60;
-  /* Shadow matched to the dynamic brand color provided in inline styles via custom property */
-  box-shadow: 0 15px 35px -10px var(--brand-color, rgba(255, 107, 107, 0.6));
+  /* Glow removed as per user request to avoid skeleton/ghost effect */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); 
 }
 
 .anime-card2 .home-card-image {
@@ -829,51 +827,58 @@
   padding: 20px;
   max-width: 1450px;
   margin: 0 auto;
+  opacity: 0.8;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-hero,
+.skeleton-bar,
+.skeleton-title,
+.skeleton-card {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite linear;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .skeleton-hero {
   height: 500px;
-  background: linear-gradient(135deg,
-      rgba(26, 26, 46, 0.9) 0%,
-      rgba(22, 33, 62, 1) 50%,
-      rgba(26, 26, 46, 0.9) 100%);
-  animation: skeleton-pulse 2s ease-in-out infinite;
-  border-radius: 20px;
+  border-radius: 24px;
   margin-bottom: 40px;
-  position: relative;
-  border: 1px solid rgba(255, 107, 107, 0.1);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
-
-
 
 .skeleton-section {
-  margin-bottom: 50px;
+  margin-bottom: 60px;
 }
 
-/* Skeleton Headers for Carousel */
 .skeleton-section-header {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   padding-left: 10px;
 }
 
 .skeleton-bar {
   width: 6px;
   height: 28px;
-  background: rgba(26, 26, 46, 0.8);
   border-radius: 4px;
   margin-right: 14px;
-  animation: shimmer 2s infinite;
 }
 
 .skeleton-title {
   height: 24px;
   width: 250px;
-  background: rgba(26, 26, 46, 0.8);
-  border-radius: 4px;
-  animation: shimmer 2s infinite;
+  border-radius: 6px;
 }
 
 .skeleton-carousel {
@@ -887,134 +892,17 @@
   flex: 0 0 auto;
   height: 320px;
   width: 220px;
-  background: linear-gradient(135deg,
-      rgba(26, 26, 46, 0.6) 0%,
-      rgba(22, 33, 62, 0.8) 25%,
-      rgba(30, 40, 70, 0.9) 50%,
-      rgba(22, 33, 62, 0.8) 75%,
-      rgba(26, 26, 46, 0.6) 100%);
-  background-size: 200% 200%;
-  animation: shimmer-diagonal 3s ease-in-out infinite;
   border-radius: 20px;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(255, 107, 107, 0.08);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Staggered animation for skeleton cards */
-.skeleton-card:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.skeleton-card:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.skeleton-card:nth-child(3) {
-  animation-delay: 0.2s;
-}
-
-.skeleton-card:nth-child(4) {
-  animation-delay: 0.3s;
-}
-
-.skeleton-card:nth-child(5) {
-  animation-delay: 0.4s;
-}
-
-.skeleton-card:nth-child(6) {
-  animation-delay: 0.5s;
-}
-
-.skeleton-card:nth-child(n+7) {
-  animation-delay: 0.6s;
-}
-
-.skeleton-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg,
-      transparent 30%,
-      rgba(255, 107, 107, 0.05) 50%,
-      transparent 70%);
-  animation: shimmer-rotate 4s linear infinite;
-}
-
-.skeleton-card::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: linear-gradient(to top,
-      rgba(0, 0, 0, 0.6),
-      transparent);
-  border-radius: 0 0 20px 20px;
-}
-
-/* Shimmer Animations */
-@keyframes skeleton-pulse {
-
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-
-  50% {
-    opacity: 1;
-  }
-}
-
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-@keyframes shimmer-diagonal {
-  0% {
-    background-position: 0% 0%;
-  }
-
-  50% {
-    background-position: 100% 100%;
-  }
-
-  100% {
-    background-position: 0% 0%;
-  }
-}
-
-@keyframes shimmer-sweep {
-  0% {
-    left: -100%;
-  }
-
-  100% {
-    left: 100%;
-  }
-}
-
-@keyframes shimmer-rotate {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
+.skeleton-card:nth-child(1) { animation-delay: 0s; }
+.skeleton-card:nth-child(2) { animation-delay: 0.1s; }
+.skeleton-card:nth-child(3) { animation-delay: 0.2s; }
+.skeleton-card:nth-child(4) { animation-delay: 0.3s; }
+.skeleton-card:nth-child(5) { animation-delay: 0.4s; }
+.skeleton-card:nth-child(6) { animation-delay: 0.5s; }
 
 /* Responsive Design */
 
@@ -1321,8 +1209,8 @@
   }
 
   .anime-card2 {
-    background: rgba(15, 15, 25, 0.7);
-    border-color: rgba(255, 107, 107, 0.15);
+    background: transparent;
+    border-color: transparent;
   }
 }
 
