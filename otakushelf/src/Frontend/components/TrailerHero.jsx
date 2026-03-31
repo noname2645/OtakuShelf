@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import axios from 'axios';
 import { motion } from "framer-motion";
+import { useAnimePreferences } from './useAnimePreferences';
 import '../Stylesheets/TrailerHero.css';
 
 // API base URL
@@ -11,6 +12,7 @@ const TrailerHero = ({ onOpenModal }) => {
     const [currentAnime, setCurrentAnime] = useState(0);
     const [opacity, setOpacity] = useState(1);
     const heroRef = useRef(null);
+    const { getPreferredTitle, shouldAutoplay, shouldBlurNSFW } = useAnimePreferences();
     const [isMuted, setIsMuted] = useState(true);
     const [hasUserInteracted, setHasUserInteracted] = useState(false);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
@@ -90,13 +92,8 @@ const TrailerHero = ({ onOpenModal }) => {
     };
 
     const getAnimeTitle = (anime) => {
-        if (anime.title?.english) return anime.title.english;
-        if (anime.title?.romaji) return anime.title.romaji;
-        if (anime.title?.native) return anime.title.native;
-        if (typeof anime.title === 'string') return anime.title;
-        if (anime.title_english) return anime.title_english;
-        if (anime.title_romaji) return anime.title_romaji;
-        return anime.title || 'Unknown Title';
+        if (!anime) return "Unknown Title";
+        return getPreferredTitle(anime.title) || anime.title_english || anime.title_romaji || "Unknown Title";
     };
 
     // Fetch with retry logic — handles Render cold-start (first attempt fast, then longer)
@@ -193,7 +190,7 @@ const TrailerHero = ({ onOpenModal }) => {
         try {
             // Mobile-specific player vars
             const playerVars = {
-                autoplay: hasUserInteracted ? 1 : 0,
+                autoplay: shouldAutoplay() ? 1 : 0,
                 mute: 1,
                 loop: 1,
                 controls: 0,

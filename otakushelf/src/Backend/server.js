@@ -22,6 +22,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import aiChat from "./aiChat.js";
 import nodemailer from 'nodemailer';
+import speakeasy from 'speakeasy';
+import qrcode from 'qrcode';
 import { success, error } from './utils/responseHandler.js';
 import { authenticateToken, authorizeUser } from './utils/authMiddleware.js';
 
@@ -95,6 +97,74 @@ app.use((req, res, next) => {
   res.sendError = (message, statusCode = 500, data = null) => error(res, message, statusCode, data);
   next();
 });
+
+// ─── Security Email Helper ───────────────────────────────────────────────────
+const sendSecurityEmail = async (email, type, data = {}) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT || 587,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    let subject = '🛡️ OtakuShelf — Security Alert';
+    let title = 'Security Alert';
+    let message = '';
+    let btnText = null;
+    let btnUrl = null;
+
+    if (type === 'otp') {
+      subject = `${data.action} Verification Code`;
+      title = `${data.action} Verification`;
+      message = `Your verification code is: <h2 style="letter-spacing:4px;color:#ec4899;font-size:32px;margin:16px 0">${data.otp}</h2> This code will expire in 10 minutes.`;
+    } else if (type === 'mfa_enabled') {
+      subject = '2FA Successfully Enabled';
+      title = '2FA Enabled';
+      message = 'Two-Factor Authentication has been successfully enabled on your account. Your account is now more secure than ever!';
+    } else if (type === 'mfa_disabled') {
+      subject = '2FA Successfully Disabled';
+      title = '2FA Disabled';
+      message = 'Two-Factor Authentication has been successfully disabled on your account. Your account is now less secure. If you did not make this change, please contact support immediately.';
+    } else if (type === 'password_changed') {
+      subject = 'Password Changed';
+      title = 'Password Changed';
+      message = 'The password for your OtakuShelf account was recently changed. If you did not make this change, please contact support immediately.';
+    } else if (type === 'account_deleted') {
+      subject = 'Account Deleted';
+      title = 'Account Deleted';
+      message = 'Your account and all associated data have been permanently removed. We\'re sad to see you go!';
+    }
+
+    await transporter.sendMail({
+      from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
+      to: email,
+      subject,
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0d0d1a;color:#fff;border-radius:16px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#ef4444,#ec4899);padding:32px;text-align:center">
+            <h1 style="margin:0;font-size:28px">OtakuShelf</h1>
+            <p style="margin:8px 0 0;opacity:0.85">${title}</p>
+          </div>
+          <div style="padding:32px">
+            <p>Hey there, Otaku! 👋</p>
+            <p>${message}</p>
+            ${btnText ? `<div style="text-align:center;margin:32px 0"><a href="${btnUrl}" style="background:linear-gradient(135deg,#ef4444,#ec4899);color:#fff;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:16px">${btnText}</a></div>` : ''}
+            <p style="font-size:13px;opacity:0.6">If you didn't expect this alert, please check your account security immediately!</p>
+            <hr style="border-color:rgba(255,255,255,0.1);margin:24px 0">
+            <p style="font-size:12px;opacity:0.4;text-align:center">OtakuShelf · Your Anime Universe</p>
+          </div>
+        </div>
+      `,
+    });
+    return true;
+  } catch (err) {
+    console.error('Email sending failed:', err);
+    return false;
+  }
+};
 
 // Security Headers (Helmet)
 app.use(helmet({
@@ -322,6 +392,29 @@ app.post("/auth/login", authLimiter, async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    // Handle MFA Flow
+    if (user.isMfaEnabled) {
+      if (!req.body.mfaCode) {
+        // Return 200 with requiresMfa flag so frontend can show input
+        return res.status(200).json({ 
+          success: true, 
+          message: "MFA code required", 
+          requiresMfa: true 
+        });
+      }
+
+      // Verify the code
+      const verified = speakeasy.totp.verify({
+        secret: user.mfaSecret,
+        encoding: 'base32',
+        token: req.body.mfaCode
+      });
+
+      if (!verified) {
+        return res.status(400).json({ message: "Invalid or expired MFA code" });
+      }
+    }
+
     req.login(user, (err) => {
       if (err) {
         console.error("Session login error:", err);
@@ -336,7 +429,8 @@ app.post("/auth/login", authLimiter, async (req, res) => {
           email: user.email,
           authType: user.authType,
           photo: user.photo || null,
-          name: user.name || null
+          name: user.name || null,
+          isMfaEnabled: user.isMfaEnabled || false
         },
         token,
       });
@@ -691,6 +785,12 @@ app.get("/api/profile/:userId", authenticateToken, authorizeUser, async (req, re
       email: userObj.email,
       name: userObj.name || 'Anime Lover',
       photo: userObj.photo || null,
+      isMfaEnabled: userObj.isMfaEnabled || false,
+      settings: userObj.settings || {
+        preferences: { titleLanguage: 'romaji', defaultLayout: 'grid', nsfwContent: false, autoplayTrailers: true, accentColor: '#ff6b6b' },
+        notifications: { episodeAlerts: true, securityEmails: true, marketingEmails: false },
+        privacy: { profileVisibility: 'public' }
+      },
       profile: {
         username: userObj.profile?.username || `@user_${userObj._id.toString().slice(-6)}`,
         bio: userObj.profile?.bio || 'Anime enthusiast exploring new worlds through animation',
@@ -763,7 +863,342 @@ app.put("/api/profile/:userId", authenticateToken, authorizeUser, async (req, re
   }
 });
 
-// Route 15: POST /api/list/:userId — Add anime to list
+// Route 15: GET /api/settings/:userId — Get user settings
+app.get("/api/settings/:userId", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select('settings');
+    if (!user) return res.sendError("User not found", 404);
+    res.sendSuccess("Settings retrieved", user.settings || {});
+  } catch (err) {
+    console.error('Get settings error:', err);
+    res.sendError("Error retrieving settings", 500, err.message);
+  }
+});
+
+// Route 16: PUT /api/settings/:userId — Update user settings
+app.put("/api/settings/:userId", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const { preferences, notifications, privacy } = req.body;
+    const update = {};
+
+    if (preferences) {
+      if (preferences.titleLanguage !== undefined) update['settings.preferences.titleLanguage'] = preferences.titleLanguage;
+      if (preferences.defaultLayout !== undefined) update['settings.preferences.defaultLayout'] = preferences.defaultLayout;
+      if (preferences.nsfwContent !== undefined) update['settings.preferences.nsfwContent'] = preferences.nsfwContent;
+      if (preferences.autoplayTrailers !== undefined) update['settings.preferences.autoplayTrailers'] = preferences.autoplayTrailers;
+      if (preferences.accentColor !== undefined) update['settings.preferences.accentColor'] = preferences.accentColor;
+    }
+    if (notifications) {
+      if (notifications.episodeAlerts !== undefined) update['settings.notifications.episodeAlerts'] = notifications.episodeAlerts;
+      if (notifications.securityEmails !== undefined) update['settings.notifications.securityEmails'] = notifications.securityEmails;
+      if (notifications.marketingEmails !== undefined) update['settings.notifications.marketingEmails'] = notifications.marketingEmails;
+    }
+    if (privacy) {
+      if (privacy.profileVisibility !== undefined) update['settings.privacy.profileVisibility'] = privacy.profileVisibility;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.userId,
+      { $set: update },
+      { new: true, select: 'settings' }
+    );
+
+    res.sendSuccess("Settings updated", updatedUser.settings);
+  } catch (err) {
+    console.error('Update settings error:', err);
+    res.sendError("Error updating settings", 500, err.message);
+  }
+});
+
+// Route 17: PUT /auth/change-password — Change password for local auth users
+app.put("/auth/change-password", authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.sendError("Current and new passwords are required", 400);
+    }
+    if (newPassword.length < 6) {
+      return res.sendError("New password must be at least 6 characters", 400);
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.sendError("User not found", 404);
+    if (user.authType !== 'local') {
+      return res.sendError("Password change is not available for Google accounts", 400);
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.sendError("Current password is incorrect", 400);
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    // Send security alert
+    if (user.settings?.notifications?.securityEmails !== false) {
+      sendSecurityEmail(user.email, 'password_changed');
+    }
+
+    res.sendSuccess("Password changed successfully");
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.sendError("Error changing password", 500, err.message);
+  }
+});
+
+// Route 18: DELETE /auth/delete-account — Permanently delete user account
+app.delete("/auth/delete-account", authenticateToken, async (req, res) => {
+  try {
+    const { password, otp } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.sendError("User not found", 404);
+
+    if (!otp) {
+      return res.sendError("Security OTP required for deletion", 400);
+    }
+
+    if (user.securityOtp !== otp || !user.securityOtpExpires || user.securityOtpExpires < new Date() || user.securityAction !== 'delete_account') {
+      return res.sendError("Invalid or expired verification code", 400);
+    }
+
+    // For local auth, verify password before deletion
+    if (user.authType === 'local') {
+      if (!password) return res.sendError("Password is required to delete your account", 400);
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.sendError("Incorrect password", 400);
+    }
+
+    // Delete user
+    await User.findByIdAndDelete(req.user.id);
+
+    // Send alert
+    sendSecurityEmail(user.email, 'account_deleted');
+
+    res.sendSuccess("Account deleted successfully");
+  } catch (err) {
+    console.error('Delete account error:', err);
+    res.sendError("Error deleting account", 500, err.message);
+  }
+});
+
+// Route 19: GET /api/settings/:userId/sessions — Get active sessions
+app.get("/api/settings/:userId/sessions", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const mongoose = await import('mongoose');
+    const db = mongoose.default.connection.db;
+    const sessionsCollection = db.collection('sessions');
+
+    const sessions = await sessionsCollection.find({}).toArray();
+
+    const userSessions = sessions.filter(s => {
+      try {
+        const sessionData = typeof s.session === 'string' ? JSON.parse(s.session) : s.session;
+        return sessionData?.passport?.user === req.params.userId;
+      } catch { return false; }
+    }).map(s => ({
+      id: s._id,
+      expires: s.expires,
+      createdAt: s._id.toString().substring(0, 8),
+    }));
+
+    res.sendSuccess("Active sessions", { sessions: userSessions, count: userSessions.length });
+  } catch (err) {
+    console.error('Sessions fetch error:', err);
+    res.sendError("Error fetching sessions", 500, err.message);
+  }
+});
+
+// Route 20: DELETE /api/settings/:userId/sessions — Logout all other sessions
+app.delete("/api/settings/:userId/sessions", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const mongoose = await import('mongoose');
+    const db = mongoose.default.connection.db;
+    const sessionsCollection = db.collection('sessions');
+
+    const currentSessionId = req.sessionID;
+
+    // Delete all sessions except the current one
+    const result = await sessionsCollection.deleteMany({
+      _id: { $ne: currentSessionId }
+    });
+
+    res.sendSuccess("All other sessions terminated", { deletedCount: result.deletedCount });
+  } catch (err) {
+    console.error('Session deletion error:', err);
+    res.sendError("Error terminating sessions", 500, err.message);
+  }
+});
+
+// Route 21: GET /api/settings/:userId/export — Export user's anime data as JSON
+app.get("/api/settings/:userId/export", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const animeList = await AnimeList.findOne({ userId: req.params.userId });
+    const user = await User.findById(req.params.userId).select('-password -passwordResetToken -passwordResetExpires');
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      platform: "OtakuShelf",
+      user: {
+        email: user.email,
+        name: user.name,
+        joinDate: user.profile?.joinDate || user.createdAt,
+        stats: user.profile?.stats || {},
+      },
+      animeList: animeList ? {
+        watching: animeList.watching || [],
+        completed: animeList.completed || [],
+        planToWatch: animeList.planToWatch || [],
+        dropped: animeList.dropped || [],
+        favorites: animeList.favorites || [],
+      } : {}
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="otakushelf_export_${Date.now()}.json"`);
+    res.send(JSON.stringify(exportData, null, 2));
+  } catch (err) {
+    console.error('Export error:', err);
+    res.sendError("Error exporting data", 500, err.message);
+  }
+});
+
+// --- MFA & Security Routes --- //
+
+// POST /api/auth/request-security-otp/:userId — Request OTP for sensitive actions
+app.post("/api/auth/request-security-otp/:userId", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const { action, password } = req.body;
+    const user = await User.findById(req.params.userId);
+
+    if (!user) return res.sendError("User not found", 404);
+
+    // Verify password for local users before generating OTP
+    if (user.authType === 'local') {
+      if (!password) return res.sendError("Password required to verify identity", 400);
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.sendError("Incorrect password", 400);
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    user.securityOtp = otp;
+    user.securityOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    user.securityAction = action; // 'mfa_disable', 'delete_account'
+    await user.save();
+
+    // Send OTP via email
+    let actionLabel = action === 'mfa_disable' ? 'MFA Disable' : 'Account Deletion';
+    const sent = await sendSecurityEmail(user.email, 'otp', { otp, action: actionLabel });
+
+    if (!sent) return res.sendError("Failed to send verification email. Please check your SMTP settings.", 500);
+
+    res.sendSuccess(`Verification code sent to ${user.email}`);
+  } catch (err) {
+    console.error('Request OTP error:', err);
+    res.sendError("Failed to generate verification code", 500, err.message);
+  }
+});
+
+// GET /api/mfa/setup/:userId — Generate new MFA secret and QR code
+app.get("/api/mfa/setup/:userId", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.sendError("User not found", 404);
+
+    const secret = speakeasy.generateSecret({ 
+      name: `OtakuShelf (${user.email})` 
+    });
+
+    user.tempMfaSecret = secret.base32;
+    await user.save();
+
+    const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
+
+    res.sendSuccess("MFA Setup started", {
+      secret: secret.base32,
+      qrCodeUrl
+    });
+  } catch (err) {
+    res.sendError("Failed to generate MFA setup", 500, err.message);
+  }
+});
+
+// POST /api/mfa/verify/:userId — Verify temp code and enable MFA
+app.post("/api/mfa/verify/:userId", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const { token } = req.body;
+    const user = await User.findById(req.params.userId);
+
+    if (!user || !user.tempMfaSecret) {
+      return res.status(400).json({ message: "MFA setup not initialized" });
+    }
+
+    const verified = speakeasy.totp.verify({
+      secret: user.tempMfaSecret,
+      encoding: 'base32',
+      token
+    });
+
+    if (verified) {
+      user.mfaSecret = user.tempMfaSecret;
+      user.isMfaEnabled = true;
+      user.tempMfaSecret = null;
+      await user.save();
+
+      // Send security alert
+      if (user.settings?.notifications?.securityEmails !== false) {
+        sendSecurityEmail(user.email, 'mfa_enabled');
+      }
+
+      res.sendSuccess("MFA successfully enabled");
+    } else {
+      res.status(400).json({ message: "Invalid MFA code" });
+    }
+  } catch (err) {
+    res.sendError("Failed to verify MFA", 500, err.message);
+  }
+});
+
+// POST /api/mfa/disable/:userId — Disable MFA (Requires Email OTP)
+app.post("/api/mfa/disable/:userId", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const { otp } = req.body;
+    const user = await User.findById(req.params.userId);
+
+    if (!user) return res.sendError("User not found", 404);
+
+    if (!otp) {
+      return res.sendError("Security OTP required to disable MFA", 400);
+    }
+
+    if (user.securityOtp !== otp || !user.securityOtpExpires || user.securityOtpExpires < new Date() || user.securityAction !== 'mfa_disable') {
+      return res.sendError("Invalid or expired verification code", 400);
+    }
+
+    user.mfaSecret = null;
+    user.isMfaEnabled = false;
+    user.tempMfaSecret = null;
+    user.securityOtp = null;
+    user.securityOtpExpires = null;
+    user.securityAction = null;
+    await user.save();
+
+    // Send security alert
+    if (user.settings?.notifications?.securityEmails !== false) {
+      sendSecurityEmail(user.email, 'mfa_disabled');
+    }
+
+    res.sendSuccess("MFA disabled successfully");
+  } catch (err) {
+    console.error('MFA disable error:', err);
+    res.sendError("Failed to disable MFA", 500, err.message);
+  }
+});
+
+// Route 22: POST /api/list/:userId — Add anime to list
 app.post("/api/list/:userId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { category, animeTitle, animeData } = req.body;

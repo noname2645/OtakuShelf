@@ -13,6 +13,7 @@ import Profile from "../Frontend/components/profile.jsx";
 import AIPage from "../Frontend/components/aipage.jsx";
 import ForgotPassword from "../Frontend/components/ForgotPassword.jsx";
 import ResetPassword from "../Frontend/components/ResetPassword.jsx";
+import SettingsPage from "../Frontend/components/settings.jsx";
 import AnimeTransitionOverlay from "../Frontend/components/AnimeTransition.jsx";
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -60,6 +61,7 @@ const AppContent = () => {
             <Route path="/ai" element={<AIPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </motion.div>
       </AnimatePresence>

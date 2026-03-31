@@ -1,26 +1,12 @@
 import styles from "../Stylesheets/animecard.module.css";
+import { useAnimePreferences } from "./useAnimePreferences";
 
 const AnimeCard = ({ anime, onClick, className }) => {
-  // Safely extract title
-  const getTitle = () => {
-    if (!anime) return "Untitled";
+  const { getPreferredTitle, shouldBlurNSFW } = useAnimePreferences();
 
-    // If title is already a string
-    if (typeof anime.title === 'string') {
-      return anime.title;
-    }
-
-    // If title is an object
-    if (anime.title && typeof anime.title === 'object') {
-      return anime.title.english ||
-        anime.title.romaji ||
-        anime.title.native ||
-        "Untitled";
-    }
-
-    // Fallback
-    return "Untitled";
-  };
+  const title = getPreferredTitle(anime?.title);
+  const isAdult = anime?.isAdult || false;
+  const requireBlur = shouldBlurNSFW(isAdult);
 
   // Safely extract image
   const getImage = () => {
@@ -47,7 +33,6 @@ const AnimeCard = ({ anime, onClick, className }) => {
     return null;
   };
 
-  const title = getTitle();
   const img = getImage();
 
   const handleClick = () => {
@@ -61,9 +46,10 @@ const AnimeCard = ({ anime, onClick, className }) => {
       <div className={styles["card-image"]}>
         {img ? (
           <img
-            className="related-img"
+            className={`related-img ${requireBlur ? styles['blur-nsfw'] : ''}`}
             src={img}
-            alt={title}
+            style={requireBlur ? { filter: 'blur(16px)', pointerEvents: 'none' } : {}}
+            alt={requireBlur ? 'NSFW Content Hidden' : title}
             loading="lazy"
             onError={(e) => {
               e.target.src = "https://via.placeholder.com/210x295/333/666?text=No+Image";
@@ -75,7 +61,7 @@ const AnimeCard = ({ anime, onClick, className }) => {
           </div>
         )}
         <div className={styles["card-title-bottom"]}>
-          <h3>{title}</h3>
+          <h3>{requireBlur ? '18+ Content' : title}</h3>
         </div>
       </div>
     </div>

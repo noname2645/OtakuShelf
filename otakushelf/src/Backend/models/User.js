@@ -38,6 +38,29 @@ const userSchema = new mongoose.Schema({
     },
     passwordResetToken: { type: String, default: null },
     passwordResetExpires: { type: Date, default: null },
+    mfaSecret: { type: String, default: null },
+    tempMfaSecret: { type: String, default: null },
+    isMfaEnabled: { type: Boolean, default: false },
+    securityOtp: { type: String, default: null },
+    securityOtpExpires: { type: Date, default: null },
+    securityAction: { type: String, default: null },
+    settings: {
+        preferences: {
+            titleLanguage: { type: String, enum: ['romaji', 'english', 'native'], default: 'romaji' },
+            defaultLayout: { type: String, enum: ['grid', 'list'], default: 'grid' },
+            nsfwContent: { type: Boolean, default: false },
+            autoplayTrailers: { type: Boolean, default: true },
+            accentColor: { type: String, default: '#ff6b6b' },
+        },
+        notifications: {
+            episodeAlerts: { type: Boolean, default: true },
+            securityEmails: { type: Boolean, default: true },
+            marketingEmails: { type: Boolean, default: false },
+        },
+        privacy: {
+            profileVisibility: { type: String, enum: ['public', 'private'], default: 'public' },
+        }
+    },
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);

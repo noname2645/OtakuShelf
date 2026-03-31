@@ -4,6 +4,7 @@ import api from '../api.js';
 import { Header } from '../components/header';
 import BottomNavBar from "../components/bottom.jsx";
 import { useAuth } from '../components/AuthContext';
+import { Link } from 'react-router-dom';
 import {
   ResponsiveContainer,
   PieChart,
@@ -646,6 +647,7 @@ const ProfilePage = () => {
                   <button className="btn-share" onClick={handleShareProfile}>
                     Share Profile
                   </button>
+
                   {/* TEMPORARY BUTTON - Remove after running once */}
                   {watchedGenres === 0 && (
                     <button

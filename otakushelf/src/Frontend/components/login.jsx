@@ -10,6 +10,8 @@ import { motion, AnimatePresence } from "framer-motion";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [requiresMfa, setRequiresMfa] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -29,11 +31,21 @@ const Login = () => {
     setMessage("");
     if (!email || !password) { setMessage("Please fill in all fields"); setIsLoading(false); return; }
     try {
-      const res = await axios.post(`${API}/auth/login`, { email, password }, { withCredentials: true });
+      const payload = { email, password };
+      if (requiresMfa) payload.mfaCode = mfaCode;
+
+      const res = await axios.post(`${API}/auth/login`, payload, { withCredentials: true });
+      
+      if (res.data.requiresMfa) {
+        setRequiresMfa(true);
+        setMessage("Two-Factor Authentication required. Check your authenticator app.");
+        return;
+      }
+
       setMessage(res.data.message);
       if (res.data.data && res.data.data.user) {
         login(res.data.data.user, res.data.data.token);
-        setEmail(""); setPassword("");
+        setEmail(""); setPassword(""); setMfaCode("");
         navigate("/");
       }
     } catch (err) {
@@ -132,8 +144,8 @@ const Login = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.38, duration: 0.4 }}
         >
-          <h1 className="login-auth-title">Welcome Back</h1>
-          <p className="login-auth-subtitle">Sign in to your OtakuShelf account</p>
+          <h1 className="login-auth-title">{requiresMfa ? "Two-Factor Auth" : "Welcome Back"}</h1>
+          <p className="login-auth-subtitle">{requiresMfa ? "Enter the 6-digit code from your app" : "Sign in to your OtakuShelf account"}</p>
         </motion.div>
 
         {/* Staggered form */}
@@ -144,30 +156,50 @@ const Login = () => {
           initial="hidden"
           animate="visible"
         >
-          <motion.div className="login-form-group" variants={fieldVariants}>
-            <div className="login-input-with-icon">
-              <span className="login-input-icon">✉️</span>
-              <input
-                type="email" placeholder="Enter your email"
-                value={email} onChange={(e) => setEmail(e.target.value)}
-                className="login-form-input" disabled={isLoading} required
-              />
-            </div>
-          </motion.div>
+          {!requiresMfa ? (
+            <>
+              <motion.div className="login-form-group" variants={fieldVariants}>
+                <div className="login-input-with-icon">
+                  <span className="login-input-icon">✉️</span>
+                  <input
+                    type="email" placeholder="Enter your email"
+                    value={email} onChange={(e) => setEmail(e.target.value)}
+                    className="login-form-input" disabled={isLoading} required
+                  />
+                </div>
+              </motion.div>
 
-          <motion.div className="login-form-group" variants={fieldVariants}>
-            <div className="login-input-with-icon">
-              <span className="login-input-icon">🔒</span>
-              <input
-                type="password" placeholder="Enter your password"
-                value={password} onChange={(e) => setPassword(e.target.value)}
-                className="login-form-input" disabled={isLoading} required
-              />
-            </div>
-            <div style={{ textAlign: "right", marginTop: "6px" }}>
-              <Link to="/forgot-password" className="login-forgot-link">Forgot password?</Link>
-            </div>
-          </motion.div>
+              <motion.div className="login-form-group" variants={fieldVariants}>
+                <div className="login-input-with-icon">
+                  <span className="login-input-icon">🔒</span>
+                  <input
+                    type="password" placeholder="Enter your password"
+                    value={password} onChange={(e) => setPassword(e.target.value)}
+                    className="login-form-input" disabled={isLoading} required
+                  />
+                </div>
+                <div style={{ textAlign: "right", marginTop: "6px" }}>
+                  <Link to="/forgot-password" className="login-forgot-link">Forgot password?</Link>
+                </div>
+              </motion.div>
+            </>
+          ) : (
+            <motion.div className="login-form-group" variants={fieldVariants}>
+              <div className="login-input-with-icon">
+                <span className="login-input-icon">🔐</span>
+                <input
+                  type="text" placeholder="6-digit MFA Code"
+                  value={mfaCode} onChange={(e) => setMfaCode(e.target.value)}
+                  className="login-form-input" disabled={isLoading} required
+                  maxLength={6} pattern="\d{6}"
+                  style={{ letterSpacing: '4px', textAlign: 'center', fontSize: '1.2rem' }}
+                />
+              </div>
+              <div style={{ textAlign: "center", marginTop: "12px" }}>
+                <span className="login-forgot-link" onClick={() => { setRequiresMfa(false); setMfaCode(""); }} style={{ cursor: 'pointer' }}>Cancel</span>
+              </div>
+            </motion.div>
+          )}
 
           <motion.div variants={fieldVariants}>
             <motion.button
