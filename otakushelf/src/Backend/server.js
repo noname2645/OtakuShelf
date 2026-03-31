@@ -16,7 +16,7 @@ import xml2js from 'xml2js';
 import fileUpload from 'express-fileupload';
 import axios from 'axios';
 import { WebSocketServer } from 'ws';
-import { parse } from 'url';
+
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -28,6 +28,7 @@ import { authenticateToken, authorizeUser } from './utils/authMiddleware.js';
 // Security packages
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
 
 
 const envFile =
@@ -88,9 +89,16 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 app.set('trust proxy', 1);
 
+// Standardized Response Middleware
+app.use((req, res, next) => {
+  res.sendSuccess = (message, data = null, statusCode = 200) => success(res, message, data, statusCode);
+  res.sendError = (message, statusCode = 500, data = null) => error(res, message, statusCode, data);
+  next();
+});
+
 // Security Headers (Helmet)
 app.use(helmet({
-  contentSecurityPolicy: false, // Disabled for development - enable in production with proper config
+  contentSecurityPolicy: isProduction ? undefined : false, // Enabled in production, disabled for Vite HMR in dev
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
@@ -101,6 +109,10 @@ app.use(helmet({
 // Request Size Limits (DoS Protection)
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Data Sanitization (Disabled due to middleware bugs with current Express version)
+// app.use(mongoSanitize());
+// app.use(xss());
 
 // Compression
 app.use(compression());
@@ -195,13 +207,6 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Standardized Response Middleware
-app.use((req, res, next) => {
-  res.sendSuccess = (message, data = null, statusCode = 200) => success(res, message, data, statusCode);
-  res.sendError = (message, statusCode = 500, data = null) => error(res, message, statusCode, data);
-  next();
-});
 
 import User from './models/User.js';
 import AnimeList from './models/AnimeList.js';
@@ -436,17 +441,18 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-    // Send email via Nodemailer (Gmail SMTP with App Password)
+    // Send email via Professional SMTP Provider
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT || 587,
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // Gmail App Password
+        pass: process.env.EMAIL_PASS,
       },
     });
 
     await transporter.sendMail({
-      from: `"OtakuShelf" <${process.env.EMAIL_USER}>`,
+      from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
       to: email,
       subject: '🔑 OtakuShelf — Reset Your Password',
       html: `
@@ -1638,6 +1644,9 @@ app.use("/api/list/:userId", async (req, res, next) => {
   }
 });
 
+// Apply API Rate Limiter to all non-auth API routes
+app.use('/api', apiLimiter);
+
 // Router Mount A: /api/anime — Anime sections, search, details (animeRoutes.js)
 app.use('/api/anime', animeRoutes);
 // Router Mount B: /api/anilist — Hero trailers (anilistRoute.js)
@@ -1692,8 +1701,9 @@ const wss = new WebSocketServer({
 
 wss.on('connection', (ws, req) => {
   try {
-    const { query } = parse(req.url, true);
-    const userId = query.userId;
+    // Construct full URL using host header or dummy base to access search parameters properly
+    const url = new URL(req.url, `ws://${req.headers.host || 'localhost'}`);
+    const userId = url.searchParams.get('userId');
 
     if (userId) {
       userConnections.set(userId, ws);

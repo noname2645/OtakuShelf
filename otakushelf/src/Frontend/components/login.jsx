@@ -31,8 +31,8 @@ const Login = () => {
     try {
       const res = await axios.post(`${API}/auth/login`, { email, password }, { withCredentials: true });
       setMessage(res.data.message);
-      if (res.data.user) {
-        login(res.data.user, res.data.token);
+      if (res.data.data && res.data.data.user) {
+        login(res.data.data.user, res.data.data.token);
         setEmail(""); setPassword("");
         navigate("/");
       }
