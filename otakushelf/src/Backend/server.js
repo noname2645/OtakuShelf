@@ -97,12 +97,6 @@ app.use(helmet({
   }
 }));
 
-// MongoDB Injection Protection
-// Note: Temporarily disabled due to compatibility issue with Express version
-// TODO: Implement manual input validation or upgrade express-mongo-sanitize
-// app.use(mongoSanitize({
-//   replaceWith: '_'
-// }));
 
 // Request Size Limits (DoS Protection)
 app.use(express.json({ limit: '10kb' }));
@@ -127,9 +121,6 @@ const authLimiter = rateLimit({
   message: 'Too many login attempts, please try again later.'
 });
 
-// Apply rate limiters
-// Note: Apply to specific routes instead of blanket /api/ to avoid conflicts
-// app.use('/api/', apiLimiter);
 
 
 app.use(fileUpload({
@@ -174,7 +165,6 @@ app.use('/uploads', (req, res, next) => {
   next();
 }, express.static(uploadsDir));
 
-// Middleware already configured above with security settings
 
 // MongoDB Connection with Pooling
 mongoose.connect(process.env.MONGO_URI, {
@@ -265,13 +255,16 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
+// Route 1: GET /healthz — Health check
 app.get('/healthz', (req, res) => res.sendSuccess('System is healthy', 'ok'));
 
 // Wake-up / keep-alive ping endpoint (used by frontend for cold-start)
+// Route 2: GET /api/ping — Connectivity test
 app.get('/api/ping', (req, res) => {
   res.sendSuccess('Server is awake', { status: 'awake', timestamp: Date.now(), uptime: process.uptime() });
 });
 
+// Route 3: POST /auth/register — User registration
 app.post("/auth/register", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -301,6 +294,7 @@ app.post("/auth/register", authLimiter, async (req, res) => {
   }
 });
 
+// Route 4: POST /auth/login — User login
 app.post("/auth/login", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -348,8 +342,10 @@ app.post("/auth/login", authLimiter, async (req, res) => {
   }
 });
 
+// Route 5: GET /auth/google — Google OAuth initiate
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
+// Route 6: GET /auth/google/callback — Google OAuth callback
 app.get("/auth/google/callback",
   passport.authenticate("google", { failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed` }),
   (req, res) => {
@@ -364,6 +360,7 @@ app.get("/auth/google/callback",
   }
 );
 
+// Route 7: GET /auth/me — Get current authenticated user
 app.get("/auth/me", (req, res) => {
   const authHeader = req.headers["authorization"];
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -394,9 +391,8 @@ app.get("/auth/me", (req, res) => {
   }
 });
 
+// Route 8: GET /auth/logout — User logout
 app.get("/auth/logout", (req, res) => {
-  const userEmail = req.user ? req.user.email : 'unknown';
-
   req.logout((err) => {
     if (err) {
       console.error("Logout error:", err);
@@ -411,13 +407,13 @@ app.get("/auth/logout", (req, res) => {
 
       res.clearCookie('sessionId');
       res.clearCookie('connect.sid');
-      // console.log('User logged out successfully:', userEmail); // sensitive: email
       res.sendSuccess("Logged out successfully");
     });
   });
 });
 
 // ─── Forgot Password ───────────────────────────────────────────────────────
+// Route 9: POST /auth/forgot-password — Send password reset email
 app.post("/auth/forgot-password", authLimiter, async (req, res) => {
   try {
     const { email } = req.body;
@@ -481,6 +477,7 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
 });
 
 // ─── Reset Password ─────────────────────────────────────────────────────────
+// Route 10: POST /auth/reset-password — Reset password with token
 app.post("/auth/reset-password", async (req, res) => {
   try {
     const { token, email, newPassword } = req.body;
@@ -518,6 +515,7 @@ app.post("/auth/reset-password", async (req, res) => {
   }
 });
 
+// Route 11: POST /api/profile/:userId/upload-photo — Upload profile photo
 app.post("/api/profile/:userId/upload-photo", authenticateToken, authorizeUser, async (req, res) => {
   try {
     if (!req.files || !req.files.photo) {
@@ -565,6 +563,7 @@ app.post("/api/profile/:userId/upload-photo", authenticateToken, authorizeUser, 
   }
 });
 
+// Route 12: POST /api/profile/:userId/upload-cover — Upload cover photo
 app.post("/api/profile/:userId/upload-cover", authenticateToken, authorizeUser, async (req, res) => {
   try {
     if (!req.files || !req.files.cover) {
@@ -608,6 +607,7 @@ app.post("/api/profile/:userId/upload-cover", authenticateToken, authorizeUser, 
   }
 });
 
+// Route 13: GET /api/profile/:userId — Get user profile
 app.get("/api/profile/:userId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { userId } = req.params;
@@ -707,6 +707,7 @@ app.get("/api/profile/:userId", authenticateToken, authorizeUser, async (req, re
   }
 });
 
+// Route 14: PUT /api/profile/:userId — Update user profile
 app.put("/api/profile/:userId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { userId } = req.params;
@@ -756,6 +757,7 @@ app.put("/api/profile/:userId", authenticateToken, authorizeUser, async (req, re
   }
 });
 
+// Route 15: POST /api/list/:userId — Add anime to list
 app.post("/api/list/:userId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { category, animeTitle, animeData } = req.body;
@@ -822,12 +824,10 @@ app.post("/api/list/:userId", authenticateToken, authorizeUser, async (req, res)
   }
 });
 
-// FIXED: MAL Import Route with better error handling
-app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, res) => {
-  console.log('🔵 MAL IMPORT REQUEST RECEIVED');
+const userConnections = new Map();
 
-  // Initialize caching for this import session
-  const jikanImageCache = new Map();
+// Route 16: POST /api/list/import/mal — Import from MyAnimeList
+app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, res) => {
   let lastJikanRequest = 0;
 
   try {
@@ -983,8 +983,6 @@ app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, r
       return 'planned';
     }
 
-    console.log('\n🎬 PROCESSING ANIME ENTRIES...');
-
     const batchSize = 10;
     let processed = 0;
     let imported = 0;
@@ -1031,15 +1029,11 @@ app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, r
             }
           }
 
-          // FIX THIS SECTION - Replace the existing image fetching code:
-
           const metadata = await getAnimeMetadata(malId, title);
           const imageUrl = metadata.image;
           const fetchedGenres = metadata.genres || [];
 
-          // NEW FUNCTION TO ADD (place it near other helper functions):
           async function getAnimeMetadata(malId, title) {
-            // Try multiple sources in order
 
             // 1. First try: Jikan API (with proper rate limiting)
             try {
@@ -1067,7 +1061,6 @@ app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, r
               const genres = res.data?.data?.genres?.map(g => g.name) || [];
 
               if (image) {
-                // jikanImageCache is simple for now, but valid
                 return { image, genres };
               }
             } catch (error) {
@@ -1191,13 +1184,7 @@ app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, r
       }
     }
 
-    console.log('\n💾 FINALIZING IMPORT...');
-
-    console.log('\n📊 IMPORT SUMMARY BY CATEGORY:');
-    console.log(`Watching: ${categoryCounts.watching}`);
-    console.log(`Completed: ${categoryCounts.completed}`);
-    console.log(`Planned: ${categoryCounts.planned}`);
-    console.log(`Dropped: ${categoryCounts.dropped}`);
+    console.log(`\n📊 Import summary — Watching: ${categoryCounts.watching}, Completed: ${categoryCounts.completed}, Planned: ${categoryCounts.planned}, Dropped: ${categoryCounts.dropped}`);
 
     sendProgress(malAnimeList.length, malAnimeList.length, 'Finalizing import...');
 
@@ -1272,6 +1259,7 @@ app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, r
   }
 });
 
+// Route 17: GET /api/list/:userId — Get user's anime list
 app.get("/api/list/:userId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -1305,9 +1293,6 @@ app.get("/api/list/:userId", authenticateToken, authorizeUser, async (req, res) 
     res.sendError("Error fetching list", 500, err.message);
   }
 });
-
-// Genre Breakdown
-// Replace the calculateGenreBreakdown function in your server.js (around line 1106) with this:
 
 async function calculateGenreBreakdown(userId) {
   const animeList = await AnimeList.findOne({ userId });
@@ -1409,6 +1394,7 @@ async function getFavoriteAnime(userId, limit = 4) {
   }));
 }
 
+// Route 18: GET /api/profile/:userId/badges — Get user badges
 app.get("/api/profile/:userId/badges", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { userId } = req.params;
@@ -1442,9 +1428,10 @@ app.get("/api/profile/:userId/badges", authenticateToken, authorizeUser, async (
   }
 });
 
+// Route 19: PUT /api/list/:userId/:animeId — Update anime in list
 app.put("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async (req, res) => {
   try {
-    const { episodesWatched, status, userRating } = req.body; // Add userRating
+    const { episodesWatched, status, userRating } = req.body;
     const { userId, animeId } = req.params;
 
     const list = await AnimeList.findOne({ userId });
@@ -1467,14 +1454,8 @@ app.put("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async (r
       return res.status(404).json({ message: "Anime not found" });
     }
 
-    if (episodesWatched !== undefined) {
-      anime.episodesWatched = episodesWatched;
-    }
-
-    // ADD THIS: Handle rating update
-    if (userRating !== undefined) {
-      anime.userRating = userRating;
-    }
+    if (episodesWatched !== undefined) anime.episodesWatched = episodesWatched;
+    if (userRating !== undefined) anime.userRating = userRating;
 
     if (status && categories.includes(status) && status !== currentCategory) {
       list[currentCategory] = list[currentCategory].filter(
@@ -1497,6 +1478,7 @@ app.put("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async (r
   }
 });
 
+// Route 20: DELETE /api/list/:userId/:animeId — Remove anime from list
 app.delete("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const list = await AnimeList.findOne({ userId: req.params.userId });
@@ -1527,9 +1509,8 @@ app.delete("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async
   }
 });
 
-// ADD THIS ENDPOINT TO YOUR server.js (after the other list endpoints, around line 1300)
-
 // Backfill genres for existing anime using AniList API
+// Route 21: POST /api/list/:userId/backfill-genres — Backfill genres via AniList
 app.post("/api/list/:userId/backfill-genres", authenticateToken, authorizeUser, async (req, res) => {
   try {
     const { userId } = req.params;
@@ -1657,11 +1638,12 @@ app.use("/api/list/:userId", async (req, res, next) => {
   }
 });
 
+// Router Mount A: /api/anime — Anime sections, search, details (animeRoutes.js)
 app.use('/api/anime', animeRoutes);
+// Router Mount B: /api/anilist — Hero trailers (anilistRoute.js)
 app.use('/api/anilist', anilistRoutes);
+// Router Mount C: /api/ai — AI chat, anime info (aiChat.js)
 app.use("/api/ai", aiChat);
-app.use("/auth", (req, res, next) => next());
-app.use("/api", (req, res, next) => next());
 
 function cleanupOldUploads() {
   try {
@@ -1690,10 +1672,12 @@ function cleanupOldUploads() {
 
 setInterval(cleanupOldUploads, 24 * 60 * 60 * 1000);
 
+// Handler: 404 — Catch-all for undefined routes
 app.use((req, res) => {
   res.sendError("Route not found", 404);
 });
 
+// Handler: 500 — Global error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.sendError("Internal server error", 500, process.env.NODE_ENV === 'development' ? err.message : undefined);
@@ -1705,8 +1689,6 @@ const wss = new WebSocketServer({
   path: '/ws',
   clientTracking: true
 });
-
-const userConnections = new Map();
 
 wss.on('connection', (ws, req) => {
   try {
@@ -1743,6 +1725,7 @@ server.keepAliveTimeout = 65 * 1000;
 server.headersTimeout = 66 * 1000;
 
 // Health Check Endpoint
+// Route 22: GET /health — WebSocket health check
 app.get('/health', async (req, res) => {
   const health = {
     uptime: process.uptime(),

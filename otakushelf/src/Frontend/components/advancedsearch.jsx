@@ -180,7 +180,7 @@ function AdvancedSearch() {
   const [currentOpenDropdown, setCurrentOpenDropdown] = useState(null);
   const [currentPageNumber, setCurrentPageNumber] = useState(1);
   const [hasMorePages, setHasMorePages] = useState(true);
-  const [totalResultsCount, setTotalResultsCount] = useState(0);
+
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
 
   // Modal state
@@ -436,7 +436,7 @@ function AdvancedSearch() {
       }
 
       setHasMorePages(responseData.pageInfo.hasNextPage);
-      setTotalResultsCount(responseData.pageInfo.total);
+
 
       if (isNewSearch) {
         setSearchResults(cleanedAnimeList);
@@ -554,7 +554,7 @@ function AdvancedSearch() {
     setSearchResults([]);
     setCurrentPageNumber(1);
     setHasMorePages(true);
-    setTotalResultsCount(0);
+
     setSearchText("");
     setHasFetchedOnce(false);
   }, []);
@@ -726,11 +726,7 @@ function AdvancedSearch() {
         <div className={styles.resultsSection}>
           {isSearching && <div className={styles.loader}></div>}
 
-          {!isSearching && searchResults.length > 0 && (
-            <div className={styles.resultsCount}>
-              Your query matched with {totalResultsCount} results
-            </div>
-          )}
+
 
           {/* Optimized Anime Grid using shared component */}
           <div className={styles.animeGrid}>

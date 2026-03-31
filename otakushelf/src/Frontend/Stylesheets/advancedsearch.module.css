@@ -24,45 +24,60 @@ body {
   align-items: center;
 }
 
+/* ── Filter Buttons & Reset ─────────────────────────────────────────────── */
 .resetBtn,
 .searchBtn {
-  padding: 12px 24px;
-  border: none;
+  padding: 11px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 50px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.5px;
-  transition: all 0.3s ease;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   text-transform: uppercase;
+  font-family: 'Bricolage Grotesque', sans-serif;
 }
 
 .resetBtn {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-  color: white;
-  box-shadow: 0 4px 15px rgba(238, 90, 36, 0.3);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 107, 107, 0.4);
 }
 
 .resetBtn:hover {
-  background: linear-gradient(135deg, #ee5a24, #ff6b6b);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(238, 90, 36, 0.4);
+  background: rgba(255, 107, 107, 0.12);
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(255, 107, 107, 0.15);
 }
 
 .resetBtn:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.97);
 }
 
-/* Simplified Dropdown Filters */
+/* ── Dropdown Filter Bar ────────────────────────────────────────────────── */
 .dropdownFilters {
   font-family: "Bricolage Grotesque", sans-serif;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
   margin-bottom: 30px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 50px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  z-index: 200;
 }
 
 .dropdown {
@@ -70,155 +85,184 @@ body {
 }
 
 .dropdownToggle {
-  background: linear-gradient(135deg, #3498db, #2980b9);
-  color: white;
-  padding: 12px 18px;
-  border: none;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 10px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  font-family: 'Bricolage Grotesque', sans-serif;
 }
 
 .dropdownToggle:hover {
-  background: linear-gradient(135deg, #2980b9, #3498db);
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #fff;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
+}
+
+.dropdownActive .dropdownToggle {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(236, 72, 153, 0.2));
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #fff;
+  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.2);
 }
 
 .dropdownArrow {
-  font-size: 10px;
-  transition: transform 0.2s ease;
+  font-size: 9px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  opacity: 0.6;
 }
 
 .dropdownActive .dropdownArrow {
   transform: rotate(180deg);
+  opacity: 1;
 }
 
-/* Optimized Dropdown Menu */
+/* ── Dropdown Panel (Dark Glassmorphism) ────────────────────────────────── */
 .dropdownMenu {
   display: none;
   position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0c0e1c;
+  border-radius: 16px;
   z-index: 100;
   max-height: 350px;
   overflow-y: auto;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  margin-top: 8px;
-  width: 300px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  width: 280px;
+}
+
+/* Custom scrollbar for dropdown */
+.dropdownMenu::-webkit-scrollbar {
+  width: 4px;
+}
+.dropdownMenu::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dropdownMenu::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 4px;
 }
 
 .dropdownActive .dropdownMenu {
   display: block;
-  animation: slideDown 0.2s ease;
+  animation: dropIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideDown {
+@keyframes dropIn {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateX(-50%) translateY(-6px) scale(0.96);
   }
-
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(0) scale(1);
   }
 }
 
-/* Grid Layout for Options */
+/* ── Options Grid ───────────────────────────────────────────────────────── */
 .dropdownContent {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 2px;
-  padding: 16px;
+  gap: 4px;
+  padding: 12px;
 }
 
 .optionsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 4px;
 }
 
 .dropdownContent .genresGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
 }
 
 .genresMenu {
-  width: 520px;
+  width: 420px;
 }
 
 .seasonGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 4px;
 }
 
-/* Simplified Checkbox Styling */
+/* ── Checkbox / Radio Labels ────────────────────────────────────────────── */
 .checkboxLabel {
   display: flex;
   align-items: center;
   cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
   transition: all 0.2s ease;
   user-select: none;
   font-size: 13px;
   font-weight: 500;
-  background: rgba(52, 152, 219, 0.05);
+  color: rgba(255, 255, 255, 0.65);
+  background: transparent;
   border: 1px solid transparent;
 }
 
 .checkboxLabel:hover {
-  background: rgba(52, 152, 219, 0.1);
-  border-color: rgba(52, 152, 219, 0.2);
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.15);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .checkboxLabel input {
   margin-right: 8px;
-  width: 16px;
-  height: 16px;
-  accent-color: #3498db;
+  width: 15px;
+  height: 15px;
+  accent-color: #8b5cf6;
+  border-radius: 4px;
 }
 
-.checkboxLabel input:checked+span {
-  color: #2980b9;
+.checkboxLabel input:checked + span {
+  color: #c4b5fd;
   font-weight: 600;
 }
 
-/* Score Range Styling */
+/* ── Score Range Styling ────────────────────────────────────────────────── */
 .scoreRange {
   padding: 16px;
 }
 
 .rangeInput label {
   font-weight: 600;
-  color: #e0e0e0;
-  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 10px;
   display: block;
+  font-size: 13px;
 }
 
 .rangeInput input[type="range"] {
   width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, #e9ecef, #3498db);
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
   outline: none;
   -webkit-appearance: none;
   appearance: none;
@@ -227,29 +271,37 @@ body {
 
 .rangeInput input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Year Input */
+/* ── Year Input ─────────────────────────────────────────────────────────── */
 .textInput {
   width: 100%;
   padding: 10px 12px;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
   font-size: 14px;
-  transition: border-color 0.2s ease;
-  background: white;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.textInput::placeholder {
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .textInput:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* Results Section */
@@ -264,7 +316,7 @@ body {
   width: 60px;
   height: 60px;
   border: 4px solid rgba(255, 255, 255, 0.1);
-  border-left-color: #3498db;
+  border-left-color: #8b5cf6;
   border-radius: 50%;
   animation: spin 1s infinite linear;
   margin: 40px auto;
@@ -285,18 +337,7 @@ body {
   font-size: 1.1rem;
 }
 
-.resultsCount {
-  font-weight: 600;
-  color: #2a2a2a;
-  text-align: center;
-  font-size: 18px;
-  border: 2px solid #000000;
-  width: fit-content;
-  margin: 20px auto;
-  padding: 6px 15px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.9);
-}
+
 
 /* Anime Grid - Matching Home Page Styles */
 .animeGrid {
@@ -701,10 +742,8 @@ body {
     font-size: 0.9rem;
   }
 
-  .resultsCount {
-    font-size: 16px;
-    padding: 5px 12px;
-    margin: 15px auto;
+  .resultsSection {
+    margin-top: 10px;
   }
 
   .resetBtn,
@@ -774,12 +813,7 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .resultsCount {
-    font-size: 14px;
-    text-align: center;
-    width: 90%;
-    padding: 4px 10px;
-  }
+
 
   .cardTitleBottom {
     padding: 10px 8px;
@@ -921,42 +955,8 @@ body {
   }
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .dropdownMenu {
-    background: rgba(30, 30, 30, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
 
-  .checkboxLabel {
-    background: rgba(255, 255, 255, 0.05);
-    color: #e0e0e0;
-  }
 
-  .checkboxLabel:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .checkboxLabel input:checked+span {
-    color: #3498db;
-  }
-
-  .textInput {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: white;
-  }
-
-  .resultsCount {
-    color: #ffffff;
-    border-color: #ffffff;
-    background: rgba(30, 30, 30, 0.9);
-  }
-
-  .animeCard {
-    background: transparent;
-  }
-}
 
 /* Touch Device Optimizations */
 @media (hover: none) and (pointer: coarse) {

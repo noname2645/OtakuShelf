@@ -18,7 +18,7 @@ async function fetchAniList(query, variables = {}) {
   return response.data.data;
 }
 
-// Enhanced Anime Sections (Airing, Popular, Movies, Trending, Top Rated, Upcoming) 
+// Route 1: GET /api/anime/anime-sections — Anime sections (Airing, Popular, Movies, Trending, Top Rated, Upcoming)
 router.get('/anime-sections', async (req, res) => {
   const now = Date.now();
   if (cache.data && now - cache.timestamp < 1000 * 60 * 10) {
@@ -198,7 +198,7 @@ router.get('/anime-sections', async (req, res) => {
   }
 });
 
-// ----------- Enhanced Search Anime -----------
+// Route 2: GET /api/anime/search — Search anime
 router.get('/search', async (req, res) => {
   const q = req.query.q;
   const limit = parseInt(req.query.limit) || 20;
@@ -298,7 +298,7 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// Get Single Anime Details 
+// Route 3: GET /api/anime/anime/:id — Get single anime details
 router.get('/anime/:id', async (req, res) => {
   const { id } = req.params;
 

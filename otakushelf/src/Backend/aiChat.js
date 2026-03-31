@@ -411,14 +411,13 @@ async function extractAnimeRecommendations(response) {
             !lower.includes('note') &&
             !lower.includes('warning') &&
             !lower.includes('absolutely') &&
+            !lower.includes('definitely') &&
             !lower.includes('sure') &&
             !lower.includes('here') &&
             !lower.includes('recommend') &&
             !lower.includes('of course') &&
             !lower.includes('yes') &&
             !lower.includes('no') &&
-            !lower.includes('absolutely') &&
-            !lower.includes('definitely') &&
             !lower.includes('thank') &&
             !uniqueTitles.has(lower)) {
             uniqueTitles.add(lower);
@@ -587,7 +586,7 @@ router.get("/health", (req, res) => {
     });
 });
 
-// Route 4: Get anime info (for testing)
+// Route 4: Get anime info
 router.post("/anime-info", async (req, res) => {
     try {
         const { anime } = req.body;
@@ -602,7 +601,7 @@ router.post("/anime-info", async (req, res) => {
             return error(res, "Anime not found", 404);
         }
 
-        res.sendSuccess("Anime info fetched successfully", {
+        return success(res, "Anime info fetched successfully", {
             title: animeData.title.english || animeData.title.romaji,
             description: animeData.description ? animeData.description.replace(/<[^>]*>/g, '') : 'No description',
             genres: animeData.genres,
@@ -612,7 +611,7 @@ router.post("/anime-info", async (req, res) => {
         });
     } catch (err) {
         console.error("Anime info error:", err);
-        res.sendError("Failed to fetch anime info", 500);
+        return error(res, "Failed to fetch anime info", 500);
     }
 });
 

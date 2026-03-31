@@ -198,6 +198,7 @@ const warmUpCache = async () => {
 // Start warming up immediately (fire and forget)
 warmUpCache();
 
+// Route 1: GET /api/anilist/hero-trailers — Get hero trailer anime
 router.get("/hero-trailers", async (req, res) => {
   const now = Date.now();
 
@@ -224,7 +225,7 @@ router.get("/hero-trailers", async (req, res) => {
   return success(res, "No hero trailers found", []);
 });
 
-// Debug endpoint 
+// Route 2: GET /api/anilist/hero-trailers/debug — Cache debug info
 router.get("/hero-trailers/debug", (req, res) => {
   const now = Date.now();
   const debugData = {
@@ -236,7 +237,7 @@ router.get("/hero-trailers/debug", (req, res) => {
   return success(res, "Hero cache debug info fetched successfully", debugData);
 });
 
-// Refresh endpoint
+// Route 3: POST /api/anilist/hero-trailers/refresh — Force cache refresh
 router.post("/hero-trailers/refresh", async (req, res) => {
   try {
     const data = await fetchHeroAnime();
