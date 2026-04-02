@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 // Import CSS since we use raw classnames matching home.css
 import "../Stylesheets/home.css"; 
 
-const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false, isGrid = false }) => {
+const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false, isGrid = false, customWidth, customHeight }) => {
     const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
 
     useEffect(() => {
@@ -22,8 +22,11 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         if (onClick) onClick(anime);
     }, [anime, onClick, isDragging]);
 
-    const height = isMobile ? '240px' : '320px';
-    const width = isMobile ? '160px' : '220px';
+    const defaultHeight = isMobile ? '240px' : '320px';
+    const defaultWidth = isMobile ? '160px' : '220px';
+    
+    const height = customHeight || defaultHeight;
+    const width = customWidth || defaultWidth;
 
     const cardStyle = {
         '--brand-color': anime.coverImage?.color || '#ff6b6b',
@@ -34,6 +37,10 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         minWidth: isGrid ? 'auto' : width,
         margin: isGrid ? '0 auto' : '0'
     };
+
+    const displayTitle = typeof anime?.title === 'object' 
+        ? (anime.title.english || anime.title.romaji || anime.title.native || "Unknown Title")
+        : (anime?.title || "Unknown Title");
 
     const imageSrc = anime.coverImage?.extraLarge ||
         anime.coverImage?.large ||
@@ -54,20 +61,18 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
             <div className="home-card-image" style={{ width: '100%', height: '100%' }}>
                 <img
                     src={imageSrc}
-                    alt={anime?.title || "Anime"}
+                    alt={displayTitle}
                     loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     decoding="async"
                 />
                 
-                {/* Default Bottom Title */}
                 <div className="card-title-bottom">
-                    <h3>{anime?.title || "Unknown Title"}</h3>
+                    <h3>{displayTitle}</h3>
                 </div>
 
-                {/* Glassmorphism Hover Overlay */}
                 <div className="card-hover-overlay">
-                    <h3 className="hover-title">{anime?.title || "Unknown Title"}</h3>
+                    <h3 className="hover-title">{displayTitle}</h3>
                     <div className="hover-stats">
                         <span className="hover-score">⭐ {anime.averageScore ? `${(anime.averageScore / 10).toFixed(1)}/10` : 'N/A'}</span>
                         <span className="hover-episodes">{anime.episodes ? `${anime.episodes} EPS` : 'TBA'}</span>

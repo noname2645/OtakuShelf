@@ -14,7 +14,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",
     "@vitejs/plugin-react": "^5.0.0",
-    "axios": "^1.11.0",
+    "axios": "1.11.0",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.539.0",
     "react": "^19.1.1",

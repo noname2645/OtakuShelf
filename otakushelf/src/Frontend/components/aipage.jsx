@@ -1,36 +1,42 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import AnimeCard from "./animecard.jsx";
+import AnimeCard from "./AnimeCardUI.jsx";
 import Modal from "./modal.jsx";
 import '../Stylesheets/aipage.css';
-import { Header } from '../components/header.jsx';
-import BottomNavBar from "../components/bottom.jsx";
-import { useAuth } from "../components/AuthContext.jsx";
+import { Header } from './header.jsx';
+import BottomNavBar from "./bottom.jsx";
+import { useAuth } from "./AuthContext.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 
 const AIPage = () => {
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [streaming, setStreaming] = useState(false); // 🆕 For typewriter effect
-    const [streamingText, setStreamingText] = useState(""); // 🆕 Current streaming text
+    const [streaming, setStreaming] = useState(false);
+    const [streamingText, setStreamingText] = useState("");
     const [conversationContext, setConversationContext] = useState({
-        mood: 'neutral',
-        suggestions: []
+        mood: 'friendly',
+        suggestions: ["Recommend something new!", "Based on my history", "Top anime of the season"]
     });
     const [showScrollButton, setShowScrollButton] = useState(false);
+    const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
     const messagesEndRef = useRef(null);
     const chatContainerRef = useRef(null);
 
-    // 🆕 Modal State
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const [selectedAnime, setSelectedAnime] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const API = import.meta.env.VITE_API_BASE_URL;
     const { user } = useAuth();
 
-    // Auto-scroll to bottom when new messages are added
+    // Auto-scroll logic
     const scrollToBottom = (instant = false) => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({
@@ -39,7 +45,6 @@ const AIPage = () => {
         }
     };
 
-    // Check if user has scrolled up
     const checkScrollPosition = () => {
         if (chatContainerRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
@@ -48,12 +53,10 @@ const AIPage = () => {
         }
     };
 
-    // Scroll to bottom button handler
     const handleScrollToBottom = () => {
         scrollToBottom(true);
     };
 
-    // Effect for auto-scrolling when messages change
     useEffect(() => {
         if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
@@ -63,29 +66,31 @@ const AIPage = () => {
         }
     }, [messages, loading]);
 
-    // Effect for initial scroll and scroll event listener
     useEffect(() => {
-        // Load previous conversation
         const savedConvo = localStorage.getItem('ai_conversation');
         if (savedConvo) {
-            const parsedConvo = JSON.parse(savedConvo);
-            setMessages(parsedConvo);
-            // Scroll to bottom after messages are loaded
-            setTimeout(() => scrollToBottom(true), 300);
+            try {
+                const parsedConvo = JSON.parse(savedConvo);
+                setMessages(parsedConvo);
+                setTimeout(() => scrollToBottom(true), 300);
+            } catch (e) {
+                console.error("Failed to parse saved conversation:", e);
+                localStorage.removeItem('ai_conversation');
+            }
         } else {
-            // 🆕 Add welcome message for first-time users
             const welcomeMessage = {
                 role: "ai",
-                text: "Hey there! 👋 I'm OtakuAI, your anime companion. I can recommend shows based on your taste, chat about anime, or just hang out. What brings you here today?",
+                text: `Yo! 👋 I'm OtakuAI, your personal anime companion. Think of me as your ultimate nakama in the anime world! 
+                
+I've analyzed your profile and I'm ready to dive deep into discussions or find your next binge-worthy masterpiece. What's on your mind today?`,
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                mood: 'neutral',
-                id: Date.now()
+                mood: 'friendly',
+                id: Date.now() + Math.random()
             };
             setMessages([welcomeMessage]);
             setTimeout(() => scrollToBottom(true), 300);
         }
 
-        // Add scroll event listener
         const chatContainer = chatContainerRef.current;
         if (chatContainer) {
             chatContainer.addEventListener('scroll', checkScrollPosition);
@@ -98,73 +103,65 @@ const AIPage = () => {
         };
     }, []);
 
-    // Check scroll position when messages change
     useEffect(() => {
         setTimeout(() => checkScrollPosition(), 100);
     }, [messages, loading]);
 
-    // Save conversation to localStorage
     useEffect(() => {
         if (messages.length > 0 && !streaming) {
             localStorage.setItem('ai_conversation', JSON.stringify(messages.slice(-50)));
         }
     }, [messages, streaming]);
 
-    // 🆕 Typewriter effect function
     const typewriterEffect = (fullText, messageData) => {
+        if (!fullText) {
+            setMessages(prev => [...prev, messageData]);
+            return;
+        }
+        
         setStreaming(true);
         setStreamingText("");
 
         let currentIndex = 0;
-        const typingSpeed = 1; // milliseconds per character (adjust for speed)
+        const typingSpeed = 2;
 
         const typingInterval = setInterval(() => {
             if (currentIndex < fullText.length) {
                 setStreamingText(fullText.substring(0, currentIndex + 1));
                 currentIndex++;
-                // Auto-scroll as text appears
-                setTimeout(() => scrollToBottom(), 10);
+                if (currentIndex % 10 === 0) scrollToBottom();
             } else {
                 clearInterval(typingInterval);
                 setStreaming(false);
                 setStreamingText("");
-
-                // Add the complete message to messages array
-                setMessages((prev) => [
-                    ...prev,
-                    messageData
-                ]);
+                setMessages((prev) => [...prev, messageData]);
             }
         }, typingSpeed);
     };
 
     const sendMessage = async () => {
-        if (!input.trim()) return;
+        if (!input.trim() || loading) return;
 
         const userText = input;
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        const userMsg = {
+            role: "user",
+            text: userText,
+            timestamp,
+            id: Date.now()
+        };
 
-        // Add user message
-        setMessages((prev) => [
-            ...prev,
-            {
-                role: "user",
-                text: userText,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                id: Date.now()
-            },
-        ]);
-
+        setMessages((prev) => [...prev, userMsg]);
         setInput("");
         setLoading(true);
 
-        // Auto-scroll to show user message immediately
         setTimeout(() => scrollToBottom(), 50);
 
         try {
-            // Prepare history (last 10 messages) to send to backend
-            const history = messages.slice(-10).map(msg => ({
+            const history = messages.slice(-8).map(msg => ({
                 role: msg.role === 'ai' ? 'assistant' : 'user',
-                content: msg.text
+                content: msg.text || ""
             }));
 
             const res = await fetch(`${API}/api/ai/chat`, {
@@ -175,15 +172,20 @@ const AIPage = () => {
                 },
                 body: JSON.stringify({
                     message: userText,
-                    history: history, // 🆕 Send history
+                    history: history,
                     userId: user?._id || user?.id,
                     context: conversationContext
                 }),
             });
 
-            const data = await res.json();
+            const response = await res.json();
+            
+            if (response.status === 'error') {
+                throw new Error(response.message || "Failed to generate AI response");
+            }
 
-            // Update conversation context
+            const data = response.data || {};
+
             setConversationContext(prev => ({
                 ...prev,
                 mood: data.context?.mood || 'neutral',
@@ -192,13 +194,11 @@ const AIPage = () => {
 
             setLoading(false);
 
-            // 🆕 Start typewriter effect for AI response
             const aiMessageData = {
                 role: "ai",
-                text: data.reply,
+                text: data.reply || "Something went wrong, but I'm still here!",
                 anime: data.anime || [],
-                context: data.context,
-                suggestions: data.context?.suggestions || [],
+                context: data.context || {},
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 mood: data.context?.mood || 'neutral',
                 id: Date.now() + 1
@@ -207,12 +207,13 @@ const AIPage = () => {
             typewriterEffect(data.reply, aiMessageData);
 
         } catch (err) {
+            console.error("AI Chat Error:", err);
             setLoading(false);
             setMessages((prev) => [
                 ...prev,
                 {
                     role: "ai",
-                    text: "Hmm, having a little trouble connecting. Try again in a moment! 🌸",
+                    text: "Hmm, having a little trouble connecting. Check your internet or try again! 🌸",
                     isError: true,
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     id: Date.now() + 1
@@ -228,31 +229,13 @@ const AIPage = () => {
         }
     };
 
-    // Quick prompts for easy interaction
-    const quickPrompts = [
-        "Recommend me a comedy anime",
-        "I'm in the mood for something adventurous",
-        "What's similar to Jujutsu Kaisen?",
-        "Find me hidden gem anime",
-        "Recommend based on my watch list",
-        "What should I watch next?",
-        "Suggest a short anime series"
-    ];
-
-    // Handle quick prompt click
     const handlePromptClick = (prompt) => {
         setInput(prompt);
-        setTimeout(() => {
-            const sendBtn = document.querySelector('.send-button');
-            if (sendBtn && !sendBtn.disabled) {
-                sendMessage();
-            }
-        }, 100);
+        // User can manually click send
     };
 
-    // 🆕 Handle Card Click
     const handleCardClick = (anime) => {
-        // console.log("Card clicked:", anime); // verbose object dump
+        if (!anime) return;
         setSelectedAnime(anime);
         setIsModalOpen(true);
     };
@@ -262,31 +245,29 @@ const AIPage = () => {
         setSelectedAnime(null);
     };
 
-    // 🆕 Clear Chat Handler
     const handleClearChat = () => {
         if (window.confirm("Are you sure you want to clear the conversation?")) {
             setMessages([]);
             localStorage.removeItem('ai_conversation');
-            setConversationContext({ mood: 'neutral', suggestions: [] });
+            setConversationContext({ mood: 'friendly', suggestions: [] });
 
-            // Re-add welcome message
-            const welcomeMessage = {
+            const welcomeMsg = {
                 role: "ai",
-                text: "Chat cleared! What's next on your watchlist?",
+                text: "Chat cleared! Ready to start fresh. What's on your mind?",
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                mood: 'neutral',
+                mood: 'friendly',
                 id: Date.now()
             };
-            setMessages([welcomeMessage]);
+            setMessages([welcomeMsg]);
         }
     };
 
     return (
-        <>
+        <div className="ai-page-root">
             <Header
                 showSearch={false}
                 customAction={
-                    <button className="clear-chat-btn" onClick={handleClearChat} title="Clear conversation">
+                    <button className="clear-chat-btn" onClick={handleClearChat}>
                         Clear Chat
                     </button>
                 }
@@ -295,164 +276,93 @@ const AIPage = () => {
 
             <div className="ai-page-container">
                 <div className="ai-page-wrapper">
-                    {/* AI Companion Header Box */}
                     <div className="ai-companion-box">
-
-                        {/* Quick Prompts */}
-                        {messages.length === 0 && (
-                            <div className="quick-prompts-box">
-                                <p className="prompts-title">Try asking:</p>
-                                <div className="prompts-grid">
-                                    {quickPrompts.map((prompt, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => handlePromptClick(prompt)}
-                                            className="prompt-chip"
-                                        >
-                                            {prompt}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Chat Container Box */}
                         <div className="chat-box">
                             <div
                                 className="messages-box"
                                 ref={chatContainerRef}
                                 onScroll={checkScrollPosition}
                             >
-                                {messages.length === 0 && (
-                                    <motion.div
-                                        className="welcome-message"
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.5, ease: "easeOut" }}
-                                    >
+                                <AnimatePresence initial={false}>
+                                    {messages.map((msg) => (
                                         <motion.div
-                                            className="welcome-icon"
-                                            animate={{ y: [0, -10, 0] }}
-                                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                                        >🎬</motion.div>
-                                        <h3>Welcome to OtakuShell AI Companion!</h3>
-                                        <p>Now powered by Llama 3.1! I'll recommend perfect anime shows just for you!</p>
-                                        <div className="companion-features">
-                                            <div className="feature"><span>✨</span> Smart recommendations</div>
-                                            <div className="feature"><span>🎯</span> Based on your watch history</div>
-                                            <div className="feature"><span>🤖</span> Powered by Llama 3.1</div>
-                                        </div>
-                                    </motion.div>
-                                )}
-
-                                {messages.map((msg) => (
-                                    <motion.div
-                                        key={msg.id}
-                                        className={`message-bubble ${msg.role} ${msg.mood || ''}`}
-                                        initial={{ opacity: 0, y: 12, scale: 0.97 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        transition={{ duration: 0.35, ease: "easeOut" }}
-                                    >
-                                        <div className="message-header">
-                                            <div className={`message-avatar ${msg.role}`}>
-                                                {msg.role === "user" ? (
-                                                    user?.photo ? (
-                                                        <img src={user.photo} alt="User" className="user-avatar-img" />
-                                                    ) : (
-                                                        <div className="user-initials" style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#667eea', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '1rem' }}>
-                                                            {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
-                                                        </div>
-                                                    )
-                                                ) : "🤖"}
-                                            </div>
-                                            <div className="message-meta">
-                                                <span className="message-sender">
-                                                    {msg.role === "user" ? (user?.name || "You") : "Otaku AI"}
-                                                </span>
-                                                <span className="message-time">{msg.timestamp}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="message-content">
-                                            {msg.role === "ai" ? (
-                                                <div className="markdown-content">
-                                                    <ReactMarkdown
-                                                        remarkPlugins={[remarkGfm]}
-                                                        components={{
-                                                            // Custom styling for markdown elements
-                                                            p: ({ node, ...props }) => <p className="markdown-paragraph" {...props} />,
-                                                            strong: ({ node, ...props }) => <strong className="markdown-bold" {...props} />,
-                                                            em: ({ node, ...props }) => <em className="markdown-italic" {...props} />,
-                                                            ul: ({ node, ...props }) => <ul className="markdown-list" {...props} />,
-                                                            ol: ({ node, ...props }) => <ol className="markdown-list-ordered" {...props} />,
-                                                            li: ({ node, ...props }) => <li className="markdown-list-item" {...props} />,
-                                                            code: ({ node, inline, ...props }) =>
-                                                                inline ?
-                                                                    <code className="markdown-code-inline" {...props} /> :
-                                                                    <code className="markdown-code-block" {...props} />,
-                                                            h1: ({ node, ...props }) => <h1 className="markdown-h1" {...props} />,
-                                                            h2: ({ node, ...props }) => <h2 className="markdown-h2" {...props} />,
-                                                            h3: ({ node, ...props }) => <h3 className="markdown-h3" {...props} />,
-                                                        }}
-                                                    >
-                                                        {msg.text}
-                                                    </ReactMarkdown>
+                                            key={msg.id || Math.random()}
+                                            className={`message-bubble ${msg.role} ${msg.mood || ''}`}
+                                            initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            transition={{ duration: 0.35 }}
+                                        >
+                                            <div className="message-header">
+                                                <div className={`message-avatar ${msg.role}`}>
+                                                    {msg.role === "user" ? (
+                                                        user?.photo ? (
+                                                            <img src={user.photo} alt="User" className="user-avatar-img" />
+                                                        ) : (
+                                                            <div className="user-initials">
+                                                                {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                                                            </div>
+                                                        )
+                                                    ) : "🤖"}
                                                 </div>
-                                            ) : (
-                                                msg.text
+                                                <div className="message-meta">
+                                                    <span className="message-sender">
+                                                        {msg.role === "user" ? (user?.name || "You") : "Otaku AI"}
+                                                    </span>
+                                                    <span className="message-time">{msg.timestamp}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="message-content">
+                                                {msg.role === "ai" ? (
+                                                    <div className="markdown-content">
+                                                        <ReactMarkdown
+                                                            remarkPlugins={[remarkGfm]}
+                                                            components={{
+                                                                p: props => <p className="md-p" {...props} />,
+                                                                strong: props => <strong className="md-bold" {...props} />,
+                                                                code: props => <code className="md-code" {...props} />
+                                                            }}
+                                                        >
+                                                            {msg.text || ""}
+                                                        </ReactMarkdown>
+                                                    </div>
+                                                ) : (
+                                                    msg.text
+                                                )}
+                                                {msg.isError && <span className="error-icon"> ⚠️</span>}
+                                            </div>
+
+                                            {msg.anime && msg.anime.length > 0 && (
+                                                <div className="anime-recommendations-box">
+                                                    <div className="anime-cards-grid">
+                                                        {msg.anime.map((a, idx) => a && (
+                                                            <AnimeCard
+                                                                key={a.id || idx}
+                                                                anime={a}
+                                                                index={idx}
+                                                                onClick={handleCardClick}
+                                                                customWidth={isMobile ? '135px' : '185px'}
+                                                                customHeight={isMobile ? '195px' : '265px'}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             )}
-                                            {msg.isError && <span className="error-indicator"> ⚠️</span>}
-                                        </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
 
-                                        {/* Anime Recommendations */}
-                                        {msg.anime && msg.anime.length > 0 && (
-                                            <div className="anime-recommendations-box">
-                                                <div className="anime-cards-grid">
-                                                    {msg.anime.map((a) => (
-                                                        <AnimeCard
-                                                            key={a.id}
-                                                            anime={a}
-                                                            showAddButton={true}
-                                                            onClick={handleCardClick}
-                                                            className="anime-card"
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                ))}
-
-                                {/* 🆕 Streaming message (typewriter effect) */}
-                                {streaming && streamingText && (
+                                {streaming && (
                                     <div className="message-bubble ai streaming">
                                         <div className="message-header">
                                             <div className="message-avatar ai">🤖</div>
                                             <div className="message-meta">
                                                 <span className="message-sender">Otaku AI</span>
-                                                <span className="message-time">Now</span>
                                             </div>
                                         </div>
                                         <div className="message-content">
                                             <div className="markdown-content">
-                                                <ReactMarkdown
-                                                    remarkPlugins={[remarkGfm]}
-                                                    components={{
-                                                        p: ({ node, ...props }) => <p className="markdown-paragraph" {...props} />,
-                                                        strong: ({ node, ...props }) => <strong className="markdown-bold" {...props} />,
-                                                        em: ({ node, ...props }) => <em className="markdown-italic" {...props} />,
-                                                        ul: ({ node, ...props }) => <ul className="markdown-list" {...props} />,
-                                                        ol: ({ node, ...props }) => <ol className="markdown-ordered-list" {...props} />,
-                                                        li: ({ node, ...props }) => <li className="markdown-list-item" {...props} />,
-                                                        code: ({ node, inline, ...props }) =>
-                                                            inline ?
-                                                                <code className="markdown-code-inline" {...props} /> :
-                                                                <code className="markdown-code-block" {...props} />,
-                                                        h1: ({ node, ...props }) => <h1 className="markdown-h1" {...props} />,
-                                                        h2: ({ node, ...props }) => <h2 className="markdown-h2" {...props} />,
-                                                        h3: ({ node, ...props }) => <h3 className="markdown-h3" {...props} />,
-                                                    }}
-                                                >
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                                     {streamingText}
                                                 </ReactMarkdown>
                                             </div>
@@ -460,46 +370,29 @@ const AIPage = () => {
                                     </div>
                                 )}
 
-                                {loading && (
+                                {loading && !streaming && (
                                     <div className="message-bubble ai loading">
-                                        <div className="message-header">
-                                            <div className="message-avatar ai">🤖</div>
-                                            <div className="message-meta">
-                                                <span className="message-sender">Otaku AI</span>
-                                                <span className="message-time">Typing...</span>
-                                            </div>
-                                        </div>
-                                        <div className="message-content">
-                                            <div className="typing-indicator">
-                                                <span></span>
-                                                <span></span>
-                                                <span></span>
-                                            </div>
+                                        <div className="typing-indicator">
+                                            <span></span><span></span><span></span>
                                         </div>
                                     </div>
                                 )}
                                 <div ref={messagesEndRef} />
                             </div>
 
-                            {/* Scroll to bottom button - appears when user scrolls up */}
-                            {showScrollButton && messages.length > 2 && (
-                                <button
-                                    className="scroll-to-bottom-btn"
-                                    onClick={handleScrollToBottom}
-                                    title="Scroll to latest message"
-                                >
+                            {showScrollButton && (
+                                <button className="scroll-to-bottom-btn" onClick={handleScrollToBottom}>
                                     ↓
                                 </button>
                             )}
 
-                            {/* Input Area */}
                             <div className="input-wrapper">
                                 <input
                                     type="text"
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyPress={handleKeyPress}
-                                    placeholder="Type your message here..."
+                                    placeholder="Message OtakuAI..."
                                     className="message-input"
                                     disabled={loading}
                                 />
@@ -508,11 +401,7 @@ const AIPage = () => {
                                     className="send-button"
                                     disabled={loading || !input.trim()}
                                 >
-                                    {loading ? (
-                                        <span className="loading-dots">⏳</span>
-                                    ) : (
-                                        <span className="send-icon">➤</span>
-                                    )}
+                                    <span className="send-icon">➤</span>
                                 </button>
                             </div>
                         </div>
@@ -520,7 +409,6 @@ const AIPage = () => {
                 </div>
             </div>
 
-            {/* 🆕 Anime Detail Modal */}
             {selectedAnime && (
                 <Modal
                     isOpen={isModalOpen}
@@ -529,7 +417,7 @@ const AIPage = () => {
                     onOpenAnime={handleCardClick}
                 />
             )}
-        </>
+        </div>
     );
 };
 
