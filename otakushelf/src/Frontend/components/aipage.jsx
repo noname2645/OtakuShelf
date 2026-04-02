@@ -9,6 +9,9 @@ import BottomNavBar from "./bottom.jsx";
 import { useAuth } from "./AuthContext.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 
+// 🆕 Imported Logo
+import otakuAI from "../images/otakuai_no_bg.png";
+
 const AIPage = () => {
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState([]);
@@ -231,7 +234,6 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
 
     const handlePromptClick = (prompt) => {
         setInput(prompt);
-        // User can manually click send
     };
 
     const handleCardClick = (anime) => {
@@ -264,19 +266,30 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
 
     return (
         <div className="ai-page-root">
-            <Header
-                showSearch={false}
-                customAction={
-                    <button className="clear-chat-btn" onClick={handleClearChat}>
-                        Clear Chat
-                    </button>
-                }
-            />
+            <Header showSearch={false} />
             <BottomNavBar />
 
             <div className="ai-page-container">
                 <div className="ai-page-wrapper">
                     <div className="ai-companion-box">
+                        <div className="companion-header">
+                            <div className="companion-info-wrapper">
+                                <div className="companion-avatar">
+                                    <img src={otakuAI} alt="OtakuAI" />
+                                </div>
+                                <div className="companion-info">
+                                    <h3>OtakuAI</h3>
+                                    <div className="companion-status">
+                                        <span className="status-dot"></span>
+                                        <span>Ready to Binge</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button className="clear-chat-pill" onClick={handleClearChat}>
+                                Clear History
+                            </button>
+                        </div>
+
                         <div className="chat-box">
                             <div
                                 className="messages-box"
@@ -302,7 +315,9 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
                                                                 {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
                                                             </div>
                                                         )
-                                                    ) : "🤖"}
+                                                    ) : (
+                                                        <img src={otakuAI} alt="AI" className="ai-avatar-img" />
+                                                    )}
                                                 </div>
                                                 <div className="message-meta">
                                                     <span className="message-sender">
@@ -329,7 +344,6 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
                                                 ) : (
                                                     msg.text
                                                 )}
-                                                {msg.isError && <span className="error-icon"> ⚠️</span>}
                                             </div>
 
                                             {msg.anime && msg.anime.length > 0 && (
@@ -355,7 +369,9 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
                                 {streaming && (
                                     <div className="message-bubble ai streaming">
                                         <div className="message-header">
-                                            <div className="message-avatar ai">🤖</div>
+                                            <div className="message-avatar ai">
+                                                <img src={otakuAI} alt="AI" className="ai-avatar-img" />
+                                            </div>
                                             <div className="message-meta">
                                                 <span className="message-sender">Otaku AI</span>
                                             </div>
@@ -380,29 +396,34 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
                                 <div ref={messagesEndRef} />
                             </div>
 
-                            {showScrollButton && (
-                                <button className="scroll-to-bottom-btn" onClick={handleScrollToBottom}>
-                                    ↓
-                                </button>
-                            )}
-
-                            <div className="input-wrapper">
-                                <input
-                                    type="text"
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyPress={handleKeyPress}
-                                    placeholder="Message OtakuAI..."
-                                    className="message-input"
-                                    disabled={loading}
-                                />
-                                <button
-                                    onClick={sendMessage}
-                                    className="send-button"
-                                    disabled={loading || !input.trim()}
-                                >
-                                    <span className="send-icon">➤</span>
-                                </button>
+                            <div className="chat-footer">
+                                {conversationContext.suggestions && conversationContext.suggestions.length > 0 && !loading && (
+                                    <div className="quick-suggestions">
+                                        {conversationContext.suggestions.map((s, i) => (
+                                            <button key={i} className="suggestion-chip" onClick={() => handlePromptClick(s)}>
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="input-wrapper">
+                                    <input
+                                        type="text"
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
+                                        onKeyPress={handleKeyPress}
+                                        placeholder="Message OtakuAI..."
+                                        className="message-input"
+                                        disabled={loading}
+                                    />
+                                    <button
+                                        onClick={sendMessage}
+                                        className="send-button"
+                                        disabled={loading || !input.trim()}
+                                    >
+                                        ➤
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
