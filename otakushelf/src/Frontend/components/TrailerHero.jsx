@@ -592,8 +592,8 @@ const TrailerHero = ({ onOpenModal }) => {
                     className="content-overlay"
                     style={{
                         bottom: isMobile ? '22%' : '20%',
-                        left: isMobile ? '3%' : '10%',
-                        right: isMobile ? '3%' : '10%',
+                        left: isMobile ? '3%' : '7%',
+                        right: isMobile ? '3%' : '7%',
                         maxWidth: isMobile ? '100%' : '600px'
                     }}
                 >
@@ -665,7 +665,7 @@ const TrailerHero = ({ onOpenModal }) => {
                                 <span className="up-next-text">Up Next</span>
                                 <div className="progress-bar-container">
                                     <motion.div 
-                                        className="progress-bar-fill"
+                                        className="progress-bar-fill2"
                                         key={currentAnime}
                                         initial={{ width: "0%" }}
                                         animate={{ width: "100%" }}

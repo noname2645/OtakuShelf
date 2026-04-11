@@ -389,8 +389,9 @@
 }
 
 /* "Get Started" pill */
-.auth-buttons .button_login {
+.auth-buttons .button_login2 {
     display: inline-flex;
+    justify-content: center;
     align-items: center;
     gap: 6px;
     padding: 0.55em 1.4em;
@@ -399,27 +400,13 @@
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    color: #ffffff;
-    background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-    box-shadow:
-        0 4px 20px rgba(139, 92, 246, 0.45),
-        0 1px 0 rgba(255, 255, 255, 0.12) inset;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    color: #000000;
+    background: #e2aa01;
+    border: 2px solid rgba(0, 0, 0, 0.745);
     white-space: nowrap;
 }
 
-.auth-buttons button:hover .button_login {
-    transform: translateY(-2px);
-    box-shadow:
-        0 8px 28px rgba(139, 92, 246, 0.6),
-        0 1px 0 rgba(255, 255, 255, 0.16) inset;
-}
 
-.auth-buttons button:active .button_login {
-    transform: translateY(0px);
-    box-shadow: 0 3px 14px rgba(139, 92, 246, 0.4);
-}
 
 /* Logo */
 .logo span {
