@@ -15,18 +15,26 @@
   max-width: 1100px;
   height: 88vh;
   background: #0d0f1a;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-  animation: smodal-in 0.28s cubic-bezier(0.22,1,0.36,1);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  animation: smodal-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  font-family: 'Outfit', sans-serif;
 }
 
 @keyframes smodal-in {
-  from { opacity: 0; transform: scale(0.96) translateY(20px); }
-  to   { opacity: 1; transform: scale(1)   translateY(0);     }
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .smodal-close {
@@ -34,8 +42,8 @@
   top: 14px;
   right: 18px;
   z-index: 10;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
   color: #fff;
   width: 36px;
@@ -49,20 +57,38 @@
 }
 
 .smodal-close:hover {
-  background: rgba(255,107,107,0.25);
-  border-color: rgba(255,107,107,0.4);
+  background: rgba(255, 107, 107, 0.25);
+  border-color: rgba(255, 107, 107, 0.4);
   transform: rotate(90deg);
 }
 
 .smodal-inner {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Hide Header and BottomNavBar when rendered inside modal */
 .smodal-inner .header,
-.smodal-inner .bottom-nav {
+.smodal-inner .bottom-button-bar-wrapper {
   display: none !important;
 }
 
+/* Custom layout overrides inside the modal */
+.smodal-inner .settings-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.smodal-inner .settings-container {
+  padding: 30px 24px 30px;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

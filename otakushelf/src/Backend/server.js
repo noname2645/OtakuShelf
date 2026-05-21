@@ -277,6 +277,43 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// GeoIP lookup helper
+async function getAreaFromIp(ip) {
+  if (!ip || ip === '::1' || ip === '127.0.0.1' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+    return 'Localhost / Dev';
+  }
+  try {
+    const response = await axios.get(`http://ip-api.com/json/${ip}`, { timeout: 3000 });
+    if (response.data && response.data.status === 'success') {
+      return `${response.data.city}, ${response.data.country}`;
+    }
+  } catch (err) {
+    console.error('GeoIP lookup failed:', err.message);
+  }
+  return 'Unknown Location';
+}
+
+// Log IP and Area inside session object automatically
+app.use(async (req, res, next) => {
+  if (req.session) {
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+    if (Array.isArray(ip)) ip = ip[0];
+    if (ip.includes(',')) ip = ip.split(',')[0].trim();
+    if (ip.startsWith('::ffff:')) {
+      ip = ip.substring(7);
+    }
+    
+    if (req.session.ip !== ip) {
+      req.session.ip = ip;
+      req.session.area = await getAreaFromIp(ip);
+      req.session.save((err) => {
+        if (err) console.error('Session save error:', err);
+      });
+    }
+  }
+  next();
+});
+
 import User from './models/User.js';
 import AnimeList from './models/AnimeList.js';
 
@@ -996,11 +1033,19 @@ app.get("/api/settings/:userId/sessions", authenticateToken, authorizeUser, asyn
         const sessionData = typeof s.session === 'string' ? JSON.parse(s.session) : s.session;
         return sessionData?.passport?.user === req.params.userId;
       } catch { return false; }
-    }).map(s => ({
-      id: s._id,
-      expires: s.expires,
-      createdAt: s._id.toString().substring(0, 8),
-    }));
+    }).map(s => {
+      let sessionData = {};
+      try {
+        sessionData = typeof s.session === 'string' ? JSON.parse(s.session) : s.session;
+      } catch {}
+      return {
+        id: s._id,
+        expires: s.expires,
+        createdAt: s._id.toString().substring(0, 8),
+        ip: sessionData?.ip || 'Unknown IP',
+        area: sessionData?.area || 'Unknown Location'
+      };
+    });
 
     res.sendSuccess("Active sessions", { sessions: userSessions, count: userSessions.length });
   } catch (err) {
