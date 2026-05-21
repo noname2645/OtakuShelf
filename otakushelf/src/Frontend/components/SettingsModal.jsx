@@ -1,6 +1,6 @@
 import React from 'react';
 import SettingsPage from './settings.jsx';
-import './SettingsModal.css';
+import '../Stylesheets/SettingsModal.css';
 
 const SettingsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
