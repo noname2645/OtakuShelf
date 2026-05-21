@@ -663,7 +663,7 @@ const TrailerHero = ({ onOpenModal }) => {
                         <div className="hero-next-previews">
                             <div className="up-next-header">
                                 <span className="up-next-text">Up Next</span>
-                                <div className="progress-bar-container">
+                                <div className="progress-bar-container2">
                                     <motion.div 
                                         className="progress-bar-fill2"
                                         key={currentAnime}
@@ -678,12 +678,19 @@ const TrailerHero = ({ onOpenModal }) => {
                                     const nextIndex = (currentAnime + offset) % announcements.length;
                                     const nextAnime = announcements[nextIndex];
                                     if (!nextAnime) return null;
+
+                                    // Use YouTube thumbnail (landscape 16:9) for sharpness, fallback to banner/cover
+                                    const videoId = getVideoId(nextAnime);
+                                    const thumbUrl = videoId
+                                        ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+                                        : (nextAnime.bannerImage || nextAnime.coverImage?.extraLarge || nextAnime.coverImage?.large);
+
                                     return (
                                         <div 
                                             key={nextIndex} 
                                             className="preview-thumb"
                                             onClick={() => setCurrentAnime(nextIndex)}
-                                            style={{ backgroundImage: `url(${nextAnime.coverImage?.large || nextAnime.coverImage?.medium || nextAnime.bannerImage})` }}
+                                            style={{ backgroundImage: `url(${thumbUrl})` }}
                                             title={getAnimeTitle(nextAnime)}
                                         >
                                             <div className="preview-overlay">

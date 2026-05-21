@@ -395,10 +395,10 @@ app.post("/auth/login", authLimiter, async (req, res) => {
     if (user.isMfaEnabled) {
       if (!req.body.mfaCode) {
         // Return 200 with requiresMfa flag so frontend can show input
-        return res.status(200).json({ 
-          success: true, 
-          message: "MFA code required", 
-          requiresMfa: true 
+        return res.status(200).json({
+          success: true,
+          message: "MFA code required",
+          requiresMfa: true
         });
       }
 
@@ -1082,7 +1082,7 @@ app.post("/api/auth/request-security-otp/:userId", authenticateToken, authorizeU
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
+
     user.securityOtp = otp;
     user.securityOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     user.securityAction = action; // 'mfa_disable', 'delete_account'
@@ -1107,8 +1107,8 @@ app.get("/api/mfa/setup/:userId", authenticateToken, authorizeUser, async (req, 
     const user = await User.findById(req.params.userId);
     if (!user) return res.sendError("User not found", 404);
 
-    const secret = speakeasy.generateSecret({ 
-      name: `OtakuShelf (${user.email})` 
+    const secret = speakeasy.generateSecret({
+      name: `OtakuShelf (${user.email})`
     });
 
     user.tempMfaSecret = secret.base32;

@@ -67,9 +67,20 @@
   user-select: none;
 }
 
-.login-anime-icon-1 { top: 18%; right: 12%; }
-.login-anime-icon-2 { bottom: 28%; left:  8%; }
-.login-anime-icon-3 { top:  62%; right: 22%; }
+.login-anime-icon-1 {
+  top: 18%;
+  right: 12%;
+}
+
+.login-anime-icon-2 {
+  bottom: 28%;
+  left: 8%;
+}
+
+.login-anime-icon-3 {
+  top: 62%;
+  right: 22%;
+}
 
 /* ---- Toast notification ---- */
 .login-message {
@@ -257,10 +268,17 @@
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 17px;
   z-index: 2;
   pointer-events: none;
+  display: flex;
+  align-items: center;
   line-height: 1;
+}
+
+.login-input-icon img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
 }
 
 .login-form-input {
@@ -269,7 +287,7 @@
   padding: 15px 16px 15px 46px;
   background: rgba(255, 255, 255, 0.05);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  border-radius: 50px;
   font-family: 'Outfit', sans-serif;
   font-size: 14.5px;
   font-weight: 400;
@@ -317,11 +335,11 @@
   justify-content: center;
   gap: 10px;
   border: none;
-  border-radius: 14px;
+  border-radius: 50px;
   font-family: 'Outfit', sans-serif;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   cursor: pointer;
   transition: all 0.25s ease;
   position: relative;
@@ -348,14 +366,12 @@
 }
 
 .login-btn-primary {
-  background: linear-gradient(135deg, #ff6b6b 0%, #a855f7 100%);
-  color: #ffffff;
-  box-shadow: 0 8px 24px rgba(255, 107, 107, 0.35);
+  background: #eb9b08cb;
+  color: #000000;
 }
 
 .login-btn-primary:not(:disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 36px rgba(255, 107, 107, 0.5);
 }
 
 .login-btn-primary:not(:disabled):active {
@@ -392,7 +408,9 @@
 }
 
 @keyframes login-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ---- Divider ---- */
@@ -425,7 +443,7 @@
   background: rgba(255, 255, 255, 0.06);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   color: #ffffff;
-  border-radius: 14px;
+  border-radius: 50px;
 }
 
 .login-btn-modern:not(:disabled):hover {
@@ -508,7 +526,11 @@
 
   .login-input-icon {
     left: 14px;
-    font-size: 15px;
+  }
+
+  .login-input-icon img {
+    width: 16px;
+    height: 16px;
   }
 
   .login-btn {

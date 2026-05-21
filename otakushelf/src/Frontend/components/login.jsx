@@ -6,6 +6,8 @@ import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import emailIcon from "../images/message.png";
+import keyIcon from "../images/key.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -160,7 +162,7 @@ const Login = () => {
             <>
               <motion.div className="login-form-group" variants={fieldVariants}>
                 <div className="login-input-with-icon">
-                  <span className="login-input-icon">✉️</span>
+                  <span className="login-input-icon"><img src={emailIcon} alt="Email" /></span>
                   <input
                     type="email" placeholder="Enter your email"
                     value={email} onChange={(e) => setEmail(e.target.value)}
@@ -171,7 +173,7 @@ const Login = () => {
 
               <motion.div className="login-form-group" variants={fieldVariants}>
                 <div className="login-input-with-icon">
-                  <span className="login-input-icon">🔒</span>
+                  <span className="login-input-icon"><img src={keyIcon} alt="Password" /></span>
                   <input
                     type="password" placeholder="Enter your password"
                     value={password} onChange={(e) => setPassword(e.target.value)}
@@ -186,7 +188,7 @@ const Login = () => {
           ) : (
             <motion.div className="login-form-group" variants={fieldVariants}>
               <div className="login-input-with-icon">
-                <span className="login-input-icon">🔐</span>
+                <span className="login-input-icon"><img src={keyIcon} alt="MFA Code" /></span>
                 <input
                   type="text" placeholder="6-digit MFA Code"
                   value={mfaCode} onChange={(e) => setMfaCode(e.target.value)}
@@ -206,13 +208,12 @@ const Login = () => {
               type="submit"
               className="login-btn login-btn-primary login-btn-glow"
               disabled={isLoading}
-              whileHover={!isLoading ? { scale: 1.025, boxShadow: "0 16px 40px rgba(102,126,234,0.65)" } : {}}
-              whileTap={!isLoading ? { scale: 0.97 } : {}}
+              whileTap={!isLoading ? { scale: 0.8 } : {}}
             >
               {isLoading ? (
                 <><div className="login-loading-spinner"></div>Signing In...</>
               ) : (
-                <><span className="login-btn-text">Enter World</span><span className="login-btn-arrow">→</span></>
+                <><span className="login-btn-text">Login</span><span className="login-btn-arrow">→</span></>
               )}
             </motion.button>
           </motion.div>

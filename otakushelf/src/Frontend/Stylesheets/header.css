@@ -128,21 +128,23 @@
     transform: translateY(-2px);
 }
 
-.InputContainer::before {
-    content: "🔎";
+.search-icon {
     position: absolute;
-    left: 16px;
+    left: 14px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 16px;
-    /* Reduced from 18px */
-    color: rgba(255, 255, 255, 0.6);
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    opacity: 0.6;
     z-index: 10;
     transition: all 0.3s ease;
+    pointer-events: none;
 }
 
-.InputContainer.active::before {
-    color: #ff6b6b;
+.InputContainer.active .search-icon {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(255, 107, 107, 0.7));
     transform: translateY(-50%) scale(1.1);
 }
 

@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext.jsx';
 import "../Stylesheets/header.css";
 import { useNavigate } from "react-router-dom";
+import Search from "../images/search.png";
+import SettingsModal from './SettingsModal.jsx';
 
 // ProfileDropdown Component (copied from home.jsx)
-const ProfileDropdown = () => {
+const ProfileDropdown = ({ onOpenSettings }) => {
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
     const { user, logout } = useAuth();
@@ -93,7 +95,7 @@ const ProfileDropdown = () => {
 
                     <button onClick={() => {
                         setShowDropdown(false);
-                        navigate("/settings");
+                        onOpenSettings();
                     }} className="dropdown-item">
                         <svg className="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -116,6 +118,7 @@ const ProfileDropdown = () => {
 
 export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
     const [isScrolled, setIsScrolled] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -133,48 +136,53 @@ export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
     };
 
     return (
-        <header className={`header ${isScrolled ? "scrolled" : ""}`}>
-            <div className="logo">
-                <Link to="/">
-                    <span>OtakuShelf</span>
-                </Link>
-            </div>
+        <>
+            <header className={`header ${isScrolled ? "scrolled" : ""}`}>
+                <div className="logo">
+                    <Link to="/">
+                        <span>OtakuShelf</span>
+                    </Link>
+                </div>
 
-            <div className="header-center">
-                {showSearch ? (
-                    <div className={`InputContainer ${onSearchChange ? "active" : ""}`}>
-                        <input
-                            placeholder="Search anime..."
-                            id="input"
-                            className="input"
-                            type="text"
-                            onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                        />
-                    </div>
-                ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div className="otaku-ai-label">
-                            🤖 <span>OtakuAI</span>
+                <div className="header-center">
+                    {showSearch ? (
+                        <div className={`InputContainer ${onSearchChange ? "active" : ""}`}>
+                            <img src={Search} alt="Search" className="search-icon" />
+                            <input
+                                placeholder="Search anime..."
+                                id="input"
+                                className="input"
+                                type="text"
+                                onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                            />
                         </div>
-                        {customAction && <div className="header-custom-action">{customAction}</div>}
-                    </div>
-                )}
-            </div>
+                    ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div className="otaku-ai-label">
+                                🤖 <span>OtakuAI</span>
+                            </div>
+                            {customAction && <div className="header-custom-action">{customAction}</div>}
+                        </div>
+                    )}
+                </div>
 
-            <div className="auth-buttons">
-                {user ? (
-                    <ProfileDropdown />
-                ) : (
-                    <>
-                        <Link to="/login">
-                            <button>
-                                <span className="button_login2">Get Started</span>
-                            </button>
-                        </Link>
-                    </>
-                )}
-            </div>
-        </header>
+                <div className="auth-buttons">
+                    {user ? (
+                        <ProfileDropdown onOpenSettings={() => setShowSettings(true)} />
+                    ) : (
+                        <>
+                            <Link to="/login">
+                                <button>
+                                    <span className="button_login2">Get Started</span>
+                                </button>
+                            </Link>
+                        </>
+                    )}
+                </div>
+            </header>
+
+            <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+        </>
     );
 };

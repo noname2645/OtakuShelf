@@ -465,7 +465,8 @@
 }
 
 .anime-carousel-section {
-  margin-bottom: 2rem; /* Reduced from 3.5rem */
+  margin-bottom: 2rem;
+  /* Reduced from 3.5rem */
   position: relative;
 }
 
@@ -473,7 +474,8 @@
 .modern-section-header {
   display: flex;
   align-items: center;
-  margin-bottom: 20px; /* Reduced from 24px */
+  margin-bottom: 20px;
+  /* Reduced from 24px */
   padding-left: 10px;
 }
 
@@ -535,13 +537,16 @@
   display: flex;
   overflow-x: auto;
   overflow-y: hidden;
-  gap: 16px; /* Reduced from 20px */
-  padding: 10px 10px 25px 10px; /* Reduced padding slightly to tight gap vertically */
+  gap: 25px;
+  padding: 10px 10px 25px 10px;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-  user-select: none; /* Prevent text selection while dragging */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  user-select: none;
+  /* Prevent text selection while dragging */
   -webkit-user-select: none;
 }
 
@@ -612,16 +617,16 @@
   opacity: 0;
   cursor: pointer;
   position: relative;
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: visible;
-  /* Allow outer glow */
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   animation: fadeInUp 0.5s ease-out forwards;
+
 }
 
 /* Explicit constraints for grid view (Advanced Search) */
 .anime-card2.grid-mode {
-  border-radius: 12px;
+  border-radius: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -631,18 +636,18 @@
 
 .anime-card2:hover {
   z-index: 60;
-  /* Glow removed as per user request to avoid skeleton/ghost effect */
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); 
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
 .anime-card2 .home-card-image {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: hidden;
   /* Clip image natively */
   background: #111;
+  border: 1px solid white;
 }
 
 .anime-card2 img {
@@ -669,7 +674,7 @@
 }
 
 .anime-card2:hover .card-title-bottom {
-  opacity: 0; /* Hide default title when hover overlay shows */
+  opacity: 0;
 }
 
 .card-title-bottom h3 {
@@ -679,7 +684,7 @@
   text-align: center;
   line-height: 1.3;
   margin: 0;
-  color: #ff9a00; /* Bright, highly visible orange */
+  color: #ff9a00;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -742,7 +747,8 @@
   color: #ffca28;
 }
 
-.hover-episodes, .hover-status {
+.hover-episodes,
+.hover-status {
   color: #a4b0be;
   border-left: 1px solid rgba(255, 255, 255, 0.2);
   padding-left: 8px;
@@ -831,20 +837,23 @@
 }
 
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .skeleton-hero,
 .skeleton-bar,
 .skeleton-title,
 .skeleton-card {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.03) 25%,
-    rgba(255, 255, 255, 0.09) 50%,
-    rgba(255, 255, 255, 0.03) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.03) 25%,
+      rgba(255, 255, 255, 0.09) 50%,
+      rgba(255, 255, 255, 0.03) 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 2s infinite linear;
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -897,16 +906,34 @@
 }
 
 /* Staggered animation for skeleton cards */
-.skeleton-card:nth-child(1) { animation-delay: 0s; }
-.skeleton-card:nth-child(2) { animation-delay: 0.1s; }
-.skeleton-card:nth-child(3) { animation-delay: 0.2s; }
-.skeleton-card:nth-child(4) { animation-delay: 0.3s; }
-.skeleton-card:nth-child(5) { animation-delay: 0.4s; }
-.skeleton-card:nth-child(6) { animation-delay: 0.5s; }
+.skeleton-card:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.skeleton-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.skeleton-card:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.skeleton-card:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.skeleton-card:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+.skeleton-card:nth-child(6) {
+  animation-delay: 0.5s;
+}
 
 /* Responsive Design */
 
 @media (max-width: 992px) {
+
   /* Hide carousel buttons on touch devices */
   .carousel-btn {
     display: none;

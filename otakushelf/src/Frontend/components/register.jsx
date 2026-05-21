@@ -5,8 +5,8 @@ import "../Stylesheets/register.css";
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import emailIcon from "../images/email.png";
-import passwordIcon from "../images/password-code.png";
+import emailIcon from "../images/message.png";
+import passwordIcon from "../images/key.png";
 import googleIcon from "../images/google.png";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -29,7 +29,11 @@ const Register = ({ onRegisterSuccess }) => {
   const validateForm = () => {
     if (!email || !password || !confirmPassword) { setMessage("Please fill in all fields"); return false; }
     if (password !== confirmPassword) { setMessage("Passwords do not match"); return false; }
-    if (password.length < 6) { setMessage("Password must be at least 6 characters long"); return false; }
+    if (password.length < 8) { setMessage("Password must be at least 8 characters long"); return false; }
+    if (!/[A-Z]/.test(password)) { setMessage("Password must contain at least one uppercase letter"); return false; }
+    if (!/[a-z]/.test(password)) { setMessage("Password must contain at least one lowercase letter"); return false; }
+    if (!/[0-9]/.test(password)) { setMessage("Password must contain at least one number"); return false; }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) { setMessage("Password must contain at least one special character (!@#$%^&* etc.)"); return false; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) { setMessage("Please enter a valid email address"); return false; }
     return true;
@@ -178,7 +182,7 @@ const Register = ({ onRegisterSuccess }) => {
               <div className="input-with-icon">
                 <span className="input-icon"><img src={passwordIcon} alt="Password Icon" /></span>
                 <input
-                  id="password" type="password" placeholder="Create a password (min 6 characters)"
+                  id="password" type="password" placeholder="Password (min 8 chars, A-Z, 0-9, symbol)"
                   value={password} onChange={(e) => setPassword(e.target.value)}
                   className="form-input" disabled={isLoading} required minLength={6}
                 />
@@ -202,13 +206,12 @@ const Register = ({ onRegisterSuccess }) => {
                 type="submit"
                 className="btn btn-primary btn-glow"
                 disabled={isLoading}
-                whileHover={!isLoading ? { scale: 1.025, boxShadow: "0 16px 40px rgba(102,126,234,0.65)" } : {}}
-                whileTap={!isLoading ? { scale: 0.97 } : {}}
+                whileTap={!isLoading ? { scale: 0.8 } : {}}
               >
                 {isLoading ? (
                   <><div className="loading-spinner"></div>Creating Your Journey...</>
                 ) : (
-                  <><span className="btn-text">Begin Adventure</span><span className="btn-arrow">→</span></>
+                  <><span className="btn-text">Register</span><span className="btn-arrow">→</span></>
                 )}
               </motion.button>
             </motion.div>
@@ -238,7 +241,7 @@ const Register = ({ onRegisterSuccess }) => {
             transition={{ delay: 1.05, duration: 0.4 }}
           >
             <p className="footer-text">
-              Already part of the adventure?{" "}
+              Already part of the community ?{" "}
               <Link to="/login" className="auth-link">
                 <span className="link-text">Login Here</span>
                 <span className="link-arrow">→</span>

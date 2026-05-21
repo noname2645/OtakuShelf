@@ -204,6 +204,11 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
+    /* Clamp to 2 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* Anime Meta Information */
@@ -332,6 +337,10 @@
     transform: scale(0.9);
 }
 
+.left-arrow:hover {
+    transform: rotate(180deg) scale(0.9) !important;
+}
+
 /* Trailer Spacer */
 .trailer-spacer {
     height: 100vh;
@@ -370,13 +379,13 @@
     text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 }
 
-.progress-bar-container {
+.progress-bar-container2 {
     width: 280px;
     height: 3px;
     border-radius: 2px;
     overflow: hidden;
-    background: #0a0a0f;
-    box-shadow: 0 0 10px #0a0a0f;   
+    background: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);   
 }
 
 .progress-bar-fill2 {

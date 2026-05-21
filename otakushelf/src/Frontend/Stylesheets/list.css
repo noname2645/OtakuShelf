@@ -739,8 +739,9 @@
   visibility: visible !important;
   height: 400px;
   width: 100%; /* Flexible width */
-  max-width: 320px;
+  max-width: 300px;
   margin: 0 auto;
+  cursor: pointer;
 }
 
 /* Status badge stays at top right */
