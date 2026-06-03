@@ -189,6 +189,72 @@
     padding: 1rem;
 }
 
+/* ── Era Curation Badge ── */
+.era-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.85rem;
+    border-radius: 20px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 0.85rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid transparent;
+    width: fit-content;
+    pointer-events: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    animation: badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes badgePop {
+    from { opacity: 0; transform: translateY(6px) scale(0.9); }
+    to   { opacity: 1; transform: translateY(0)   scale(1);   }
+}
+
+/* Golden Era ≤ 1999 */
+.era-badge--golden {
+    background: linear-gradient(135deg, rgba(180, 120, 20, 0.35), rgba(255, 200, 60, 0.2));
+    border-color: rgba(255, 200, 60, 0.55);
+    color: #ffd966;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* Millennium Era 2000-2012 */
+.era-badge--millennium {
+    background: linear-gradient(135deg, rgba(80, 40, 160, 0.35), rgba(160, 80, 255, 0.2));
+    border-color: rgba(160, 80, 255, 0.55);
+    color: #c084fc;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* Bridge Era 2013-2019 */
+.era-badge--bridge {
+    background: linear-gradient(135deg, rgba(0, 120, 160, 0.35), rgba(0, 220, 255, 0.2));
+    border-color: rgba(0, 220, 255, 0.5);
+    color: #67e8f9;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* Modern / Trending Now */
+.era-badge--modern {
+    background: linear-gradient(135deg, rgba(200, 60, 0, 0.35), rgba(255, 115, 0, 0.2));
+    border-color: rgba(255, 115, 0, 0.6);
+    color: #fb923c;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* Upcoming */
+.era-badge--upcoming {
+    background: linear-gradient(135deg, rgba(0, 160, 80, 0.35), rgba(0, 255, 140, 0.2));
+    border-color: rgba(0, 255, 140, 0.5);
+    color: #4ade80;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
 /* Anime Title */
 .anime-title {
     font-family: "Outfit", sans-serif;

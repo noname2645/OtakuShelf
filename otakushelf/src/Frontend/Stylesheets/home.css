@@ -828,6 +828,36 @@
   font-size: 1.1rem;
 }
 
+/* Search empty state */
+.search-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  gap: 8px;
+}
+
+.search-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 8px;
+}
+
+.search-empty-state h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.search-empty-state p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
 /* Skeleton Loading */
 .loading-skeleton {
   padding: 20px;

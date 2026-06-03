@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../Stylesheets/profile.css';
+import '../Stylesheets/settings.css';
 import api from '../api.js';
 import { Header } from '../components/header';
 import BottomNavBar from "../components/bottom.jsx";
@@ -26,11 +27,18 @@ const ProfilePage = () => {
   const [genres, setGenres] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [editForm, setEditForm] = useState({
     name: '',
     bio: '',
     username: ''
   });
+
+  // Toast helper
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500);
+  };
 
   const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -57,27 +65,20 @@ const ProfilePage = () => {
     "Thriller"
   ];
 
-  // Backfill genres function
+  // Backfill genres function — no longer shown in UI but kept for admin use
   const backfillGenres = async () => {
-    if (!confirm('This will fetch genres for all your anime from AniList. It may take several minutes (about 1 minute per 100 anime). Continue?')) {
-      return;
-    }
-
     try {
       setBackfilling(true);
-      const token = localStorage.getItem("token");
-
       const response = await api.post(`${API}/api/list/${user._id}/backfill-genres`);
       const data = response.data;
-
       if (data.success) {
-        alert(`Success! Updated genres for ${data.updated} anime. ${data.failed > 0 ? `Failed: ${data.failed}` : ''}`);
-        await loadProfileData(); // Reload to see new genres
+        showToast(`Genres updated for ${data.updated} anime!`);
+        await loadProfileData();
       } else {
-        alert('Failed to backfill genres: ' + (data.message || 'Unknown error'));
+        showToast('Failed to backfill genres: ' + (data.message || 'Unknown error'), 'error');
       }
     } catch (error) {
-      alert('Error backfilling genres: ' + error.message);
+      showToast('Error backfilling genres: ' + error.message, 'error');
     } finally {
       setBackfilling(false);
     }
@@ -254,18 +255,12 @@ const ProfilePage = () => {
 
     try {
       if (!file.type.startsWith("image/")) {
-        alert("Invalid image type. Please select an image file (JPEG, PNG, WebP)");
+        showToast('Invalid image type. Please select a JPEG, PNG, or WebP file.', 'error');
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        alert("Image too large. Maximum size is 5MB");
-        return;
-      }
-
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("Please log in to upload images");
+        showToast('Image too large. Maximum size is 5MB.', 'error');
         return;
       }
 
@@ -280,23 +275,16 @@ const ProfilePage = () => {
 
       if (data.coverImage) {
         let coverUrl = data.coverImage;
-
         if (coverUrl && coverUrl.startsWith('/uploads/')) {
           const backendBaseUrl = API.replace('/api', '');
           coverUrl = `${backendBaseUrl}${coverUrl}`;
         }
-
-        setProfileData(prev => ({
-          ...prev,
-          coverImage: coverUrl
-        }));
-
-        alert('Cover image updated successfully!');
+        setProfileData(prev => ({ ...prev, coverImage: coverUrl }));
+        showToast('Cover image updated successfully!');
       }
-
     } catch (error) {
       console.error('Cover upload error:', error);
-      alert('Failed to upload cover: ' + error.message);
+      showToast('Failed to upload cover image.', 'error');
     }
   };
 
@@ -306,8 +294,6 @@ const ProfilePage = () => {
 
   const handleSaveProfile = async () => {
     try {
-      const token = localStorage.getItem("token");
-
       const updateData = {
         name: editForm.name,
         profile: {
@@ -316,7 +302,7 @@ const ProfilePage = () => {
         }
       };
 
-      const response = await api.put(`${API}/api/profile/${user._id}`, updateData);
+      await api.put(`${API}/api/profile/${user._id}`, updateData);
 
       if (updateProfile) {
         await updateProfile(updateData);
@@ -330,13 +316,12 @@ const ProfilePage = () => {
       }));
 
       setIsEditing(false);
-      alert('Profile updated successfully!');
-
+      showToast('Profile updated successfully!');
       await loadProfileData();
 
     } catch (error) {
       console.error('Profile update error:', error);
-      alert('Failed to update profile: ' + error.message);
+      showToast('Failed to update profile.', 'error');
     }
   };
 
@@ -359,35 +344,23 @@ const ProfilePage = () => {
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-
     const userId = user?._id || localStorage.getItem("user_id") || JSON.parse(localStorage.getItem("user"))?.id;
 
-    if (!userId) {
-      alert('Please log in to upload images');
-      return;
-    }
-
-    if (!file) {
-      alert('Please select an image file');
-      return;
-    }
+    if (!userId) { showToast('Please log in to upload images', 'error'); return; }
+    if (!file) { showToast('Please select an image file', 'error'); return; }
 
     try {
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file (JPEG, PNG, WebP, or GIF)');
+        showToast('Please select a JPEG, PNG, WebP, or GIF file.', 'error');
         return;
       }
-
       if (file.size > 2 * 1024 * 1024) {
-        alert('Image size should be less than 2MB');
+        showToast('Image size must be less than 2MB.', 'error');
         return;
       }
 
       const formData = new FormData();
       formData.append('photo', file);
-
-      const token = localStorage.getItem("token") || '';
-
       setLoading(true);
 
       const response = await api.post(`${API}/api/profile/${userId}/upload-photo`, formData, {
@@ -395,29 +368,19 @@ const ProfilePage = () => {
       });
 
       const result = response.data.data;
-
       let photoUrl = result.photo;
-
       if (photoUrl && photoUrl.startsWith('/uploads/')) {
         const backendBaseUrl = API.replace('/api', '');
         photoUrl = `${backendBaseUrl}${photoUrl}`;
       }
 
-      setProfileData(prev => ({
-        ...prev,
-        avatar: photoUrl
-      }));
-
-      if (updateUserState) {
-        updateUserState({ photo: photoUrl });
-      }
-
-      alert('Profile picture updated successfully!');
+      setProfileData(prev => ({ ...prev, avatar: photoUrl }));
+      if (updateUserState) updateUserState({ photo: photoUrl });
+      showToast('Profile picture updated!');
 
     } catch (error) {
-      console.error('Upload error details:', error);
-      alert('Failed to upload image: ' + error.message);
-
+      console.error('Upload error:', error);
+      showToast('Failed to upload image.', 'error');
       await loadProfileData();
     } finally {
       setLoading(false);
@@ -531,6 +494,12 @@ const ProfilePage = () => {
   return (
     <>
       <BottomNavBar />
+      {/* Toast notification */}
+      {toast.show && (
+        <div className={`settings-toast ${toast.type === 'error' ? 'toast-error' : 'toast-success'}`}>
+          {toast.message}
+        </div>
+      )}
       <div className="profile-page">
         <Header showSearch={false} />
         <div className="profile-cover">
@@ -647,18 +616,6 @@ const ProfilePage = () => {
                   <button className="btn-share" onClick={handleShareProfile}>
                     Share Profile
                   </button>
-
-                  {/* TEMPORARY BUTTON - Remove after running once */}
-                  {watchedGenres === 0 && (
-                    <button
-                      className="btn-edit"
-                      onClick={backfillGenres}
-                      disabled={backfilling}
-                      style={{ backgroundColor: '#FF6B6B' }}
-                    >
-                      {backfilling ? 'Backfilling...' : 'Fix Genres'}
-                    </button>
-                  )}
                 </>
               )}
             </div>
@@ -700,20 +657,6 @@ const ProfilePage = () => {
                 <div className="stat-card">
                   <span className="stat-number">{stats?.favorites || 0}</span>
                   <span className="stat-label">Favorites</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="recent-activity-column">
-              <h2 className="overview-header">Recent Activity</h2>
-              <div className="recentact">
-                <div className="activity-placeholder">
-                  <div className="activity-icon">📊</div>
-                  <p className="activity-message">
-                    {recentlyWatched.length > 0
-                      ? 'Feature coming soon'
-                      : 'Start watching anime to see your activity here!'}
-                  </p>
                 </div>
               </div>
             </div>
@@ -764,26 +707,21 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Badges Section */}
-          <div className="badges-section">
-            <h3 className="section-title">Badges</h3>
-            <div className="badges-grid">
-              {badges.length > 0 ? (
-                badges.map(badge => (
+          {/* Badges Section — only shown when user has earned badges */}
+          {badges.length > 0 && (
+            <div className="badges-section">
+              <h3 className="section-title">Badges</h3>
+              <div className="badges-grid">
+                {badges.map(badge => (
                   <div key={badge.id} className="badge-card">
                     <div className="badge-icon">{badge.icon}</div>
                     <div className="badge-title">{badge.title}</div>
                     <div className="badge-desc">{badge.description}</div>
                   </div>
-                ))
-              ) : (
-                <div className="empty-state">
-                  <p>No badges earned yet.</p>
-                  <p>Complete achievements to earn badges!</p>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Genre Breakdown Section */}
           <div className="genre-section">

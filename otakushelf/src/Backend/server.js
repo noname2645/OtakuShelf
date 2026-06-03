@@ -294,7 +294,7 @@ async function getAreaFromIp(ip) {
 }
 
 // Log IP and Area inside session object automatically
-app.use(async (req, res, next) => {
+app.use((req, res, next) => {
   if (req.session) {
     let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
     if (Array.isArray(ip)) ip = ip[0];
@@ -305,9 +305,16 @@ app.use(async (req, res, next) => {
     
     if (req.session.ip !== ip) {
       req.session.ip = ip;
-      req.session.area = await getAreaFromIp(ip);
-      req.session.save((err) => {
-        if (err) console.error('Session save error:', err);
+      req.session.area = 'Locating...';
+      
+      getAreaFromIp(ip).then(area => {
+        req.session.area = area;
+        req.session.save((err) => {
+          if (err) console.error('Session save error:', err);
+        });
+      }).catch(() => {
+        req.session.area = 'Unknown Location';
+        req.session.save();
       });
     }
   }
@@ -1046,6 +1053,8 @@ app.get("/api/settings/:userId/sessions", authenticateToken, authorizeUser, asyn
         area: sessionData?.area || 'Unknown Location'
       };
     });
+
+
 
     res.sendSuccess("Active sessions", { sessions: userSessions, count: userSessions.length });
   } catch (err) {

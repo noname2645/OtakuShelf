@@ -333,6 +333,9 @@ const TrailerHero = ({ onOpenModal }) => {
             startDate: anime.startDate || null,
             endDate: anime.endDate || null,
             shortDescription: anime.description ? anime.description.substring(0, 200) + '...' : null,
+            // Era curation fields from backend
+            _era: anime._era || null,
+            _eraLabel: anime._eraLabel || null,
             ...anime,
         };
     };
@@ -359,14 +362,10 @@ const TrailerHero = ({ onOpenModal }) => {
                 const data = response.data; // Standardized response contains "data" property
                 
                 if (data && Array.isArray(data) && data.length > 0) {
-                    const normalizedAnnouncements = data
-                        .map(normalizeHeroAnime)
-                        .filter(anime => {
-                            const s = anime.status?.toLowerCase();
-                            return s !== 'not_yet_released' && s !== 'not_yet_aired';
-                        });
+                    // Backend already filters & orders by era — trust it
+                    const normalizedAnnouncements = data.map(normalizeHeroAnime);
 
-                    setAnnouncements(normalizedAnnouncements.slice(0, 10));
+                    setAnnouncements(normalizedAnnouncements);
                     localStorage.setItem(CACHE_KEY, JSON.stringify(normalizedAnnouncements));
                     localStorage.setItem(`${CACHE_KEY}_time`, String(Date.now()));
                 }
@@ -597,6 +596,8 @@ const TrailerHero = ({ onOpenModal }) => {
                         maxWidth: isMobile ? '100%' : '600px'
                     }}
                 >
+
+
                     <h1 className="anime-title">
                         {getAnimeTitle(currentAnimeData)}
                     </h1>

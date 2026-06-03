@@ -36,148 +36,255 @@ async function fetchAniList(query, variables = {}) {
   }
 }
 
-// Main fetch function used by cache warm-up and route
+// ──────────────────────────────────────────────
+//  ERA DEFINITIONS  (FuzzyDateInt = YYYYMMDD as Int)
+//  golden   : ≤ 31 Dec 1999  — true classics / forgotten masterpieces
+//  millen   : 1 Jan 2000 – 31 Dec 2012 — peak cult era
+//  bridge   : 1 Jan 2013 – 31 Dec 2019 — modern-era golden bridge
+//  current  : 2020+ airing / recent hits
+//  upcoming : announced but not yet released
+// ──────────────────────────────────────────────
+
+const MEDIA_FIELDS = `
+  id
+  idMal
+  title { romaji english native }
+  description(asHtml: false)
+  status
+  season
+  seasonYear
+  episodes
+  averageScore
+  popularity
+  trending
+  bannerImage
+  coverImage { large extraLarge medium color }
+  genres
+  format
+  startDate { year month day }
+  endDate { year month day }
+  studios {
+    nodes { name isAnimationStudio }
+  }
+  trailer { id site thumbnail }
+`;
+
+// 🏺 Golden Era  ≤ 1999-12-31
+const goldenQuery = `
+  query {
+    Page(page: 1, perPage: 40) {
+      media(
+        sort: [SCORE_DESC]
+        type: ANIME
+        isAdult: false
+        startDate_lesser: 19991231
+        averageScore_greater: 72
+        format_in: [TV, MOVIE, OVA, ONA]
+      ) { ${MEDIA_FIELDS} }
+    }
+  }
+`;
+
+// 💎 Millennium Era  2000-01-01 → 2012-12-31
+const millenQuery = `
+  query {
+    Page(page: 1, perPage: 40) {
+      media(
+        sort: [SCORE_DESC]
+        type: ANIME
+        isAdult: false
+        startDate_greater: 19991231
+        startDate_lesser: 20121231
+        averageScore_greater: 72
+        format_in: [TV, MOVIE, OVA, ONA]
+      ) { ${MEDIA_FIELDS} }
+    }
+  }
+`;
+
+// ⚡ Bridge / Cult Era  2013-01-01 → 2019-12-31
+const bridgeQuery = `
+  query {
+    Page(page: 1, perPage: 40) {
+      media(
+        sort: [SCORE_DESC]
+        type: ANIME
+        isAdult: false
+        startDate_greater: 20121231
+        startDate_lesser: 20191231
+        averageScore_greater: 72
+        format_in: [TV, MOVIE, OVA, ONA]
+      ) { ${MEDIA_FIELDS} }
+    }
+  }
+`;
+
+// 🔥 Modern / Trending Now  — currently releasing
+const releasingQuery = `
+  query {
+    Page(page: 1, perPage: 40) {
+      media(
+        sort: [TRENDING_DESC, POPULARITY_DESC]
+        type: ANIME
+        isAdult: false
+        status: RELEASING
+        format_in: [TV, ONA]
+      ) { ${MEDIA_FIELDS} }
+    }
+  }
+`;
+
+// 🚀 Upcoming — announced but not yet aired
+const upcomingQuery = `
+  query {
+    Page(page: 1, perPage: 20) {
+      media(
+        sort: [POPULARITY_DESC]
+        type: ANIME
+        isAdult: false
+        status: NOT_YET_RELEASED
+        format_in: [TV, ONA, MOVIE]
+      ) { ${MEDIA_FIELDS} }
+    }
+  }
+`;
+
+
+// ──────────────────────────────────────────────
+//  HIDDEN GEM SCORE
+//  Rewards high averageScore AND punishes very high popularity
+//  (if everyone already knows it, it's not a "hidden gem")
+//  Score range: 0–100
+// ──────────────────────────────────────────────
+const hiddenGemScore = (anime) => {
+  const score = anime.averageScore || 0;          // 0-100
+  const pop   = anime.popularity   || 1;
+
+  // Popularity penalty: log scale so it's not brutal
+  // A show with pop=500 gets ~0 penalty; pop=50000 gets ~0.4 penalty
+  const popPenalty = Math.min(Math.log10(pop / 500) * 0.15, 0.5);
+  return score * (1 - popPenalty);
+};
+
+// Generic quality score for modern/releasing (pure quality + trending)
+const modernScore = (anime) => {
+  const score    = (anime.averageScore || 0) * 0.45;
+  const pop      = Math.min((anime.popularity  || 0) / 1000, 30) * 0.3; // cap contribution
+  const trending = Math.min((anime.trending    || 0) / 10,   25) * 0.25;
+  return score + pop + trending;
+};
+
+// ──────────────────────────────────────────────
+//  MAIN FETCH FUNCTION
+// ──────────────────────────────────────────────
 const fetchHeroAnime = async () => {
-  // Fetch from three different statuses for diversity
-  const releasingQuery = `
-      query {
-        Page(page: 1, perPage: 30) {
-          media(sort: [TRENDING_DESC, POPULARITY_DESC], type: ANIME, status: RELEASING, isAdult: false) {
-            id
-            idMal
-            title { romaji english native }
-            description(asHtml: false)
-            status
-            season
-            seasonYear
-            episodes
-            averageScore
-            popularity
-            bannerImage
-            coverImage { large extraLarge medium }
-            genres
-            format  
-            startDate { year month day } 
-            endDate { year month day }   
-            studios {
-              nodes { name isAnimationStudio }
-            }
-            trailer { id site thumbnail }
-          }
-        }
-      }
-    `;
-
-  const finishedQuery = `
-      query {
-        Page(page: 1, perPage: 30) {
-          media(sort: [SCORE_DESC, POPULARITY_DESC], type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70) {
-            id
-            idMal
-            title { romaji english native }
-            description(asHtml: false)
-            status
-            season
-            seasonYear
-            episodes
-            averageScore
-            popularity
-            bannerImage
-            coverImage { large extraLarge medium }
-            genres
-            format  
-            startDate { year month day } 
-            endDate { year month day }   
-            studios {
-              nodes { name isAnimationStudio }
-            }
-            trailer { id site thumbnail }
-          }
-        }
-      }
-    `;
-
-  const upcomingQuery = `
-      query {
-        Page(page: 1, perPage: 30) {
-          media(sort: [POPULARITY_DESC, TRENDING_DESC], type: ANIME, status: NOT_YET_RELEASED, isAdult: false) {
-            id
-            idMal
-            title { romaji english native }
-            description(asHtml: false)
-            status
-            season
-            seasonYear
-            episodes
-            averageScore
-            popularity
-            bannerImage
-            coverImage { large extraLarge medium }
-            genres
-            format  
-            startDate { year month day } 
-            endDate { year month day }   
-            studios {
-              nodes { name isAnimationStudio }
-            }
-            trailer { id site thumbnail }
-          }
-        }
-      }
-    `;
-
   try {
-    console.log("Fetching diverse hero trailers data...");
+    console.log("Fetching era-diverse hero trailers...");
 
-    // Fetch all three categories in parallel
-    const [releasingData, finishedData, upcomingData] = await Promise.all([
-      fetchAniList(releasingQuery).catch(() => ({ Page: { media: [] } })),
-      fetchAniList(finishedQuery).catch(() => ({ Page: { media: [] } })),
-      fetchAniList(upcomingQuery).catch(() => ({ Page: { media: [] } }))
+    // Fire all queries in parallel
+    const [
+      goldenData,
+      millenData,
+      bridgeData,
+      currentData,
+      upcomingData,
+    ] = await Promise.all([
+      fetchAniList(goldenQuery).catch(e  => { console.error('Golden era query failed:', e.message); return { Page: { media: [] } }; }),
+      fetchAniList(millenQuery).catch(e  => { console.error('Millennium query failed:', e.message); return { Page: { media: [] } }; }),
+      fetchAniList(bridgeQuery).catch(e  => { console.error('Bridge query failed:',     e.message); return { Page: { media: [] } }; }),
+      fetchAniList(releasingQuery).catch(e => { console.error('Releasing query failed:', e.message); return { Page: { media: [] } }; }),
+      fetchAniList(upcomingQuery).catch(e  => { console.error('Upcoming query failed:',  e.message); return { Page: { media: [] } }; }),
     ]);
 
-    const releasingMedia = releasingData?.Page?.media || [];
-    const finishedMedia = finishedData?.Page?.media || [];
-    const upcomingMedia = upcomingData?.Page?.media || [];
+    const golden   = goldenData?.Page?.media   || [];
+    const millen   = millenData?.Page?.media   || [];
+    const bridge   = bridgeData?.Page?.media   || [];
+    const current  = currentData?.Page?.media  || [];
+    const upcoming = upcomingData?.Page?.media || [];
 
-    console.log(`Raw counts - Releasing: ${releasingMedia.length}, Finished: ${finishedMedia.length}, Upcoming: ${upcomingMedia.length}`);
+    console.log(`Raw counts — Golden: ${golden.length}, Millennium: ${millen.length}, Bridge: ${bridge.length}, Current: ${current.length}, Upcoming: ${upcoming.length}`);
 
-    // Filter for high quality results with trailers
-    const filterAnime = (anime) => {
+    // ── Filter: must have YouTube trailer + image + title ──
+    const requiresTrailerAndImage = (anime) => {
       const hasTrailer = anime.trailer?.id && anime.trailer?.site === 'youtube';
-      const hasImage = anime.bannerImage || anime.coverImage?.extraLarge;
-      const hasTitle = anime.title?.english || anime.title?.romaji;
+      const hasImage   = anime.bannerImage || anime.coverImage?.extraLarge;
+      const hasTitle   = anime.title?.english || anime.title?.romaji;
       return hasTrailer && hasImage && hasTitle;
     };
 
-    const releasingFiltered = releasingMedia.filter(filterAnime);
-    const finishedFiltered = finishedMedia.filter(filterAnime);
-    const upcomingFiltered = upcomingMedia.filter(filterAnime);
+    // ── Filter & sort each era bucket ──
+    const goldenGems  = golden.filter(requiresTrailerAndImage)
+                               .sort((a, b) => hiddenGemScore(b) - hiddenGemScore(a))
+                               .slice(0, 5)
+                               .map(a => ({ ...a, _era: 'golden', _eraLabel: '🏺 Golden Era Gem' }));
 
-    console.log(`Filtered counts - Releasing: ${releasingFiltered.length}, Finished: ${finishedFiltered.length}, Upcoming: ${upcomingFiltered.length}`);
+    const millenGems  = millen.filter(requiresTrailerAndImage)
+                               .sort((a, b) => hiddenGemScore(b) - hiddenGemScore(a))
+                               .slice(0, 5)
+                               .map(a => ({ ...a, _era: 'millennium', _eraLabel: '💎 Hidden Gem' }));
 
-    // Take equal amounts from each category (or as many as available)
-    const perCategory = 10;
-    const releasing = releasingFiltered.slice(0, perCategory);
-    const finished = finishedFiltered.slice(0, perCategory);
-    const upcoming = upcomingFiltered.slice(0, perCategory);
+    const bridgeGems  = bridge.filter(requiresTrailerAndImage)
+                               .sort((a, b) => hiddenGemScore(b) - hiddenGemScore(a))
+                               .slice(0, 4)
+                               .map(a => ({ ...a, _era: 'bridge', _eraLabel: '⚡ Cult Classic' }));
 
-    // Combine and shuffle for variety
-    const combined = [...releasing, ...finished, ...upcoming];
-    const shuffled = combined.sort(() => Math.random() - 0.5);
+    const modernHits  = current.filter(requiresTrailerAndImage)
+                                .sort((a, b) => modernScore(b) - modernScore(a))
+                                .slice(0, 6)
+                                .map(a => ({ ...a, _era: 'modern', _eraLabel: '🔥 Trending Now' }));
+
+    const upcomingHits = upcoming.filter(requiresTrailerAndImage)
+                                  .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+                                  .slice(0, 2)
+                                  .map(a => ({ ...a, _era: 'upcoming', _eraLabel: '🚀 Coming Soon' }));
+
+    console.log(`Filtered — Golden: ${goldenGems.length}, Millennium: ${millenGems.length}, Bridge: ${bridgeGems.length}, Modern: ${modernHits.length}, Upcoming: ${upcomingHits.length}`);
+
+    // ── Interleave eras so the hero cycles through different eras smoothly ──
+    // Target order: Modern → Golden → Millennium → Modern → Bridge → Upcoming → repeat
+    const interleaved = [];
+    const queues = {
+      modern:     [...modernHits],
+      golden:     [...goldenGems],
+      millennium: [...millenGems],
+      bridge:     [...bridgeGems],
+      upcoming:   [...upcomingHits],
+    };
+
+    const pattern = ['modern', 'golden', 'millennium', 'modern', 'bridge', 'upcoming', 'modern', 'millennium', 'golden', 'bridge'];
+
+    for (const era of pattern) {
+      const item = queues[era]?.shift();
+      if (item) interleaved.push(item);
+    }
+
+    // Append any remaining modern hits that didn't make the pattern
+    for (const era of ['modern', 'golden', 'millennium', 'bridge']) {
+      while (queues[era]?.length > 0) {
+        interleaved.push(queues[era].shift());
+      }
+    }
 
     // Add display helper fields
-    const enhanced = shuffled.map(anime => ({
+    const enhanced = interleaved.map(anime => ({
       ...anime,
       displayTitle: anime.title.english || anime.title.romaji || anime.title.native,
-      mainStudio: anime.studios?.nodes?.find(s => s.isAnimationStudio)?.name || 'Unknown Studio'
+      mainStudio: anime.studios?.nodes?.find(s => s.isAnimationStudio)?.name || 'Unknown Studio',
     }));
 
-    console.log(`Final hero anime count: ${enhanced.length} (balanced mix)`);
+    // Remove duplicates by id (in case a show appears in multiple era buckets)
+    const seen = new Set();
+    const deduped = enhanced.filter(a => {
+      if (seen.has(a.id)) return false;
+      seen.add(a.id);
+      return true;
+    });
 
-    return enhanced;
-  } catch (error) {
-    console.error("Error in fetchHeroAnime:", error.message);
+    console.log(`Final hero anime count: ${deduped.length} (era-interleaved)`);
+    return deduped;
+
+  } catch (err) {
+    console.error("Error in fetchHeroAnime:", err.message);
     return [];
   }
 };
@@ -232,7 +339,14 @@ router.get("/hero-trailers/debug", (req, res) => {
     hasData: !!heroCache.data,
     count: heroCache.data?.length || 0,
     ageMinutes: heroCache.timestamp ? (now - heroCache.timestamp) / 60000 : 0,
-    expired: now - heroCache.timestamp > HERO_TTL
+    expired: now - heroCache.timestamp > HERO_TTL,
+    eraBreakdown: heroCache.data ? {
+      golden:     heroCache.data.filter(a => a._era === 'golden').length,
+      millennium: heroCache.data.filter(a => a._era === 'millennium').length,
+      bridge:     heroCache.data.filter(a => a._era === 'bridge').length,
+      modern:     heroCache.data.filter(a => a._era === 'modern').length,
+      upcoming:   heroCache.data.filter(a => a._era === 'upcoming').length,
+    } : null
   };
   return success(res, "Hero cache debug info fetched successfully", debugData);
 });

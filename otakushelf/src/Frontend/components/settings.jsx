@@ -25,7 +25,7 @@ const ACCENT_COLORS = [
   { name: 'Emerald', value: '#10b981' },
 ];
 
-const SettingsPage = () => {
+const SettingsPage = ({ isModal = false }) => {
   const { user, logout, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const API = import.meta.env.VITE_API_BASE_URL;
@@ -130,6 +130,10 @@ const SettingsPage = () => {
     const newSettings = { ...settings };
     newSettings[category][key] = value;
     setSettings(newSettings);
+    // Instantly apply accent color to the whole page without waiting for auth refresh
+    if (category === 'preferences' && key === 'accentColor') {
+      document.documentElement.style.setProperty('--accent-color', value);
+    }
     saveSettings(category, { [key]: value });
   };
 
@@ -492,12 +496,16 @@ const SettingsPage = () => {
               <div className="session-info">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                   <span className="session-name">Session {idx + 1}</span>
-                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}>
-                    {session.ip}
-                  </span>
-                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: 'rgba(255, 107, 107, 0.1)', color: '#ff6b6b', fontWeight: '500' }}>
-                    📍 {session.area}
-                  </span>
+                  {session.ip && (
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}>
+                      {session.ip}
+                    </span>
+                  )}
+                  {session.area && (
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: 'rgba(255, 107, 107, 0.1)', color: '#ff6b6b', fontWeight: '500' }}>
+                      📍 {session.area}
+                    </span>
+                  )}
                 </div>
                 <span className="session-expires">Expires: {new Date(session.expires).toLocaleDateString()}</span>
               </div>
@@ -903,9 +911,9 @@ const SettingsPage = () => {
 
   return (
     <>
-      <Header showSearch={false} />
-      <BottomNavBar />
-      <div className="settings-page">
+      {!isModal && <Header showSearch={false} />}
+      {!isModal && <BottomNavBar />}
+      <div className={`settings-page${isModal ? ' settings-page--modal' : ''}`}>
         {/* Toast */}
         {toast.show && (
           <div className={`settings-toast ${toast.type}`}>

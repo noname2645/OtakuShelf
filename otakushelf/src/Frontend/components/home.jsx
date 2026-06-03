@@ -6,6 +6,7 @@ import TrailerHero from './TrailerHero.jsx';
 import { Header } from '../components/header.jsx';
 import BottomNavBar from './bottom.jsx';
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from 'react-router-dom';
 
 // API base URL
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -17,8 +18,19 @@ const STALE_TIME = 1000 * 60 * 30; // 30 minutes until fresh fetch (but stale da
 
 import AnimeCard from './AnimeCardUI.jsx';
 // Section Component to manage its own "View More" state
+// Map section titles to genre/filter hints for Advanced Search
+const SECTION_GENRE_MAP = {
+    'TOP AIRING': '?status=RELEASING',
+    'TRENDING THIS WEEK': '?sort=TRENDING',
+    'MOST WATCHED': '?sort=POPULARITY',
+    'TOP RATED ALL TIME': '?sort=SCORE',
+    'TOP MOVIES': '?type=MOVIE',
+    'UPCOMING RELEASES': '?status=TBA',
+};
+
 const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
     const scrollRef = useRef(null);
+    const navigate = useNavigate();
     const [isDragging, setIsDragging] = useState(false);
     const [startX, setStartX] = useState(0);
     const [scrollLeft, setScrollLeft] = useState(0);
@@ -84,7 +96,9 @@ const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
             <div className="modern-section-header">
                 <div className="accent-bar"></div>
                 <h2 className="header-title">{title}</h2>
-                <button className="view-more-btn">Explore <span className="arrow">&rsaquo;</span></button>
+                <button className="view-more-btn" onClick={() => navigate(`/advance${SECTION_GENRE_MAP[title] || ''}`)}>
+                    Explore <span className="arrow">&rsaquo;</span>
+                </button>
             </div>
             
             <div className={`carousel-wrapper ${isDragging ? 'dragging' : ''}`}>
@@ -116,6 +130,7 @@ const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
 AnimeSection.displayName = 'AnimeSection';
 
 const AnimeHomepage = () => {
+    const navigate = useNavigate();
     // State
     const [loading, setLoading] = useState(true); // Initial skeleton state
     const [sections, setSections] = useState({
@@ -351,6 +366,15 @@ const AnimeHomepage = () => {
                                     <div className="loading-search">
                                         <div className="spinner"></div>
                                         <p>Searching...</p>
+                                    </div>
+                                ) : searchResults.length === 0 ? (
+                                    <div className="search-empty-state">
+                                        <div className="search-empty-icon">🔍</div>
+                                        <h3>No results found</h3>
+                                        <p>Try a different title or check the spelling.</p>
+                                        <button className="view-more-btn" onClick={() => navigate('/advance')} style={{ marginTop: '12px' }}>
+                                            Try Advanced Search <span className="arrow">&rsaquo;</span>
+                                        </button>
                                     </div>
                                 ) : (
                                     <div className="anime-grid">

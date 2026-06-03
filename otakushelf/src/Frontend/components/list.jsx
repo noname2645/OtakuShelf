@@ -1,14 +1,19 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../api.js';
 import "../Stylesheets/list.css";
+import "../Stylesheets/settings.css";
 import { Star } from 'lucide-react';
 import { Navigate } from "react-router-dom";
 import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
 import Import from "../images/import.png";
+import { useAnimePreferences } from './useAnimePreferences';
 
 const EnhancedAnimeList = () => {
+  const { preferences } = useAnimePreferences();
   const [activeTab, setActiveTab] = useState('watching');
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [confirmRemove, setConfirmRemove] = useState(null); // stores animeId to confirm
   const [animeList, setAnimeList] = useState({
     watching: [],
     completed: [],
@@ -25,6 +30,11 @@ const EnhancedAnimeList = () => {
 
   const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
   const wsRef = useRef(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500);
+  };
 
   const getFallbackImage = (animeTitle) => {
     const encodedTitle = encodeURIComponent(animeTitle || 'Anime Poster');
@@ -125,7 +135,7 @@ const EnhancedAnimeList = () => {
     if (!file) return;
 
     if (!file.name.endsWith('.xml') && file.type !== 'application/xml' && file.type !== 'text/xml') {
-      alert('Please select a valid XML file exported from MyAnimeList');
+      showToast('Please select a valid XML file exported from MyAnimeList', 'error');
       event.target.value = '';
       return;
     }
@@ -137,7 +147,7 @@ const EnhancedAnimeList = () => {
 
   const handleImportConfirm = async () => {
     if (!selectedFile || !user || !user._id) {
-      alert('Please select a file and ensure you are logged in.');
+      showToast('Please select a file and ensure you are logged in.', 'error');
       return;
     }
 
@@ -160,10 +170,10 @@ const EnhancedAnimeList = () => {
       const resData = response.data;
 
       if (resData.status === "success") {
-        alert(`✅ Success! ${resData.message}`);
+        showToast(`✅ ${resData.message}`);
         fetchAnimeList();
       } else {
-        alert(`❌ Import failed: ${resData.message}`);
+        showToast(`Import failed: ${resData.message}`, 'error');
       }
     } catch (error) {
       console.error('Import error:', error);
@@ -177,7 +187,7 @@ const EnhancedAnimeList = () => {
         errorMsg = 'Import is taking too long. Your list might be very large. Please try with a smaller list or wait and try again.';
       }
 
-      alert(`Failed to import: ${errorMsg}`);
+      showToast(`Failed to import: ${errorMsg}`, 'error');
     } finally {
       setImporting(false);
       setTimeout(() => setImportProgress(''), 3000);
@@ -366,33 +376,36 @@ const EnhancedAnimeList = () => {
     return sortedGroups;
   }, []);
   const handleRemove = useCallback(async (animeId) => {
-    if (window.confirm('Are you sure you want to remove this anime from your list?')) {
-      try {
-        if (!user || !user._id) {
-          alert('User not found');
-          return;
-        }
+    setConfirmRemove(animeId);
+  }, []);
 
-        const userId = user._id;
-        await api.delete(`${API}/api/list/${userId}/${animeId}`);
-
-        setAnimeList(prev => {
-          const newList = { ...prev };
-          Object.keys(newList).forEach(category => {
-            if (Array.isArray(newList[category])) {
-              newList[category] = newList[category].filter(
-                anime => anime._id !== animeId && anime.animeId !== animeId
-              );
-            }
-          });
-          return newList;
-        });
-      } catch (error) {
-        console.error("Error removing anime:", error);
-        alert('Failed to remove anime. Please try again.');
+  const confirmRemoveAnime = useCallback(async (animeId) => {
+    try {
+      if (!user || !user._id) {
+        showToast('User not found', 'error');
+        return;
       }
+      const userId = user._id;
+      await api.delete(`${API}/api/list/${userId}/${animeId}`);
+      setAnimeList(prev => {
+        const newList = { ...prev };
+        Object.keys(newList).forEach(category => {
+          if (Array.isArray(newList[category])) {
+            newList[category] = newList[category].filter(
+              anime => anime._id !== animeId && anime.animeId !== animeId
+            );
+          }
+        });
+        return newList;
+      });
+      showToast('Removed from your list');
+    } catch (error) {
+      console.error("Error removing anime:", error);
+      showToast('Failed to remove anime. Please try again.', 'error');
+    } finally {
+      setConfirmRemove(null);
     }
-  }, [user]);
+  }, [user, API]);
 
   const getStatusBadgeClass = useCallback((status) => {
     switch (status) {
@@ -416,7 +429,7 @@ const EnhancedAnimeList = () => {
 
   const handleIncrementEpisode = async (anime) => {
     if (!user || !user._id) {
-      alert('User not found');
+      showToast('User not found', 'error');
       return;
     }
 
@@ -470,7 +483,7 @@ const EnhancedAnimeList = () => {
 
   const handleStatusChange = async (anime, newStatus) => {
     if (!user || !user._id) {
-      alert('User not found');
+      showToast('User not found', 'error');
       return;
     }
 
@@ -587,7 +600,7 @@ const EnhancedAnimeList = () => {
 
   const handleRatingChange = useCallback(async (anime, newRating) => {
     if (!user || !user._id) {
-      alert('Please log in to rate anime');
+      showToast('Please log in to rate anime', 'error');
       return;
     }
 
@@ -607,9 +620,8 @@ const EnhancedAnimeList = () => {
       );
     } catch (err) {
       console.error("Failed to update rating", err);
-      // Revert on error
       updateAnimeInList(animeId, { userRating: anime.userRating || 0 });
-      alert('Failed to save rating. Please try again.');
+      showToast('Failed to save rating. Please try again.', 'error');
     }
   }, [user, updateAnimeInList]);
 
@@ -648,6 +660,27 @@ const EnhancedAnimeList = () => {
     <>
       <Header showSearch={false} />
       <BottomNavBar />
+      {/* Toast notification */}
+      {toast.show && (
+        <div className={`settings-toast ${toast.type === 'error' ? 'error' : 'success'}`}>
+          <span>{toast.type === 'error' ? '❌' : '✅'}</span>
+          {toast.message}
+        </div>
+      )}
+      {/* Inline Remove Confirmation */}
+      {confirmRemove && (
+        <div className="settings-modal-overlay" onClick={() => setConfirmRemove(null)}>
+          <div className="settings-modal" onClick={e => e.stopPropagation()}>
+            <div className="settings-modal-icon">🗑️</div>
+            <h3>Remove from List?</h3>
+            <p>This anime will be removed from your list. This cannot be undone.</p>
+            <div className="settings-modal-actions">
+              <button className="settings-btn-danger" onClick={() => confirmRemoveAnime(confirmRemove)}>Remove</button>
+              <button className="settings-btn-ghost" onClick={() => setConfirmRemove(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="enhanced-anime-list">
         <div className="list-header">
           <div className="list-tabs">
