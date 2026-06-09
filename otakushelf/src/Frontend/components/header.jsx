@@ -46,30 +46,34 @@ const ProfileDropdown = ({ onOpenSettings }) => {
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         className="profile-button"
+        aria-label="Open profile menu"
       >
-        <div className="profile-glow"></div>
-        {user.photo ? (
-          <div className="profile-avatar">
-            <img src={user.photo} alt="Profile" />
-          </div>
-        ) : (
-          <div className="profile-initials">{getInitials(user.email)}</div>
-        )}
-        <div className="profile-info">
-          <div className="welcome-text">Welcome</div>
-          <div className="username">{user.name || user.email}</div>
+        {/* Avatar with status dot */}
+        <div className="pill-avatar-wrap">
+          {user.photo ? (
+            <img src={user.photo} alt="Profile" className="pill-avatar-img" />
+          ) : (
+            <div className="pill-avatar-initials">{getInitials(user.email)}</div>
+          )}
         </div>
+
+        {/* Name block */}
+        <div className="pill-info">
+          <span className="pill-sub">Welcome</span>
+          <span className="pill-name">{user.name || user.email}</span>
+        </div>
+
+        {/* Chevron */}
         <svg
-          className={`dropdown-arrow ${showDropdown ? "rotated" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          strokeWidth="2"
+          className={`pill-chevron ${showDropdown ? "rotated" : ""}`}
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
         >
           <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
+            fillRule="evenodd"
+            d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06z"
+            clipRule="evenodd"
           />
         </svg>
       </button>

@@ -148,140 +148,119 @@
     transform: translateY(-50%) scale(1.1);
 }
 
-/* Profile Container */
+/* ── Profile Pill ─────────────────────────────────────── */
 .profile-container {
     position: relative;
     display: inline-block;
 }
 
 .profile-button {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2vw, 16px);
-    background: linear-gradient(135deg,
-            rgba(48, 34, 34, 0.75) 0%,
-            rgba(35, 25, 25, 0.45) 100%);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 20px;
+    gap: 12px;
+    padding: 7px 16px 7px 7px;
+    background: rgba(255, 251, 0, 0.06);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50px;
     cursor: pointer;
-    font-size: clamp(11px, 2.5vw, 13px);
-    color: #ffffff;
-    box-shadow:
-        0 8px 32px rgba(54, 54, 54, 0.2),
-        0 2px 8px rgba(255, 255, 255, 0.05) inset;
-
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    letter-spacing: 0.3px;
+    color: #fff;
+    transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
     position: relative;
-    overflow: hidden;
-    animation: subtle-pulse 4s infinite;
-    height: 55px;
-    width: fit-content;
-    max-width: 100%;
-    min-height: 44px;
+    min-height: 52px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
 }
-
 
 .profile-button:hover {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.15) 100%);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25), 0 2px 12px rgba(255, 255, 255, 0.08) inset;
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.22);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 
-.profile-glow {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100%;
-    background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.4), transparent 70%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
+.profile-button:active {
+    transform: translateY(0);
 }
 
-.profile-button:hover .profile-glow {
-    opacity: 0.6;
-}
-
-.profile-avatar {
+/* Avatar wrapper */
+.pill-avatar-wrap {
     position: relative;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
 }
 
-.profile-avatar img {
-    width: 36px;
-    height: 36px;
+.pill-avatar-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    display: block;
 }
 
-.profile-initials {
-    width: 36px;
-    height: 36px;
+.pill-avatar-initials {
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    font-weight: 700;
     border: 2px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    flex-shrink: 0;
+    letter-spacing: 0;
 }
 
-.profile-info {
-    text-align: left;
-    max-width: 120px;
+/* Text block */
+.pill-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    max-width: 110px;
     overflow: hidden;
 }
 
-.welcome-text {
+.pill-sub {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgb(255, 255, 0);
+    white-space: nowrap;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    line-height: 1.2;
+}
+
+.pill-name {
+    font-size: 17px;
     font-weight: 600;
-    font-size: 12px;
-    /* Reduced from 14px */
+    color: #fff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: rgba(255, 255, 255, 0.85);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    line-height: 1.2;
+    max-width: 100%;
 }
 
-.username {
-    background: linear-gradient(150deg, #fcd34d, #f59e0b, #f88383);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 13px;
-    /* Reduced from 15px */
-    font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.dropdown-arrow {
+/* Chevron */
+.pill-chevron {
     width: 14px;
-    /* Reduced from 16px */
     height: 14px;
-    /* Reduced from 16px */
-    transition: transform 0.3s ease;
+    color: rgba(255, 255, 255, 0.5);
     flex-shrink: 0;
-    color: rgba(255, 255, 255, 0.7);
+    transition: transform 0.25s ease, color 0.2s ease;
+    margin-left: 2px;
 }
 
-.dropdown-arrow.rotated {
+.profile-button:hover .pill-chevron {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.pill-chevron.rotated {
     transform: rotate(180deg);
 }
 
@@ -411,6 +390,21 @@
 
 
 /* Logo */
+.logo-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.logo-image {
+    margin-top: 15px;
+    /* height: 420px; */
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
 .logo span {
     font-family: "Prompt", sans-serif;
     font-size: 38px;

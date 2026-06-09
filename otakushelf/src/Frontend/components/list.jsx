@@ -37,8 +37,14 @@ const EnhancedAnimeList = () => {
   };
 
   const getFallbackImage = (animeTitle) => {
-    const encodedTitle = encodeURIComponent(animeTitle || 'Anime Poster');
-    return `https://placehold.co/300x180/667eea/ffffff?text=${encodedTitle}&font=roboto`;
+    const title = (animeTitle || 'No Image').replace(/"/g, '&quot;');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180">
+      <rect width="300" height="180" fill="#1a1a2e"/>
+      <rect x="110" y="50" width="80" height="60" rx="8" fill="#2d2d4e"/>
+      <text x="150" y="140" font-family="sans-serif" font-size="12" fill="#6b6b9a" text-anchor="middle">${title}</text>
+      <path d="M135 70 l30 20 l-30 20 Z" fill="#6b6b9a"/>
+    </svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   };
 
   const user = useMemo(() => {
