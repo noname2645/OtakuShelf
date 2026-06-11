@@ -5,13 +5,19 @@ import { Header } from '../components/header';
 import BottomNavBar from "../components/bottom.jsx";
 import { useAuth } from '../components/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import BellIcon from '../images/bell.png';
+import PaletteIcon from '../images/color-palette.png';
+import DatabaseIcon from '../images/database-management.png';
+import ProfileIcon from '../images/profile.png';
+import SecurityIcon from '../images/security.png';
+import ArrowIcon from '../images/arrow.png';
 
 const TABS = [
-  { id: 'security', label: 'Security & Login', icon: '🔒' },
-  { id: 'preferences', label: 'App Preferences', icon: '🎨' },
-  { id: 'profile', label: 'Profile', icon: '👤' },
-  { id: 'data', label: 'Data & Privacy', icon: '📥' },
-  { id: 'notifications', label: 'Notifications', icon: '🔔' },
+  { id: 'security',      label: 'Security & Login',  icon: SecurityIcon },
+  { id: 'preferences',  label: 'App Preferences',   icon: PaletteIcon },
+  { id: 'profile',      label: 'Profile',            icon: ProfileIcon },
+  { id: 'data',         label: 'Data & Privacy',     icon: DatabaseIcon },
+  { id: 'notifications',label: 'Notifications',      icon: BellIcon },
 ];
 
 const ACCENT_COLORS = [
@@ -349,7 +355,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Change Password */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">🔑</span>
+          <span className="settings-card-icon"></span>
           <h3>Change Password</h3>
         </div>
         {user?.authType === 'google' ? (
@@ -392,6 +398,7 @@ const SettingsPage = ({ isModal = false }) => {
             </div>
             <button type="submit" className="settings-btn-primary" disabled={saving}>
               {saving ? 'Changing...' : 'Update Password'}
+              <img src={ArrowIcon} alt="" className="btn-arrow" aria-hidden="true" />
             </button>
           </form>
         )}
@@ -400,7 +407,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Two-Factor Authentication (MFA) */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">🛡️</span>
+          <span className="settings-card-icon"></span>
           <h3>Two-Factor Authentication</h3>
         </div>
         {user?.authType === 'google' ? (
@@ -428,6 +435,7 @@ const SettingsPage = ({ isModal = false }) => {
                   <div style={{ padding: '4px 4px 24px 4px' }}>
                     <button className="settings-btn-primary" onClick={handleSetupMfa} disabled={saving}>
                       {saving ? 'Setting up...' : 'Setup Authenticator App'}
+                      <img src={ArrowIcon} alt="" className="btn-arrow" aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
@@ -468,6 +476,7 @@ const SettingsPage = ({ isModal = false }) => {
                       <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                         <button className="settings-btn-primary" onClick={handleVerifyMfa} disabled={saving || mfaTokenInput.length !== 6}>
                           Verify & Enable
+                          <img src={ArrowIcon} alt="" className="btn-arrow" aria-hidden="true" />
                         </button>
                         <button className="settings-btn-ghost" onClick={() => { setMfaSetup(null); setMfaTokenInput(''); }}>
                           Cancel
@@ -485,7 +494,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Active Sessions */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">📱</span>
+          <span className="settings-card-icon"></span>
           <h3>Active Sessions</h3>
         </div>
         <p className="settings-card-desc">Manage devices where you're currently logged in.</p>
@@ -525,7 +534,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Connected Accounts */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">🔗</span>
+          <span className="settings-card-icon"></span>
           <h3>Connected Accounts</h3>
         </div>
         <div className="settings-connected-item">
@@ -582,6 +591,7 @@ const SettingsPage = ({ isModal = false }) => {
                     onClick={handleRequestDisableOtp}
                   >
                     {actionLoading ? 'Sending code...' : 'Send Verification Code'}
+                    <img src={ArrowIcon} alt="" className="btn-arrow" aria-hidden="true" />
                   </button>
                   <button className="settings-btn-ghost" onClick={() => setShowMfaDisableModal(false)}>Cancel</button>
                 </div>
@@ -639,6 +649,7 @@ const SettingsPage = ({ isModal = false }) => {
                     onClick={handleRequestDeleteOtp}
                   >
                     {actionLoading ? 'Sending code...' : 'Send Verification Code'}
+                    <img src={ArrowIcon} alt="" className="btn-arrow" aria-hidden="true" />
                   </button>
                   <button className="settings-btn-ghost" onClick={() => setShowDeleteModal(false)}>Cancel</button>
                 </div>
@@ -675,7 +686,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Title Language */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">🌐</span>
+          <span className="settings-card-icon"></span>
           <h3>Title Language</h3>
         </div>
         <p className="settings-card-desc">Choose how anime titles are displayed across the site.</p>
@@ -700,7 +711,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Default Layout */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">📐</span>
+          <span className="settings-card-icon"></span>
           <h3>Default Layout</h3>
         </div>
         <p className="settings-card-desc">Choose your preferred viewing layout for anime lists.</p>
@@ -729,7 +740,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Toggles */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">⚙️</span>
+          <span className="settings-card-icon"></span>
           <h3>Display Preferences</h3>
         </div>
         {renderToggle('preferences', 'autoplayTrailers', 'Autoplay Trailers', 'Automatically play hero trailers on the homepage')}
@@ -739,7 +750,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Accent Color */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">🎨</span>
+          <span className="settings-card-icon"></span>
           <h3>Accent Color</h3>
         </div>
         <p className="settings-card-desc">Personalize the site's accent color to match your vibe.</p>
@@ -768,7 +779,7 @@ const SettingsPage = ({ isModal = false }) => {
     <div className="settings-section">
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">👤</span>
+          <span className="settings-card-icon"></span>
           <h3>Profile Information</h3>
         </div>
         <p className="settings-card-desc">
@@ -796,7 +807,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Auth Type Info */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">🛡️</span>
+          <span className="settings-card-icon"></span>
           <h3>Account Type</h3>
         </div>
         <div className="settings-account-type">
@@ -819,7 +830,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Profile Visibility */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">👁️</span>
+          <span className="settings-card-icon"></span>
           <h3>Profile Visibility</h3>
         </div>
         <p className="settings-card-desc">Control who can see your anime list and profile information.</p>
@@ -846,25 +857,13 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Export Data */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">💾</span>
+          <span className="settings-card-icon"></span>
           <h3>Export Your Data</h3>
         </div>
         <p className="settings-card-desc">Download a complete backup of your anime lists, profile information, and stats as a JSON file.</p>
         <button className="settings-btn-primary" onClick={handleExportData}>
           📦 Download My Data
-        </button>
-      </div>
-
-      {/* Import (Coming Soon) */}
-      <div className="settings-card settings-card-dimmed">
-        <div className="settings-card-header">
-          <span className="settings-card-icon">📤</span>
-          <h3>Import from MAL / AniList</h3>
-          <span className="settings-badge-coming">Coming Soon</span>
-        </div>
-        <p className="settings-card-desc">Import your anime library from MyAnimeList or AniList via XML/JSON file upload.</p>
-        <button className="settings-btn-secondary" disabled>
-          Upload File
+          <img src={ArrowIcon} alt="" className="btn-arrow" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -874,7 +873,7 @@ const SettingsPage = ({ isModal = false }) => {
     <div className="settings-section">
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">🔔</span>
+          <span className="settings-card-icon"></span>
           <h3>Email Notifications</h3>
         </div>
         <p className="settings-card-desc">Control which emails you receive from OtakuShelf.</p>
@@ -938,7 +937,7 @@ const SettingsPage = ({ isModal = false }) => {
                   className={`settings-nav-item ${activeTab === tab.id ? 'active' : ''}`}
                   onClick={() => setActiveTab(tab.id)}
                 >
-                  <span className="nav-icon">{tab.icon}</span>
+                  <img src={tab.icon} alt={tab.label} className="nav-icon-img" />
                   <span className="nav-label2">{tab.label}</span>
                   {activeTab === tab.id && <span className="nav-indicator" />}
                 </button>
