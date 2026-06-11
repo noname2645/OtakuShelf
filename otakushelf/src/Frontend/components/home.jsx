@@ -7,6 +7,7 @@ import { Header } from '../components/header.jsx';
 import BottomNavBar from './bottom.jsx';
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
+import PageLoader from './PageLoader.jsx';
 
 // API base URL
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -132,7 +133,9 @@ AnimeSection.displayName = 'AnimeSection';
 const AnimeHomepage = () => {
     const navigate = useNavigate();
     // State
-    const [loading, setLoading] = useState(true); // Initial skeleton state
+    const [loading, setLoading] = useState(true);
+    // Show cinematic loader on every page load/refresh
+    const [showLoader, setShowLoader] = useState(true);
     const [sections, setSections] = useState({
         topAiring: [],
         mostWatched: [],
@@ -323,35 +326,12 @@ const AnimeHomepage = () => {
     }, []);
 
 
-    if (loading && !isSearching) {
-        return (
-            <div className="homepage">
-                <Header showSearch={true} onSearchChange={setSearchQuery} />
-                <div className="loading-skeleton">
-                    <div className="skeleton-hero"></div>
-
-                    {/* Multiple sections to match actual layout */}
-                    {['TOP AIRING', 'TRENDING THIS WEEK', 'MOST WATCHED', 'TOP RATED ALL TIME', 'TOP MOVIES', 'UPCOMING RELEASES'].map((title, sectionIndex) => (
-                        <div key={sectionIndex} className="skeleton-section">
-                            <div className="skeleton-section-header">
-                                <div className="skeleton-bar"></div>
-                                <div className="skeleton-title"></div>
-                            </div>
-                            <div className="skeleton-carousel">
-                                {[...Array(6)].map((_, i) => (
-                                    <div key={i} className="skeleton-card"></div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <BottomNavBar />
-            </div>
-        );
-    }
 
     return (
         <>
+            {/* Cinematic page loader — renders as overlay so data fetches concurrently */}
+            {showLoader && <PageLoader onFinish={() => setShowLoader(false)} />}
+
             <BottomNavBar />
             <div className="homepage">
                 <div className="main-content">

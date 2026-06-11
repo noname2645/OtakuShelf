@@ -10,7 +10,6 @@ const API = import.meta.env.VITE_API_BASE_URL;
 // TrailerHero Component
 const TrailerHero = ({ onOpenModal }) => {
     const [currentAnime, setCurrentAnime] = useState(0);
-    const [opacity, setOpacity] = useState(1);
     const heroRef = useRef(null);
     const { getPreferredTitle, shouldAutoplay, shouldBlurNSFW } = useAnimePreferences();
     const [isMuted, setIsMuted] = useState(true);
@@ -18,6 +17,8 @@ const TrailerHero = ({ onOpenModal }) => {
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [playerError, setPlayerError] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
+    const [fallbackImageLoaded, setFallbackImageLoaded] = useState(false);
+    const [fallbackImageUrl, setFallbackImageUrl] = useState('');
     // ⚡ Initialize directly from cache so hero is instant on re-mount
     const [announcements, setAnnouncements] = useState(() => {
         try {
@@ -47,6 +48,7 @@ const TrailerHero = ({ onOpenModal }) => {
     // Horizontal scroll functionality for main hero
     const isDragging = useRef(false);
     const autoScrollRef = useRef(null);
+    const rafScrollRef = useRef(null);
 
     // YouTube player refs
     const playerRef = useRef(null);
@@ -379,23 +381,30 @@ const TrailerHero = ({ onOpenModal }) => {
         fetchAnnouncements();
     }, []);
 
-    // Handle scroll effect for fade
+    // Handle scroll effect for fade — use rAF + direct DOM mutation to avoid React re-render on every scroll tick
     useEffect(() => {
+        const heroEl = heroRef.current;
         const handleScroll = () => {
-            const scrollTop = window.pageYOffset;
-            const heroHeight = heroRef.current?.offsetHeight || 600;
-            const fadeStart = heroHeight * 0.3;
-            const fadeEnd = heroHeight * 0.8;
-            let newOpacity = 1;
-            if (scrollTop > fadeStart) {
-                newOpacity = Math.max(0, 1 - (scrollTop - fadeStart) / (fadeEnd - fadeStart));
-            }
-            setOpacity(newOpacity);
+            if (rafScrollRef.current) return; // already queued
+            rafScrollRef.current = requestAnimationFrame(() => {
+                rafScrollRef.current = null;
+                const scrollTop = window.pageYOffset;
+                const heroHeight = heroEl?.offsetHeight || 600;
+                const fadeStart = heroHeight * 0.3;
+                const fadeEnd = heroHeight * 0.8;
+                let newOpacity = 1;
+                if (scrollTop > fadeStart) {
+                    newOpacity = Math.max(0, 1 - (scrollTop - fadeStart) / (fadeEnd - fadeStart));
+                }
+                // Directly mutate DOM style — no React re-render, buttery smooth
+                if (heroEl) heroEl.style.opacity = newOpacity;
+            });
         };
 
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => {
             window.removeEventListener('scroll', handleScroll);
+            if (rafScrollRef.current) cancelAnimationFrame(rafScrollRef.current);
         };
     }, []);
 
@@ -409,6 +418,8 @@ const TrailerHero = ({ onOpenModal }) => {
         // Reset player error and retry count when switching anime
         setPlayerError(false);
         setRetryCount(0);
+        // Reset fallback image state when switching
+        setFallbackImageLoaded(false);
 
         const videoId = getVideoId(currentAnimeData);
         const currentAnimeHasTrailer = hasTrailer(currentAnimeData);
@@ -420,6 +431,16 @@ const TrailerHero = ({ onOpenModal }) => {
         } else {
             setPlayerError(true);
             cleanupPlayer();
+        }
+
+        // Pre-load the fallback image for instant display
+        const imgUrl = currentAnimeData.bannerImage || currentAnimeData.coverImage?.extraLarge || '';
+        if (imgUrl) {
+            setFallbackImageUrl(imgUrl);
+            const img = new Image();
+            img.onload = () => setFallbackImageLoaded(true);
+            img.onerror = () => setFallbackImageLoaded(true); // still show even on error
+            img.src = imgUrl;
         }
 
         // Start auto-scroll
@@ -522,7 +543,6 @@ const TrailerHero = ({ onOpenModal }) => {
                 ref={heroRef}
                 className="trailer-hero-section"
                 style={{
-                    opacity: opacity,
                     paddingTop: safeAreaTop,
                     paddingBottom: safeAreaBottom
                 }}
@@ -533,17 +553,15 @@ const TrailerHero = ({ onOpenModal }) => {
                     className={`youtube-container ${currentAnimeHasTrailer && !playerError ? 'active' : 'hidden'}`}
                 />
 
-                {/* Fallback Image */}
-                {(playerError || !currentAnimeHasTrailer) && (
-                    <div
-                        className="fallback-image"
-                        style={{
-                            backgroundImage: `url(${currentAnimeData.bannerImage || currentAnimeData.coverImage?.extraLarge || '/fallback-image.jpg'})`,
-                            backgroundSize: isMobile ? 'cover' : 'cover',
-                            backgroundPosition: isMobile ? 'center center' : 'center center'
-                        }}
-                    />
-                )}
+                {/* Fallback Image — always in DOM, fade controlled by CSS class */}
+                <div
+                    className={`fallback-image${fallbackImageLoaded && (playerError || !currentAnimeHasTrailer) ? ' visible' : ''}`}
+                    style={{
+                        backgroundImage: fallbackImageUrl ? `url(${fallbackImageUrl})` : 'none',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center center'
+                    }}
+                />
 
                 {/* User Interaction Prompt */}
                 {currentAnimeHasTrailer && !hasUserInteracted && !playerError && (

@@ -70,4 +70,15 @@ body {
   background-attachment: fixed;
   color: var(--text-primary);
   font-family: 'Outfit', sans-serif;
+  /* Smooth native scroll on all platforms */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  /* Prevent subpixel rendering jank */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  scroll-behavior: smooth;
 }
