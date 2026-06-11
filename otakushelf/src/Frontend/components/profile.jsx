@@ -1,18 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import '../Stylesheets/profile.css';
-import '../Stylesheets/settings.css';
-import api from '../api.js';
-import { Header } from '../components/header';
+import React, { useState, useEffect } from "react";
+import "../Stylesheets/profile.css";
+import "../Stylesheets/settings.css";
+import api from "../api.js";
+import { Header } from "../components/header";
 import BottomNavBar from "../components/bottom.jsx";
-import { useAuth } from '../components/AuthContext';
-import { Link } from 'react-router-dom';
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-} from 'recharts';
+import { useAuth } from "../components/AuthContext";
+import { Link } from "react-router-dom";
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
+import PageLoader from "./PageLoader.jsx";
 
 const ProfilePage = () => {
   const { user, updateProfile, checkAuthStatus, updateUserState } = useAuth();
@@ -20,6 +15,7 @@ const ProfilePage = () => {
   // Profile data
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showLoader, setShowLoader] = useState(true);
   const [stats, setStats] = useState(null);
   const [recentlyWatched, setRecentlyWatched] = useState([]);
   const [favoriteAnime, setFavoriteAnime] = useState([]);
@@ -27,17 +23,24 @@ const ProfilePage = () => {
   const [genres, setGenres] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
   const [editForm, setEditForm] = useState({
-    name: '',
-    bio: '',
-    username: ''
+    name: "",
+    bio: "",
+    username: "",
   });
 
   // Toast helper
-  const showToast = (message, type = 'success') => {
+  const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500);
+    setTimeout(
+      () => setToast({ show: false, message: "", type: "success" }),
+      3500,
+    );
   };
 
   const API = import.meta.env.VITE_API_BASE_URL;
@@ -62,23 +65,28 @@ const ProfilePage = () => {
     "Sports",
     "Supernatural",
     "Suspense",
-    "Thriller"
+    "Thriller",
   ];
 
   // Backfill genres function — no longer shown in UI but kept for admin use
   const backfillGenres = async () => {
     try {
       setBackfilling(true);
-      const response = await api.post(`${API}/api/list/${user._id}/backfill-genres`);
+      const response = await api.post(
+        `${API}/api/list/${user._id}/backfill-genres`,
+      );
       const data = response.data;
       if (data.success) {
         showToast(`Genres updated for ${data.updated} anime!`);
         await loadProfileData();
       } else {
-        showToast('Failed to backfill genres: ' + (data.message || 'Unknown error'), 'error');
+        showToast(
+          "Failed to backfill genres: " + (data.message || "Unknown error"),
+          "error",
+        );
       }
     } catch (error) {
-      showToast('Error backfilling genres: ' + error.message, 'error');
+      showToast("Error backfilling genres: " + error.message, "error");
     } finally {
       setBackfilling(false);
     }
@@ -90,21 +98,36 @@ const ProfilePage = () => {
 
     // Create a map for fast lookup of user data
     const userGenreMap = {};
-    userGenres.forEach(genre => {
+    userGenres.forEach((genre) => {
       if (genre && genre.name) {
         userGenreMap[genre.name.toLowerCase()] = {
           percentage: genre.percentage || 0,
-          count: genre.count || 0
+          count: genre.count || 0,
         };
       }
     });
 
     // Color palette
     const colors = [
-      '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2',
-      '#EF476F', '#073B4C', '#7209B7', '#3A86FF', '#FB5607',
-      '#8338EC', '#FF006E', '#FFBE0B', '#3A86FF', '#FB5607',
-      '#FF595E', '#8AC926', '#1982C4', '#6A4C93'
+      "#FF6B6B",
+      "#4ECDC4",
+      "#FFD166",
+      "#06D6A0",
+      "#118AB2",
+      "#EF476F",
+      "#073B4C",
+      "#7209B7",
+      "#3A86FF",
+      "#FB5607",
+      "#8338EC",
+      "#FF006E",
+      "#FFBE0B",
+      "#3A86FF",
+      "#FB5607",
+      "#FF595E",
+      "#8AC926",
+      "#1982C4",
+      "#6A4C93",
     ];
 
     // Create array with ALL genres
@@ -116,7 +139,7 @@ const ProfilePage = () => {
         name: genreName,
         value: actualValue,
         count: userGenre ? userGenre.count : 0,
-        color: colors[index % colors.length]
+        color: colors[index % colors.length],
       };
     });
 
@@ -176,36 +199,43 @@ const ProfilePage = () => {
         // Helper function to fix image URLs
         const fixImageUrl = (url) => {
           if (!url) return null;
-          if (url.startsWith('http') || url.startsWith('data:')) {
+          if (url.startsWith("http") || url.startsWith("data:")) {
             return url;
           }
-          if (url.startsWith('/uploads/')) {
-            const backendBaseUrl = API.replace('/api', '');
+          if (url.startsWith("/uploads/")) {
+            const backendBaseUrl = API.replace("/api", "");
             return `${backendBaseUrl}${url}`;
           }
           return url;
         };
 
         setProfileData({
-          name: data.name || 'Anime Lover',
-          username: data.profile?.username || `@user_${user._id.toString().slice(-6)}`,
-          bio: data.profile?.bio || 'Anime enthusiast exploring new worlds through animation',
-          joinDate: new Date(data.profile?.joinDate || data.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          name: data.name || "Anime Lover",
+          username:
+            data.profile?.username || `@user_${user._id.toString().slice(-6)}`,
+          bio:
+            data.profile?.bio ||
+            "Anime enthusiast exploring new worlds through animation",
+          joinDate: new Date(
+            data.profile?.joinDate || data.createdAt,
+          ).toLocaleDateString("en-US", { month: "long", year: "numeric" }),
           avatar: fixImageUrl(data.photo),
           coverImage: fixImageUrl(data.profile?.coverImage),
-          email: data.email
+          email: data.email,
         });
 
-        setStats(data.profile?.stats || {
-          animeWatched: 0,
-          hoursWatched: 0,
-          currentlyWatching: 0,
-          favorites: 0,
-          animePlanned: 0,
-          animeDropped: 0,
-          totalEpisodes: 0,
-          meanScore: 0
-        });
+        setStats(
+          data.profile?.stats || {
+            animeWatched: 0,
+            hoursWatched: 0,
+            currentlyWatching: 0,
+            favorites: 0,
+            animePlanned: 0,
+            animeDropped: 0,
+            totalEpisodes: 0,
+            meanScore: 0,
+          },
+        );
 
         setRecentlyWatched(data.recentlyWatched || []);
         setFavoriteAnime(data.favoriteAnime || []);
@@ -214,21 +244,25 @@ const ProfilePage = () => {
 
         // Initialize edit form
         setEditForm({
-          name: data.name || '',
-          bio: data.profile?.bio || '',
-          username: data.profile?.username || `@user_${user._id.toString().slice(-6)}`
+          name: data.name || "",
+          bio: data.profile?.bio || "",
+          username:
+            data.profile?.username || `@user_${user._id.toString().slice(-6)}`,
         });
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error("Error loading profile:", error);
       setProfileData({
-        name: 'Anime Lover',
-        username: `@user_${user?._id.toString().slice(-6) || '000000'}`,
-        bio: 'Anime enthusiast exploring new worlds through animation',
-        joinDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        name: "Anime Lover",
+        username: `@user_${user?._id.toString().slice(-6) || "000000"}`,
+        bio: "Anime enthusiast exploring new worlds through animation",
+        joinDate: new Date().toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        }),
         avatar: null,
         coverImage: null,
-        email: ''
+        email: "",
       });
       setStats({
         animeWatched: 0,
@@ -238,7 +272,7 @@ const ProfilePage = () => {
         animePlanned: 0,
         animeDropped: 0,
         totalEpisodes: 0,
-        meanScore: 0
+        meanScore: 0,
       });
       setRecentlyWatched([]);
       setFavoriteAnime([]);
@@ -255,36 +289,43 @@ const ProfilePage = () => {
 
     try {
       if (!file.type.startsWith("image/")) {
-        showToast('Invalid image type. Please select a JPEG, PNG, or WebP file.', 'error');
+        showToast(
+          "Invalid image type. Please select a JPEG, PNG, or WebP file.",
+          "error",
+        );
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        showToast('Image too large. Maximum size is 5MB.', 'error');
+        showToast("Image too large. Maximum size is 5MB.", "error");
         return;
       }
 
       const formData = new FormData();
       formData.append("cover", file);
 
-      const response = await api.post(`${API}/api/profile/${user._id}/upload-cover`, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      const response = await api.post(
+        `${API}/api/profile/${user._id}/upload-cover`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
 
       const data = response.data.data;
 
       if (data.coverImage) {
         let coverUrl = data.coverImage;
-        if (coverUrl && coverUrl.startsWith('/uploads/')) {
-          const backendBaseUrl = API.replace('/api', '');
+        if (coverUrl && coverUrl.startsWith("/uploads/")) {
+          const backendBaseUrl = API.replace("/api", "");
           coverUrl = `${backendBaseUrl}${coverUrl}`;
         }
-        setProfileData(prev => ({ ...prev, coverImage: coverUrl }));
-        showToast('Cover image updated successfully!');
+        setProfileData((prev) => ({ ...prev, coverImage: coverUrl }));
+        showToast("Cover image updated successfully!");
       }
     } catch (error) {
-      console.error('Cover upload error:', error);
-      showToast('Failed to upload cover image.', 'error');
+      console.error("Cover upload error:", error);
+      showToast("Failed to upload cover image.", "error");
     }
   };
 
@@ -298,8 +339,8 @@ const ProfilePage = () => {
         name: editForm.name,
         profile: {
           bio: editForm.bio,
-          username: editForm.username
-        }
+          username: editForm.username,
+        },
       };
 
       await api.put(`${API}/api/profile/${user._id}`, updateData);
@@ -308,79 +349,90 @@ const ProfilePage = () => {
         await updateProfile(updateData);
       }
 
-      setProfileData(prev => ({
+      setProfileData((prev) => ({
         ...prev,
         name: editForm.name,
         bio: editForm.bio,
-        username: editForm.username
+        username: editForm.username,
       }));
 
       setIsEditing(false);
-      showToast('Profile updated successfully!');
+      showToast("Profile updated successfully!");
       await loadProfileData();
-
     } catch (error) {
-      console.error('Profile update error:', error);
-      showToast('Failed to update profile.', 'error');
+      console.error("Profile update error:", error);
+      showToast("Failed to update profile.", "error");
     }
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditForm({
-      name: profileData?.name || '',
-      bio: profileData?.bio || '',
-      username: profileData?.username || ''
+      name: profileData?.name || "",
+      bio: profileData?.bio || "",
+      username: profileData?.username || "",
     });
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditForm(prev => ({
+    setEditForm((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    const userId = user?._id || localStorage.getItem("user_id") || JSON.parse(localStorage.getItem("user"))?.id;
+    const userId =
+      user?._id ||
+      localStorage.getItem("user_id") ||
+      JSON.parse(localStorage.getItem("user"))?.id;
 
-    if (!userId) { showToast('Please log in to upload images', 'error'); return; }
-    if (!file) { showToast('Please select an image file', 'error'); return; }
+    if (!userId) {
+      showToast("Please log in to upload images", "error");
+      return;
+    }
+    if (!file) {
+      showToast("Please select an image file", "error");
+      return;
+    }
 
     try {
-      if (!file.type.startsWith('image/')) {
-        showToast('Please select a JPEG, PNG, WebP, or GIF file.', 'error');
+      if (!file.type.startsWith("image/")) {
+        showToast("Please select a JPEG, PNG, WebP, or GIF file.", "error");
         return;
       }
       if (file.size > 2 * 1024 * 1024) {
-        showToast('Image size must be less than 2MB.', 'error');
+        showToast("Image size must be less than 2MB.", "error");
         return;
       }
 
       const formData = new FormData();
-      formData.append('photo', file);
+      formData.append("photo", file);
       setLoading(true);
 
-      const response = await api.post(`${API}/api/profile/${userId}/upload-photo`, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      const response = await api.post(
+        `${API}/api/profile/${userId}/upload-photo`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
 
       const result = response.data.data;
       let photoUrl = result.photo;
-      if (photoUrl && photoUrl.startsWith('/uploads/')) {
-        const backendBaseUrl = API.replace('/api', '');
+      if (photoUrl && photoUrl.startsWith("/uploads/")) {
+        const backendBaseUrl = API.replace("/api", "");
         photoUrl = `${backendBaseUrl}${photoUrl}`;
       }
 
-      setProfileData(prev => ({ ...prev, avatar: photoUrl }));
+      setProfileData((prev) => ({ ...prev, avatar: photoUrl }));
       if (updateUserState) updateUserState({ photo: photoUrl });
-      showToast('Profile picture updated!');
-
+      showToast("Profile picture updated!");
     } catch (error) {
-      console.error('Upload error:', error);
-      showToast('Failed to upload image.', 'error');
+      console.error("Upload error:", error);
+      showToast("Failed to upload image.", "error");
       await loadProfileData();
     } finally {
       setLoading(false);
@@ -398,7 +450,7 @@ const ProfilePage = () => {
       });
     } else {
       navigator.clipboard.writeText(profileUrl);
-      alert('Profile link copied to clipboard!');
+      alert("Profile link copied to clipboard!");
     }
   };
 
@@ -409,7 +461,7 @@ const ProfilePage = () => {
     midAngle,
     innerRadius,
     outerRadius,
-    payload
+    payload,
   }) => {
     const actualValue = payload.value;
 
@@ -429,7 +481,7 @@ const ProfilePage = () => {
           dominantBaseline="middle"
           fontSize={12}
           fontWeight="bold"
-          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}
+          style={{ textShadow: "0 2px 4px rgba(0,0,0,0.8)" }}
         >
           {`${actualValue.toFixed(1)}%`}
         </text>
@@ -438,65 +490,61 @@ const ProfilePage = () => {
     return null;
   };
 
-  if (loading) {
-    return (
-      <div style={{ position: 'relative', minHeight: '100vh', background: 'linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)' }}>
-        <Header showSearch={false} />
-        <BottomNavBar />
-        <div className="profile-loading" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 9999,
-          background: 'linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)'
-        }}>
-          <div className="loading-icons">
-            <div className="loading-icon">🎬</div>
-            <div className="loading-icon">🌟</div>
-            <div className="loading-icon">🎨</div>
-            <div className="loading-icon">🔥</div>
-            <div className="loading-icon">✨</div>
-          </div>
-
-          <div className="loading-content">
-            <div className="loading-spinner"></div>
-            <h2 className="loading-text">Loading Your Anime Journey</h2>
-            <p className="loading-subtext">
-              Preparing your stats, favorites, and anime collection...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (!profileData) {
     return (
       <>
+        {showLoader && <PageLoader onFinish={() => setShowLoader(false)} />}
         <BottomNavBar />
-        <div className="profile-page">
+        <div className="profile-page" style={{ minHeight: "100vh", background: "linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)" }}>
           <Header showSearch={false} />
+          {!showLoader && (
+            <div
+              className="profile-loading"
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 9999,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                background: "linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)",
+              }}
+            >
+              <div className="loading-content">
+                <div className="loading-spinner"></div>
+                <h2 className="loading-text">Loading Your Anime Journey</h2>
+                <p className="loading-subtext">
+                  Preparing your stats, favorites, and anime collection...
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </>
     );
   }
 
   // Calculate stats for display
-  const genresWithData = chartData.filter(g => g.value > 0);
+  const genresWithData = chartData.filter((g) => g.value > 0);
   const totalGenres = ALL_ANIME_GENRES.length;
   const watchedGenres = genresWithData.length;
-  const topPercentage = genresWithData.length > 0
-    ? Math.max(...genresWithData.map(g => g.value)).toFixed(1)
-    : '0';
+  const topPercentage =
+    genresWithData.length > 0
+      ? Math.max(...genresWithData.map((g) => g.value)).toFixed(1)
+      : "0";
 
   return (
     <>
+      {showLoader && <PageLoader onFinish={() => setShowLoader(false)} />}
       <BottomNavBar />
       {/* Toast notification */}
       {toast.show && (
-        <div className={`settings-toast ${toast.type === 'error' ? 'toast-error' : 'toast-success'}`}>
+        <div
+          className={`settings-toast ${toast.type === "error" ? "toast-error" : "toast-success"}`}
+        >
           {toast.message}
         </div>
       )}
@@ -540,7 +588,7 @@ const ProfilePage = () => {
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
                 id="avatar-upload"
               />
               <label htmlFor="avatar-upload" className="upload-label">
@@ -598,9 +646,7 @@ const ProfilePage = () => {
                     <span className="email">({profileData.email})</span>
                   )}
                 </div>
-                <p className="profile-bio">
-                  {profileData.bio}
-                </p>
+                <p className="profile-bio">{profileData.bio}</p>
                 <div className="join-date">
                   <span>Joined {profileData.joinDate}</span>
                 </div>
@@ -627,27 +673,39 @@ const ProfilePage = () => {
               <h2 className="overview-header">Overview</h2>
               <div className="stats-grid">
                 <div className="stat-card">
-                  <span className="stat-number">{stats?.currentlyWatching || 0}</span>
+                  <span className="stat-number">
+                    {stats?.currentlyWatching || 0}
+                  </span>
                   <span className="stat-label">Anime Watching</span>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-number">{stats?.animeWatched || 0}</span>
+                  <span className="stat-number">
+                    {stats?.animeWatched || 0}
+                  </span>
                   <span className="stat-label">Anime Watched</span>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-number">{stats?.animePlanned || 0}</span>
+                  <span className="stat-number">
+                    {stats?.animePlanned || 0}
+                  </span>
                   <span className="stat-label">Anime Planned</span>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-number">{stats?.animeDropped || 0}</span>
+                  <span className="stat-number">
+                    {stats?.animeDropped || 0}
+                  </span>
                   <span className="stat-label">Anime Dropped</span>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-number">{stats?.hoursWatched || 0}</span>
+                  <span className="stat-number">
+                    {stats?.hoursWatched || 0}
+                  </span>
                   <span className="stat-label">Total Hours</span>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-number">{stats?.totalEpisodes || 0}</span>
+                  <span className="stat-number">
+                    {stats?.totalEpisodes || 0}
+                  </span>
                   <span className="stat-label">Total Episodes</span>
                 </div>
                 <div className="stat-card">
@@ -668,7 +726,7 @@ const ProfilePage = () => {
               <h3 className="section-title">Recently Watched</h3>
               <div className="recently-watched-grid">
                 {recentlyWatched.length > 0 ? (
-                  recentlyWatched.map(anime => (
+                  recentlyWatched.map((anime) => (
                     <div key={anime.id} className="watched-item">
                       <img src={anime.image} alt={anime.title} />
                       <div className="watched-info">
@@ -689,7 +747,7 @@ const ProfilePage = () => {
               <h3 className="section-title">Favorite Anime</h3>
               <div className="favorite-grid">
                 {favoriteAnime.length > 0 ? (
-                  favoriteAnime.map(anime => (
+                  favoriteAnime.map((anime) => (
                     <div key={anime.id} className="favorite-item">
                       <img src={anime.image} alt={anime.title} />
                       <div className="favorite-info">
@@ -712,7 +770,7 @@ const ProfilePage = () => {
             <div className="badges-section">
               <h3 className="section-title">Badges</h3>
               <div className="badges-grid">
-                {badges.map(badge => (
+                {badges.map((badge) => (
                   <div key={badge.id} className="badge-card">
                     <div className="badge-icon">{badge.icon}</div>
                     <div className="badge-title">{badge.title}</div>
@@ -725,7 +783,9 @@ const ProfilePage = () => {
 
           {/* Genre Breakdown Section */}
           <div className="genre-section">
-            <h3 className="section-title">Genre Breakdown - {totalGenres} Genres</h3>
+            <h3 className="section-title">
+              Genre Breakdown - {totalGenres} Genres
+            </h3>
 
             <div className="genre-breakdown-container">
               {/* Pie Chart Column */}
@@ -736,7 +796,7 @@ const ProfilePage = () => {
                       <ResponsiveContainer width="100%" height={400}>
                         <PieChart>
                           <Pie
-                            data={chartData.filter(d => d.value > 0)}
+                            data={chartData.filter((d) => d.value > 0)}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
@@ -747,14 +807,16 @@ const ProfilePage = () => {
                             nameKey="name"
                             label={renderCustomizedLabel}
                           >
-                            {chartData.filter(d => d.value > 0).map((entry, index) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={entry.color}
-                                stroke="rgba(0, 0, 0, 0.3)"
-                                strokeWidth={1}
-                              />
-                            ))}
+                            {chartData
+                              .filter((d) => d.value > 0)
+                              .map((entry, index) => (
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={entry.color}
+                                  stroke="rgba(0, 0, 0, 0.3)"
+                                  strokeWidth={1}
+                                />
+                              ))}
                           </Pie>
                           <Tooltip content={<CustomTooltip />} />
 
@@ -765,7 +827,11 @@ const ProfilePage = () => {
                             textAnchor="middle"
                             dominantBaseline="middle"
                             className="donut-total"
-                            style={{ fontSize: '32px', fontWeight: 'bold', fill: '#fff' }}
+                            style={{
+                              fontSize: "32px",
+                              fontWeight: "bold",
+                              fill: "#fff",
+                            }}
                           >
                             {watchedGenres}
                           </text>
@@ -775,7 +841,7 @@ const ProfilePage = () => {
                             textAnchor="middle"
                             dominantBaseline="middle"
                             className="donut-label"
-                            style={{ fontSize: '14px', fill: '#999' }}
+                            style={{ fontSize: "14px", fill: "#999" }}
                           >
                             Genres Watched
                           </text>
@@ -810,7 +876,10 @@ const ProfilePage = () => {
                     <div className="chart-placeholder">
                       <div className="placeholder-icon">📊</div>
                       <p>No genre data available yet.</p>
-                      <p>Click "Fix Genres" button above to fetch genres for your anime!</p>
+                      <p>
+                        Click "Fix Genres" button above to fetch genres for your
+                        anime!
+                      </p>
                     </div>
                   </div>
                 )}
@@ -822,22 +891,27 @@ const ProfilePage = () => {
                   {chartData.map((genre, index) => (
                     <div
                       key={`legend-${index}`}
-                      className={`legend-item ${genre.value === 0 ? 'inactive' : ''}`}
+                      className={`legend-item ${genre.value === 0 ? "inactive" : ""}`}
                     >
                       <div
                         className="legend-color"
                         style={{
-                          backgroundColor: genre.color || '#8884d8',
-                          opacity: genre.value === 0 ? 0.3 : 1
+                          backgroundColor: genre.color || "#8884d8",
+                          opacity: genre.value === 0 ? 0.3 : 1,
                         }}
                       />
                       <div className="legend-info">
                         <p className="legend-text">{genre.name}</p>
                         <p className="legend-percentage">
-                          {genre.value === 0 ? '0.0%' : `${genre.value.toFixed(1)}%`}
+                          {genre.value === 0
+                            ? "0.0%"
+                            : `${genre.value.toFixed(1)}%`}
                         </p>
                         {genre.count > 0 && (
-                          <p className="legend-count" style={{ fontSize: '11px', color: '#888' }}>
+                          <p
+                            className="legend-count"
+                            style={{ fontSize: "11px", color: "#888" }}
+                          >
                             ({genre.count} anime)
                           </p>
                         )}
