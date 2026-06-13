@@ -41,26 +41,22 @@ const KANJI_TEXT = '棚のアニメ';
 const TAGLINE = 'Your anime universe, curated.';
 
 const PageLoader = ({ onFinish }) => {
-    const [phase, setPhase] = useState('enter'); // enter → slash → reveal → exit
-    const slashRef = useRef(null);
+    const [phase, setPhase] = useState('enter'); // enter → reveal → exit
     const particles = useRef([...Array(PARTICLE_COUNT)].map((_, i) => i));
     const kanji = useTypewriter(KANJI_TEXT, 180, 200);
     const tagline = useTypewriter(TAGLINE, 45, 1200);
 
-
     // Phase timeline
     useEffect(() => {
-        // 0ms:  enter (panels slide in, particles fall, kanji builds)
-        // 1400ms: slash (red line cuts across)
-        // 2000ms: reveal (panels fly out to sides)
-        // 2700ms: exit (fade out loader, call onFinish)
-        const t1 = setTimeout(() => setPhase('slash'), 1400);
-        const t2 = setTimeout(() => setPhase('reveal'), 2000);
-        const t3 = setTimeout(() => {
+        // 0ms:   enter (panels slide in, particles fall, kanji builds)
+        // 1400ms: reveal (panels fly out to sides)
+        // 2200ms: exit (fade out loader, call onFinish)
+        const t1 = setTimeout(() => setPhase('reveal'), 1400);
+        const t2 = setTimeout(() => {
             setPhase('exit');
             onFinish?.();
-        }, 2900);
-        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+        }, 2200);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
     }, [onFinish]);
 
     return (
@@ -102,13 +98,7 @@ const PageLoader = ({ onFinish }) => {
                 </svg>
             </div>
 
-            {/* Slash effect */}
-            <div ref={slashRef} className="slash-line" />
-            <div className="slash-glow" />
 
-            {/* Energy rings */}
-            <div className="energy-ring ring-1" />
-            <div className="energy-ring ring-2" />
         </div>
     );
 };

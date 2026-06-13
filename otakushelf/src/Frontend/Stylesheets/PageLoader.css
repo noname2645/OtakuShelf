@@ -1,6 +1,6 @@
 /* ================================================================
    OTAKUSHELF — CINEMATIC PAGE LOADER
-   Anime gate + katana slash + sakura rain
+   Anime gate + sakura rain
    ================================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700;900&family=Outfit:wght@300;400;700;900&display=swap');
@@ -78,12 +78,10 @@
 @keyframes curtain-enter-left  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 @keyframes curtain-enter-right { from { transform: translateX(100%);  } to { transform: translateX(0); } }
 
-/* Slash / reveal: panels fly apart */
-.page-loader.phase-slash .curtain-left,
+/* Reveal: panels fly apart */
 .page-loader.phase-reveal .curtain-left {
     animation: curtain-split-left 0.6s cubic-bezier(0.55, 0, 1, 0.45) 0.5s both;
 }
-.page-loader.phase-slash .curtain-right,
 .page-loader.phase-reveal .curtain-right {
     animation: curtain-split-right 0.6s cubic-bezier(0.55, 0, 1, 0.45) 0.5s both;
 }
@@ -126,7 +124,6 @@
 }
 
 /* Center content fades out in sync with curtain split (same 0.5s delay) */
-.page-loader.phase-slash .loader-center,
 .page-loader.phase-reveal .loader-center {
     animation: center-exit 0.35s cubic-bezier(0.4, 0, 1, 1) 0.5s both;
 }
@@ -204,83 +201,7 @@
     50%       { transform: translateY(-6px); }
 }
 
-/* ── Katana Slash ────────────────────────────────────────────────── */
-.slash-line {
-    position: absolute;
-    top: 50%;
-    left: -10%;
-    width: 120%;
-    height: 2px;
-    background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(255, 80, 0, 0.9) 20%,
-        #fff 50%,
-        rgba(255, 80, 0, 0.9) 80%,
-        transparent 100%
-    );
-    transform: translateY(-50%) rotate(-1.5deg);
-    transform-origin: left center;
-    z-index: 10;
-    opacity: 0;
-    pointer-events: none;
-}
 
-.slash-glow {
-    position: absolute;
-    top: 50%;
-    left: -10%;
-    width: 120%;
-    height: 30px;
-    background: radial-gradient(ellipse at center, rgba(255, 150, 0, 0.45) 0%, transparent 70%);
-    transform: translateY(-50%) rotate(-1.5deg);
-    z-index: 9;
-    opacity: 0;
-    pointer-events: none;
-    filter: blur(6px);
-}
-
-/* Slash fires in "slash" phase */
-.page-loader.phase-slash .slash-line {
-    animation: slash-sweep 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-.page-loader.phase-slash .slash-glow {
-    animation: slash-sweep 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.04s forwards;
-}
-
-@keyframes slash-sweep {
-    0%   { opacity: 0; clip-path: inset(0 100% 0 0); }
-    20%  { opacity: 1; }
-    80%  { opacity: 1; clip-path: inset(0 0% 0 0); }
-    100% { opacity: 0; clip-path: inset(0 0% 0 0); }
-}
-
-/* ── Energy rings ────────────────────────────────────────────────── */
-.energy-ring {
-    position: absolute;
-    border-radius: 50%;
-    border: 1.5px solid rgba(255, 115, 0, 0.3);
-    pointer-events: none;
-    z-index: 1;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 0;
-}
-
-.ring-1 { width: 200px; height: 200px; }
-.ring-2 { width: 340px; height: 340px; border-color: rgba(255, 200, 80, 0.18); }
-
-.page-loader.phase-slash .ring-1 {
-    animation: ring-expand 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-.page-loader.phase-slash .ring-2 {
-    animation: ring-expand 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s forwards;
-}
-
-@keyframes ring-expand {
-    0%   { opacity: 0.8; transform: translate(-50%, -50%) scale(0.2); }
-    100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.8); }
-}
 
 /* ── Sakura particles ────────────────────────────────────────────── */
 .sakura-container {
@@ -349,8 +270,6 @@
     .kanji-glyph            { animation: none !important; }
     .torii-icon             { animation: none !important; }
     .curtain                { animation: none !important; }
-    .slash-line, .slash-glow{ animation: none !important; }
-    .energy-ring            { animation: none !important; }
     /* Just fade in quickly */
     .page-loader.phase-exit { animation: loader-fadeout 0.2s linear forwards; }
 }

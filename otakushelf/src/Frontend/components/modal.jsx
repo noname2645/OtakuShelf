@@ -481,15 +481,15 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                         >
                                             <div className="stats-grid2">
                                                 <div className="stat-item">
-                                                    <span className="stat-label desktop-only">Episodes :</span>
+                                                    <span className="stat-label2 desktop-only">Episodes :</span>
                                                     <span className="stat-value">{animeData.episodes} Episodes</span>
                                                 </div>
                                                 <div className="stat-item">
-                                                    <span className="stat-label desktop-only">Score :</span>
+                                                    <span className="stat-label2 desktop-only">Score :</span>
                                                     <span className="stat-value score">⭐ {animeData.score || "N/A"}</span>
                                                 </div>
                                                 <div className="stat-item">
-                                                    <span className="stat-label desktop-only">Age Rating :</span>
+                                                    <span className="stat-label2 desktop-only">Age Rating :</span>
                                                     <span className="stat-value age-rating">{animeData.rating}</span>
                                                 </div>
                                             </div>

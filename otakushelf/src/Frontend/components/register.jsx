@@ -137,20 +137,9 @@ const Register = ({ onRegisterSuccess }) => {
           initial="hidden"
           animate="visible"
         >
-          {/* Back to home */}
           <Link to="/" className="reg-back-home">
             <span className="reg-back-arrow">←</span> Home
           </Link>
-          {/* Floating emoji header */}
-          <motion.div className="card-header"
-            initial={{ y: -30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.4, ease: "easeOut" }}
-          >
-            <div className="card-icon">🎬</div>
-            <div className="card-glow"></div>
-          </motion.div>
-
           <motion.div className="auth-header"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

@@ -1,9 +1,51 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
-import AnimeCard from "./animecard.jsx";
 import "../Stylesheets/relatedsection.css";
+import { useAnimePreferences } from "./useAnimePreferences";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+
+/* ── AnimeCard (inlined) ─────────────────────────────────────────── */
+const AnimeCard = ({ anime, onClick, className }) => {
+  const { getPreferredTitle, shouldBlurNSFW } = useAnimePreferences();
+
+  const title = getPreferredTitle(anime?.title);
+  const isAdult = anime?.isAdult || false;
+  const requireBlur = shouldBlurNSFW(isAdult);
+
+  const getImage = () => {
+    if (!anime) return null;
+    if (anime.coverImage)
+      return anime.coverImage.extraLarge || anime.coverImage.large || anime.coverImage.medium || null;
+    if (anime.bannerImage) return anime.bannerImage;
+    if (anime.image_url) return anime.image_url;
+    return null;
+  };
+
+  const img = getImage();
+
+  return (
+    <div className={`anime-card ${className || ''}`} onClick={() => onClick && anime && onClick(anime)}>
+      <div className="card-image">
+        {img ? (
+          <img
+            className={`related-img${requireBlur ? ' blur-nsfw' : ''}`}
+            src={img}
+            style={requireBlur ? { filter: 'blur(16px)', pointerEvents: 'none' } : {}}
+            alt={requireBlur ? 'NSFW Content Hidden' : title}
+            loading="lazy"
+            onError={(e) => { e.target.src = "https://via.placeholder.com/210x295/333/666?text=No+Image"; }}
+          />
+        ) : (
+          <div className="image-placeholder"><span>No Image</span></div>
+        )}
+        <div className="card-title-bottom">
+          <h3>{requireBlur ? '18+ Content' : title}</h3>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 /**
  * Scrollable Relation Group Component
