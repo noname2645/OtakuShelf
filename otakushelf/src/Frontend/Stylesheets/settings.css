@@ -9,7 +9,7 @@
   background: transparent;
   color: #fff;
   padding: 0;
-  font-family: 'Outfit', 'Segoe UI', sans-serif;
+  font-family: "Outfit", "Segoe UI", sans-serif;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -95,7 +95,11 @@
 .settings-page-title {
   font-size: 42px;
   font-weight: 800;
-  background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.75) 100%);
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.75) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -157,7 +161,11 @@
 }
 
 .settings-nav-item.active {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(236, 72, 153, 0.1));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 107, 107, 0.15),
+    rgba(236, 72, 153, 0.1)
+  );
   color: #fff;
   font-weight: 600;
 }
@@ -187,7 +195,9 @@
   height: 22px;
   object-fit: contain;
   opacity: 0.55;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
   flex-shrink: 0;
 }
 
@@ -529,7 +539,8 @@
   font-weight: 700;
   font-size: 14px;
   cursor: default;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--preview-color) 40%, transparent);
+  box-shadow: 0 4px 16px
+    color-mix(in srgb, var(--preview-color) 40%, transparent);
 }
 
 /* ── Buttons ───────────────────────────────────────────────────── */
@@ -966,7 +977,11 @@
 .settings-badge-coming {
   padding: 4px 12px;
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.15));
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.2),
+    rgba(236, 72, 153, 0.15)
+  );
   border: 1px solid rgba(139, 92, 246, 0.3);
   color: #c4b5fd;
   font-size: 11px;

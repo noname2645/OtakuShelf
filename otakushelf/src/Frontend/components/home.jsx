@@ -5,6 +5,7 @@ import Modal from "../components/modal.jsx";
 import TrailerHero from './TrailerHero.jsx';
 import { Header } from '../components/header.jsx';
 import BottomNavBar from './bottom.jsx';
+import Footer from './footer.jsx';
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
 import PageLoader from './PageLoader.jsx';
@@ -405,6 +406,9 @@ const AnimeHomepage = () => {
                             </>
                         )}
                     </main>
+
+                    {/* Company Footer */}
+                    <Footer />
                 </div>
 
                 <AnimatePresence>

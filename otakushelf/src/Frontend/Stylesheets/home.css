@@ -27,7 +27,7 @@
   max-width: 100vw;
   overflow-x: hidden;
   position: relative;
-  padding-bottom: 80px;
+  padding-bottom: 0;
 }
 
 ::-webkit-scrollbar {
@@ -468,6 +468,10 @@
   margin-bottom: 2rem;
   /* Reduced from 3.5rem */
   position: relative;
+}
+
+.anime-carousel-section:last-child {
+  margin-bottom: 0;
 }
 
 /* Modern Header */
@@ -1066,7 +1070,7 @@
   }
 
   .main-content {
-    padding-bottom: 60px !important;
+    padding-bottom: 0 !important;
   }
 
   /* Loading skeleton */
@@ -1172,7 +1176,7 @@
   }
 
   .main-content {
-    padding-bottom: 50px !important;
+    padding-bottom: 0 !important;
   }
 }
 
@@ -1290,6 +1294,6 @@
 @supports (padding: max(0px)) {
 
   .main-content {
-    padding-bottom: max(80px, env(safe-area-inset-bottom) + 60px);
+    padding-bottom: 0;
   }
 }

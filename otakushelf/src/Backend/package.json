@@ -8,7 +8,11 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "build": "echo 'Installing backend dependencies...' && npm install && echo 'Building frontend...' && cd ../Frontend && npm install && npm run build",
-    "postinstall": "echo 'Backend dependencies installed successfully'"
+    "postinstall": "echo 'Backend dependencies installed successfully'",
+    "version:show": "node ../scripts/version.js",
+    "version:patch": "node ../scripts/version.js patch",
+    "version:minor": "node ../scripts/version.js minor",
+    "version:major": "node ../scripts/version.js major"
   },
   "keywords": [],
   "author": "",
