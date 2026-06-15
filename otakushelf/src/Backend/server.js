@@ -166,12 +166,45 @@ const sendSecurityEmail = async (email, type, data = {}) => {
 };
 
 // Security Headers (Helmet)
+// CSP is always set — permissive in dev (allows Vite HMR), strict in production.
+// This resolves ZAP alerts: CSP Not Set, Anti-clickjacking, X-Content-Type-Options.
 app.use(helmet({
-  contentSecurityPolicy: isProduction ? undefined : false, // Enabled in production, disabled for Vite HMR in dev
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-  }
+  contentSecurityPolicy: {
+    directives: isProduction
+      ? {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com"],
+          imgSrc: ["'self'", "data:", "https:", "blob:"],
+          connectSrc: ["'self'", "https://graphql.anilist.co", "https://api.jikan.moe"],
+          frameSrc: ["'none'"],
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+          upgradeInsecureRequests: [],
+        }
+      : {
+          // Dev: allow everything needed for Vite HMR + local APIs
+          defaultSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "ws:", "wss:", "http:", "https:"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+          imgSrc: ["'self'", "data:", "https:", "blob:", "http:"],
+          connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
+          fontSrc: ["'self'", "data:", "https:"],
+        },
+  },
+  // X-Frame-Options: DENY — prevents clickjacking (always on)
+  frameguard: { action: 'deny' },
+  // X-Content-Type-Options: nosniff (always on)
+  noSniff: true,
+  // Referrer-Policy
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  // Permissions-Policy: restrict sensitive browser features
+  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+  hsts: isProduction
+    ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+    : false, // HSTS only in production (HTTPS required)
 }));
 
 
@@ -403,8 +436,6 @@ app.post("/auth/register", authLimiter, async (req, res) => {
       authType: "local",
     });
     await newUser.save();
-
-    // console.log('User registered successfully:', email); // sensitive: email
     res.sendSuccess("Registration successful!");
   } catch (err) {
     console.error('Registration error:', err);
@@ -493,7 +524,6 @@ app.get("/auth/google/callback",
   (req, res) => {
     try {
       const token = jwt.sign({ id: req.user._id }, JWT_SECRET, { expiresIn: "24h" });
-      // console.log('Google auth successful for:', req.user.email); // sensitive: email
       res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
     } catch (err) {
       console.error('Google callback error:', err);
@@ -1322,15 +1352,9 @@ const userConnections = new Map();
 
 // Route 16: POST /api/list/import/mal — Import from MyAnimeList
 app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, res) => {
-  let lastJikanRequest = 0;
-
   try {
     if (!req.files || !req.files.malFile) {
-      console.log('❌ No file uploaded');
-      return res.status(400).json({
-        success: false,
-        message: 'No file uploaded'
-      });
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
     const malFile = req.files.malFile;
@@ -1338,418 +1362,282 @@ app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, r
     const clearExisting = req.body.clearExisting === 'true';
 
     if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Valid User ID is required'
-      });
+      return res.status(400).json({ success: false, message: 'Valid User ID is required' });
     }
 
-    if (malFile.size > 10 * 1024 * 1024) {
-      return res.status(400).json({
-        success: false,
-        message: 'File too large (max 10MB)'
-      });
+    if (malFile.size > 50 * 1024 * 1024) {
+      return res.status(400).json({ success: false, message: 'File too large (max 50MB)' });
     }
 
-    const userWs = userConnections.get(userId);
-
-    const sendProgress = (current, total, message) => {
-      console.log(`📈 Progress: ${current}/${total} - ${message}`);
-
-      if (userWs && userWs.readyState === 1) {
-        try {
-          userWs.send(JSON.stringify({
-            type: 'progress',
-            current: current,
-            total: total,
-            message: message,
-            progress: `${current}/${total}`
-          }));
-        } catch (wsError) {
-          console.error('WebSocket send error:', wsError.message);
-        }
-      }
-    };
-
-    console.log('Parsing XML file...');
-    sendProgress(0, 0, 'Starting import...');
-
+    // Parse XML
     let malData;
     try {
       const xmlContent = malFile.data.toString('utf-8');
-      console.log('XML length:', xmlContent.length);
-
-      const parser = new xml2js.Parser({
-        explicitArray: false,
-        mergeAttrs: true,
-        trim: true,
-        normalize: true
-      });
-
+      const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true, trim: true, normalize: true });
       malData = await parser.parseStringPromise(xmlContent);
-      console.log('✅ XML parsed successfully');
     } catch (xmlError) {
-      console.error('❌ XML parsing failed:', xmlError.message);
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid XML file. Please export from MyAnimeList.'
-      });
+      return res.status(400).json({ success: false, message: 'Invalid XML file. Please export from MyAnimeList.' });
     }
 
-    if (!malData || !malData.myanimelist) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid MAL XML format'
-      });
+    if (!malData?.myanimelist) {
+      return res.status(400).json({ success: false, message: 'Invalid MAL XML format' });
     }
 
-    let rawAnimeList = malData.myanimelist.anime;
+    const rawAnimeList = malData.myanimelist.anime;
     if (!rawAnimeList) {
-      return res.status(400).json({
-        success: false,
-        message: 'No anime found in XML file'
-      });
+      return res.status(400).json({ success: false, message: 'No anime found in XML file' });
     }
 
     const malAnimeList = Array.isArray(rawAnimeList) ? rawAnimeList : [rawAnimeList];
 
-    console.log(`Found ${malAnimeList.length} anime entries`);
-
     if (malAnimeList.length === 0) {
-      return res.json({
-        success: true,
-        message: 'No anime found in the file'
-      });
+      return res.json({ status: 'success', message: 'No anime found in the file' });
     }
 
-    sendProgress(0, malAnimeList.length, 'Preparing database...');
+    // Respond immediately - background processing starts below
+    res.status(202).json({
+      status: 'accepted',
+      message: `Import started for ${malAnimeList.length} anime. Watch for progress updates.`,
+      total: malAnimeList.length
+    });
 
-    let animeList = await AnimeList.findOne({ userId });
+    // Background Processing
+    setImmediate(async () => {
+      const userWs = userConnections.get(userId);
 
-    if (!animeList) {
-      animeList = new AnimeList({
-        userId,
-        watching: [],
-        completed: [],
-        planned: [],
-        dropped: []
-      });
-    }
-
-    if (clearExisting) {
-      console.log('Clearing existing lists...');
-      animeList.watching = [];
-      animeList.completed = [];
-      animeList.planned = [];
-      animeList.dropped = [];
-      await animeList.save();
-      sendProgress(0, malAnimeList.length, 'Cleared existing list');
-    }
-
-    function getCategoryFromMalStatus(malStatus) {
-      if (!malStatus) return 'planned';
-
-      const statusStr = String(malStatus).trim().toLowerCase();
-
-      if (statusStr === '1') return 'watching';
-      if (statusStr === '2') return 'completed';
-      if (statusStr === '3') return 'planned';
-      if (statusStr === '4') return 'dropped';
-      if (statusStr === '6') return 'planned';
-
-      if (statusStr.includes('watching') || statusStr.includes('currently')) {
-        return 'watching';
-      }
-      if (statusStr.includes('completed') || statusStr.includes('complete')) {
-        return 'completed';
-      }
-      if (statusStr.includes('dropped')) {
-        return 'dropped';
-      }
-      if (statusStr.includes('on-hold') || statusStr.includes('on hold') || statusStr === '3') {
-        return 'planned';
-      }
-      if (statusStr.includes('plan') || statusStr.includes('ptw') || statusStr === '6') {
-        return 'planned';
-      }
-
-      console.warn(`Unknown status: "${malStatus}", defaulting to planned`);
-      return 'planned';
-    }
-
-    const batchSize = 10;
-    let processed = 0;
-    let imported = 0;
-    let skipped = 0;
-    let errors = [];
-
-    const categoryCounts = {
-      watching: 0,
-      completed: 0,
-      planned: 0,
-      dropped: 0
-    };
-
-    for (let i = 0; i < malAnimeList.length; i += batchSize) {
-      const batch = malAnimeList.slice(i, Math.min(i + batchSize, malAnimeList.length));
-
-      for (const malAnime of batch) {
-        processed++;
-
-        try {
-          const malId = malAnime.series_animedb_id || malAnime.series_anime_db_id || malAnime.series_animedbid;
-          const title = malAnime.series_title || malAnime.series_title_eng || 'Unknown Title';
-
-          const malStatus = malAnime.my_status || malAnime.my_status_string || malAnime.my_status_str || malAnime.my_status_code;
-          const episodesWatched = parseInt(malAnime.my_watched_episodes || malAnime.my_watched_episodes_string || malAnime.my_watched_episodes_str || 0) || 0;
-          const totalEpisodes = parseInt(malAnime.series_episodes || malAnime.series_episodes_string || malAnime.series_episodes_str || 24) || 24;
-          const userRating = parseInt(malAnime.my_score || malAnime.my_score_string || malAnime.my_score_str || 0) || 0;
-
-          const category = getCategoryFromMalStatus(malStatus);
-          categoryCounts[category]++;
-
-          sendProgress(
-            processed,
-            malAnimeList.length,
-            `Processing: ${title.substring(0, 30)}... -> ${category}`
-          );
-
-          if (!clearExisting && malId) {
-            const exists = animeList[category].some(a => a.malId === malId.toString());
-            if (exists) {
-              console.log(`Skipped (duplicate): ${title}`);
-              skipped++;
-              continue;
-            }
-          }
-
-          const metadata = await getAnimeMetadata(malId, title);
-          const imageUrl = metadata.image;
-          const fetchedGenres = metadata.genres || [];
-
-          async function getAnimeMetadata(malId, title) {
-
-            // 1. First try: Jikan API (with proper rate limiting)
-            try {
-              // Rate limiting
-              const now = Date.now();
-              if (now - lastJikanRequest < 1500) { // 1.5 second delay
-                await new Promise(resolve => setTimeout(resolve, 1500 - (now - lastJikanRequest)));
-              }
-
-              lastJikanRequest = Date.now();
-
-              const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}`, {
-                headers: {
-                  "User-Agent": "OtakuShelf/1.0 (contact: example@email.com)",
-                  "Accept": "application/json"
-                },
-                timeout: 5000
-              });
-
-              const image = res.data?.data?.images?.jpg?.large_image_url ||
-                res.data?.data?.images?.jpg?.image_url ||
-                res.data?.data?.images?.jpg?.small_image_url ||
-                null;
-
-              const genres = res.data?.data?.genres?.map(g => g.name) || [];
-
-              if (image) {
-                return { image, genres };
-              }
-            } catch (error) {
-              console.log(`Jikan failed for ${malId}: ${error.message}`);
-            }
-
-            // 2. Second try: AniList API (alternative)
-            try {
-              const query = `
-      query ($idMal: Int) {
-        Media(idMal: $idMal, type: ANIME) {
-          coverImage {
-            extraLarge
-            large
-            medium
-          }
-          genres
+      const sendProgress = (current, total, message, extra = {}) => {
+        if (userWs && userWs.readyState === 1) {
+          try {
+            userWs.send(JSON.stringify({ type: 'progress', current, total, message, ...extra }));
+          } catch (e) { /* ignore WS send errors */ }
         }
-      }
-    `;
+      };
 
-              const response = await axios.post(
-                "https://graphql.anilist.co",
-                {
-                  query,
-                  variables: { idMal: Number(malId) }
-                },
-                {
-                  headers: { "Content-Type": "application/json" },
-                  timeout: 5000
-                }
-              );
-
-              const image = response.data?.data?.Media?.coverImage?.extraLarge ||
-                response.data?.data?.Media?.coverImage?.large ||
-                response.data?.data?.Media?.coverImage?.medium;
-
-              const genres = response.data?.data?.Media?.genres || [];
-
-              if (image) {
-                return { image, genres };
-              }
-            } catch (error) {
-              console.log(`AniList failed for ${malId}: ${error.message}`);
-            }
-
-            // 3. Fallback: Use placeholder with anime title
-            const encodedTitle = encodeURIComponent(title || 'Anime Poster');
-            return {
-              image: `https://placehold.co/300x400/667eea/ffffff?text=${encodedTitle}&font=roboto`,
-              genres: []
-            };
-          }
-
-          const malStartDate = malAnime.my_start_date && malAnime.my_start_date !== "0000-00-00"
-            ? new Date(malAnime.my_start_date)
-            : null;
-
-          const malFinishDate = malAnime.my_finish_date && malAnime.my_finish_date !== "0000-00-00"
-            ? new Date(malAnime.my_finish_date)
-            : null;
-
-          const animeEntry = {
-            title,
-            animeId: malId ? malId.toString() : `mal_${Date.now()}_${processed}`,
-            malId: malId ? malId.toString() : null,
-            image: imageUrl,
-            totalEpisodes,
-            episodes: totalEpisodes,
-            episodesWatched,
-            status: category,
-            genres: fetchedGenres,
-            userRating: userRating > 0 ? Math.round(userRating / 2) : undefined,
-            addedDate: malStartDate || new Date(),
-          };
-
-          if (category === "completed") {
-            animeEntry.finishDate = malFinishDate || malStartDate || new Date();
-            animeEntry.episodesWatched = animeEntry.totalEpisodes;
-          }
-
-          if (category === "watching") {
-            animeEntry.startDate = malStartDate || new Date();
-          }
-
-          if (category === "dropped") {
-            animeEntry.droppedDate = malFinishDate || new Date();
-          }
-
-          if (category === "planned") {
-            animeEntry.plannedDate = malStartDate || new Date();
-          }
-
-          animeList[category].push(animeEntry);
-          imported++;
-
-          console.log(`✅ Imported to ${category}: ${title}`);
-
-        } catch (animeError) {
-          const errorMsg = `Failed to process anime: ${animeError.message}`;
-          errors.push(errorMsg);
-          console.error('❌ Anime processing error:', errorMsg);
-        }
+      function getCategoryFromMalStatus(malStatus) {
+        if (!malStatus) return 'planned';
+        const s = String(malStatus).trim().toLowerCase();
+        if (s === '1' || s.includes('watching') || s.includes('currently')) return 'watching';
+        if (s === '2' || s.includes('completed') || s.includes('complete')) return 'completed';
+        if (s === '4' || s.includes('dropped')) return 'dropped';
+        return 'planned';
       }
 
       try {
-        await animeList.save();
-        console.log(`💾 Saved batch ${Math.ceil(processed / batchSize)}`);
-        sendProgress(
-          processed,
-          malAnimeList.length,
-          `Saved ${processed}/${malAnimeList.length} entries`
-        );
-      } catch (saveError) {
-        console.error('❌ Batch save error:', saveError.message);
-        errors.push(`Batch save failed: ${saveError.message}`);
-      }
-
-      if (processed < malAnimeList.length) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-    }
-
-    console.log(`\n📊 Import summary — Watching: ${categoryCounts.watching}, Completed: ${categoryCounts.completed}, Planned: ${categoryCounts.planned}, Dropped: ${categoryCounts.dropped}`);
-
-    sendProgress(malAnimeList.length, malAnimeList.length, 'Finalizing import...');
-
-    try {
-      await animeList.save();
-      console.log('✅ List saved successfully');
-    } catch (saveError) {
-      console.error('❌ Final save error:', saveError.message);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to save list to database'
-      });
-    }
-
-    try {
-      const user = await User.findById(userId);
-      if (user && user.profile) {
-        user.profile.stats = user.profile.stats || {};
-        user.profile.stats.animeWatched = animeList.completed.length;
-        user.profile.stats.currentlyWatching = animeList.watching.length;
-        user.profile.stats.animePlanned = animeList.planned.length;
-        user.profile.stats.animeDropped = animeList.dropped.length;
-        await user.save();
-      }
-    } catch (statsError) {
-      console.error('Stats update error:', statsError.message);
-    }
-
-    const finalMessage = `Imported ${imported} anime (Watching: ${categoryCounts.watching}, Completed: ${categoryCounts.completed}, Planned: ${categoryCounts.planned}, Dropped: ${categoryCounts.dropped})`;
-    console.log(`\n✅ ${finalMessage}`);
-
-    if (userWs && userWs.readyState === 1) {
-      userWs.send(JSON.stringify({
-        type: 'progress',
-        message: 'Import completed successfully!',
-        current: malAnimeList.length,
-        total: malAnimeList.length,
-        completed: true
-      }));
-    }
-
-    res.sendSuccess(finalMessage, {
-      imported: imported,
-      skipped: skipped,
-      errors: errors.length,
-      total: malAnimeList.length,
-      categoryCounts: categoryCounts
-    });
-
-  } catch (error) {
-    console.error('❌ UNHANDLED ERROR IN MAL IMPORT:', error);
-
-    try {
-      const userId = req.body?.userId;
-      if (userId) {
-        const userWs = userConnections.get(userId);
-        if (userWs && userWs.readyState === 1) {
-          userWs.send(JSON.stringify({
-            type: 'progress',
-            message: `Import failed: ${error.message}`,
-            current: 0,
-            total: 0,
-            error: true
-          }));
+        let animeList = await AnimeList.findOne({ userId });
+        if (!animeList) {
+          animeList = new AnimeList({ userId, watching: [], completed: [], planned: [], dropped: [] });
         }
-      }
-    } catch (wsError) {
-      console.error('Failed to send WebSocket error:', wsError);
-    }
 
-    res.sendError("Import failed", 500, error.message);
+        if (clearExisting) {
+          animeList.watching = [];
+          animeList.completed = [];
+          animeList.planned = [];
+          animeList.dropped = [];
+          await animeList.save();
+        }
+
+        sendProgress(0, malAnimeList.length, 'Analyzing MyAnimeList data...');
+
+        // 1. Extract all unique valid MAL IDs
+        const malIds = malAnimeList
+          .map(anime => {
+            const idStr = anime.series_animedb_id || anime.series_anime_db_id || anime.series_animedbid;
+            return idStr ? parseInt(idStr) : null;
+          })
+          .filter(id => id && !isNaN(id));
+
+        // 2. Fetch metadata from AniList in bulk batches of 50
+        const metadataMap = new Map();
+        const BULK_BATCH_SIZE = 50;
+        
+        for (let i = 0; i < malIds.length; i += BULK_BATCH_SIZE) {
+          const batchIds = malIds.slice(i, i + BULK_BATCH_SIZE);
+          sendProgress(0, malAnimeList.length, `Fetching cover images: batch ${Math.floor(i / BULK_BATCH_SIZE) + 1}...`);
+
+          // Stagger requests slightly to prevent AniList rate limits
+          await new Promise(r => setTimeout(r, 350));
+
+          try {
+            const r = await axios.post('https://graphql.anilist.co', {
+              query: `
+                query ($idMals: [Int]) {
+                  Page(page: 1, perPage: 50) {
+                    media(idMal_in: $idMals, type: ANIME) {
+                      idMal
+                      coverImage {
+                        extraLarge
+                        large
+                        medium
+                      }
+                      genres
+                    }
+                  }
+                }
+              `,
+              variables: { idMals: batchIds }
+            }, { headers: { 'Content-Type': 'application/json' }, timeout: 12000 });
+
+            const mediaList = r.data?.data?.Page?.media || [];
+            for (const media of mediaList) {
+              if (media && media.idMal) {
+                const img = media.coverImage?.extraLarge || media.coverImage?.large || media.coverImage?.medium || null;
+                metadataMap.set(media.idMal.toString(), {
+                  image: img,
+                  genres: media.genres || []
+                });
+              }
+            }
+          } catch (err) {
+            console.error(`AniList bulk metadata fetch failed at index ${i}: ${err.message}`);
+            if (err.response?.status === 429) {
+              // Rate limited: wait 6 seconds and retry the same batch
+              await new Promise(r => setTimeout(r, 6000));
+              i -= BULK_BATCH_SIZE;
+            }
+          }
+        }
+
+        // Fallback fetch helper for individual items not found in AniList bulk query
+        let lastJikanCall = 0;
+        async function fetchSingleFallback(malId, title) {
+          if (!malId) return { image: null, genres: [] };
+
+          try {
+            const now = Date.now();
+            if (now - lastJikanCall < 1500) {
+              await new Promise(r => setTimeout(r, 1500 - (now - lastJikanCall)));
+            }
+            lastJikanCall = Date.now();
+
+            const r = await axios.get(`https://api.jikan.moe/v4/anime/${malId}`, {
+              headers: { 'User-Agent': 'OtakuShelf/1.0', Accept: 'application/json' },
+              timeout: 8000
+            });
+            const img = r.data?.data?.images?.jpg?.large_image_url ||
+              r.data?.data?.images?.jpg?.image_url || null;
+            const genres = r.data?.data?.genres?.map(g => g.name) || [];
+            
+            if (img) return { image: img, genres };
+          } catch (err) {
+            console.warn(`Fallback Jikan check failed for MAL ID ${malId}: ${err.message}`);
+          }
+
+          const encodedTitle = encodeURIComponent(title || 'Anime Poster');
+          return {
+            image: `https://placehold.co/300x400/667eea/ffffff?text=${encodedTitle}&font=roboto`,
+            genres: []
+          };
+        }
+
+        // 3. Process each anime and write to database
+        sendProgress(0, malAnimeList.length, 'Saving anime entries to your list...');
+
+        let processed = 0;
+        let imported = 0;
+        let skipped = 0;
+        const categoryCounts = { watching: 0, completed: 0, planned: 0, dropped: 0 };
+
+        for (let i = 0; i < malAnimeList.length; i++) {
+          const malAnime = malAnimeList[i];
+          processed++;
+
+          try {
+            const malId = malAnime.series_animedb_id || malAnime.series_anime_db_id || malAnime.series_animedbid;
+            const title = malAnime.series_title || malAnime.series_title_eng || 'Unknown Title';
+            const malStatus = malAnime.my_status || malAnime.my_status_string || malAnime.my_status_str || malAnime.my_status_code;
+            const episodesWatched = parseInt(malAnime.my_watched_episodes || malAnime.my_watched_episodes_string || malAnime.my_watched_episodes_str || 0) || 0;
+            const totalEpisodes = parseInt(malAnime.series_episodes || malAnime.series_episodes_string || malAnime.series_episodes_str || 24) || 24;
+            const userRating = parseInt(malAnime.my_score || malAnime.my_score_string || malAnime.my_score_str || 0) || 0;
+            const category = getCategoryFromMalStatus(malStatus);
+
+            sendProgress(processed, malAnimeList.length, `Saving: ${title.substring(0, 30)}...`);
+
+            if (!clearExisting && malId) {
+              const exists = ['watching', 'completed', 'planned', 'dropped'].some(cat => 
+                animeList[cat].some(a => a.malId === malId.toString())
+              );
+              if (exists) {
+                skipped++;
+                continue;
+              }
+            }
+
+            // Retrieve from bulk map or fetch fallback
+            const malIdStr = malId ? malId.toString() : '';
+            let metadata = metadataMap.get(malIdStr);
+            if (!metadata) {
+              metadata = await fetchSingleFallback(malId, title);
+            }
+
+            const malStartDate = malAnime.my_start_date && malAnime.my_start_date !== '0000-00-00'
+              ? new Date(malAnime.my_start_date) : null;
+            const malFinishDate = malAnime.my_finish_date && malAnime.my_finish_date !== '0000-00-00'
+              ? new Date(malAnime.my_finish_date) : null;
+
+            const entry = {
+              title,
+              animeId: malId ? malId.toString() : `mal_${Date.now()}_${processed}`,
+              malId: malIdStr || null,
+              image: metadata.image,
+              totalEpisodes, episodes: totalEpisodes, episodesWatched,
+              status: category, genres: metadata.genres,
+              userRating: userRating > 0 ? Math.round(userRating / 2) : undefined,
+              addedDate: malStartDate || new Date(),
+            };
+
+            if (category === 'completed') {
+              entry.finishDate = malFinishDate || malStartDate || new Date();
+              entry.episodesWatched = totalEpisodes;
+            }
+            if (category === 'watching') entry.startDate = malStartDate || new Date();
+            if (category === 'dropped') entry.droppedDate = malFinishDate || new Date();
+            if (category === 'planned') entry.plannedDate = malStartDate || new Date();
+
+            animeList[category].push(entry);
+            categoryCounts[category]++;
+            imported++;
+
+          } catch (animeError) {
+            console.error(`Failed to process anime entry: ${animeError.message}`);
+          }
+
+          // Save to database periodically
+          if (processed % 15 === 0 || processed === malAnimeList.length) {
+            try {
+              await animeList.save();
+              sendProgress(processed, malAnimeList.length, `Saved ${processed}/${malAnimeList.length} entries`);
+            } catch (saveError) {
+              console.error('Batch save error:', saveError.message);
+            }
+          }
+        }
+
+        // Final save + stats
+        await animeList.save();
+
+        try {
+          const user = await User.findById(userId);
+          if (user?.profile) {
+            user.profile.stats = user.profile.stats || {};
+            user.profile.stats.animeWatched = animeList.completed.length;
+            user.profile.stats.currentlyWatching = animeList.watching.length;
+            user.profile.stats.animePlanned = animeList.planned.length;
+            user.profile.stats.animeDropped = animeList.dropped.length;
+            await user.save();
+          }
+        } catch { /* non-critical */ }
+
+        const finalMsg = `Imported ${imported} anime (W:${categoryCounts.watching} C:${categoryCounts.completed} P:${categoryCounts.planned} D:${categoryCounts.dropped})${skipped ? `, skipped ${skipped} duplicates` : ''}`;
+        sendProgress(malAnimeList.length, malAnimeList.length, finalMsg, { completed: true });
+
+      } catch (bgError) {
+        console.error('❌ Background MAL import error:', bgError);
+        sendProgress(0, 0, `Import failed: ${bgError.message}`, { error: true });
+      }
+    });
+  } catch (error) {
+    console.error('❌ MAL import setup error:', error);
+    res.sendError('Import failed', 500, error.message);
   }
 });
 
@@ -1773,7 +1661,6 @@ app.get("/api/list/:userId", authenticateToken, authorizeUser, async (req, res) 
         dropped: []
       });
       await list.save();
-      // console.log('Created new empty list for user:', userId); // sensitive: userId
     }
 
     if (!Array.isArray(list.watching)) list.watching = [];
@@ -2195,8 +2082,6 @@ wss.on('connection', (ws, req) => {
 
     if (userId) {
       userConnections.set(userId, ws);
-      // console.log(`🔗 WebSocket connected for user: ${userId}`); // sensitive: userId
-
       ws.send(JSON.stringify({
         type: 'connected',
         message: 'WebSocket connected'
@@ -2206,7 +2091,6 @@ wss.on('connection', (ws, req) => {
     ws.on('close', () => {
       if (userId) {
         userConnections.delete(userId);
-        // console.log(`🔌 WebSocket disconnected for user: ${userId}`); // sensitive: userId
       }
     });
 

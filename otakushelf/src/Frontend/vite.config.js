@@ -6,18 +6,25 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_VERSION = readFileSync(resolve(__dirname, '../VERSION'), 'utf8').trim();
+const isProduction = process.env.NODE_ENV === 'production';
 
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Access anywhere in the app as: import.meta.env.VITE_APP_VERSION
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
   },
   resolve: {
     extensions: ['.js', '.jsx', '.json']
   },
+  build: {
+    // Strip all console statements in production builds (fixes ZAP: Information Disclosure)
+    minify: 'esbuild',
+    sourcemap: false,
+    esbuildOptions: {
+      drop: isProduction ? ['console', 'debugger'] : [],
+    },
+  },
   server: {
-    // port: 3000,
     host: true,
   }
 });

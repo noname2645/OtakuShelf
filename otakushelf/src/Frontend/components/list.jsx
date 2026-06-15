@@ -97,12 +97,16 @@ const EnhancedAnimeList = () => {
               }
 
               if (data.completed) {
-                setTimeout(() => setImportProgress(''), 2000);
                 setImporting(false);
+                setTimeout(() => setImportProgress(''), 2000);
+                showToast(`✅ ${data.message || 'Import completed successfully!'}`);
+                fetchAnimeList(); // Refresh list after background import finishes
               }
 
               if (data.error) {
-                console.error('Import error:', data.message);
+                setImporting(false);
+                setTimeout(() => setImportProgress(''), 2000);
+                showToast(`❌ Import error: ${data.message || 'Unknown error'}`, 'error');
               }
             }
           } catch (e) {
@@ -167,36 +171,36 @@ const EnhancedAnimeList = () => {
     formData.append('clearExisting', (importOption === 'replace').toString());
 
     try {
+      // Fire-and-forget with no timeout — backend processes in background,
+      // WebSocket handles progress updates and completion notification
       const response = await api.post(`${API}/api/list/import/mal`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 0, // No timeout — large lists can take many minutes
       });
 
       const resData = response.data;
-
-      if (resData.status === "success") {
-        showToast(`✅ ${resData.message}`);
-        fetchAnimeList();
+      // 202 Accepted means background processing started
+      if (resData.status === 'accepted' || resData.status === 'success') {
+        showToast('⏳ Import started! Progress updates will appear automatically.');
+        // Don't set importing=false here — WebSocket completion will do that
       } else {
         showToast(`Import failed: ${resData.message}`, 'error');
+        setImporting(false);
       }
     } catch (error) {
       console.error('Import error:', error);
-      let errorMsg = error.response?.data?.message || error.message;
+      let errorMsg = error.response?.data?.message || error.message || 'Unknown error';
 
       if (errorMsg.includes('Invalid XML')) {
-        errorMsg = 'The selected file is not a valid MyAnimeList XML export. Please export your list from MAL and try again.';
+        errorMsg = 'Not a valid MAL XML export. Please re-export your list from MyAnimeList.';
       } else if (errorMsg.includes('Rate limited')) {
         errorMsg = 'Too many requests. Please wait a few minutes before trying again.';
-      } else if (errorMsg.includes('timeout')) {
-        errorMsg = 'Import is taking too long. Your list might be very large. Please try with a smaller list or wait and try again.';
       }
 
       showToast(`Failed to import: ${errorMsg}`, 'error');
-    } finally {
       setImporting(false);
-      setTimeout(() => setImportProgress(''), 3000);
+    } finally {
+      setTimeout(() => setImportProgress(''), 300);
       setSelectedFile(null);
     }
   };

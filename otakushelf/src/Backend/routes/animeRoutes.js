@@ -143,9 +143,7 @@ router.get('/anime-sections', async (req, res) => {
       }
     `;
 
-    console.log("Fetching anime sections...");
     const data = await fetchAniList(query);
-    console.log("Raw AniList data received.");
 
     // Process trailer URLs
     const processTrailer = (trailer) => {
@@ -177,7 +175,6 @@ router.get('/anime-sections', async (req, res) => {
     const topRatedList = [...(data.topRated1?.media || []), ...(data.topRated2?.media || [])];
     const upcomingList = [...(data.upcoming1?.media || []), ...(data.upcoming2?.media || [])];
 
-    console.log(`Fetched counts - Airing: ${airingList.length}, Watched: ${watchedList.length}, Movies: ${moviesList.length}, Trending: ${trendingList.length}, Top Rated: ${topRatedList.length}, Upcoming: ${upcomingList.length}`);
 
     cache = {
       data: {
@@ -288,8 +285,6 @@ router.get('/search', async (req, res) => {
         ...anime,
         trailer: processTrailer(anime.trailer)
       }));
-
-    // console.log('Search Results Sample:', safeResults[0]);
 
     return success(res, "Search results fetched successfully", safeResults);
   } catch (err) {
