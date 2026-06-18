@@ -1,94 +1,75 @@
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Prompt:wght@700;800&display=swap');
 
-/* ── Footer wrapper ──────────────────────────────────────────────── */
+/* ============================================================
+   OTAKUSHELF FOOTER — Matching site design language
+   - Deep black background (#030712)
+   - Amber/orange accent (#ff9a00, #e2aa01)
+   - Outfit + Prompt typography
+   - Subtle glassmorphism top border
+   ============================================================ */
+
 .site-footer {
   width: 100%;
+  background: #030712;
+  border-top: 1px solid rgba(255, 154, 0, 0.12);
+  font-family: 'Outfit', sans-serif;
+  color: rgba(255, 255, 255, 0.55);
   position: relative;
-  /* Fade in from page content above, solid through the footer body */
-  background: rgba(5, 5, 15, 0.97);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  font-family: "Outfit", sans-serif;
-  color: rgba(255, 255, 255, 0.6);
-  /* Reserve space below copyright for the bottom gradient */
-  padding-bottom: 300px;
+  padding-bottom: 0;
 }
 
-/* Force Outfit font on every element inside the footer */
-.site-footer * {
-  font-family: "Outfit", sans-serif;
-}
-
-/* Gradient fade-out below the copyright bar */
-.site-footer::after {
-  content: "";
+/* Thin amber glow on the top edge */
+.site-footer::before {
+  content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 300px;
-  /* Fade from footer colour → body background (#030712), no seam */
-  background: linear-gradient(180deg, rgba(5, 5, 15, 0.97) 0%, #030712 100%);
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 154, 0, 0.4), rgba(255, 107, 107, 0.3), rgba(255, 154, 0, 0.4), transparent);
   pointer-events: none;
-  z-index: 0;
 }
 
-/* ── Inner grid ──────────────────────────────────────────────────── */
+/* ── Inner grid ── */
 .footer-inner {
-  position: relative;
-  z-index: 1;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 120px 48px 24px;
+  padding: 56px 48px 32px;
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 64px;
+  grid-template-columns: 260px 1fr;
+  gap: 80px;
   align-items: start;
 }
 
-/* ── Brand column ────────────────────────────────────────────────── */
+/* ── Brand column ── */
 .footer-brand {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
-.footer-logo {
-  font-size: 1.6rem;
-  font-weight: 900;
-  letter-spacing: 0.18em;
-  line-height: 1;
+.footer-logo-svg {
+  height: 36px;
+  width: auto;
+  display: block;
+  opacity: 0.92;
+  transition: opacity 0.2s ease;
 }
 
-.footer-logo-otaku {
-  color: #ff9a00;
-}
-
-.footer-logo-shelf {
-  color: #ffffff;
+.footer-logo-link:hover .footer-logo-svg {
+  opacity: 1;
 }
 
 .footer-tagline {
-  font-size: 0.9rem;
-  font-weight: 300;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.35);
   margin: 0;
-  letter-spacing: 0.04em;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
 }
 
-.footer-version-pill {
-  display: inline-block;
-  width: fit-content;
-  padding: 3px 12px;
-  border-radius: 20px;
-  background: rgba(255, 154, 0, 0.08);
-  border: 1px solid rgba(255, 154, 0, 0.2);
-  color: rgba(255, 154, 0, 0.7);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-/* ── Nav columns ─────────────────────────────────────────────────── */
+/* ── Nav columns ── */
 .footer-nav {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -96,12 +77,13 @@
 }
 
 .footer-col-title {
-  font-size: 0.75rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 18px;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 20px;
 }
 
 .footer-col ul {
@@ -110,34 +92,37 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 13px;
 }
 
+/* Active links */
 .footer-col a {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.45);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
   display: inline-block;
 }
 
 .footer-col a:hover {
   color: #ff9a00;
+  transform: translateX(3px);
 }
 
+/* Muted/disabled links (Legal section) */
 .footer-link-muted {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.3);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.22);
   cursor: default;
 }
 
-/* ── Bottom bar ──────────────────────────────────────────────────── */
+/* ── Bottom bar ── */
 .footer-bottom {
-  position: relative;
-  z-index: 1;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 12px 48px 16px;
+  padding: 20px 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -148,72 +133,70 @@
 
 .footer-copy {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.22);
   letter-spacing: 0.02em;
 }
 
-.footer-build-info {
+.footer-made-with {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.22);
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 5px;
 }
 
-.footer-build-info code {
-  font-family: "Outfit", sans-serif;
-  font-size: 0.78rem;
-  color: rgba(255, 154, 0, 0.55);
-  background: rgba(255, 154, 0, 0.06);
-  padding: 1px 6px;
-  border-radius: 4px;
-}
-
+/* Beating heart ♥ */
 .footer-heart {
   color: #ff6b6b;
   font-size: 0.85rem;
-  animation: footer-heartbeat 1.8s ease-in-out infinite;
   display: inline-block;
+  animation: footer-heartbeat 1.8s ease-in-out infinite;
 }
 
 @keyframes footer-heartbeat {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.85;
-  }
-  50% {
-    transform: scale(1.25);
-    opacity: 1;
-  }
+  0%, 100% { transform: scale(1);    opacity: 0.8; }
+  50%       { transform: scale(1.3); opacity: 1;   }
 }
 
-/* ── Responsive ──────────────────────────────────────────────────── */
-@media (max-width: 1024px) {
+/* ── Responsive ── */
+@media (max-width: 900px) {
   .footer-inner {
     grid-template-columns: 1fr;
     gap: 40px;
-    padding: 44px 32px 24px;
-  }
-
-  .footer-nav {
-    grid-template-columns: repeat(3, 1fr);
+    padding: 44px 32px 28px;
   }
 }
 
 @media (max-width: 640px) {
   .footer-inner {
-    padding: 36px 24px 20px;
+    padding: 36px 20px 24px;
+    gap: 32px;
   }
 
   .footer-nav {
     grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
+    gap: 28px;
   }
 
   .footer-bottom {
-    padding: 12px 24px 16px;
+    padding: 16px 20px;
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+  }
+
+  .footer-logo {
+    font-size: 1.5rem;
+  }
+
+  /* Extra bottom space so floating nav doesn't cover the bar */
+  .site-footer {
+    padding-bottom: 88px;
+  }
+}
+
+@media (max-width: 400px) {
+  .footer-nav {
+    grid-template-columns: 1fr;
   }
 }

@@ -146,9 +146,11 @@ textarea {
    HOME — Hero + Sections
    ====================================================== */
 
-/* Ensure hero content doesn't overlap the bottom nav */
-.main-content {
-    padding-bottom: calc(90px + var(--safe-bottom)) !important;
+/* Ensure hero content doesn't overlap the bottom nav — mobile only */
+@media (max-width: 1024px) {
+    .main-content {
+        padding-bottom: calc(90px + var(--safe-bottom)) !important;
+    }
 }
 
 /* Section headings on mobile */

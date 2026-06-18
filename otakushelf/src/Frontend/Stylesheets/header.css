@@ -397,30 +397,16 @@
     text-decoration: none;
 }
 
-.logo-image {
-    margin-top: 15px;
-    /* height: 420px; */
+.logo-svg {
+    height: 32px;
     width: auto;
-    object-fit: contain;
     display: block;
+    transition: transform 0.3s ease, filter 0.3s ease;
 }
 
-.logo span {
-    font-family: "Prompt", sans-serif;
-    font-size: 38px;
-    border-radius: 20px;
-    cursor: pointer;
-    letter-spacing: 2px;
-    background: linear-gradient(45deg, #ff6a00, #ffcc00, #ff0066, #ff33cc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-}
-
-.logo span:hover {
-    transform: scale(1.1);
-    text-shadow: 2px 2px 15px rgba(255, 102, 0, 0.8), 0 0 10px rgba(255, 204, 0, 0.7);
+.logo-link:hover .logo-svg {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 8px rgba(255, 217, 0, 0.5));
 }
 
 
@@ -451,9 +437,8 @@
     .logo { justify-content: flex-start !important; }
     .auth-buttons { justify-content: flex-end !important; }
 
-    .logo span {
-        font-size: 20px !important; /* Smaller to prevent overlap */
-        letter-spacing: 0px !important;
+    .logo-svg {
+        height: 24px !important;
     }
 
     .InputContainer {
@@ -568,9 +553,8 @@
     .logo { justify-content: flex-start !important; }
     .profile-container { justify-content: flex-end !important; }
 
-    .logo span {
-        font-size: 18px !important;
-        letter-spacing: 0px !important;
+    .logo-svg {
+        height: 22px !important;
     }
 
     .InputContainer {
@@ -583,10 +567,10 @@
         max-width: 200px !important;
     }
 
-    /* Hide logo text on very small screens */
+    /* Adjust logo height on very small screens */
     @media (max-width: 400px) {
-        .logo span {
-            font-size: 18px !important;
+        .logo-svg {
+            height: 20px !important;
         }
     }
 
@@ -642,8 +626,8 @@
         padding: 0 0.5rem !important;
     }
 
-    .logo span {
-        font-size: 18px !important;
+    .logo-svg {
+        height: 20px !important;
     }
 }
 

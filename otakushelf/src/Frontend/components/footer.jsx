@@ -2,23 +2,40 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import '../Stylesheets/footer.css';
 
-const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0';
 const YEAR = new Date().getFullYear();
 
 const Footer = () => (
   <footer className="site-footer" aria-label="Site footer">
+
+    {/* ── Top content grid ── */}
     <div className="footer-inner">
 
-      {/* ── Brand column ── */}
+      {/* Brand */}
       <div className="footer-brand">
-        <span className="footer-logo">
-          <span className="footer-logo-otaku">OTAKU</span>
-          <span className="footer-logo-shelf">SHELF</span>
-        </span>
-        <span className="footer-version-pill">v{APP_VERSION}</span>
+        <Link to="/home" className="footer-logo-link">
+          <svg className="footer-logo-svg" viewBox="0 0 220 44" xmlns="http://www.w3.org/2000/svg" aria-label="OtakuShelf">
+            <text
+              x="0" y="34"
+              fontFamily="'Outfit', sans-serif"
+              fontWeight="800"
+              fontSize="38"
+              fill="#ffffff"
+              letterSpacing="-0.5"
+            >Otaku</text>
+            <text
+              x="116" y="34"
+              fontFamily="'Outfit', sans-serif"
+              fontWeight="800"
+              fontSize="38"
+              fill="#FFD700"
+              letterSpacing="-0.5"
+            >Shelf</text>
+          </svg>
+        </Link>
+        <p className="footer-tagline">Your ultimate anime companion.<br />Track, discover, obsess.</p>
       </div>
 
-      {/* ── Nav columns ── */}
+      {/* Nav columns */}
       <nav className="footer-nav" aria-label="Footer navigation">
         <div className="footer-col">
           <h4 className="footer-col-title">Explore</h4>
@@ -49,22 +66,16 @@ const Footer = () => (
           </ul>
         </div>
       </nav>
-
     </div>
 
     {/* ── Bottom bar ── */}
     <div className="footer-bottom">
-      <span className="footer-copy">
-        © {YEAR} OtakuShelf. All rights reserved.
+      <span className="footer-copy">© {YEAR} OtakuShelf. All rights reserved.</span>
+      <span className="footer-made-with">
+        Made with <span className="footer-heart" aria-label="love">♥</span> for anime fans
       </span>
-      <div className="footer-bottom-right">
-        <span className="footer-build-info">
-          Build&nbsp;<code>v{APP_VERSION}</code>&nbsp;·&nbsp;Made with&nbsp;
-          <span className="footer-heart" aria-label="love">♥</span>
-          &nbsp;for anime fans
-        </span>
-      </div>
     </div>
+
   </footer>
 );
 
