@@ -771,7 +771,6 @@ const EnhancedAnimeList = () => {
                         <div
                           key={anime._id || anime.animeId || anime.title}
                           className={`anime-card3 ${isCompleted ? 'status-completed' : ''}`}
-                          style={{ '--progress-width': progressPercentage, '--poster-bg': `url(${imageUrl})` }}
                         >
                           <div className={`status-badge2 ${getStatusBadgeClass(animeStatus)}`}>
                             <select
@@ -804,49 +803,54 @@ const EnhancedAnimeList = () => {
                               aria-hidden
                               onError={(e) => (e.target.src = getFallbackImage(anime.title))}
                             />
-                            <div className="poster-overlay">
-                              <h3 className="anime-title-card">{anime.title || 'Unknown Title'}</h3>
-                              <div className="card-content2">
-                                <div className="episode-info">
-                                  <span className="episode-dot"></span>
-                                  <span>{formatEpisodeText(episodesWatched, totalEpisodes)}</span>
-                                  <button
-                                    className="epincbtn"
-                                    onClick={() => handleIncrementEpisode(anime)}
-                                    disabled={episodesWatched >= totalEpisodes || isCompleted}
-                                  >
-                                    +1 Ep
-                                  </button>
-                                </div>
+                          </div>
 
-                                <div className="progress-section">
-                                  <div className="progress-bar-container">
-                                    <div
-                                      className="progress-bar-fill"
-                                      style={{ width: progressPercentage }}
-                                    ></div>
-                                  </div>
-                                  <div className="progress-text">
-                                    <span>Progress</span>
-                                    <span>{Math.round(progress)}%</span>
-                                  </div>
-                                </div>
-                                <div className="rating-section">
-                                  <div className="rating-left">
-                                    <StarRating
-                                      rating={userRating || 0}
-                                      onRatingChange={(newRating) => handleRatingChange(anime, newRating)}
-                                      disabled={!user}
-                                    />
-                                  </div>
-                                  <button
-                                    className="action-btn remove-btn-card"
-                                    onClick={() => handleRemove(anime._id || anime.animeId)}
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
+                          <div className="card-info-content">
+                            <h3 className="anime-title-card" title={anime.title}>
+                              {anime.title || 'Unknown Title'}
+                            </h3>
+
+                            <div className="episode-row">
+                              <div className="episode-info">
+                                <span className="episode-dot"></span>
+                                <span>{formatEpisodeText(episodesWatched, totalEpisodes)}</span>
                               </div>
+                              <button
+                                className="epincbtn"
+                                onClick={() => handleIncrementEpisode(anime)}
+                                disabled={episodesWatched >= totalEpisodes || isCompleted}
+                              >
+                                +1 Ep
+                              </button>
+                            </div>
+
+                            <div className="progress-section">
+                              <div className="progress-bar-container">
+                                <div
+                                  className="progress-bar-fill"
+                                  style={{ width: progressPercentage }}
+                                ></div>
+                              </div>
+                              <div className="progress-text">
+                                <span>Progress</span>
+                                <span>{Math.round(progress)}%</span>
+                              </div>
+                            </div>
+
+                            <div className="rating-row">
+                              <div className="rating-left">
+                                <StarRating
+                                  rating={userRating || 0}
+                                  onRatingChange={(newRating) => handleRatingChange(anime, newRating)}
+                                  disabled={!user}
+                                />
+                              </div>
+                              <button
+                                className="action-btn remove-btn-card"
+                                onClick={() => handleRemove(anime._id || anime.animeId)}
+                              >
+                                Remove
+                              </button>
                             </div>
                           </div>
                         </div>

@@ -1,5 +1,5 @@
 /* Import Beautiful Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@100..900&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* Enhanced Hover Effects */
 .image-container:hover .add-to-list-buttons {
@@ -154,7 +154,7 @@
   padding: 12px 20px;
   border-radius: 12px;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-weight: 600;
   font-size: 0.85rem;
   transition: all 0.3s ease;
@@ -268,7 +268,7 @@
 }
 
 .import-modal-header h3 {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 1.5rem;
   font-weight: 700;
   color: white;
@@ -329,7 +329,7 @@
 }
 
 .file-details h4 {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 1.1rem;
   font-weight: 600;
   color: white;
@@ -338,7 +338,7 @@
 }
 
 .file-details p {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.6);
   margin: 0;
@@ -349,7 +349,7 @@
 }
 
 .import-options h4 {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 1.1rem;
   font-weight: 600;
   color: white;
@@ -415,7 +415,7 @@
 
 .option-content strong {
   display: block;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 1rem;
   font-weight: 600;
   color: white;
@@ -424,7 +424,7 @@
 }
 
 .option-content p {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.6);
   margin: 0;
@@ -442,7 +442,7 @@
   padding: 16px 24px;
   border: none;
   border-radius: 12px;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
@@ -636,7 +636,7 @@
 .anime-card3:hover .anime-title-card {
   filter: grayscale(0%);
   opacity: 1;
-  color: #ff6a00;
+  color: #ff9a00;
 }
 
 .anime-card3:hover .poster-img.color {
@@ -656,7 +656,7 @@
 .anime-card3.status-completed .anime-title-card {
   filter: grayscale(0%);
   opacity: 1;
-  color: #ff6a00;
+  color: #ff9a00;
   font-weight: 700;
   letter-spacing: 1px;
 }
@@ -728,41 +728,61 @@
 .anime-card3 {
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 20px;
+  background: rgba(26, 31, 56, 0.45);
+  backdrop-filter: blur(16px) saturate(120%);
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   opacity: 1 !important;
   visibility: visible !important;
-  height: 400px;
-  width: 100%; /* Flexible width */
-  max-width: 300px;
+  height: 380px;
+  width: 100%;
+  max-width: 280px;
   margin: 0 auto;
   cursor: pointer;
+}
+
+.anime-card3:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.45);
+  border-color: rgba(255, 85, 51, 0.3);
 }
 
 /* Status badge stays at top right */
 .status-badge2 {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-family: 'Poppins', sans-serif;
+  top: 10px;
+  right: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.status-badge2 .status-badge-select {
+  background: transparent;
+  border: none;
+  color: white;
+  font-weight: 700;
+  font-size: 0.68rem;
+  font-family: 'Outfit', sans-serif;
+  text-transform: uppercase;
+  outline: none;
+  cursor: pointer;
 }
 
 .status-badge2 .status-badge-select option {
   color: black;
-  border-radius: 20px;
+  background: white;
+  font-family: 'Outfit', sans-serif;
 }
 
 .watching-badge {
@@ -785,15 +805,14 @@
   color: white;
 }
 
-/* Poster container - fixed height */
+/* Poster container - covers the entire card */
 .card-poster {
-  position: relative;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   height: 100%;
-  /* Fixed height */
   width: 100%;
   flex-shrink: 0;
-  /* Don't shrink */
 }
 
 .card-poster img {
@@ -804,81 +823,94 @@
   transition: transform 0.3s ease;
 }
 
-
-/* Title overlay on image */
-.poster-overlay {
+/* Content overlay container */
+.card-info-content {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top,
-      rgba(0, 0, 0, 0.85) 30%,
-      rgba(0, 0, 0, 0.4) 65%,
-      rgba(0, 0, 0, 0) 100%);
-  padding: 20px 16px 16px;
+  background: rgba(13, 18, 36, 0.87);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   z-index: 5;
 }
 
 .anime-title-card {
   font-family: "Outfit", sans-serif;
   font-weight: 600;
-  font-size: 1.2rem;
-  color: white;
+  font-size: 0.95rem;
+  color: #f3f4f6;
   margin: 0;
   text-align: center;
-  letter-spacing: 0.6px;
-  margin-bottom: 3px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* text-overflow: ellipsis; */
+}
+
+.episode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .episode-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #ffffff;
-  font-size: 0.9rem;
+  gap: 6px;
+  color: #9ca3af;
+  font-size: 0.8rem;
   font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  margin-bottom: 8px;
+  font-family: 'Outfit', sans-serif;
 }
 
 .episode-dot {
   width: 6px;
   height: 6px;
-  background: #214aff;
+  background: #3b82f6;
   border-radius: 50%;
 }
 
 .progress-section {
-  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
 }
 
 .progress-bar-container {
   width: 100%;
-  height: 8px;
-  background: #c6c6c6;
-  border-radius: 10px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
   overflow: hidden;
-  margin-bottom: 8px;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-  border-radius: 10px;
+  background: linear-gradient(90deg, #ffca28, #ff9a00);
+  border-radius: 2px;
   transition: width 0.3s ease;
 }
 
 .progress-text {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
-  color: #ffffff;
-  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  color: #9ca3af;
+  font-family: 'Outfit', sans-serif;
   font-weight: 500;
 }
 
 .dropvalue option {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-weight: 600;
   font-size: 0.9rem;
   color: #374151;
@@ -891,16 +923,22 @@
 }
 
 .epincbtn {
-  padding: 2px 12px 2px 12px;
-  border: none;
-  border-radius: 15px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 154, 0, 0.2);
+  border-radius: 6px;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-weight: 600;
-  font-size: 0.85rem;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  font-size: 0.72rem;
+  background: rgba(255, 154, 0, 0.08);
+  color: #ff9a00;
+  transition: all 0.2s ease;
+}
+
+.epincbtn:hover:not(:disabled) {
+  background: #ff9a00;
   color: white;
-  margin-left: 8%;
+  border-color: #ff9a00;
 }
 
 /* Star Rating Styles */
@@ -913,9 +951,14 @@
 .star-btn {
   background: none;
   border: none;
-  padding: 2px;
+  padding: 1px;
   cursor: pointer;
   transition: transform 0.1s;
+}
+
+.star-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .star-btn:hover:not(:disabled) {
@@ -932,18 +975,24 @@
   color: #ffd700;
 }
 
-.rating-section {
+.rating-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.rating-left {
+  display: flex;
+  align-items: center;
 }
 
 .rating-text {
-  margin-left: 8px;
-  font-size: 13px;
+  margin-left: 6px;
+  font-size: 0.75rem;
   font-weight: 500;
-  color: #ffffff;
-  min-width: 60px;
+  color: #9ca3af;
+  font-family: 'Outfit', sans-serif;
 }
 
 .star-icon {
@@ -958,28 +1007,31 @@
 }
 
 .action-btn {
-  padding: 10px 16px;
+  padding: 6px 10px;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .remove-btn-card {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.remove-btn-card:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
 }
 
 /* FIXED: Empty State for Cards - Visible on dark background */
@@ -1267,7 +1319,7 @@
 
 .month-group-title-alt {
   font-size: clamp(1.5rem, 5vw, 3rem);
-  font-family: "Keepcalm", sans-serif;
+  font-family: "Outfit", sans-serif;
   color: #FF775C;
   margin: 2rem 0 1.5rem 0;
   text-align: center;
