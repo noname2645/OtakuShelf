@@ -420,8 +420,12 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
                                         onClick={sendMessage}
                                         className="send-button"
                                         disabled={loading || !input.trim()}
+                                        title="Send message"
                                     >
-                                        ➤
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
                                     </button>
                                 </div>
                             </div>
@@ -429,6 +433,18 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
                     </div>
                 </div>
             </div>
+
+            {showScrollButton && (
+                <button
+                    className="scroll-to-bottom-btn"
+                    onClick={handleScrollToBottom}
+                    title="Scroll to latest"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                </button>
+            )}
 
             {selectedAnime && (
                 <Modal

@@ -1,301 +1,790 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Prompt:wght@600;700;800&display=swap');
 
-/* ============================================
-   🌌 PREMIUM ANIME BUDDY UI THEME
-   ============================================ */
+/* ============================================================
+   🔥 OTAKUSHELF AI PAGE — PREMIUM REDESIGN
+   Matching OtakuShelf site design language:
+   - Deep black + midnight blue background
+   - Amber / orange accent system (#e2aa01, #ff6b00, #ff9f00)
+   - Glassmorphism panels with subtle borders
+   - Outfit + Prompt typography
+   - Micro-animations & hover effects
+   ============================================================ */
+
+/* ---- CSS Variables aligned with site palette ---- */
 :root {
-    --primary-gradient: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
-    --accent-gradient: linear-gradient(45deg, #ec4899, #8b5cf6);
-    --glass-bg: rgba(13, 13, 29, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-highlight: rgba(255, 255, 255, 0.03);
-    --accent-glow: #6366f1;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --anim-speed: 0.3s;
-    --pill-amber: #f59e0b;
+    --ai-bg:            #030712;
+    --ai-surface:       rgba(13, 15, 26, 0.85);
+    --ai-surface-2:     rgba(15, 20, 35, 0.75);
+    --ai-border:        rgba(255, 255, 255, 0.08);
+    --ai-border-hover:  rgba(255, 159, 0, 0.35);
+    --ai-amber:         #e2aa01;
+    --ai-amber-glow:    rgba(226, 170, 1, 0.18);
+    --ai-amber-dark:    #b88800;
+    --ai-orange:        #ff6b00;
+    --ai-red-accent:    #ff6b6b;
+    --ai-purple:        #8b5cf6;
+    --ai-text-primary:  #f1f5f9;
+    --ai-text-secondary:#94a3b8;
+    --ai-text-muted:    #475569;
+    --ai-user-gradient: linear-gradient(135deg, #ff9f00 0%, #e2aa01 60%, #ff6b00 100%);
+    --ai-glow-shadow:   0 0 30px rgba(226, 170, 1, 0.15), 0 0 60px rgba(255, 107, 107, 0.08);
+    --ai-panel-shadow:  0 32px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-body {
-    background-color: #030712;
-    background-image: 
-        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.08) 0%, transparent 40%);
-    background-attachment: fixed;
-    overflow-x: hidden;
+/* ---- Page Root ---- */
+.ai-page-root {
+    min-height: 100vh;
+    background: var(--ai-bg);
+    position: relative;
+    overflow: hidden;
 }
 
+/* Ambient background glows matching the homepage orbs */
+.ai-page-root::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(circle at 8% 15%, rgba(255, 107, 107, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 92% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(226, 170, 1, 0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ---- Outer Container ---- */
 .ai-page-container {
-    padding-top: 80px;
+    padding-top: 90px;
     height: 100vh;
     display: flex;
     justify-content: center;
     box-sizing: border-box;
     overflow: hidden;
-    background: transparent;
+    position: relative;
+    z-index: 1;
 }
 
+/* ---- Inner Wrapper ---- */
 .ai-page-wrapper {
     width: 100%;
-    max-width: 1000px;
-    padding: 0 24px;
+    max-width: 900px;
+    padding: 0 20px 20px;
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
     align-items: center;
 }
 
-/* ============================================
-   🎭 CORE CHAT PANEL
-   ============================================ */
+/* ============================================================
+   🎭 MAIN CHAT PANEL — Glassmorphism card
+   ============================================================ */
 .ai-companion-box {
-    background: var(--glass-bg);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-radius: 40px;
-    border: 1px solid var(--glass-border);
-    box-shadow: 
-        0 30px 60px -12px rgba(0, 0, 0, 0.6),
-        inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    background: var(--ai-surface);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border-radius: 28px;
+    border: 1px solid var(--ai-border);
+    box-shadow: var(--ai-panel-shadow);
     display: flex;
     flex-direction: column;
     height: calc(100vh - 160px);
-    max-height: 850px;
+    max-height: 840px;
     width: 100%;
     overflow: hidden;
     position: relative;
-    margin-top: 20px;
+    /* Subtle top-border accent strip */
+    margin-top: 8px;
 }
 
-/* ============================================
-   👒 HEADER
-   ============================================ */
+/* Amber top accent line */
+.ai-companion-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--ai-amber), var(--ai-orange), var(--ai-amber), transparent);
+    border-radius: 0 0 4px 4px;
+    opacity: 0.8;
+}
+
+/* ============================================================
+   👒 COMPANION HEADER
+   ============================================================ */
 .companion-header {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 18px 28px;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 16px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--ai-border);
+    flex-shrink: 0;
 }
 
 .companion-info-wrapper {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
 }
 
+/* Avatar — styled like profile pill avatars on the site */
 .companion-avatar {
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: rgba(226, 170, 1, 0.08);
+    border: 1.5px solid rgba(226, 170, 1, 0.3);
     padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 0 16px rgba(226, 170, 1, 0.12);
+    transition: box-shadow 0.3s ease;
+}
+
+.companion-avatar:hover {
+    box-shadow: 0 0 24px rgba(226, 170, 1, 0.25);
 }
 
 .companion-avatar img {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    border-radius: 10px;
 }
 
+/* AI name — using the site's Prompt font like logo/headings */
 .companion-info h3 {
-    font-size: 1.25rem;
-    margin: 0;
-    font-family: 'Space Grotesk', sans-serif;
-    color: white;
+    font-family: 'Prompt', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 2px;
+    background: linear-gradient(135deg, #ffffff 0%, #fca5a5 60%, #c084fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.3px;
 }
 
 .companion-status {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+    gap: 7px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--ai-text-secondary);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
 }
 
+/* Pulsing green dot — matches style of status indicators on the site */
 .status-dot {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
     background: #10b981;
     border-radius: 50%;
-    box-shadow: 0 0 10px #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: ai-pulse-dot 2.5s ease-in-out infinite;
 }
 
+@keyframes ai-pulse-dot {
+    0%, 100% { box-shadow: 0 0 6px #10b981; opacity: 1; }
+    50%       { box-shadow: 0 0 14px #10b981; opacity: 0.75; }
+}
+
+/* Clear History button — styled like site's "Get Started" pill */
 .clear-chat-pill {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    color: var(--text-secondary);
-    padding: 8px 16px;
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--ai-text-secondary);
+    padding: 7px 16px;
+    border-radius: 50px;
     cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.2s ease;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: all 0.25s ease;
+    white-space: nowrap;
 }
 
 .clear-chat-pill:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #f87171;
+    transform: translateY(-1px);
 }
 
-/* ============================================
+/* ============================================================
    💬 CHAT WINDOW
-   ============================================ */
+   ============================================================ */
 .chat-box {
     flex: 1;
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow: hidden;
 }
 
 .messages-box {
     flex: 1;
-    overflow-y: auto !important;
-    padding: 1.5rem 2rem;
+    overflow-y: auto;
+    padding: 24px 28px;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 20px;
     min-height: 0;
     scroll-behavior: smooth;
 }
 
-.messages-box::-webkit-scrollbar { width: 5px; }
-.messages-box::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; }
-
-/* ============================================
-   💬 MESSAGE BUBBLES
-   ============================================ */
-.message-bubble { 
-    display: flex; 
-    flex-direction: column; 
-    max-width: 82%; 
+/* Scrollbar — invisible thin like home.css */
+.messages-box::-webkit-scrollbar {
+    width: 4px;
+}
+.messages-box::-webkit-scrollbar-track {
+    background: transparent;
+}
+.messages-box::-webkit-scrollbar-thumb {
+    background: rgba(226, 170, 1, 0.15);
+    border-radius: 10px;
+}
+.messages-box::-webkit-scrollbar-thumb:hover {
+    background: rgba(226, 170, 1, 0.3);
 }
 
-.message-bubble.ai { align-self: flex-start; }
-.message-bubble.user { align-self: flex-end; }
+/* ============================================================
+   💬 MESSAGE BUBBLES
+   ============================================================ */
+.message-bubble {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+    animation: ai-fadeInUp 0.35s ease-out both;
+}
 
+@keyframes ai-fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.message-bubble.ai {
+    align-self: flex-start;
+}
+
+.message-bubble.user {
+    align-self: flex-end;
+}
+
+/* Message header row (avatar + name + time) */
 .message-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 6px;
+    gap: 9px;
+    margin-bottom: 7px;
 }
 
-.message-bubble.user .message-header { flex-direction: row-reverse; }
+.message-bubble.user .message-header {
+    flex-direction: row-reverse;
+}
 
+/* Message avatars — square rounded like AnimeCards on the site */
 .message-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 4px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
 }
 
-.message-avatar img { width: 100%; height: 100%; object-fit: contain; }
-.user-initials { font-weight: 700; font-size: 0.9rem; }
-
-.message-sender { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
-.message-time { font-size: 0.65rem; opacity: 0.5; }
-
-.message-content {
-    padding: 14px 20px;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    border-radius: 20px;
+.message-avatar.ai {
+    background: rgba(226, 170, 1, 0.06);
+    border-color: rgba(226, 170, 1, 0.2);
 }
 
-.message-bubble.ai .message-content {
-    background: rgba(30, 41, 59, 0.4);
-    border: 1px solid var(--glass-border);
-    border-top-left-radius: 4px;
+.message-avatar.user {
+    background: rgba(255, 107, 0, 0.15);
+    border-color: rgba(255, 107, 0, 0.35);
 }
 
-.message-bubble.user .message-content {
-    background: var(--primary-gradient);
-    color: white;
-    border-top-right-radius: 4px;
+.message-avatar img,
+.ai-avatar-img,
+.user-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-/* ============================================
-   🃏 ANIME CARDS
-   ============================================ */
-.anime-recommendations-box { margin-top: 12px; }
-.anime-cards-grid {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding-bottom: 10px;
+.user-initials {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: var(--ai-amber);
 }
 
-/* ============================================
-   ⌨️ FOOTER & INPUT
-   ============================================ */
-.chat-footer {
-    padding: 0 24px 24px 24px;
+/* Message meta (name + timestamp) */
+.message-meta {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 1px;
 }
 
-.quick-suggestions { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-.quick-suggestions::-webkit-scrollbar { display: none; }
+.message-bubble.user .message-meta {
+    align-items: flex-end;
+}
+
+.message-sender {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ai-text-secondary);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.message-time {
+    font-size: 0.62rem;
+    color: var(--ai-text-muted);
+    letter-spacing: 0.2px;
+}
+
+/* ---- AI bubble — glassmorphism like login-card ---- */
+.message-bubble.ai .message-content {
+    background: rgba(15, 20, 35, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    padding: 14px 18px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.93rem;
+    line-height: 1.65;
+    color: var(--ai-text-primary);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: border-color 0.25s ease;
+}
+
+.message-bubble.ai .message-content:hover {
+    border-color: rgba(226, 170, 1, 0.12);
+}
+
+/* ---- User bubble — amber gradient like "Get Started" button ---- */
+.message-bubble.user .message-content {
+    background: var(--ai-user-gradient);
+    border: none;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    padding: 14px 18px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.93rem;
+    line-height: 1.65;
+    color: #000000;
+    font-weight: 600;
+    box-shadow: 0 4px 24px rgba(226, 170, 1, 0.25);
+}
+
+/* ---- Markdown content inside AI bubbles ---- */
+.markdown-content {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.93rem;
+    line-height: 1.65;
+    color: var(--ai-text-primary);
+}
+
+.markdown-content .md-p {
+    margin: 0 0 0.6em;
+}
+
+.markdown-content .md-p:last-child {
+    margin-bottom: 0;
+}
+
+.markdown-content .md-bold {
+    color: var(--ai-amber);
+    font-weight: 700;
+}
+
+.markdown-content .md-code {
+    background: rgba(226, 170, 1, 0.08);
+    border: 1px solid rgba(226, 170, 1, 0.2);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 0.87em;
+    color: var(--ai-amber);
+    font-family: 'Courier New', monospace;
+}
+
+/* Error bubble */
+.message-bubble.ai.isError .message-content {
+    border-color: rgba(239, 68, 68, 0.25);
+    background: rgba(239, 68, 68, 0.06);
+}
+
+/* ============================================================
+   ⏳ TYPING / LOADING INDICATORS
+   ============================================================ */
+.message-bubble.loading .message-content,
+.message-bubble.loading {
+    max-width: 100px;
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 20px;
+    background: rgba(15, 20, 35, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 20px;
+    border-top-left-radius: 4px;
+    width: fit-content;
+}
+
+.typing-indicator span {
+    display: block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ai-amber);
+    animation: ai-typing-bounce 1.4s ease-in-out infinite;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: 0s; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes ai-typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+    30%            { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Streaming bubble — same as AI bubble */
+.message-bubble.streaming .message-content {
+    border-color: rgba(226, 170, 1, 0.2);
+    animation: ai-stream-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes ai-stream-pulse {
+    0%, 100% { border-color: rgba(226, 170, 1, 0.15); }
+    50%       { border-color: rgba(226, 170, 1, 0.35); }
+}
+
+/* ============================================================
+   🃏 ANIME RECOMMENDATION CARDS
+   ============================================================ */
+.anime-recommendations-box {
+    margin-top: 14px;
+}
+
+.anime-recommendations-box::before {
+    content: '✨ Recommendations';
+    display: block;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--ai-amber);
+    margin-bottom: 10px;
+    opacity: 0.85;
+}
+
+.anime-cards-grid {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-behavior: smooth;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.anime-cards-grid::-webkit-scrollbar {
+    display: none;
+}
+
+/* ============================================================
+   ⌨️ CHAT FOOTER — SUGGESTIONS + INPUT
+   ============================================================ */
+.chat-footer {
+    padding: 0 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Divider above footer */
+.chat-footer::before {
+    content: '';
+    display: block;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+    margin-bottom: 6px;
+}
+
+/* ---- Suggestion chips — matching site's pill style ---- */
+.quick-suggestions {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.quick-suggestions::-webkit-scrollbar {
+    display: none;
+}
 
 .suggestion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     white-space: nowrap;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    padding: 8px 16px;
-    border-radius: 100px;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
+    background: rgba(226, 170, 1, 0.06);
+    border: 1px solid rgba(226, 170, 1, 0.18);
+    padding: 7px 16px;
+    border-radius: 50px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: rgba(226, 170, 1, 0.8);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.22s ease;
+    letter-spacing: 0.2px;
 }
 
 .suggestion-chip:hover {
-    background: rgba(99, 102, 241, 0.1);
-    color: #818cf8;
+    background: rgba(226, 170, 1, 0.14);
+    border-color: rgba(226, 170, 1, 0.45);
+    color: var(--ai-amber);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(226, 170, 1, 0.15);
 }
 
+/* ---- Input area — mimics site search field dark style ---- */
 .input-wrapper {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: 6px 10px;
     display: flex;
     align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50px;
+    padding: 6px 8px 6px 18px;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.input-wrapper:focus-within {
+    border-color: rgba(226, 170, 1, 0.5);
+    box-shadow: 0 0 0 3px rgba(226, 170, 1, 0.1), 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
 .message-input {
     flex: 1;
     background: transparent;
     border: none;
-    color: white;
-    padding: 10px 14px;
-    font-size: 0.95rem;
+    color: var(--ai-text-primary);
+    padding: 10px 0;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.93rem;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+    caret-color: var(--ai-amber);
 }
 
-.message-input:focus { outline: none; }
+.message-input::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+}
 
+.message-input:focus {
+    outline: none;
+}
+
+.message-input:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ---- Send button — matching site's amber "Get Started" button ---- */
 .send-button {
-    width: 38px;
-    height: 38px;
-    background: var(--pill-amber);
-    border: none;
-    border-radius: 12px;
-    color: black;
+    width: 42px;
+    height: 42px;
+    background: var(--ai-amber);
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    border-radius: 50px;
+    color: #000000;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease;
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.22s ease;
+    box-shadow: 0 4px 14px rgba(226, 170, 1, 0.3);
 }
 
-.send-button:hover { transform: scale(1.05); }
-.send-button:disabled { background: rgba(255, 255, 255, 0.1); color: grey; }
+.send-button:hover:not(:disabled) {
+    background: #f0bc00;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(226, 170, 1, 0.45);
+}
+
+.send-button:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
+}
+
+.send-button:disabled {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.04);
+    color: var(--ai-text-muted);
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* ============================================================
+   📱 RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+    .ai-page-container {
+        padding-top: 80px;
+    }
+
+    .ai-page-wrapper {
+        padding: 0 12px 80px; /* Bottom padding for mobile nav */
+    }
+
+    .ai-companion-box {
+        height: calc(100vh - 155px);
+        border-radius: 22px;
+        margin-top: 6px;
+    }
+
+    .companion-header {
+        padding: 14px 18px;
+    }
+
+    .companion-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+    }
+
+    .companion-info h3 {
+        font-size: 1rem;
+    }
+
+    .messages-box {
+        padding: 18px 16px;
+        gap: 16px;
+    }
+
+    .message-bubble {
+        max-width: 88%;
+    }
+
+    .message-bubble.ai .message-content,
+    .message-bubble.user .message-content {
+        padding: 12px 15px;
+        font-size: 0.88rem;
+    }
+
+    .chat-footer {
+        padding: 0 14px 16px;
+    }
+
+    .input-wrapper {
+        padding: 5px 7px 5px 16px;
+    }
+
+    .message-input {
+        font-size: 0.9rem;
+    }
+
+    .send-button {
+        width: 38px;
+        height: 38px;
+    }
+
+    .suggestion-chip {
+        font-size: 0.74rem;
+        padding: 6px 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .companion-info h3 {
+        font-size: 0.95rem;
+    }
+
+    .companion-status {
+        font-size: 0.65rem;
+    }
+
+    .clear-chat-pill {
+        padding: 6px 12px;
+        font-size: 0.72rem;
+    }
+
+    .messages-box {
+        padding: 14px 12px;
+        gap: 14px;
+    }
+
+    .message-bubble {
+        max-width: 92%;
+    }
+
+    .ai-companion-box::before {
+        left: 5%;
+        right: 5%;
+    }
+}
+
+/* ============================================================
+   🔽 SCROLL-TO-BOTTOM FLOATING BUTTON
+   ============================================================ */
+.scroll-to-bottom-btn {
+    position: fixed;
+    bottom: 120px;
+    right: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--ai-amber);
+    border: 2px solid rgba(0, 0, 0, 0.25);
+    color: #000;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(226, 170, 1, 0.4);
+    z-index: 500;
+    animation: ai-fadeInUp 0.25s ease-out;
+    transition: all 0.22s ease;
+}
+
+.scroll-to-bottom-btn:hover {
+    transform: translateY(-3px) scale(1.08);
+    box-shadow: 0 10px 28px rgba(226, 170, 1, 0.55);
+    background: #f0bc00;
+}
+
+@media (max-width: 768px) {
+    .scroll-to-bottom-btn {
+        bottom: 100px;
+        right: 16px;
+        width: 36px;
+        height: 36px;
+    }
+}

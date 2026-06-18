@@ -2132,49 +2132,13 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Graceful Shutdown
-const gracefulShutdown = async (signal) => {
-  console.log(`\n${signal} received. Starting graceful shutdown...`);
 
-  server.close(async () => {
-    console.log('HTTP server closed');
-
-    try {
-      await mongoose.connection.close();
-      console.log('MongoDB connection closed');
-
-      if (wss) {
-        wss.clients.forEach(client => client.close());
-        wss.close(() => console.log('WebSocket server closed'));
-      }
-
-      console.log('✅ Graceful shutdown completed');
-      process.exit(0);
-    } catch (err) {
-      console.error('❌ Error during shutdown:', err);
-      process.exit(1);
-    }
-  });
-
-  // Force shutdown after 30 seconds
-  setTimeout(() => {
-    console.error('⚠️ Forced shutdown after timeout');
-    process.exit(1);
-  }, 30000);
-};
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Error handlers
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  gracefulShutdown('UNCAUGHT_EXCEPTION');
-});
 
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
