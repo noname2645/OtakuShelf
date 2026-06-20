@@ -26,6 +26,9 @@ import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import { success, error } from './utils/responseHandler.js';
 import { authenticateToken, authorizeUser } from './utils/authMiddleware.js';
+import evaluateBadges from './utils/badgeEngine.js';
+import BADGES from './utils/badgeDefinitions.js';
+import badgeEvents from './utils/badgeEvents.js';
 
 // Security packages
 import helmet from 'helmet';
@@ -1342,6 +1345,9 @@ app.post("/api/list/:userId", authenticateToken, authorizeUser, async (req, res)
     list[category].push(animeEntry);
     await list.save();
     res.sendSuccess("Anime list updated", list);
+
+    // 🏅 Fire-and-forget badge evaluation after adding anime
+    setImmediate(() => evaluateBadges(userId).catch(() => {}));
   } catch (err) {
     console.error('Update list error:', err);
     res.sendError("Error updating list", 500, err.message);
@@ -1403,13 +1409,17 @@ app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, r
 
     // Background Processing
     setImmediate(async () => {
-      const userWs = userConnections.get(userId);
+      const userSockets = userConnections.get(userId);
 
       const sendProgress = (current, total, message, extra = {}) => {
-        if (userWs && userWs.readyState === 1) {
-          try {
-            userWs.send(JSON.stringify({ type: 'progress', current, total, message, ...extra }));
-          } catch (e) { /* ignore WS send errors */ }
+        if (userSockets) {
+          for (const ws of userSockets) {
+            if (ws.readyState === 1) {
+              try {
+                ws.send(JSON.stringify({ type: 'progress', current, total, message, ...extra }));
+              } catch (e) { /* ignore WS send errors */ }
+            }
+          }
         }
       };
 
@@ -1627,6 +1637,9 @@ app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, r
           }
         } catch { /* non-critical */ }
 
+        // 🏅 Award the mal_importer badge + re-evaluate all badges after import
+        try { await evaluateBadges(userId, true); } catch { /* non-critical */ }
+
         const finalMsg = `Imported ${imported} anime (W:${categoryCounts.watching} C:${categoryCounts.completed} P:${categoryCounts.planned} D:${categoryCounts.dropped})${skipped ? `, skipped ${skipped} duplicates` : ''}`;
         sendProgress(malAnimeList.length, malAnimeList.length, finalMsg, { completed: true });
 
@@ -1804,13 +1817,50 @@ app.get("/api/profile/:userId/badges", authenticateToken, authorizeUser, async (
 
     res.sendSuccess("Badges fetched successfully", badges);
   } catch (err) {
-    console.error('Badges fetch error:', err);
+    console.error('Old badges fetch error:', err);
     res.sendError("Error fetching badges", 500, err.message);
   }
 });
 
+// ─── NEW Badge Routes ─────────────────────────────────────────────────────────
+
+// Route: POST /api/badges/evaluate/:userId — Manually trigger badge evaluation
+// Called from the profile page "Check Badges" button or on demand.
+app.post("/api/badges/evaluate/:userId", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.sendError("Invalid user ID format", 400);
+    }
+
+    const result = await evaluateBadges(userId);
+    res.sendSuccess(
+      result.newBadges.length > 0
+        ? `Awarded ${result.newBadges.length} new badge(s)!`
+        : "No new badges yet — keep watching!",
+      {
+        newBadges  : result.newBadges,
+        totalEarned: result.totalEarned,
+      }
+    );
+  } catch (err) {
+    console.error('Badge evaluate error:', err);
+    res.sendError("Badge evaluation failed", 500, err.message);
+  }
+});
+
+// Route: GET /api/badges/all — Return all 100 badge definitions (for locked badge UI)
+// No auth required — definitions are public data.
+app.get("/api/badges/all", (req, res) => {
+  const definitions = BADGES.map(({ id, title, description, icon, rarity, category }) => ({
+    id, title, description, icon, rarity, category,
+  }));
+  res.sendSuccess("All badge definitions", { badges: definitions, total: definitions.length });
+});
+
 // Route 19: PUT /api/list/:userId/:animeId — Update anime in list
 app.put("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async (req, res) => {
+
   try {
     const { episodesWatched, status, userRating } = req.body;
     const { userId, animeId } = req.params;
@@ -1853,6 +1903,9 @@ app.put("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async (r
 
     await list.save();
     res.sendSuccess("Anime updated successfully", list);
+
+    // 🏅 Fire-and-forget badge evaluation after updating anime
+    setImmediate(() => evaluateBadges(userId).catch(() => {}));
   } catch (err) {
     console.error("PUT UPDATE ERROR:", err);
     res.sendError(err.message, 500);
@@ -2056,56 +2109,6 @@ function cleanupOldUploads() {
 
 setInterval(cleanupOldUploads, 24 * 60 * 60 * 1000);
 
-// Handler: 404 — Catch-all for undefined routes
-app.use((req, res) => {
-  res.sendError("Route not found", 404);
-});
-
-// Handler: 500 — Global error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.sendError("Internal server error", 500, process.env.NODE_ENV === 'development' ? err.message : undefined);
-});
-
-const server = http.createServer(app);
-const wss = new WebSocketServer({
-  server,
-  path: '/ws',
-  clientTracking: true
-});
-
-wss.on('connection', (ws, req) => {
-  try {
-    // Construct full URL using host header or dummy base to access search parameters properly
-    const url = new URL(req.url, `ws://${req.headers.host || 'localhost'}`);
-    const userId = url.searchParams.get('userId');
-
-    if (userId) {
-      userConnections.set(userId, ws);
-      ws.send(JSON.stringify({
-        type: 'connected',
-        message: 'WebSocket connected'
-      }));
-    }
-
-    ws.on('close', () => {
-      if (userId) {
-        userConnections.delete(userId);
-      }
-    });
-
-    ws.on('error', (error) => {
-      console.error('WebSocket error for user:', userId, error);
-    });
-
-  } catch (error) {
-    console.error('WebSocket connection error:', error);
-  }
-});
-
-server.keepAliveTimeout = 65 * 1000;
-server.headersTimeout = 66 * 1000;
-
 // Health Check Endpoint
 // Route 22: GET /health — WebSocket health check
 app.get('/health', async (req, res) => {
@@ -2131,6 +2134,77 @@ app.get('/health', async (req, res) => {
     res.sendError("Health check failed", 503, health);
   }
 });
+
+// Handler: 404 — Catch-all for undefined routes
+app.use((req, res) => {
+  res.sendError("Route not found", 404);
+});
+
+// Handler: 500 — Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.sendError("Internal server error", 500, process.env.NODE_ENV === 'development' ? err.message : undefined);
+});
+
+const server = http.createServer(app);
+const wss = new WebSocketServer({
+  server,
+  path: '/ws',
+  clientTracking: true
+});
+
+wss.on('connection', (ws, req) => {
+  try {
+    // Construct full URL using host header or dummy base to access search parameters properly
+    const url = new URL(req.url, `ws://${req.headers.host || 'localhost'}`);
+    const userId = url.searchParams.get('userId');
+
+    if (userId) {
+      if (!userConnections.has(userId)) {
+        userConnections.set(userId, new Set());
+      }
+      userConnections.get(userId).add(ws);
+      ws.send(JSON.stringify({
+        type: 'connected',
+        message: 'WebSocket connected'
+      }));
+    }
+
+    ws.on('close', () => {
+      if (userId) {
+        const sockets = userConnections.get(userId);
+        if (sockets) {
+          sockets.delete(ws);
+          if (sockets.size === 0) userConnections.delete(userId);
+        }
+      }
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error for user:', userId, error);
+    });
+
+  } catch (error) {
+    console.error('WebSocket connection error:', error);
+  }
+});
+
+// Broadcast newly awarded badges to all connected tabs for a user
+badgeEvents.on('awarded', (userId, newBadges) => {
+  const sockets = userConnections.get(userId);
+  if (sockets) {
+    for (const ws of sockets) {
+      if (ws.readyState === 1) {
+        try {
+          ws.send(JSON.stringify({ type: 'BADGES_EARNED', newBadges }));
+        } catch (e) {}
+      }
+    }
+  }
+});
+
+server.keepAliveTimeout = 65 * 1000;
+server.headersTimeout = 66 * 1000;
 
 
 

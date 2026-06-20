@@ -22,9 +22,12 @@ const userSchema = new mongoose.Schema({
             meanScore: { type: Number, default: 0 }
         },
         badges: [{
+            id: { type: String },          // unique badge key — used for deduplication
             title: String,
             description: String,
             icon: String,
+            rarity: { type: String, enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'], default: 'common' },
+            category: String,
             earnedDate: Date
         }],
         favoriteGenres: [{

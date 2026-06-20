@@ -158,6 +158,7 @@ const AnimeHomepage = () => {
     const [isMobile, setIsMobile] = useState(false);
 
     const controllerRef = useRef(null);
+    const searchResultsRef = useRef(null);
 
     // Helpers
     const normalizeGridAnime = useCallback((anime) => {
@@ -310,6 +311,13 @@ const AnimeHomepage = () => {
         };
     }, [searchQuery, normalizeGridAnime]);
 
+    // Auto-scroll to search results so user doesn't have to scroll past the hero
+    useEffect(() => {
+        if (isSearching && searchResultsRef.current) {
+            searchResultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [isSearching]);
+
 
     // Modal Handlers
     const openModal = useCallback((anime) => {
@@ -340,7 +348,7 @@ const AnimeHomepage = () => {
 
                     <TrailerHero onOpenModal={openModal} isMobile={isMobile} />
 
-                    <main className="anime-sections">
+                    <main className="anime-sections" ref={searchResultsRef}>
                         {isSearching ? (
                             <div className="anime-section-container">
                                 {searchLoading ? (

@@ -43,11 +43,14 @@ const AppContent = () => {
   );
 };
 
+import BadgeNotification from "../Frontend/components/BadgeNotification.jsx";
+
 /* ─── Root App ───────────────────────────────────────────────────────────── */
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <BadgeNotification />
         <AppContent />
       </BrowserRouter>
     </AuthProvider>

@@ -33,6 +33,10 @@ const ProfilePage = () => {
     bio: "",
     username: "",
   });
+  const [allBadgeDefs, setAllBadgeDefs]   = useState([]);
+  const [badgeFilter, setBadgeFilter]     = useState('All');
+  const [badgeSort, setBadgeSort]         = useState('rarity-desc');
+  const [checkingBadges, setCheckingBadges] = useState(false);
 
   // Toast helper
   const showToast = (message, type = "success") => {
@@ -89,6 +93,38 @@ const ProfilePage = () => {
       showToast("Error backfilling genres: " + error.message, "error");
     } finally {
       setBackfilling(false);
+    }
+  };
+
+  // Load all 100 badge definitions for the locked/earned grid
+  const loadAllBadgeDefs = async () => {
+    try {
+      const res = await api.get(`${API}/api/badges/all`);
+      setAllBadgeDefs(res.data?.data?.badges || []);
+    } catch (e) {
+      console.error('Failed to load badge definitions:', e);
+    }
+  };
+
+  // Manually trigger badge evaluation
+  const checkBadgesNow = async () => {
+    if (!user?._id || checkingBadges) return;
+    try {
+      setCheckingBadges(true);
+      const res = await api.post(
+        `${API}/api/badges/evaluate/${user._id}`,
+        {},
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      const data = res.data?.data;
+      showToast(res.data?.message || 'Badges checked!');
+      if (data?.newBadges?.length > 0) {
+        await loadProfileData(); // refresh badge list
+      }
+    } catch (e) {
+      showToast('Failed to check badges', 'error');
+    } finally {
+      setCheckingBadges(false);
     }
   };
 
@@ -180,6 +216,7 @@ const ProfilePage = () => {
   useEffect(() => {
     if (user?._id) {
       loadProfileData();
+      loadAllBadgeDefs();
     } else {
       setLoading(false);
     }
@@ -765,21 +802,190 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Badges Section — only shown when user has earned badges */}
-          {badges.length > 0 && (
-            <div className="badges-section">
-              <h3 className="section-title">Badges</h3>
-              <div className="badges-grid">
-                {badges.map((badge) => (
-                  <div key={badge.id} className="badge-card">
-                    <div className="badge-icon">{badge.icon}</div>
-                    <div className="badge-title">{badge.title}</div>
-                    <div className="badge-desc">{badge.description}</div>
+          {/* ─── BADGES SHOWCASE ─────────────────────────────── */}
+          {(() => {
+            const earnedIds     = new Set(badges.map(b => b.id).filter(Boolean));
+            const RARITY_ORDER  = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+            const RARITY_COLORS = {
+              common    : { border: 'rgba(148,163,184,0.35)', glow: 'rgba(148,163,184,0.15)', label: '#94a3b8' },
+              uncommon  : { border: 'rgba(74,222,128,0.45)', glow: 'rgba(74,222,128,0.15)', label: '#4ade80' },
+              rare      : { border: 'rgba(96,165,250,0.5)',  glow: 'rgba(96,165,250,0.18)', label: '#60a5fa' },
+              epic      : { border: 'rgba(192,132,252,0.55)',glow: 'rgba(192,132,252,0.2)', label: '#c084fc' },
+              legendary : { border: 'rgba(251,191,36,0.65)', glow: 'rgba(251,191,36,0.25)', label: '#fbbf24' },
+            };
+
+            // Merge definitions with earned data
+            const enriched = allBadgeDefs.map(def => ({
+              ...def,
+              earned     : earnedIds.has(def.id),
+              earnedDate : badges.find(b => b.id === def.id)?.earnedDate || null,
+            }));
+
+            const categories = ['All', ...new Set(enriched.map(b => b.category))];
+            const filtered   = badgeFilter === 'All'
+              ? enriched
+              : enriched.filter(b => b.category === badgeFilter);
+
+            // Sort logic based on badgeSort state
+            const sorted = [...filtered].sort((a, b) => {
+              // Always push unearned to the bottom unless it's alphabetical
+              if (badgeSort !== 'alpha-asc' && badgeSort !== 'alpha-desc') {
+                if (a.earned !== b.earned) return a.earned ? -1 : 1;
+              }
+
+              switch (badgeSort) {
+                case 'date-desc':
+                  if (!a.earnedDate) return 1;
+                  if (!b.earnedDate) return -1;
+                  return new Date(b.earnedDate) - new Date(a.earnedDate);
+                case 'date-asc':
+                  if (!a.earnedDate) return 1;
+                  if (!b.earnedDate) return -1;
+                  return new Date(a.earnedDate) - new Date(b.earnedDate);
+                case 'rarity-asc':
+                  return RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity);
+                case 'alpha-asc':
+                  return a.title.localeCompare(b.title);
+                case 'alpha-desc':
+                  return b.title.localeCompare(a.title);
+                case 'rarity-desc':
+                default:
+                  return RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity);
+              }
+            });
+
+            const totalDefs   = enriched.length;
+            const earnedCount = enriched.filter(b => b.earned).length;
+            const pct         = totalDefs > 0 ? Math.round((earnedCount / totalDefs) * 100) : 0;
+
+            return (
+              <div className="badges-showcase">
+                {/* Header row */}
+                <div className="badges-header-row">
+                  <div className="badges-title-block">
+                    <h3 className="section-title" style={{ margin: 0 }}>Badges & Awards</h3>
+                    <span className="badges-count-pill">{earnedCount} / {totalDefs}</span>
                   </div>
-                ))}
+                  <button
+                    className={`check-badges-btn ${checkingBadges ? 'loading' : ''}`}
+                    onClick={checkBadgesNow}
+                    disabled={checkingBadges}
+                  >
+                    {checkingBadges ? 'Checking...' : 'Check Badges'}
+                  </button>
+                </div>
+
+                {/* Progress bar */}
+                <div className="badges-progress-wrap">
+                  <div className="badges-progress-bar">
+                    <div
+                      className="badges-progress-fill"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="badges-progress-pct">{pct}% complete</span>
+                </div>
+
+                {/* Rarity legend */}
+                <div className="rarity-legend">
+                  {Object.entries(RARITY_COLORS).map(([r, c]) => (
+                    <span key={r} className="rarity-pip" style={{ color: c.label }}>
+                      <span className="rarity-dot" style={{ background: c.label }} />
+                      {r.charAt(0).toUpperCase() + r.slice(1)}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Controls Row: Category Tabs + Sort */}
+                <div className="badge-controls-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+                  {/* Category filter tabs */}
+                  <div className="badge-category-tabs" style={{ marginBottom: 0 }}>
+                    {categories.map(cat => (
+                      <button
+                        key={cat}
+                        className={`badge-cat-tab ${badgeFilter === cat ? 'active' : ''}`}
+                        onClick={() => setBadgeFilter(cat)}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Sort Dropdown */}
+                  <div className="badge-sort-control" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <label style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>Sort by</label>
+                    <select 
+                      value={badgeSort} 
+                      onChange={(e) => setBadgeSort(e.target.value)}
+                      style={{
+                        background: 'rgba(30, 41, 59, 0.7)',
+                        color: 'white',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        backdropFilter: 'blur(10px)'
+                      }}
+                    >
+                      <option value="rarity-desc">Rarity (Highest)</option>
+                      <option value="rarity-asc">Rarity (Lowest)</option>
+                      <option value="date-desc">Date (Newest)</option>
+                      <option value="date-asc">Date (Oldest)</option>
+                      <option value="alpha-asc">Name (A-Z)</option>
+                      <option value="alpha-desc">Name (Z-A)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Badge grid */}
+                {sorted.length === 0 ? (
+                  <div className="badges-empty">
+                    <span>🔍</span>
+                    <p>No badges in this category yet.</p>
+                  </div>
+                ) : (
+                  <div className="badges-grid-new">
+                    {sorted.map(badge => {
+                      const rc = RARITY_COLORS[badge.rarity] || RARITY_COLORS.common;
+                      return (
+                        <div
+                          key={badge.id}
+                          className={`badge-card-new ${badge.earned ? 'earned' : 'locked'} rarity-${badge.rarity}`}
+                          title={badge.earned ? `Earned: ${new Date(badge.earnedDate).toLocaleDateString()}` : 'Locked'}
+                          style={badge.earned ? {
+                            border    : `1px solid ${rc.border}`,
+                            boxShadow : `0 0 18px ${rc.glow}, inset 0 0 12px ${rc.glow}`,
+                          } : {}}
+                        >
+                          <div className="badge-icon-wrap">
+                            <span className="badge-emoji">{badge.icon}</span>
+                            {!badge.earned && <div className="badge-lock-overlay">🔒</div>}
+                          </div>
+                          <div className="badge-info">
+                            <div className="badge-card-title">{badge.title}</div>
+                            <div className="badge-card-desc">{badge.description}</div>
+                            <div
+                              className="badge-rarity-label"
+                              style={{ color: rc.label }}
+                            >
+                              {badge.rarity.toUpperCase()}
+                            </div>
+                            {badge.earned && badge.earnedDate && (
+                              <div className="badge-earned-date">
+                                ✅ {new Date(badge.earnedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Genre Breakdown Section */}
           <div className="genre-section">

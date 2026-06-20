@@ -106,7 +106,7 @@
     padding: 0 18px 0 45px;
     background: black;
     color: #ff9f00;
-    font-family: 'Bricolage Grotesque', sans-serif;
+    font-family: "Outfit", sans-serif;
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 2px;
@@ -117,6 +117,7 @@
 }
 
 .input::placeholder {
+    font-family: "Outfit", sans-serif;
     color: rgba(237, 235, 235, 0.822);
     font-weight: 400;
 }
@@ -124,8 +125,6 @@
 .input:focus {
     background: rgba(20, 20, 20, 0.95);
     border-color: #ff6b6b;
-    box-shadow: 0 8px 30px rgba(255, 107, 107, 0.3), 0 0 0 1px rgba(255, 107, 107, 0.2);
-    transform: translateY(-2px);
 }
 
 .search-icon {
@@ -398,14 +397,13 @@
 }
 
 .logo-svg {
-    height: 32px;
+    height: 45px;
     width: auto;
     display: block;
     transition: transform 0.3s ease, filter 0.3s ease;
 }
 
 .logo-link:hover .logo-svg {
-    transform: scale(1.05);
     filter: drop-shadow(0 0 8px rgba(255, 217, 0, 0.5));
 }
 

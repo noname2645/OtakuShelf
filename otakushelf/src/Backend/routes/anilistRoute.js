@@ -69,16 +69,30 @@ const MEDIA_FIELDS = `
   trailer { id site thumbnail }
 `;
 
-// 🏺 Golden Era  ≤ 1999-12-31
+// ── Random helpers ──────────────────────────────────────────────────────────
+// Fisher-Yates shuffle — mutates array in-place, returns it
+const shuffle = (arr) => {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+// Pick `n` random items from `arr` (non-destructive)
+const randomPick = (arr, n) => shuffle([...arr]).slice(0, n);
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 🏺 Golden Era  ≤ 1999-12-31  (large pool so random picks vary)
 const goldenQuery = `
   query {
-    Page(page: 1, perPage: 40) {
+    Page(page: 1, perPage: 100) {
       media(
         sort: [SCORE_DESC]
         type: ANIME
         isAdult: false
         startDate_lesser: 19991231
-        averageScore_greater: 72
+        averageScore_greater: 70
         format_in: [TV, MOVIE, OVA, ONA]
       ) { ${MEDIA_FIELDS} }
     }
@@ -88,14 +102,14 @@ const goldenQuery = `
 // 💎 Millennium Era  2000-01-01 → 2012-12-31
 const millenQuery = `
   query {
-    Page(page: 1, perPage: 40) {
+    Page(page: 1, perPage: 100) {
       media(
         sort: [SCORE_DESC]
         type: ANIME
         isAdult: false
         startDate_greater: 19991231
         startDate_lesser: 20121231
-        averageScore_greater: 72
+        averageScore_greater: 70
         format_in: [TV, MOVIE, OVA, ONA]
       ) { ${MEDIA_FIELDS} }
     }
@@ -105,14 +119,14 @@ const millenQuery = `
 // ⚡ Bridge / Cult Era  2013-01-01 → 2019-12-31
 const bridgeQuery = `
   query {
-    Page(page: 1, perPage: 40) {
+    Page(page: 1, perPage: 100) {
       media(
         sort: [SCORE_DESC]
         type: ANIME
         isAdult: false
         startDate_greater: 20121231
         startDate_lesser: 20191231
-        averageScore_greater: 72
+        averageScore_greater: 70
         format_in: [TV, MOVIE, OVA, ONA]
       ) { ${MEDIA_FIELDS} }
     }
@@ -122,7 +136,7 @@ const bridgeQuery = `
 // 🔥 Modern / Trending Now  — currently releasing
 const releasingQuery = `
   query {
-    Page(page: 1, perPage: 40) {
+    Page(page: 1, perPage: 50) {
       media(
         sort: [TRENDING_DESC, POPULARITY_DESC]
         type: ANIME
@@ -137,7 +151,7 @@ const releasingQuery = `
 // 🚀 Upcoming — announced but not yet aired
 const upcomingQuery = `
   query {
-    Page(page: 1, perPage: 20) {
+    Page(page: 1, perPage: 40) {
       media(
         sort: [POPULARITY_DESC]
         type: ANIME
@@ -212,31 +226,39 @@ const fetchHeroAnime = async () => {
       return hasTrailer && hasImage && hasTitle;
     };
 
-    // ── Filter & sort each era bucket ──
-    const goldenGems  = golden.filter(requiresTrailerAndImage)
-                               .sort((a, b) => hiddenGemScore(b) - hiddenGemScore(a))
-                               .slice(0, 5)
-                               .map(a => ({ ...a, _era: 'golden', _eraLabel: '🏺 Golden Era Gem' }));
+    // ── Filter & randomly sample each era bucket ──
+    // We sort first to keep quality high (weighted toward good scores),
+    // then shuffle the top-quality half so each refresh shows different picks.
 
-    const millenGems  = millen.filter(requiresTrailerAndImage)
-                               .sort((a, b) => hiddenGemScore(b) - hiddenGemScore(a))
-                               .slice(0, 5)
-                               .map(a => ({ ...a, _era: 'millennium', _eraLabel: '💎 Hidden Gem' }));
+    const goldenPool  = golden.filter(requiresTrailerAndImage)
+                              .sort((a, b) => hiddenGemScore(b) - hiddenGemScore(a))
+                              .slice(0, 50); // top 50 quality pool
+    const goldenGems  = randomPick(goldenPool, 6)
+                              .map(a => ({ ...a, _era: 'golden', _eraLabel: '🏺 Golden Era Gem' }));
 
-    const bridgeGems  = bridge.filter(requiresTrailerAndImage)
-                               .sort((a, b) => hiddenGemScore(b) - hiddenGemScore(a))
-                               .slice(0, 4)
-                               .map(a => ({ ...a, _era: 'bridge', _eraLabel: '⚡ Cult Classic' }));
+    const millenPool  = millen.filter(requiresTrailerAndImage)
+                              .sort((a, b) => hiddenGemScore(b) - hiddenGemScore(a))
+                              .slice(0, 50);
+    const millenGems  = randomPick(millenPool, 6)
+                              .map(a => ({ ...a, _era: 'millennium', _eraLabel: '💎 Hidden Gem' }));
 
-    const modernHits  = current.filter(requiresTrailerAndImage)
-                                .sort((a, b) => modernScore(b) - modernScore(a))
-                                .slice(0, 6)
-                                .map(a => ({ ...a, _era: 'modern', _eraLabel: '🔥 Trending Now' }));
+    const bridgePool  = bridge.filter(requiresTrailerAndImage)
+                              .sort((a, b) => hiddenGemScore(b) - hiddenGemScore(a))
+                              .slice(0, 50);
+    const bridgeGems  = randomPick(bridgePool, 5)
+                              .map(a => ({ ...a, _era: 'bridge', _eraLabel: '⚡ Cult Classic' }));
 
-    const upcomingHits = upcoming.filter(requiresTrailerAndImage)
-                                  .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-                                  .slice(0, 2)
-                                  .map(a => ({ ...a, _era: 'upcoming', _eraLabel: '🚀 Coming Soon' }));
+    const modernPool  = current.filter(requiresTrailerAndImage)
+                               .sort((a, b) => modernScore(b) - modernScore(a))
+                               .slice(0, 30); // top 30 trending
+    const modernHits  = randomPick(modernPool, 7)
+                               .map(a => ({ ...a, _era: 'modern', _eraLabel: '🔥 Trending Now' }));
+
+    const upcomingPool = upcoming.filter(requiresTrailerAndImage)
+                                 .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+                                 .slice(0, 20);
+    const upcomingHits = randomPick(upcomingPool, 3)
+                                 .map(a => ({ ...a, _era: 'upcoming', _eraLabel: '🚀 Coming Soon' }));
 
     console.log(`Filtered — Golden: ${goldenGems.length}, Millennium: ${millenGems.length}, Bridge: ${bridgeGems.length}, Modern: ${modernHits.length}, Upcoming: ${upcomingHits.length}`);
 

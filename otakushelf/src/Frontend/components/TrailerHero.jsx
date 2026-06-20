@@ -345,7 +345,7 @@ const TrailerHero = ({ onOpenModal }) => {
     // Fetch announcements — cache-first, then background refresh
     useEffect(() => {
         const CACHE_KEY = 'hero_announcements';
-        const CACHE_TTL = 30 * 60 * 1000; // 30 min before a fresh fetch
+        const CACHE_TTL = 10 * 60 * 1000; // 10 min — backend randomizes picks, so refresh often
 
         const fetchAnnouncements = async () => {
             // Check if cache is fresh enough to skip the network call
