@@ -3,3 +3,4 @@
 .env.production
 
 IMPLEMENTATION_SUMMARY.md
+.anime_sections_cache.json

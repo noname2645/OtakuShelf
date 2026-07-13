@@ -1,10 +1,40 @@
 // animeRoutes.js
 import express from 'express';
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { success, error } from '../utils/responseHandler.js';
 
 const router = express.Router();
-let cache = { data: null, timestamp: 0 };
+
+// ── Persistent cache (survives server restarts) ──────────────────────────────
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const CACHE_FILE = path.join(__dirname, '..', '.anime_sections_cache.json');
+const CACHE_TTL  = 1000 * 60 * 60; // 1 hour — stale after this, refresh in background
+
+let memCache = { data: null, timestamp: 0 }; // hot in-memory copy
+
+// Load persisted cache from disk on startup so first request is instant
+try {
+  if (fs.existsSync(CACHE_FILE)) {
+    const raw = fs.readFileSync(CACHE_FILE, 'utf8');
+    const saved = JSON.parse(raw);
+    if (saved && saved.data && saved.timestamp) {
+      memCache = saved;
+      console.log('[animeRoutes] Loaded persisted cache from disk, age:', Math.round((Date.now() - saved.timestamp) / 1000), 's');
+    }
+  }
+} catch (e) {
+  console.warn('[animeRoutes] Could not load disk cache:', e.message);
+}
+
+// Save cache to disk asynchronously (non-blocking)
+function persistCache() {
+  fs.writeFile(CACHE_FILE, JSON.stringify(memCache), 'utf8', (err) => {
+    if (err) console.warn('[animeRoutes] Failed to persist cache:', err.message);
+  });
+}
 
 const ANILIST_URL = "https://graphql.anilist.co";
 
@@ -21,11 +51,30 @@ async function fetchAniList(query, variables = {}) {
 // Route 1: GET /api/anime/anime-sections — Anime sections (Airing, Popular, Movies, Trending, Top Rated, Upcoming)
 router.get('/anime-sections', async (req, res) => {
   const now = Date.now();
-  if (cache.data && now - cache.timestamp < 1000 * 60 * 10) {
-    return success(res, "Anime sections fetched from cache", cache.data);
+
+  // Serve from memory immediately if fresh enough
+  if (memCache.data && now - memCache.timestamp < CACHE_TTL) {
+    return success(res, "Anime sections fetched from cache", memCache.data);
   }
 
+  // If we have stale data, serve it immediately and refresh in background
+  if (memCache.data) {
+    success(res, "Anime sections fetched from stale cache", memCache.data);
+    refreshCache().catch(e => console.error('[animeRoutes] Background refresh failed:', e.message));
+    return;
+  }
+
+  // No cache at all — must wait for fresh fetch
   try {
+    await refreshCache();
+    return success(res, "Anime sections fetched successfully", memCache.data);
+  } catch (err) {
+    console.error("AniList error:", err.response?.data || err.message);
+    return error(res, "Failed to fetch anime sections", 500);
+  }
+});
+
+async function refreshCache() {
     const query = `
       fragment mediaFields on Media {
         id
@@ -176,24 +225,31 @@ router.get('/anime-sections', async (req, res) => {
     const upcomingList = [...(data.upcoming1?.media || []), ...(data.upcoming2?.media || [])];
 
 
-    cache = {
-      data: {
-        topAiring: processMediaArray(airingList),
-        mostWatched: processMediaArray(watchedList),
-        topMovies: processMediaArray(moviesList),
-        trending: processMediaArray(trendingList),
-        topRated: processMediaArray(topRatedList),
-        upcoming: processMediaArray(upcomingList),
-      },
-      timestamp: now,
-    };
+  memCache = {
+    data: {
+      topAiring: processMediaArray(airingList),
+      mostWatched: processMediaArray(watchedList),
+      topMovies: processMediaArray(moviesList),
+      trending: processMediaArray(trendingList),
+      topRated: processMediaArray(topRatedList),
+      upcoming: processMediaArray(upcomingList),
+    },
+    timestamp: Date.now(),
+  };
+  persistCache(); // Save to disk so next server start is instant
+}
 
-    return success(res, "Anime sections fetched successfully", cache.data);
-  } catch (err) {
-    console.error("AniList error:", err.response?.data || err.message);
-    return error(res, "Failed to fetch anime sections", 500);
+// Warm up cache immediately on startup if disk cache is stale or missing
+(async () => {
+  const age = Date.now() - memCache.timestamp;
+  if (!memCache.data || age > CACHE_TTL) {
+    console.log('[animeRoutes] Warming up cache on startup...');
+    try { await refreshCache(); console.log('[animeRoutes] Cache warmed up.'); }
+    catch (e) { console.warn('[animeRoutes] Warm-up failed:', e.message); }
+  } else {
+    console.log('[animeRoutes] Disk cache is fresh, skipping warm-up.');
   }
-});
+})();
 
 // Route 2: GET /api/anime/search — Search anime
 router.get('/search', async (req, res) => {

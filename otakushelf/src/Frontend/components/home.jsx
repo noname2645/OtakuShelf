@@ -14,9 +14,9 @@ import PageLoader from './PageLoader.jsx';
 const API = import.meta.env.VITE_API_BASE_URL;
 
 // Stale-while-revalidate key
-const CACHE_KEY = 'animeSections_100_v5'; // Increment version to force fresh structure after API standard changes
+const CACHE_KEY = 'animeSections_normalized_v1'; // normalized data — instant reads
 const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
-const STALE_TIME = 1000 * 60 * 30; // 30 minutes until fresh fetch (but stale data shown immediately)
+const STALE_TIME = 1000 * 60 * 60; // 1 hour — matches backend TTL
 
 import AnimeCard from './AnimeCardUI.jsx';
 // Section Component to manage its own "View More" state
@@ -226,46 +226,35 @@ const AnimeHomepage = () => {
         const loadWrapper = async () => {
             let hasCachedData = false;
 
-            // 1. Load from Cache Immediately
+            // 1. Load pre-normalized data from cache — truly instant, no processing needed
             const cachedData = localStorage.getItem(CACHE_KEY);
             if (cachedData) {
                 try {
                     const parsed = JSON.parse(cachedData);
-                    const cacheTime = localStorage.getItem(CACHE_TIME_KEY);
-                    const age = Date.now() - (parseInt(cacheTime) || 0);
+                    const age = Date.now() - (parseInt(localStorage.getItem(CACHE_TIME_KEY)) || 0);
 
-                    // If valid JSON, show immediately
-                    if (parsed.topAiring && parsed.mostWatched) {
-                        setSections({
-                            topAiring: (parsed.topAiring || []).map(normalizeGridAnime).filter(Boolean),
-                            mostWatched: (parsed.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                            topMovies: (parsed.topMovies || []).map(normalizeGridAnime).filter(Boolean),
-                            trending: (parsed.trending || []).map(normalizeGridAnime).filter(Boolean),
-                            topRated: (parsed.topRated || []).map(normalizeGridAnime).filter(Boolean),
-                            upcoming: (parsed.upcoming || []).map(normalizeGridAnime).filter(Boolean)
-                        });
-                        setLoading(false); // Stop skeleton loader immediately
+                    if (parsed.topAiring && parsed.trending) {
+                        // Direct assignment — data is already normalized, zero extra work
+                        setSections(parsed);
+                        setLoading(false);
                         hasCachedData = true;
 
-                        // If data is fresh enough, we stop here to avoid aggressive networking
                         if (age < STALE_TIME) {
-                            console.log("Using fresh cache, no network fetch needed.");
-                            return;
+                            return; // Fresh enough, skip network
                         }
+                        // Stale — fall through to background refresh
                     }
                 } catch (e) {
                     console.error("Cache parse error:", e);
                     localStorage.removeItem(CACHE_KEY);
+                    localStorage.removeItem(CACHE_TIME_KEY);
                 }
             }
 
-            // 2. Fetch Fresh Data (Background Update)
+            // 2. Fetch & Normalize Fresh Data (or background update)
             try {
-                // If we didn't have cache, we are still loading skeleton
-                // If we did have cache, we are just silently updating
-                console.log("Fetching fresh data...");
                 const response = await axios.get(`${API}/api/anime/anime-sections`, { timeout: 15000 });
-                const data = response.data.data; // Access the "data" property from the standardized response
+                const data = response.data.data;
 
                 const newSections = {
                     topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
@@ -276,24 +265,15 @@ const AnimeHomepage = () => {
                     upcoming: (data.upcoming || []).map(normalizeGridAnime).filter(Boolean)
                 };
 
-                // Update State
                 setSections(newSections);
                 setLoading(false);
 
-                // Update Cache
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    topAiring: data.topAiring || [],
-                    mostWatched: data.mostWatched || [],
-                    topMovies: data.topMovies || [],
-                    trending: data.trending || [],
-                    topRated: data.topRated || [],
-                    upcoming: data.upcoming || []
-                }));
+                // Store normalized sections — next load reads this directly with no processing
+                localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
                 localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
 
-            } catch (error) {
-                console.error("Network fetch failed:", error);
-                // If we had no cache and network failed, stop loading to show empty state or error
+            } catch (err) {
+                console.error("Network fetch failed:", err);
                 if (!hasCachedData) setLoading(false);
             }
         };
