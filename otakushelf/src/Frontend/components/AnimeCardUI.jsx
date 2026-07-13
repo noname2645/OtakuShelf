@@ -4,13 +4,29 @@ import { motion } from 'framer-motion';
 // Import CSS since we use raw classnames matching home.css
 import "../Stylesheets/home.css"; 
 
+// ─── Shared singleton resize tracker ──────────────────────────────────────────
+// Instead of each card attaching its own window resize listener (100+ listeners!),
+// we use a single module-level listener that notifies all subscribers.
+const resizeCallbacks = new Set();
+let sharedIsMobile = window.innerWidth <= 768;
+
+const handleGlobalResize = () => {
+    const mobile = window.innerWidth <= 768;
+    if (mobile !== sharedIsMobile) {
+        sharedIsMobile = mobile;
+        resizeCallbacks.forEach(cb => cb(mobile));
+    }
+};
+window.addEventListener('resize', handleGlobalResize, { passive: true });
+// ──────────────────────────────────────────────────────────────────────────────
+
 const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false, isGrid = false, customWidth, customHeight }) => {
-    const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+    const [isMobile, setIsMobile] = useState(sharedIsMobile);
 
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        const cb = (mobile) => setIsMobile(mobile);
+        resizeCallbacks.add(cb);
+        return () => resizeCallbacks.delete(cb);
     }, []);
 
     const handleClick = useCallback((e) => {
@@ -22,7 +38,7 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         if (onClick) onClick(anime);
     }, [anime, onClick, isDragging]);
 
-    const defaultHeight = isMobile ? '240px' : '320px';
+    const defaultHeight = isMobile ? '228px' : '320px';
     const defaultWidth = isMobile ? '160px' : '220px';
     
     const height = customHeight || defaultHeight;
@@ -51,12 +67,12 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         <motion.div
             className={`anime-card2 ${isGrid ? 'grid-mode' : ''}`}
             onClick={handleClick}
-            style={cardStyle}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: Math.min(index, 8) * 0.05, ease: "easeOut" }}
-            whileHover={{ scale: isGrid ? 1.02 : 1.04, y: -4, transition: { duration: 0.2 } }}
-            whileTap={{ scale: 0.98 }}
+            style={{
+                ...cardStyle,
+                animationDelay: `${Math.min(index, 8) * 0.05}s`,
+            }}
+            whileHover={{ scale: isGrid ? 1.02 : 1.04, y: -4, transition: { duration: 0.18, ease: "easeOut" } }}
+            whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
         >
             <div className="home-card-image" style={{ width: '100%', height: '100%' }}>
                 <img

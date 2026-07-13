@@ -162,41 +162,84 @@
 @media (max-width: 900px) {
   .footer-inner {
     grid-template-columns: 1fr;
-    gap: 40px;
-    padding: 44px 32px 28px;
+    gap: 48px;
+    padding: 48px 32px 32px;
+  }
+  
+  .footer-brand {
+    align-items: center;
+    text-align: center;
+  }
+
+  .footer-logo-link {
+    display: flex;
+    justify-content: center;
   }
 }
 
 @media (max-width: 640px) {
   .footer-inner {
-    padding: 36px 20px 24px;
-    gap: 32px;
+    padding: 40px 24px 24px;
+    gap: 40px;
   }
 
   .footer-nav {
     grid-template-columns: repeat(2, 1fr);
-    gap: 28px;
+    gap: 36px 20px;
+    width: 100%;
+  }
+
+  /* Make Legal column span both columns horizontally for layout balance */
+  .footer-nav .footer-col:last-child {
+    grid-column: span 2;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 24px;
+    margin-top: 8px;
+  }
+
+  .footer-nav .footer-col:last-child ul {
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px 24px;
   }
 
   .footer-bottom {
-    padding: 16px 20px;
+    padding: 20px;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
   }
 
-  .footer-logo {
-    font-size: 1.5rem;
-  }
-
-  /* Extra bottom space so floating nav doesn't cover the bar */
+  /* Extra bottom padding to clear the floating bottom navigation bar */
   .site-footer {
-    padding-bottom: 88px;
+    padding-bottom: 96px;
   }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 480px) {
   .footer-nav {
     grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .footer-nav .footer-col:last-child {
+    grid-column: span 1;
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .footer-nav .footer-col:last-child ul {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .footer-col-title {
+    margin-bottom: 12px;
   }
 }
+

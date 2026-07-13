@@ -33,55 +33,70 @@ const SECTION_GENRE_MAP = {
 const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
     const scrollRef = useRef(null);
     const navigate = useNavigate();
+    const isDraggingRef = useRef(false);
+    const startXRef = useRef(0);
+    const scrollLeftRef = useRef(0);
     const [isDragging, setIsDragging] = useState(false);
-    const [startX, setStartX] = useState(0);
-    const [scrollLeft, setScrollLeft] = useState(0);
 
-    const scroll = (direction) => {
+    const scroll = useCallback((direction) => {
         if (scrollRef.current) {
             const { scrollLeft, clientWidth } = scrollRef.current;
-            const scrollAmount = clientWidth * 0.8; // Scroll 80% of visible width
+            const scrollAmount = clientWidth * 0.8;
+            // Use native scrollTo with smooth behavior only for button presses (not drag)
             scrollRef.current.scrollTo({
                 left: direction === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
                 behavior: 'smooth'
             });
         }
-    };
+    }, []);
 
-    const handleMouseDown = (e) => {
+    const handleMouseDown = useCallback((e) => {
         if (!scrollRef.current) return;
-        setStartX(e.pageX - scrollRef.current.offsetLeft);
-        setScrollLeft(scrollRef.current.scrollLeft);
-        // Don't set isDragging immediately on mouse down, wait for move
-    };
+        startXRef.current = e.pageX - scrollRef.current.offsetLeft;
+        scrollLeftRef.current = scrollRef.current.scrollLeft;
+        isDraggingRef.current = false;
+    }, []);
 
-    const handleMouseLeave = () => {
-        setIsDragging(false);
-    };
+    const handleMouseLeave = useCallback(() => {
+        if (isDragging) setIsDragging(false);
+        isDraggingRef.current = false;
+        startXRef.current = 0;
+    }, [isDragging]);
 
-    const handleMouseUp = () => {
-        // Small delay so onClick handles correctly before dragging resets
-        setTimeout(() => setIsDragging(false), 50);
-    };
+    const handleMouseUp = useCallback(() => {
+        setTimeout(() => {
+            setIsDragging(false);
+            isDraggingRef.current = false;
+        }, 50);
+        startXRef.current = 0;
+    }, []);
 
-    const handleMouseMove = (e) => {
-        if (startX === 0 || !scrollRef.current) return;
+    const handleMouseMove = useCallback((e) => {
+        if (startXRef.current === 0 || !scrollRef.current) return;
         
         const x = e.pageX - scrollRef.current.offsetLeft;
-        const walk = (x - startX) * 2;
+        const walk = (x - startXRef.current) * 2;
         
-        // Threshold: only start dragging if mouse moved more than 5 pixels
         if (Math.abs(walk) > 5) {
-            setIsDragging(true);
+            if (!isDraggingRef.current) {
+                isDraggingRef.current = true;
+                setIsDragging(true);
+            }
             e.preventDefault();
-            scrollRef.current.scrollLeft = scrollLeft - walk;
+            scrollRef.current.scrollLeft = scrollLeftRef.current - walk;
         }
-    };
+    }, []);
 
-    // Reset startX when mouse is up anywhere
+    // Single global mouseup to release drag if cursor leaves window
     useEffect(() => {
-        const handleGlobalMouseUp = () => setStartX(0);
-        window.addEventListener('mouseup', handleGlobalMouseUp);
+        const handleGlobalMouseUp = () => {
+            if (isDraggingRef.current) {
+                isDraggingRef.current = false;
+                startXRef.current = 0;
+                setIsDragging(false);
+            }
+        };
+        window.addEventListener('mouseup', handleGlobalMouseUp, { passive: true });
         return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
     }, []);
 
@@ -90,10 +105,10 @@ const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
     return (
         <motion.div
             className="anime-carousel-section"
-            initial={{ opacity: 0, y: 32 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
         >
             <div className="modern-section-header">
                 <div className="accent-bar"></div>
@@ -104,7 +119,26 @@ const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
             </div>
             
             <div className={`carousel-wrapper ${isDragging ? 'dragging' : ''}`}>
-                <button className="carousel-btn prev-btn" onClick={() => scroll('left')}>‹</button>
+                <div className="slider-btns">
+                    <button
+                        className="left-arrow"
+                        onClick={() => scroll('left')}
+                        aria-label="Scroll left"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path fill="none" stroke="#ff5900ff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="m10 17l5-5m0 0l-5-5" />
+                        </svg>
+                    </button>
+                    <button
+                        className="right-arrow"
+                        onClick={() => scroll('right')}
+                        aria-label="Scroll right"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path fill="none" stroke="#ff5900ff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="m10 17l5-5m0 0l-5-5" />
+                        </svg>
+                    </button>
+                </div>
                 <div 
                     className="anime-carousel" 
                     ref={scrollRef}
@@ -124,7 +158,6 @@ const AnimeSection = React.memo(({ title, data, onOpenModal }) => {
                         />
                     ))}
                 </div>
-                <button className="carousel-btn next-btn" onClick={() => scroll('right')}>›</button>
             </div>
         </motion.div>
     );
@@ -268,11 +301,11 @@ const AnimeHomepage = () => {
         loadWrapper();
     }, [normalizeGridAnime]);
 
-    // Check Mobile
+    // Check Mobile — use same singleton listener as AnimeCardUI (no extra window listener)
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        handleResize();
-        window.addEventListener('resize', handleResize);
+        setIsMobile(window.innerWidth <= 768); // set initial
+        window.addEventListener('resize', handleResize, { passive: true });
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
@@ -382,13 +415,23 @@ const AnimeHomepage = () => {
                         ) : (
                             <>
                                 <AnimeSection
+                                    title="TRENDING THIS WEEK"
+                                    data={sections.trending}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
                                     title="TOP AIRING"
                                     data={sections.topAiring}
                                     onOpenModal={openModal}
                                 />
                                 <AnimeSection
-                                    title="TRENDING THIS WEEK"
-                                    data={sections.trending}
+                                    title="UPCOMING RELEASES"
+                                    data={sections.upcoming}
+                                    onOpenModal={openModal}
+                                />
+                                <AnimeSection
+                                    title="TOP MOVIES"
+                                    data={sections.topMovies}
                                     onOpenModal={openModal}
                                 />
                                 <AnimeSection
@@ -399,16 +442,6 @@ const AnimeHomepage = () => {
                                 <AnimeSection
                                     title="TOP RATED ALL TIME"
                                     data={sections.topRated}
-                                    onOpenModal={openModal}
-                                />
-                                <AnimeSection
-                                    title="TOP MOVIES"
-                                    data={sections.topMovies}
-                                    onOpenModal={openModal}
-                                />
-                                <AnimeSection
-                                    title="UPCOMING RELEASES"
-                                    data={sections.upcoming}
                                     onOpenModal={openModal}
                                 />
                             </>

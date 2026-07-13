@@ -2,8 +2,10 @@ import React from "react";
 import { Link, useLocation } from 'react-router-dom';
 import "../Stylesheets/bottom.css";
 import { motion } from "framer-motion";
+import { useAuth } from "./AuthContext.jsx";
 
 const BottomNavBar = () => {
+  const { user } = useAuth();
   const location = useLocation();
   const path = location.pathname;
 
@@ -11,72 +13,135 @@ const BottomNavBar = () => {
     if (path === '/home' || path === '/') return 'home';
     if (path === '/list') return 'list';
     if (path === '/advance') return 'search';
-    if (path === '/ai') return 'AI';
+    if (path === '/ai') return 'ai';
+    if (path === '/profile' || path === '/settings' || path === '/login' || path === '/register') return 'profile';
     return '';
   };
 
   const activePage = getActivePage();
 
+  const getInitials = (email) => {
+    return email ? email.charAt(0).toUpperCase() : "U";
+  };
+
+  const tabs = [
+    {
+      id: 'home',
+      label: 'Home',
+      to: '/home',
+      rgb: '167, 139, 250', // Violet (#a78bfa)
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg-icon">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      )
+    },
+    {
+      id: 'list',
+      label: 'Watchlist',
+      to: '/list',
+      rgb: '244, 114, 182', // Pink (#f472b6)
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg-icon">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6" strokeWidth="3"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12" strokeWidth="3"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18" strokeWidth="3"></line>
+        </svg>
+      )
+    },
+    {
+      id: 'search',
+      label: 'Discover',
+      to: '/advance',
+      rgb: '45, 212, 191', // Teal (#2dd4bf)
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg-icon">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
+      )
+    },
+    {
+      id: 'ai',
+      label: 'OtakuAI',
+      to: '/ai',
+      rgb: '255, 215, 0', // Gold/Yellow (#FFD700)
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg-icon">
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z" />
+          <path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5.5Z" />
+          <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1Z" />
+        </svg>
+      )
+    },
+    {
+      id: 'profile',
+      label: user ? 'Profile' : 'Login',
+      to: user ? '/profile' : '/login',
+      rgb: '56, 189, 248', // Sky Blue (#38bdf8)
+      icon: user ? (
+        <div className="nav-avatar-wrap">
+          {user.photo ? (
+            <img src={user.photo} alt="Profile" className="nav-avatar-img" />
+          ) : (
+            <div className="nav-avatar-initials">{getInitials(user.email)}</div>
+          )}
+        </div>
+      ) : (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg-icon">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      )
+    }
+  ];
+
   return (
-    // Outer div: handles fixed positioning + horizontal centering
     <div className="bottom-button-bar-wrapper">
-      {/* Inner motion.div: handles only the slide-up animation */}
       <motion.div
         className="bottom-button-bar"
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 320, damping: 28, delay: 0.3 }}
       >
-        <Link
-          to="/home"
-          className={`nav-item ${activePage === 'home' ? 'active' : ''}`}
-        >
-          <div className="icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-              <path fill="currentColor" d="M261.56 101.28a8 8 0 0 0-11.06 0L66.4 277.15a8 8 0 0 0-2.47 5.79L63.9 448a32 32 0 0 0 32 32H192a16 16 0 0 0 16-16V328a8 8 0 0 1 8-8h80a8 8 0 0 1 8 8v136a16 16 0 0 0 16 16h96.06a32 32 0 0 0 32-32V282.94a8 8 0 0 0-2.47-5.79Z" />
-            </svg>
-          </div>
-          <span className="nav-label">Home</span>
-        </Link>
+        {tabs.map((tab) => {
+          const isActive = activePage === tab.id;
+          return (
+            <Link
+              key={tab.id}
+              to={tab.to}
+              className={`nav-item ${isActive ? 'active' : ''}`}
+              style={{
+                '--tab-color-rgb': tab.rgb
+              }}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="activeTabBackground"
+                  className="active-tab-bg"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 350, damping: 26 }}
+                />
+              )}
+              
+              <div className="icon-wrapper">
+                {tab.icon}
+              </div>
 
-        <Link
-          to="/list"
-          className={`nav-item ${activePage === 'list' ? 'active' : ''}`}
-        >
-          <div className="icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M7 5h10v2H7V5zm0 6h10v2H7v-2zm0 6h10v2H7v-2zM4 5h2v2H4V5zm0 6h2v2H4v-2zm0 6h2v2H4v-2z" />
-            </svg>
-          </div>
-          <span className="nav-label">List</span>
-        </Link>
-
-        <Link
-          to="/advance"
-          className={`nav-item ${activePage === 'search' ? 'active' : ''}`}
-        >
-          <div className="icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-            </svg>
-          </div>
-          <span className="nav-label">Search</span>
-        </Link>
-
-        <Link
-          to="/ai"
-          className={`nav-item ${activePage === 'AI' ? 'active' : ''}`}
-        >
-          <div className="icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M19 10.5V8h-2.5v2.5H14v2.5h2.5V15.5h2.5v-2.5H21.5v-2.5H19zm-8.25-1.25L9 4 7.25 9.25 2 11l5.25 1.75L9 18l1.75-5.25L16 11l-5.25-1.75z" />
-            </svg>
-          </div>
-          <span className="nav-label">AI Chat</span>
-        </Link>
+              <span className="nav-label">
+                {tab.label}
+              </span>
+            </Link>
+          );
+        })}
       </motion.div>
     </div>
   );
 };
 
 export default BottomNavBar;
+

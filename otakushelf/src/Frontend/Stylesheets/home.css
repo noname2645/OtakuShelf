@@ -137,17 +137,15 @@
 .anime-card2 {
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
   cursor: pointer;
   position: relative;
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: hidden;
   z-index: 50;
   pointer-events: auto;
   height: 320px;
   width: 100%;
-  border-radius: 20px;
-  transition: all 0.3s ease;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.25s ease;
   animation: fadeInUp 0.5s ease-out forwards;
   align-self: start;
 }
@@ -238,26 +236,6 @@
 }
 
 /* Simple fade-in-up animation - ensure this exists */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-
-.anime-card2.loaded {
-  opacity: 1;
-  transform: translateY(0);
-  animation: fadeInUp 0.5s ease-out forwards !important;
-  z-index: 20;
-}
-
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -466,7 +444,6 @@
 
 .anime-carousel-section {
   margin-bottom: 2rem;
-  /* Reduced from 3.5rem */
   position: relative;
 }
 
@@ -543,14 +520,11 @@
   overflow-y: hidden;
   gap: 25px;
   padding: 10px 10px 25px 10px;
-  scroll-behavior: smooth;
+  /* scroll-behavior: smooth removed — conflicts with JS drag scrolling */
   scroll-snap-type: x mandatory;
   -ms-overflow-style: none;
-  /* IE and Edge */
   scrollbar-width: none;
-  /* Firefox */
   user-select: none;
-  /* Prevent text selection while dragging */
   -webkit-user-select: none;
 }
 
@@ -569,40 +543,68 @@
   display: none;
 }
 
-.carousel-btn {
+/* Anime carousel scroll buttons (Matching TrailerHero slider-btns design) */
+.carousel-wrapper .slider-btns {
   position: absolute;
-  top: 45%;
+  top: 50%;
+  left: 0;
+  right: 0;
   transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   z-index: 100;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(15, 20, 35, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  font-size: 2rem;
+  pointer-events: none;
+  width: 100%;
+}
+
+.carousel-wrapper .slider-btns button {
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  width: 60px;
+  height: 60px;
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  color: white;
+  border-radius: 50%;
+  backdrop-filter: blur(5px);
+  min-width: 44px;
+  min-height: 44px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
-.carousel-btn:hover {
-  background: #ff6b6b;
-  border-color: #ff6b6b;
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
+.carousel-wrapper .left-arrow {
+  margin-left: -30px;
+  transform: rotate(180deg) scale(0.8);
 }
 
-.prev-btn {
-  left: -24px;
+.carousel-wrapper .right-arrow {
+  margin-right: -30px;
+  transform: scale(0.8);
 }
 
-.next-btn {
-  right: -24px;
+.carousel-wrapper .slider-btns button:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 115, 0, 0.8);
+  box-shadow: 0 0 20px rgba(255, 115, 0, 0.4);
+}
+
+.carousel-wrapper .left-arrow:hover {
+  transform: rotate(180deg) scale(0.9) !important;
+}
+
+.carousel-wrapper .right-arrow:hover {
+  transform: scale(0.9) !important;
+}
+
+.carousel-wrapper .slider-btns button svg {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
 /* Fallback Grid layout for absolute necessity like search */
@@ -614,18 +616,13 @@
   place-items: center;
 }
 
-/* Anime Card Hover Effects */
+/* Anime Card — carousel context additions */
 .anime-card2 {
   flex: 0 0 auto;
   scroll-snap-align: start;
-  opacity: 0;
-  cursor: pointer;
-  position: relative;
-  border-radius: 20px;
-  overflow: visible;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  animation: fadeInUp 0.5s ease-out forwards;
-
+  /* overflow: visible was blocking page scroll — keep hidden */
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.25s ease;
 }
 
 /* Explicit constraints for grid view (Advanced Search) */
@@ -647,7 +644,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 20px;
+  border-radius: inherit;
   overflow: hidden;
   /* Clip image natively */
   background: #111;
@@ -697,24 +694,23 @@
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.8);
 }
 
-/* Glassmorphism Hover Overlay */
+/* Hover Overlay - NO backdrop-filter (causes compositing layer per-card = major perf hit) */
 .card-hover-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(15, 20, 35, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(12, 16, 28, 0.92);
   z-index: 5;
   display: flex;
   flex-direction: column;
   padding: 20px 16px;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
-  transform: translateY(10px);
+  /* Only transition opacity + transform, not 'all' */
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+  transform: translateY(8px);
 }
 
 .anime-card2:hover .card-hover-overlay {
@@ -969,7 +965,8 @@
 @media (max-width: 992px) {
 
   /* Hide carousel buttons on touch devices */
-  .carousel-btn {
+  .carousel-btn,
+  .carousel-wrapper .slider-btns {
     display: none;
   }
 
@@ -1292,8 +1289,109 @@
 
 /* Safe area for modern phones */
 @supports (padding: max(0px)) {
-
   .main-content {
     padding-bottom: 0;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   MOBILE RESPONSIVE — native queries (no !important)
+   These complement the global mobile.css overrides
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  /* Tighter section layout */
+  .anime-sections {
+    padding: 0 10px;
+  }
+
+  /* Hide arrow buttons — swipe is the primary interaction */
+  .carousel-btn,
+  .carousel-wrapper .slider-btns {
+    display: none;
+  }
+
+  /* Compact carousel gap */
+  .anime-carousel {
+    gap: 12px;
+    padding: 6px 4px 14px;
+  }
+
+  /* Card sizing — readable but not cramped */
+  .anime-card2 {
+    height: 230px;
+    min-height: 230px;
+    max-height: 230px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+    border-radius: 14px;
+  }
+
+  /* Disable hover overlay on touch devices */
+  .card-hover-overlay {
+    display: none;
+  }
+
+  /* Section header compact */
+  .modern-section-header {
+    margin-bottom: 12px;
+    padding-left: 6px;
+  }
+
+  .header-title {
+    font-size: clamp(0.95rem, 4vw, 1.3rem);
+  }
+
+  .view-more-btn {
+    font-size: 0.76rem;
+    padding: 5px 10px;
+  }
+
+  /* Skeleton grid 2 cols */
+  .skeleton-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .skeleton-card {
+    height: 200px;
+  }
+}
+
+@media (max-width: 430px) {
+  .anime-card2 {
+    height: 200px;
+    min-height: 200px;
+    max-height: 200px;
+    width: 130px;
+    min-width: 130px;
+    max-width: 130px;
+    border-radius: 12px;
+  }
+
+  .anime-carousel {
+    gap: 10px;
+  }
+
+  .anime-sections {
+    padding: 0 6px;
+  }
+}
+
+@media (max-width: 380px) {
+  .anime-card2 {
+    height: 185px;
+    min-height: 185px;
+    max-height: 185px;
+    width: 115px;
+    min-width: 115px;
+    max-width: 115px;
+    border-radius: 10px;
+  }
+
+  .skeleton-card {
+    height: 185px;
+  }
+}
+

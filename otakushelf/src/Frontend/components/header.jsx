@@ -167,25 +167,40 @@ const ProfileDropdown = ({ onOpenSettings }) => {
 export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { user } = useAuth();
+  const rafRef = useRef(null);
+  const isScrolledRef = useRef(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 100);
+      if (rafRef.current) return; // already queued
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        const scrolled = window.scrollY > 100;
+        if (scrolled !== isScrolledRef.current) {
+          isScrolledRef.current = scrolled;
+          setIsScrolled(scrolled);
+        }
+      });
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
       onSearchChange && onSearchChange("");
+      e.target.blur();
     }
   };
 
   return (
     <>
-      <header className={`header ${isScrolled ? "scrolled" : ""}`}>
+      <header className={`header ${isScrolled ? "scrolled" : ""} ${isSearchFocused ? "search-focused" : ""}`}>
         <div className="logo">
           <Link to="/" className="logo-link">
             <svg className="logo-svg" viewBox="0 0 220 44" xmlns="http://www.w3.org/2000/svg" aria-label="OtakuShelf">
@@ -211,13 +226,15 @@ export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
 
         <div className="header-center">
           {showSearch ? (
-            <div className={`InputContainer ${onSearchChange ? "active" : ""}`}>
+            <div className={`InputContainer ${onSearchChange ? "active" : ""} ${isSearchFocused ? "focused" : ""}`}>
               <img src={Search} alt="Search" className="search-icon" />
               <input
                 placeholder="Search anime..."
                 id="input"
                 className="input"
                 type="text"
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
                 onChange={(e) =>
                   onSearchChange && onSearchChange(e.target.value)
                 }
@@ -235,6 +252,7 @@ export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
             </div>
           )}
         </div>
+
 
         <div className="auth-buttons">
           {user ? (

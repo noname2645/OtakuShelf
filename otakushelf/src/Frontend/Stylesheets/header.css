@@ -440,26 +440,7 @@
     }
 
     .InputContainer {
-        width: 100% !important;
-        max-width: 140px !important;
-    }
-
-    .InputContainer.active {
-        width: 100% !important;
-        max-width: 160px !important;
-        transform: none !important;
-    }
-
-    .input {
-        height: 32px !important;
-        font-size: 12px !important;
-        padding: 0 15px 0 35px !important;
-        border-radius: 15px !important;
-    }
-
-    .InputContainer::before {
-        left: 12px !important;
-        font-size: 14px !important;
+        display: none !important;
     }
 
     /* Profile adjustments */
@@ -555,15 +536,7 @@
         height: 22px !important;
     }
 
-    .InputContainer {
-        width: 100% !important;
-        max-width: 140px !important;
-    }
-
-    .InputContainer.active {
-        width: 100% !important;
-        max-width: 200px !important;
-    }
+    /* Disabled on mobile */
 
     /* Adjust logo height on very small screens */
     @media (max-width: 400px) {
@@ -611,10 +584,7 @@
         justify-content: flex-end;
     }
 
-    .InputContainer {
-        width: 100% !important;
-        max-width: 120px !important;
-    }
+
 }
 
 /* Landscape Mode */

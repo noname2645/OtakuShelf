@@ -1,66 +1,166 @@
 /*
  * =========================================================
  *  OTAKUSHELF — GLOBAL MOBILE RESPONSIVENESS STYLESHEET
- *  Applied as the final layer on top of all page stylesheets
+ *  Loaded last via App.css — overrides all component styles
+ *  Breakpoints: 320px | 375px | 430px | 576px | 768px | 1024px
  * =========================================================
  */
 
 /* ── Safe-area support (iPhone notch, Android chin) ── */
 :root {
-    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-top:    env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-left: env(safe-area-inset-left, 0px);
-    --safe-right: env(safe-area-inset-right, 0px);
-
-    /* Touch-friendly minimum sizes */
+    --safe-left:   env(safe-area-inset-left, 0px);
+    --safe-right:  env(safe-area-inset-right, 0px);
     --touch-target: 44px;
 }
 
-/* ── Prevent horizontal scroll everywhere ── */
-html,
-body {
+/* ── Prevent horizontal overflow everywhere ── */
+html, body {
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
 }
 
-/* ── Smooth scrolling ── */
-html {
-    scroll-behavior: smooth;
-}
-
 /* ── Base touch improvements ── */
-button,
-a,
-input,
-select,
-textarea {
+button, a, input, select, textarea {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
 
-/* ======================================================
-   HEADER  (fixes profile button overflow on small screens)
-   ====================================================== */
-@media (max-width: 480px) {
+/* Prevent iOS form zoom (font-size must be ≥ 16px) */
+input, select, textarea {
+    font-size: max(16px, 1rem);
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   1. HEADER
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
     .header {
-        top: 8px !important;
-        padding: 0 0.5rem !important;
-        width: 97% !important;
-        height: 48px !important;
-        border-radius: 24px !important;
+        top: 10px !important;
+        width: calc(100% - 24px) !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        padding: 0 10px !important;
+        height: 52px !important;
+        transition: background 0.3s ease, border-radius 0.3s ease !important;
     }
 
-    .logo span {
-        font-size: 20px !important;
-        letter-spacing: 1px !important;
+    .logo, .auth-buttons {
+        flex: 0 0 auto !important;
+        transition: opacity 0.25s ease, width 0.25s ease, transform 0.25s ease !important;
     }
 
-    /* Hide "Welcome" + username text, show only avatar */
-    .profile-info {
+    .header-center {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        transition: all 0.3s ease !important;
+    }
+
+    /* Collapsed Circular Search Button by Default — Disabled/Hidden on mobile view */
+    .InputContainer,
+    .InputContainer.active {
         display: none !important;
     }
 
+    .InputContainer .input {
+        position: absolute !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        opacity: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        cursor: pointer !important;
+        transition: opacity 0.2s ease !important;
+    }
+
+    .InputContainer .search-icon {
+        position: absolute !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        opacity: 0.85 !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        pointer-events: none !important;
+    }
+
+    /* Expanded Search Input Mode (Fades out logo and login/started buttons) */
+    .header.search-focused .logo {
+        opacity: 0 !important;
+        width: 0 !important;
+        margin: 0 !important;
+        pointer-events: none !important;
+        transform: scale(0.9) !important;
+    }
+
+    .header.search-focused .auth-buttons {
+        opacity: 0 !important;
+        width: 0 !important;
+        margin: 0 !important;
+        pointer-events: none !important;
+        transform: scale(0.9) !important;
+    }
+
+    .header.search-focused .InputContainer,
+    .header.search-focused .InputContainer.active,
+    .InputContainer.focused {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 20px !important;
+        background: rgba(8, 8, 12, 0.96) !important;
+        border: 1px solid rgba(255, 159, 0, 0.4) !important;
+        box-shadow: 0 0 15px rgba(255, 159, 0, 0.15) !important;
+    }
+
+    .header.search-focused .InputContainer .input,
+    .InputContainer.focused .input {
+        position: relative !important;
+        opacity: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        padding: 0 16px 0 40px !important;
+        pointer-events: auto !important;
+        background: black !important;
+        border-radius: 20px !important;
+        cursor: text !important;
+        font-size: 14px !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    .header.search-focused .InputContainer .search-icon,
+    .InputContainer.focused .search-icon {
+        left: 14px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+    }
+
+
+    /* Tighten logo on small screens */
+    .logo span {
+        font-size: clamp(16px, 4vw, 22px) !important;
+        letter-spacing: 1px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        height: 48px !important;
+        border-radius: 24px !important;
+        width: calc(100% - 16px) !important;
+    }
+
+    /* Hide "Welcome" text, show only avatar */
+    .profile-info {
+        display: none !important;
+    }
     .dropdown-arrow {
         display: none !important;
     }
@@ -68,41 +168,24 @@ textarea {
     .profile-button {
         padding: 6px !important;
         border-radius: 50% !important;
-        width: 40px !important;
-        height: 40px !important;
-        min-height: 40px !important;
+        width: 38px !important;
+        height: 38px !important;
+        min-height: 38px !important;
         justify-content: center !important;
     }
 
-    /* Search bar collapses to icon-only on tiny screens */
-    .InputContainer {
-        width: 36px !important;
-        overflow: hidden !important;
-        border-radius: 50% !important;
-    }
-
-    .InputContainer.active {
-        width: calc(100vw - 180px) !important;
-        border-radius: 20px !important;
-        overflow: visible !important;
-    }
-
-    .input {
-        padding: 0 12px 0 36px !important;
-    }
-
-    /* Auth buttons: icon only */
+    /* Auth buttons compact */
     .auth-buttons {
         gap: 6px !important;
     }
-
     .auth-buttons .button_login,
+    .auth-buttons .button_login2,
     .auth-buttons .button_register {
-        padding: 0.3em 0.7em !important;
+        padding: 0.35em 0.9em !important;
         font-size: 0.75rem !important;
     }
 
-    /* Dropdown: full-width on phone */
+    /* Dropdown full-width */
     .profile-dropdown {
         left: 0 !important;
         right: 0 !important;
@@ -111,108 +194,202 @@ textarea {
     }
 }
 
-/* ======================================================
-   BOTTOM NAV — Safe area + slightly smaller
-   ====================================================== */
-.bottom-button-bar {
-    padding-bottom: calc(8px + var(--safe-bottom)) !important;
-    margin-bottom: 0;
+
+
+/* ══════════════════════════════════════════════════════════
+   3. HOME PAGE — TRAILER HERO
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Hero content overlay */
+    .content-overlay {
+        left: 5% !important;
+        right: 5% !important;
+        bottom: 22% !important;
+        max-width: 90% !important;
+    }
+
+    .anime-title {
+        font-size: clamp(1.3rem, 5.5vw, 2rem) !important;
+        line-height: 1.2 !important;
+        margin-bottom: 8px !important;
+    }
+
+    .anime-description {
+        font-size: 0.88rem !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 3 !important;
+        line-clamp: 3 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        margin-bottom: 12px !important;
+    }
+
+    .genres {
+        font-size: 0.82rem !important;
+        gap: 6px !important;
+        flex-wrap: wrap !important;
+    }
+
+    .details-button {
+        padding: 0.65rem 1.4rem !important;
+        font-size: 0.88rem !important;
+    }
+
+    /* Hero nav dots */
+    .hero-nav-dots {
+        bottom: 8% !important;
+    }
+
+    /* Slide indicators */
+    .slide-indicators {
+        bottom: 6% !important;
+        gap: 6px !important;
+    }
 }
 
-@media (max-width: 400px) {
-    .bottom-button-bar {
-        gap: 4px !important;
-        min-width: 260px !important;
-        padding: 6px 4px !important;
+@media (max-width: 430px) {
+    .content-overlay {
+        bottom: 20% !important;
     }
 
-    .nav-item {
-        min-width: 40px !important;
-        height: 40px !important;
-        padding: 6px !important;
+    .anime-title {
+        font-size: clamp(1.1rem, 5vw, 1.5rem) !important;
     }
 
-    .icon-wrapper svg {
-        width: 20px !important;
-        height: 20px !important;
+    .anime-description {
+        font-size: 0.82rem !important;
+        -webkit-line-clamp: 2 !important;
+        line-clamp: 2 !important;
     }
 
-    .nav-label {
-        font-size: 0.8rem !important;
+    .details-button {
+        padding: 0.55rem 1.1rem !important;
+        font-size: 0.82rem !important;
     }
 }
 
-/* ======================================================
-   HOME — Hero + Sections
-   ====================================================== */
 
-/* Ensure hero content doesn't overlap the bottom nav — mobile only */
+/* ══════════════════════════════════════════════════════════
+   4. HOME PAGE — ANIME SECTIONS & CAROUSELS
+   ══════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
+    /* Push page content above bottom nav */
     .main-content {
         padding-bottom: calc(90px + var(--safe-bottom)) !important;
     }
 }
 
-/* Section headings on mobile */
 @media (max-width: 768px) {
-    .anime-sections .divider .divider-content {
-        font-size: clamp(1.4rem, 5vw, 2.5rem) !important;
-    }
-
+    /* Section padding */
     .anime-sections {
-        padding: 0 8px !important;
-    }
-}
-
-/* 2-column grid on very small phones */
-@media (max-width: 380px) {
-    .anime-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 8px !important;
+        padding: 0 10px !important;
     }
 
+    /* Section header */
+    .modern-section-header {
+        margin-bottom: 14px !important;
+        padding-left: 6px !important;
+    }
+
+    .header-title {
+        font-size: clamp(1rem, 4vw, 1.4rem) !important;
+    }
+
+    .view-more-btn {
+        font-size: 0.78rem !important;
+        padding: 5px 12px !important;
+    }
+
+    /* Carousel arrow buttons — hidden on mobile (use swipe instead) */
+    .carousel-btn,
+    .carousel-wrapper .slider-btns {
+        display: none !important;
+    }
+
+    /* Carousel scroll */
+    .anime-carousel {
+        gap: 12px !important;
+        padding: 6px 4px 16px !important;
+    }
+
+    /* Card sizing — override all inline sizing variables to prevent stretching */
     .anime-card2 {
-        height: 190px !important;
-        max-width: 100% !important;
-        border-radius: 10px !important;
+        height: 228px !important;
+        min-height: 228px !important;
+        max-height: 228px !important;
+        width: 160px !important;
+        min-width: 160px !important;
+        max-width: 160px !important;
+        border-radius: 18px !important;
     }
 
-    .skeleton-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
+    /* Hover overlay disabled on touch */
+    .card-hover-overlay {
+        display: none !important;
     }
 
-    .skeleton-card {
-        height: 190px !important;
-    }
-}
-
-/* Ensure search overlay is usable on mobile  */
-@media (max-width: 768px) {
+    /* Search overlay */
     .search-overlay {
         padding-top: 70px !important;
-        padding-left: 10px;
-        padding-right: 10px;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
     }
 
     .search-results-header {
         padding: 0 10px !important;
-        margin-bottom: 15px !important;
+        margin-bottom: 12px !important;
     }
 
     .search-results-title {
-        font-size: 1.2rem !important;
+        font-size: 1.1rem !important;
     }
 
     .close-search-button {
         width: 40px !important;
         height: 40px !important;
+        min-height: 40px !important;
     }
 }
 
-/* ======================================================
-   MODAL — Make it a full-screen sheet on phones
-   ====================================================== */
+@media (max-width: 430px) {
+    .anime-card2 {
+        height: 194px !important;
+        min-height: 194px !important;
+        max-height: 194px !important;
+        width: 136px !important;
+        min-width: 136px !important;
+        max-width: 136px !important;
+        border-radius: 16px !important;
+    }
+
+    .anime-sections {
+        padding: 0 6px !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .anime-card2 {
+        height: 178px !important;
+        min-height: 178px !important;
+        max-height: 178px !important;
+        width: 124px !important;
+        min-width: 124px !important;
+        max-width: 124px !important;
+        border-radius: 14px !important;
+    }
+}
+
+
+
+/* ══════════════════════════════════════════════════════════
+   5. ANIME DETAIL MODAL
+   ══════════════════════════════════════════════════════════ */
+
+/* The modal has extensive built-in responsive rules in modal.css.
+   These override only what's still broken on small phones. */
+
 @media (max-width: 576px) {
+    /* Full-screen bottom sheet */
     .modal-overlay {
         align-items: flex-end !important;
         padding: 0 !important;
@@ -221,44 +398,166 @@ textarea {
     .modal-content {
         border-radius: 24px 24px 0 0 !important;
         width: 100% !important;
-        height: 92vh !important;
-        max-height: 92vh !important;
-        padding: 12px 10px !important;
-        padding-bottom: calc(12px + var(--safe-bottom)) !important;
+        height: 94vh !important;
+        max-height: 94vh !important;
+        padding: 8px 10px 0 !important;
+        padding-bottom: calc(16px + var(--safe-bottom)) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
     }
 
-    /* Top drag handle indicator */
+    /* Drag handle */
     .modal-content::before {
         content: '';
         display: block;
         width: 40px;
         height: 4px;
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.18);
         border-radius: 2px;
-        margin: 0 auto 10px;
+        margin: 6px auto 10px;
+        flex-shrink: 0;
     }
 
+    /* Stack image + info vertically */
     .modal-body {
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        height: auto !important;
+        overflow-y: visible !important;
+    }
+
+    /* Compact image */
+    .modal-image-wrapper {
+        width: 100% !important;
+        height: 200px !important;
+        display: flex !important;
+        justify-content: center !important;
+    }
+
+    .image-container {
+        width: 140px !important;
+        height: 200px !important;
+        max-width: 140px !important;
+        margin: 0 auto !important;
+        flex-shrink: 0 !important;
+    }
+
+    .image-container img {
+        width: 140px !important;
+        height: 200px !important;
+    }
+
+    /* Title compact */
+    .modal-title {
+        min-height: 40px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .modal-title h2 {
+        font-size: clamp(1.1rem, 5vw, 1.4rem) !important;
+        letter-spacing: 0 !important;
+    }
+
+    /* Action buttons full-width */
+    .info-buttons {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    .info-btn {
+        flex: 1 1 calc(50% - 8px) !important;
+        min-width: 120px !important;
+        padding: 10px 10px !important;
+    }
+
+    .btn-text {
+        font-size: 0.8rem !important;
     }
 
     /* Stats scroll horizontally */
     .stats-grid2 {
+        overflow-x: auto !important;
         -webkit-overflow-scrolling: touch !important;
-        padding-bottom: 8px !important;
+        flex-wrap: nowrap !important;
+        padding-bottom: 6px !important;
+        gap: 8px !important;
     }
 
-    /* Genre pills a bit larger to tap */
+    .stat-item {
+        min-width: 100px !important;
+        flex-shrink: 0 !important;
+        padding: 8px 10px !important;
+    }
+
+    /* Synopsis compact */
+    .synopsis-section {
+        padding: 12px !important;
+        margin-top: 8px !important;
+    }
+
+    .synopsis-text {
+        font-size: 0.88rem !important;
+        line-height: 1.4 !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* Info rows stacked */
+    .anime-info-vertical {
+        margin-top: 8px !important;
+        gap: 6px !important;
+    }
+
+    .info-row {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+        flex-wrap: wrap !important;
+    }
+
+    .info-label {
+        min-width: 90px !important;
+        font-size: 0.82rem !important;
+        padding: 4px 6px !important;
+    }
+
+    .info-value {
+        font-size: 0.85rem !important;
+        padding: 4px 6px !important;
+    }
+
+    /* Genre pills */
     .genre-pill {
-        font-size: 0.75rem !important;
-        padding: 5px 12px !important;
+        font-size: 0.72rem !important;
+        padding: 4px 10px !important;
+        letter-spacing: 0.5px !important;
     }
-}
 
-/* Fix modal image centering on all mobiles */
-@media (max-width: 768px) {
+    /* Tabs */
+    .modal-tabs {
+        gap: 6px !important;
+        flex-wrap: wrap !important;
+    }
 
+    .tab-btn {
+        padding: 8px 14px !important;
+        font-size: 0.82rem !important;
+    }
+
+    /* Synopsis modal (nested) */
+    .synopsis-modal-content {
+        width: 96% !important;
+        max-height: 88vh !important;
+        border-radius: 16px !important;
+    }
+
+    /* Trailer embed */
+    .trailer-embed,
+    .video-container {
+        height: 200px !important;
+        border-radius: 10px !important;
+    }
+
+    /* Modal image centering */
     .modal-image-wrapper,
     .image-container {
         margin-left: auto !important;
@@ -266,92 +565,140 @@ textarea {
     }
 }
 
-/* ======================================================
-   AI CHAT PAGE
-   ====================================================== */
+@media (max-width: 380px) {
+    .modal-content {
+        height: 96vh !important;
+        max-height: 96vh !important;
+    }
+
+    .info-btn {
+        flex: 1 1 100% !important;
+    }
+
+    .modal-title h2 {
+        font-size: 1rem !important;
+    }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   6. ADVANCED SEARCH PAGE
+   ══════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-    .ai-page-container {
-        padding-top: 65px !important;
+    .advancedSearchContainer {
+        padding-top: 80px !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
     }
 
-    .ai-page-wrapper {
-        padding: 0 !important;
-        max-width: 100% !important;
+    /* Filter bar — scrollable pill row instead of pill cloud */
+    .dropdownFilters {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        justify-content: flex-start !important;
+        width: 100% !important;
+        border-radius: 16px !important;
+        padding: 10px 12px !important;
+        gap: 8px !important;
+        scrollbar-width: none !important;
+    }
+    .dropdownFilters::-webkit-scrollbar {
+        display: none !important;
     }
 
-    .ai-companion-box {
-        border-radius: 0 !important;
-        height: calc(100vh - 65px - 80px) !important;
-        /* Viewport minus header minus bottom nav */
-        margin-bottom: 0 !important;
+    .dropdownToggle {
+        white-space: nowrap !important;
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+        flex-shrink: 0 !important;
     }
 
-    .messages-box {
-        padding: 1rem !important;
-    }
-
-    .message-bubble {
-        max-width: 90% !important;
-    }
-
-    .message-bubble.ai .message-content {
-        padding: 14px 16px !important;
-        font-size: 0.95rem !important;
-    }
-
-    .message-bubble.user .message-content {
-        padding: 12px 16px !important;
-    }
-
-    .input-wrapper {
-        margin: 8px !important;
-    }
-
-    /* Quick prompts smaller */
-    .prompt-chip {
-        font-size: 0.8rem !important;
-        padding: 6px 12px !important;
-    }
-
-    /* Welcome screen */
-    .welcome-message {
-        padding: 20px !important;
-        margin-top: 10px !important;
-    }
-
-    .welcome-message h3 {
-        font-size: 1.4rem !important;
-    }
-
-    .companion-features {
-        flex-direction: column !important;
-        align-items: center !important;
+    /* Header controls wrap */
+    .headerControls {
+        flex-wrap: wrap !important;
         gap: 10px !important;
-        margin-top: 20px !important;
     }
 
-    /* Recommendation cards: 2 per row */
-    .anime-cards-grid .anime-card {
-        flex: 0 0 calc(50% - 6px) !important;
-        max-width: 50% !important;
+    .resetBtn, .searchBtn {
+        padding: 9px 16px !important;
+        font-size: 12px !important;
+        flex: 1 !important;
+    }
+
+    /* Results grid — 2 columns */
+    .resultsGrid,
+    .searchResultsGrid,
+    [class*="resultsGrid"],
+    [class*="searchResultsGrid"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+    }
+
+    /* Sort bar */
+    .sortBar,
+    [class*="sortBar"] {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    /* Dropdown menus — full viewport width on mobile */
+    .dropdownMenu {
+        left: 0 !important;
+        right: 0 !important;
+        transform: none !important;
+        width: calc(100vw - 24px) !important;
+        max-width: none !important;
+        max-height: 60vh !important;
+        border-radius: 12px !important;
+    }
+
+    .genresMenu {
+        width: calc(100vw - 24px) !important;
+    }
+
+    .dropdownContent .genresGrid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Anime grid (result cards) — same as .anime-card2 sizing */
+    .animeGrid,
+    [class*="animeGrid"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+        padding: 0 !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .advancedSearchContainer {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .resultsGrid,
+    .searchResultsGrid,
+    [class*="resultsGrid"] {
+        gap: 8px !important;
+    }
+
+    /* Score range input full width */
+    .scoreRange {
+        padding: 10px !important;
     }
 }
 
 @media (max-width: 380px) {
-    .ai-companion-box {
-        height: calc(100vh - 55px - 75px) !important;
-    }
-
-    /* 1 card per row on tiny screens */
-    .anime-cards-grid .anime-card {
-        flex: 0 0 100% !important;
-        max-width: 100% !important;
+    .dropdownToggle {
+        padding: 7px 10px !important;
+        font-size: 11px !important;
     }
 }
 
-/* ======================================================
-   LIST PAGE
-   ====================================================== */
+
+/* ══════════════════════════════════════════════════════════
+   7. ANIME LIST PAGE
+   ══════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
     .enhanced-anime-list {
         padding: 0.8rem !important;
@@ -362,12 +709,17 @@ textarea {
     }
 
     .list-header h1 {
-        font-size: 1.8rem !important;
+        font-size: clamp(1.6rem, 6vw, 2rem) !important;
     }
 
+    .list-header p {
+        font-size: 0.88rem !important;
+    }
+
+    /* Tabs wrap and center */
     .list-tabs {
         gap: 8px !important;
-        margin-top: 20px !important;
+        margin-top: 16px !important;
         flex-wrap: wrap !important;
         justify-content: center !important;
     }
@@ -377,16 +729,18 @@ textarea {
         font-size: 0.8rem !important;
     }
 
-    /* Cards: 2 columns on mobile */
+    /* 2-column grid */
     .anime-list-grid,
-    .anime-grid-list {
+    .anime-grid-list,
+    [class*="animeListGrid"],
+    [class*="animeGridList"] {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 12px !important;
     }
 
     .anime-card3 {
         width: 100% !important;
-        height: 280px !important;
+        height: 260px !important;
     }
 
     /* Import section */
@@ -398,15 +752,25 @@ textarea {
         width: 100% !important;
         font-size: 0.85rem !important;
     }
+
+    /* Stats summary bar */
+    .stats-summary,
+    [class*="statsSummary"] {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    /* Filter/sort controls */
+    .list-controls,
+    [class*="listControls"] {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
 }
 
 @media (max-width: 480px) {
     .anime-card3 {
-        height: 240px !important;
-    }
-
-    .list-tabs {
-        gap: 6px !important;
+        height: 230px !important;
     }
 
     .list-tabs button {
@@ -414,7 +778,7 @@ textarea {
         font-size: 0.75rem !important;
     }
 
-    /* Import modal full-screen on phone */
+    /* Import modal bottom sheet */
     .import-modal-overlay {
         padding: 0 !important;
         align-items: flex-end !important;
@@ -424,98 +788,354 @@ textarea {
         border-radius: 20px 20px 0 0 !important;
         max-width: 100% !important;
         margin: 0 !important;
+        padding-bottom: calc(20px + var(--safe-bottom)) !important;
     }
 }
 
-/* ======================================================
-   ADVANCED SEARCH
-   ====================================================== */
-@media (max-width: 768px) {
-
-    /* Filters panel */
-    .filters-panel,
-    .search-filters {
-        padding: 12px !important;
+@media (max-width: 380px) {
+    .anime-card3 {
+        height: 200px !important;
     }
 
-    .filter-group {
-        margin-bottom: 12px !important;
-    }
-
-    /* Results grid */
-    .search-results-grid,
-    .results-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 12px !important;
-    }
-}
-
-@media (max-width: 480px) {
-
-    .search-results-grid,
-    .results-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
+    .anime-list-grid,
+    .anime-grid-list {
         gap: 8px !important;
     }
 }
 
-/* ======================================================
-   PROFILE PAGE
-   ====================================================== */
-@media (max-width: 768px) {
 
-    /* Profile header card */
-    .profile-header-card,
-    .profile-card {
-        margin: 70px 10px 10px !important;
+/* ══════════════════════════════════════════════════════════
+   8. AI CHAT PAGE
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .ai-page-container {
+        padding-top: 65px !important;
+    }
+
+    .ai-page-wrapper {
+        padding: 0 0 12px !important;
+        max-width: 100% !important;
+    }
+
+    .ai-companion-box {
+        border-radius: 0 !important;
+        height: calc(100vh - 65px - 80px - var(--safe-bottom)) !important;
+        margin-bottom: 0 !important;
+    }
+
+    .messages-box {
+        padding: 1rem !important;
+    }
+
+    .message-bubble {
+        max-width: 88% !important;
+    }
+
+    .message-bubble.ai .message-content {
+        padding: 12px 14px !important;
+        font-size: 0.9rem !important;
+    }
+
+    .message-bubble.user .message-content {
+        padding: 10px 14px !important;
+    }
+
+    .input-wrapper {
+        margin: 8px !important;
+    }
+
+    .prompt-chip {
+        font-size: 0.78rem !important;
+        padding: 6px 12px !important;
+    }
+
+    .welcome-message {
         padding: 20px 16px !important;
     }
 
-    /* Stats grid on profile */
+    .welcome-message h3 {
+        font-size: 1.3rem !important;
+    }
+
+    .companion-features {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 10px !important;
+    }
+
+    /* AI recommendation cards: 2 per row */
+    .anime-cards-grid .anime-card {
+        flex: 0 0 calc(50% - 6px) !important;
+        max-width: calc(50% - 6px) !important;
+    }
+
+    /* Quick prompt chips scroll horizontally */
+    .quick-prompts,
+    [class*="quickPrompts"] {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 4px !important;
+        scrollbar-width: none !important;
+    }
+    .quick-prompts::-webkit-scrollbar,
+    [class*="quickPrompts"]::-webkit-scrollbar {
+        display: none !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .ai-companion-box {
+        height: calc(100vh - 55px - 75px - var(--safe-bottom)) !important;
+    }
+
+    .anime-cards-grid .anime-card {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   9. PROFILE PAGE
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Cover image — shorter on mobile */
+    .profile-cover {
+        height: 280px !important;
+    }
+
+    /* Header layout — stack vertically */
+    .profile-header {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        padding: 20px 5% !important;
+        gap: 16px !important;
+        bottom: -20px !important;
+    }
+
+    .profile-avatar-large {
+        width: 110px !important;
+        height: 110px !important;
+        border-radius: 28px !important;
+    }
+
+    .profile-avatar-placeholder {
+        font-size: 40px !important;
+    }
+
+    .profile-name-section h1 {
+        font-size: clamp(1.6rem, 7vw, 2.5rem) !important;
+        text-align: center !important;
+    }
+
+    .username-section {
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+    }
+
+    /* Container padding */
+    .profile-container2 {
+        padding: 50px 16px 100px !important;
+    }
+
+    /* Stats grid 2-column */
     .profile-stats,
     .stats-grid {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;
     }
 
-    /* Profile avatar */
-    .profile-avatar-large,
-    .avatar-container {
-        width: 80px !important;
-        height: 80px !important;
+    /* Tabs scroll horizontally */
+    .profile-tabs,
+    [class*="profileTabs"] {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        gap: 8px !important;
+        padding-bottom: 4px !important;
+    }
+    .profile-tabs::-webkit-scrollbar {
+        display: none !important;
     }
 
-    /* Edit form */
-    .profile-edit-form input,
-    .profile-edit-form textarea {
-        font-size: 16px !important;
-        /* Prevent iOS zoom */
+    .profile-tab-btn {
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        padding: 8px 16px !important;
+        font-size: 0.85rem !important;
     }
 
     /* Badges grid */
     .badges-grid {
         grid-template-columns: repeat(3, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    /* Anime list in profile: 2 columns */
+    .profile-anime-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    /* Edit form inputs — prevent iOS zoom */
+    .profile-edit-form input,
+    .profile-edit-form textarea {
+        font-size: 16px !important;
+    }
+
+    /* Action buttons */
+    .profile-action-btns {
+        flex-direction: column !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+
+    .profile-action-btns button {
+        width: 100% !important;
     }
 }
 
 @media (max-width: 480px) {
+    .profile-cover {
+        height: 220px !important;
+    }
 
-    .profile-stats,
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
+    .profile-avatar-large {
+        width: 90px !important;
+        height: 90px !important;
+        border-radius: 22px !important;
+    }
+
+    .profile-container2 {
+        padding: 40px 12px 100px !important;
     }
 
     .badges-grid {
         grid-template-columns: repeat(2, 1fr) !important;
     }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
 }
 
-/* ======================================================
-   LOGIN & REGISTER — Full-screen beautiful form
-   ====================================================== */
-@media (max-width: 576px) {
+@media (max-width: 380px) {
+    .profile-cover {
+        height: 180px !important;
+    }
 
-    /* Login card: full-height on mobile */
+    .profile-avatar-large {
+        width: 78px !important;
+        height: 78px !important;
+    }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   10. SETTINGS PAGE
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .settings-page {
+        height: auto !important;
+        overflow: visible !important;
+        overflow-x: hidden !important;
+    }
+
+    .settings-container {
+        padding: 80px 16px 100px !important;
+        overflow: visible !important;
+    }
+
+    .settings-page-title {
+        font-size: clamp(1.8rem, 7vw, 2.5rem) !important;
+    }
+
+    /* Stack sidebar + content vertically */
+    .settings-layout {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+
+    /* Sidebar becomes horizontal scroll tabs */
+    .settings-nav,
+    .settings-sidebar {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        gap: 8px !important;
+        padding-bottom: 4px !important;
+        width: 100% !important;
+        background: transparent !important;
+        border: none !important;
+    }
+    .settings-nav::-webkit-scrollbar,
+    .settings-sidebar::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    .settings-nav-item,
+    .settings-nav a,
+    .settings-sidebar button {
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        padding: 8px 16px !important;
+        font-size: 0.85rem !important;
+        border-radius: 50px !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+    }
+
+    /* Content panel */
+    .settings-content,
+    .settings-panel {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    /* Setting rows stack */
+    .setting-row {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    /* Toggles stay right */
+    .setting-toggle,
+    .toggle-switch {
+        align-self: flex-end !important;
+    }
+
+    /* Toast on mobile — full width bottom */
+    .settings-toast {
+        right: 10px !important;
+        left: 10px !important;
+        top: auto !important;
+        bottom: calc(90px + var(--safe-bottom)) !important;
+        width: auto !important;
+        border-radius: 12px !important;
+        justify-content: center !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-container {
+        padding: 70px 12px 100px !important;
+    }
+
+    .settings-page-title {
+        font-size: clamp(1.5rem, 6.5vw, 2rem) !important;
+    }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   11. LOGIN & REGISTER PAGES
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 576px) {
     .login-container,
     .register-container {
         min-height: 100vh !important;
@@ -532,136 +1152,177 @@ textarea {
         max-width: 100% !important;
     }
 
-    /* Inputs: big enough to not trigger zoom */
     .form-input,
     .auth-form input {
         font-size: 16px !important;
-        height: 52px !important;
+        height: 50px !important;
     }
 
-    /* Buttons full-width */
     .btn-primary,
     .google-btn {
         width: 100% !important;
     }
-}
 
-/* ======================================================
-   TRAILER HERO — Safe top padding on phones
-   ====================================================== */
-@media (max-width: 768px) {
-    .content-overlay {
-        left: 5% !important;
-        right: 5% !important;
-        bottom: 25% !important;
-        max-width: 90% !important;
-    }
-
-    .anime-title {
-        font-size: clamp(1.4rem, 5vw, 2rem) !important;
-    }
-
-    .anime-description {
-        font-size: 0.9rem !important;
-        display: -webkit-box !important;
-        -webkit-line-clamp: 3 !important;
-        line-clamp: 3 !important;
-        -webkit-box-orient: vertical !important;
-        overflow: hidden !important;
-    }
-
-    .genres {
-        font-size: 0.85rem !important;
-    }
-
-    .details-button {
-        padding: 0.7rem 1.5rem !important;
-        font-size: 0.9rem !important;
+    /* Forgot password */
+    .forgot-card {
+        border-radius: 0 !important;
+        min-height: 100vh !important;
+        padding: 80px 24px 40px !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
 }
 
-@media (max-width: 380px) {
-    .anime-title {
-        font-size: 1.2rem !important;
+
+/* ══════════════════════════════════════════════════════════
+   12. RELATED & RECOMMENDATIONS SECTION (inside modal)
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 576px) {
+    /* Related anime cards in modal tab */
+    .related-section,
+    .recommendations-section {
+        padding: 8px 0 !important;
     }
 
-    .anime-description {
-        font-size: 0.8rem !important;
-        -webkit-line-clamp: 2 !important;
-        line-clamp: 2 !important;
+    .related-grid,
+    .rec-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
     }
 
-    .details-button {
-        padding: 0.6rem 1.2rem !important;
-        font-size: 0.85rem !important;
-    }
-}
-
-/* ======================================================
-   TYPOGRAPHY SMOOTHING
-   ====================================================== */
-@media (max-width: 768px) {
-    h1 {
-        font-size: clamp(1.6rem, 6vw, 2.5rem) !important;
-    }
-
-    h2 {
-        font-size: clamp(1.4rem, 5vw, 2rem) !important;
-    }
-
-    h3 {
-        font-size: clamp(1.1rem, 4vw, 1.5rem) !important;
+    .related-card,
+    .rec-card {
+        height: 180px !important;
     }
 }
 
-/* ======================================================
-   GLOBAL TOUCH IMPROVEMENTS
-   ====================================================== */
+
+/* ══════════════════════════════════════════════════════════
+   13. GLOBAL TOUCH IMPROVEMENTS
+   ══════════════════════════════════════════════════════════ */
+
+/* Touch devices: disable hover effects that don't make sense */
 @media (hover: none) and (pointer: coarse) {
 
-    /* Ensure minimum tap targets everywhere */
-    button,
-    [role="button"],
-    a {
-        min-height: var(--touch-target);
-    }
-
-    /* Remove hover effects */
-    .anime-card2:hover img,
-    .anime-card3:hover .poster-img.grayscale {
+    /* Cards: no hover state on touch */
+    .anime-card2:hover img {
         transform: none !important;
         filter: none !important;
     }
 
-    /* Faster transitions on touch */
-    * {
-        transition-duration: 0.15s !important;
+    /* List card hover */
+    .anime-card3:hover .poster-img {
+        transform: none !important;
+        filter: none !important;
+    }
+
+    /* Profile avatar hover */
+    .profile-avatar-large:hover {
+        transform: none !important;
+    }
+
+    /* Shorter transitions on touch for snappier feel */
+    .anime-card2,
+    .anime-card3,
+    .nav-item,
+    .info-btn,
+    .carousel-btn,
+    .carousel-wrapper .slider-btns button,
+    .list-tabs button {
+        transition-duration: 0.12s !important;
+    }
+
+    /* Minimum tap target size */
+    button, [role="button"], a {
+        min-height: 44px;
     }
 }
 
-/* ======================================================
-   LANDSCAPE PHONE FIXES
-   ====================================================== */
-@media (max-height: 450px) and (orientation: landscape) {
-    .ai-companion-box {
-        height: calc(100vh - 50px - 60px) !important;
-    }
 
+/* ══════════════════════════════════════════════════════════
+   14. LANDSCAPE PHONE FIXES
+   ══════════════════════════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+    /* Hero overlay higher up in landscape */
     .content-overlay {
         bottom: 5% !important;
     }
 
+    /* Modal full height in landscape */
     .modal-content {
         max-height: 98vh !important;
     }
 
-    .bottom-button-bar {
-        padding: 4px 6px !important;
-        bottom: 8px !important;
+    /* AI chat height */
+    .ai-companion-box {
+        height: calc(100vh - 50px - 55px) !important;
     }
 
-    .nav-item {
-        height: 36px !important;
-        min-width: 36px !important;
+    /* Settings scrollable in landscape */
+    .settings-page {
+        height: auto !important;
+        overflow: visible !important;
+    }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   15. TYPOGRAPHY CLAMP — natural scaling
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Only apply to top-level headings, not inside components */
+    .homepage h1:not(.anime-title):not(.modal-title *) {
+        font-size: clamp(1.6rem, 6vw, 2.5rem) !important;
+    }
+
+    .homepage h2:not(.header-title) {
+        font-size: clamp(1.2rem, 5vw, 1.8rem) !important;
+    }
+
+    /* Section header accent bar — compact */
+    .accent-bar {
+        width: 4px !important;
+        height: 22px !important;
+        margin-right: 10px !important;
+    }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   16. MISC FIXES
+   ══════════════════════════════════════════════════════════ */
+
+/* Page loader safe on all devices */
+.page-loader {
+    padding-top: var(--safe-top) !important;
+}
+
+/* Skeleton loaders — 2 per row on small screens */
+@media (max-width: 768px) {
+    .skeleton-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .skeleton-card {
+        height: 200px !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .skeleton-card {
+        height: 185px !important;
+    }
+}
+
+/* Trailer embed responsive */
+@media (max-width: 768px) {
+    iframe[src*="youtube"],
+    .youtube-iframe,
+    .trailer-container iframe {
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 16/9 !important;
+        border-radius: 10px !important;
     }
 }

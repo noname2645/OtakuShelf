@@ -1,9 +1,9 @@
 /* ================================================================
    OTAKUSHELF — CINEMATIC PAGE LOADER
-   Anime gate + sakura rain
+   Anime welcome gate preloader (Symmetric timeline)
    ================================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700;900&family=Outfit:wght@300;400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap');
 
 /* ── Root container ─────────────────────────────────────────────── */
 .page-loader {
@@ -15,6 +15,7 @@
     align-items: center;
     justify-content: center;
     pointer-events: all;
+    background: #030712;
     /* Compositing on GPU */
     will-change: opacity;
     transform: translateZ(0);
@@ -22,7 +23,7 @@
 
 /* Exit phase: fade the whole loader out */
 .page-loader.phase-exit {
-    animation: loader-fadeout 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: loader-fadeout 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes loader-fadeout {
@@ -67,7 +68,7 @@
     pointer-events: none;
 }
 
-/* Enter: panels slide in from the sides */
+/* Enter: panels slide in from the sides (Duration: 0.7s) */
 .page-loader.phase-enter .curtain-left {
     animation: curtain-enter-left 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -78,33 +79,17 @@
 @keyframes curtain-enter-left  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 @keyframes curtain-enter-right { from { transform: translateX(100%);  } to { transform: translateX(0); } }
 
-/* Reveal: panels fly apart */
+/* Reveal: panels fly apart (Duration: 0.7s, delay-free for symmetry) */
 .page-loader.phase-reveal .curtain-left {
-    animation: curtain-split-left 0.6s cubic-bezier(0.55, 0, 1, 0.45) 0.5s both;
+    animation: curtain-split-left 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .page-loader.phase-reveal .curtain-right {
-    animation: curtain-split-right 0.6s cubic-bezier(0.55, 0, 1, 0.45) 0.5s both;
+    animation: curtain-split-right 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes curtain-split-left  { to { transform: translateX(-105%); } }
 @keyframes curtain-split-right { to { transform: translateX(105%);  } }
 
-/* Vertical Japanese text on curtain */
-.curtain-jp-text {
-    position: absolute;
-    top: 50%;
-    writing-mode: vertical-rl;
-    font-family: 'Noto Serif JP', serif;
-    font-size: clamp(0.9rem, 2.5vw, 1.3rem);
-    font-weight: 300;
-    color: rgba(255, 180, 80, 0.18);
-    letter-spacing: 0.3em;
-    transform: translateY(-50%);
-    pointer-events: none;
-    user-select: none;
-}
-.curtain-left  .curtain-jp-text { right: 18px; }
-.curtain-right .curtain-jp-text { left: 18px;  }
 
 /* ── Center Logo ─────────────────────────────────────────────────── */
 .loader-center {
@@ -115,7 +100,7 @@
     align-items: center;
     gap: 0.5rem;
     text-align: center;
-    animation: center-appear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+    animation: center-appear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
 }
 
 @keyframes center-appear {
@@ -123,25 +108,14 @@
     to   { opacity: 1; transform: scale(1)   translateY(0); }
 }
 
-/* Center content fades out in sync with curtain split (same 0.5s delay) */
+/* Center content fades out in sync with curtain split (Duration: 0.6s) */
 .page-loader.phase-reveal .loader-center {
-    animation: center-exit 0.35s cubic-bezier(0.4, 0, 1, 1) 0.5s both;
+    animation: center-exit 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes center-exit {
     from { opacity: 1; transform: scale(1)    translateY(0);   }
     to   { opacity: 0; transform: scale(0.85) translateY(-12px); }
-}
-
-/* Big kanji glyph — the "loading" symbol */
-.kanji-glyph {
-    font-family: 'Noto Serif JP', serif;
-    font-size: clamp(3.5rem, 10vw, 7rem);
-    font-weight: 900;
-    color: #ff7300;
-    line-height: 1;
-    transition: all 0.18s ease;
-    min-height: 1.1em;
 }
 
 /* Brand name */
@@ -202,72 +176,8 @@
 }
 
 
-
-/* ── Sakura particles ────────────────────────────────────────────── */
-.sakura-container {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    z-index: 4;
-    pointer-events: none;
-}
-
-.sakura-petal {
-    position: absolute;
-    top: -30px;
-    left: var(--x);
-    width: var(--size);
-    height: var(--size);
-    opacity: var(--opacity);
-    animation: sakura-fall var(--duration) ease-in var(--delay) infinite;
-    will-change: transform, opacity;
-}
-
-/* Cherry blossom petal using clip-path */
-.sakura-petal::before,
-.sakura-petal::after {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #ffb7c5, #ff8fa3, #ffd6de);
-    border-radius: 50% 0 50% 0;
-    box-shadow: 0 0 4px rgba(255, 150, 170, 0.4);
-}
-
-.sakura-petal::after {
-    transform: rotate(90deg);
-    background: linear-gradient(135deg, #ffd6de, #ffb7c5);
-    opacity: 0.8;
-}
-
-@keyframes sakura-fall {
-    0% {
-        transform: translateY(-20px) translateX(0) rotate(var(--rotate-start));
-        opacity: 0;
-    }
-    10% { opacity: var(--opacity); }
-    90% { opacity: var(--opacity); }
-    100% {
-        transform:
-            translateY(105vh)
-            translateX(var(--drift))
-            rotate(var(--rotate-end));
-        opacity: 0;
-    }
-}
-
-/* Hide petals during reveal to keep it clean */
-.page-loader.phase-reveal .sakura-container,
-.page-loader.phase-exit .sakura-container {
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
 /* ── Reduce motion accessibility ─────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-    .sakura-petal           { animation: none !important; opacity: 0 !important; }
-    .kanji-glyph            { animation: none !important; }
     .torii-icon             { animation: none !important; }
     .curtain                { animation: none !important; }
     /* Just fade in quickly */
@@ -276,8 +186,6 @@
 
 /* ── Mobile tweaks ───────────────────────────────────────────────── */
 @media (max-width: 480px) {
-    .curtain-jp-text { display: none; }
     .loader-brand    { font-size: 1.6rem; }
-    .kanji-glyph     { font-size: 3.5rem; }
     .torii-icon      { width: 55px; }
 }

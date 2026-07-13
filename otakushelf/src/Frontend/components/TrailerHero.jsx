@@ -57,9 +57,15 @@ const TrailerHero = ({ onOpenModal }) => {
 
     // Detect mobile and safe areas
     useEffect(() => {
+        const isMobileBreakpoint = () => window.innerWidth <= 768;
+        let prevMobile = isMobileBreakpoint();
+        
         const checkMobile = () => {
-            const mobile = window.innerWidth <= 768;
-            setIsMobile(mobile);
+            const mobile = isMobileBreakpoint();
+            if (mobile !== prevMobile) {
+                prevMobile = mobile;
+                setIsMobile(mobile);
+            }
 
             // Get safe area insets for modern phones (notch, home indicator)
             if (CSS.supports('padding-top: env(safe-area-inset-top)')) {
@@ -68,9 +74,9 @@ const TrailerHero = ({ onOpenModal }) => {
             }
         };
 
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        window.addEventListener('orientationchange', checkMobile);
+        setIsMobile(prevMobile);
+        window.addEventListener('resize', checkMobile, { passive: true });
+        window.addEventListener('orientationchange', checkMobile, { passive: true });
 
         return () => {
             window.removeEventListener('resize', checkMobile);
@@ -418,11 +424,13 @@ const TrailerHero = ({ onOpenModal }) => {
         // Reset player error and retry count when switching anime
         setPlayerError(false);
         setRetryCount(0);
-        // Reset fallback image state when switching
-        setFallbackImageLoaded(false);
-
         const videoId = getVideoId(currentAnimeData);
         const currentAnimeHasTrailer = hasTrailer(currentAnimeData);
+
+        // Only reset fallback image state if the new anime has a trailer
+        if (currentAnimeHasTrailer) {
+            setFallbackImageLoaded(false);
+        }
 
         if (currentAnimeHasTrailer && videoId) {
             setTimeout(() => {
@@ -433,14 +441,22 @@ const TrailerHero = ({ onOpenModal }) => {
             cleanupPlayer();
         }
 
-        // Pre-load the fallback image for instant display
+        // Pre-load the fallback image and only swap the URL after it has finished loading to prevent blinking
         const imgUrl = currentAnimeData.bannerImage || currentAnimeData.coverImage?.extraLarge || '';
         if (imgUrl) {
-            setFallbackImageUrl(imgUrl);
             const img = new Image();
-            img.onload = () => setFallbackImageLoaded(true);
-            img.onerror = () => setFallbackImageLoaded(true); // still show even on error
+            img.onload = () => {
+                setFallbackImageUrl(imgUrl);
+                setFallbackImageLoaded(true);
+            };
+            img.onerror = () => {
+                setFallbackImageUrl(imgUrl);
+                setFallbackImageLoaded(true);
+            };
             img.src = imgUrl;
+        } else {
+            setFallbackImageUrl('');
+            setFallbackImageLoaded(false);
         }
 
         // Start auto-scroll
@@ -698,10 +714,10 @@ const TrailerHero = ({ onOpenModal }) => {
                                     const nextAnime = announcements[nextIndex];
                                     if (!nextAnime) return null;
 
-                                    // Use YouTube thumbnail (landscape 16:9) for sharpness, fallback to banner/cover
+                                    // Use YouTube hqdefault thumbnail (guaranteed to exist) to prevent broken grey placeholders
                                     const videoId = getVideoId(nextAnime);
                                     const thumbUrl = videoId
-                                        ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+                                        ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
                                         : (nextAnime.bannerImage || nextAnime.coverImage?.extraLarge || nextAnime.coverImage?.large);
 
                                     return (

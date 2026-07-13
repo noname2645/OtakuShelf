@@ -7,16 +7,12 @@ body {
 .advancedSearchContainer {
   padding: 20px;
   margin: 0 auto;
-  /* background: #0a1124; Removed for global background */
   background: transparent;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
   min-height: 100vh;
   padding-top: 120px;
   font-family: 'Bricolage Grotesque', sans-serif;
 }
+
 
 .headerControls {
   display: flex;

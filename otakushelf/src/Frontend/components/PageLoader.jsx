@@ -1,27 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import '../Stylesheets/PageLoader.css';
 
-// Sakura particle pool
-const PARTICLE_COUNT = 28;
-
-const rand = (min, max) => Math.random() * (max - min) + min;
-
-const Sakura = ({ id }) => {
-    const style = {
-        '--x': `${rand(0, 100)}vw`,
-        '--drift': `${rand(-60, 60)}px`,
-        '--duration': `${rand(4, 8)}s`,
-        '--delay': `${rand(0, 4)}s`,
-        '--size': `${rand(8, 18)}px`,
-        '--rotate-start': `${rand(-40, 40)}deg`,
-        '--rotate-end': `${rand(200, 400)}deg`,
-        '--opacity': rand(0.4, 0.9),
-    };
-    return <div className="sakura-petal" style={style} key={id} />;
-};
-
 // Typewriter hook
-const useTypewriter = (text, speed = 60, startDelay = 300) => {
+const useTypewriter = (text, speed = 25, startDelay = 200) => {
     const [displayed, setDisplayed] = useState('');
     useEffect(() => {
         let i = 0;
@@ -37,51 +18,52 @@ const useTypewriter = (text, speed = 60, startDelay = 300) => {
     return displayed;
 };
 
-const KANJI_TEXT = '棚のアニメ';
 const TAGLINE = 'Your anime universe, curated.';
 
 const PageLoader = ({ onFinish }) => {
     const [phase, setPhase] = useState('enter'); // enter → reveal → exit
-    const particles = useRef([...Array(PARTICLE_COUNT)].map((_, i) => i));
-    const kanji = useTypewriter(KANJI_TEXT, 180, 200);
-    const tagline = useTypewriter(TAGLINE, 45, 1200);
+    const tagline = useTypewriter(TAGLINE, 25, 200);
 
-    // Phase timeline
+    // Keep onFinish callback reference updated without restarting the timeline
+    const onFinishRef = useRef(onFinish);
     useEffect(() => {
-        // 0ms:   enter (panels slide in, particles fall, kanji builds)
-        // 1400ms: reveal (panels fly out to sides)
-        // 2200ms: exit (fade out loader, call onFinish)
+        onFinishRef.current = onFinish;
+    }, [onFinish]);
+
+    // Symmetric phase timeline (Runs exactly once on mount):
+    // 0ms:    enter (panels slide in, takes 700ms)
+    // 1400ms: reveal (panels split apart, takes 700ms)
+    // 2100ms: exit (fade out loader overlay, takes 300ms)
+    // 2400ms: finished (loader hidden, trigger onFinish)
+    useEffect(() => {
         const t1 = setTimeout(() => setPhase('reveal'), 1400);
         const t2 = setTimeout(() => {
             setPhase('exit');
-            onFinish?.();
-        }, 2200);
-        return () => { clearTimeout(t1); clearTimeout(t2); };
-    }, [onFinish]);
+        }, 2100);
+        const t3 = setTimeout(() => {
+            onFinishRef.current?.();
+        }, 2400);
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
+        };
+    }, []);
 
     return (
         <div className={`page-loader phase-${phase}`} aria-hidden="true">
-            {/* Sakura rain */}
-            <div className="sakura-container">
-                {particles.current.map(id => <Sakura key={id} id={id} />)}
-            </div>
-
             {/* Left curtain panel */}
             <div className="curtain curtain-left">
                 <div className="curtain-texture" />
-                {/* Vertical Japanese text */}
-                <div className="curtain-jp-text">オタクシェルフ</div>
             </div>
 
             {/* Right curtain panel */}
             <div className="curtain curtain-right">
                 <div className="curtain-texture" />
-                <div className="curtain-jp-text">アニメの世界へ</div>
             </div>
 
-            {/* Center logo/kanji */}
+            {/* Center logo (Without Kanji) */}
             <div className="loader-center">
-                <div className="kanji-glyph">{kanji}<span className="cursor-blink">|</span></div>
                 <div className="loader-brand">
                     <span className="brand-otaku">OTAKU</span>
                     <span className="brand-shelf">SHELF</span>
@@ -97,8 +79,6 @@ const PageLoader = ({ onFinish }) => {
                     <rect x="102" y="8" width="8" height="20" rx="2" fill="currentColor" opacity="0.6"/>
                 </svg>
             </div>
-
-
         </div>
     );
 };
