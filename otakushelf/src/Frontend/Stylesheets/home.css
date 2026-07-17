@@ -1396,4 +1396,361 @@
     height: 185px;
   }
 }
+
+/* ==================================================================
+   🌌 PREMIUM CARD SYSTEM ("THE DOSSIER" CARD DESIGN - COMPACT)
+   ================================================================== */
+.anime-card-premium {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: rgba(12, 16, 28, 0.45);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.25s, box-shadow 0.25s;
+}
+
+.anime-card-premium:hover {
+  border-color: #ff5900;
+  box-shadow: 0 0 20px rgba(255, 89, 0, 0.22), 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+.premium-card-header {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+}
+
+.premium-rating-badge {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 4px 8px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  color: white;
+  line-height: 1;
+}
+
+.premium-rating-star {
+  color: #ff5900;
+  font-size: 11px;
+  display: inline-block;
+  line-height: 1;
+}
+
+.premium-rating-number {
+  font-size: 12px;
+  font-weight: 800;
+  font-family: 'Space Grotesk', sans-serif;
+  color: white;
+  display: inline-block;
+  line-height: 1;
+}
+
+.premium-bookmark-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.premium-bookmark-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.premium-bookmark-btn:active {
+  transform: scale(0.92);
+}
+
+.premium-card-poster {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.premium-card-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.premium-poster-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 10%, rgba(12, 16, 28, 0.45) 38%, rgba(12, 16, 28, 0.95) 72%, #0c101c 95%);
+  z-index: 2;
+}
+
+.premium-card-body {
+  padding: 12px 8px 6px;
+  position: relative;
+  z-index: 5;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.premium-format-tag {
+  border: 1px solid #ff5900;
+  color: #ff5900;
+  font-size: 7px;
+  font-weight: 800;
+  padding: 1.5px 7px;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 6px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.format-dot {
+  font-size: 5px;
+  vertical-align: middle;
+}
+
+.premium-main-title {
+  font-size: 15px;
+  font-weight: 800;
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
+  color: white;
+  line-height: 1.15;
+  margin: 0 0 3px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 34px;
+}
+
+.premium-romaji-spaced {
+  font-size: 6.5px;
+  color: #ff5900;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.premium-type-line {
+  font-size: 8.5px;
+  color: rgba(255, 255, 255, 0.38);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+}
+
+.type-line-dash {
+  opacity: 0.5;
+}
+
+.premium-divider-x {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.2);
+  margin: 2px 0;
+  line-height: 1;
+}
+
+.premium-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 6px;
+  padding: 0;
+}
+
+.premium-meta-col {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-align: left;
+}
+
+.meta-icon {
+  width: 15px;
+  height: 15px;
+  color: #ff5900;
+  flex-shrink: 0;
+}
+
+.meta-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.meta-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 0.6px;
+}
+
+.meta-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 58px;
+}
+
+.meta-separator {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 4px;
+}
+
+.premium-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 15, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  margin: 0 12px 12px;
+  padding: 4px;
+  z-index: 10;
+  position: relative;
+}
+
+.footer-action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+  transition: color 0.18s;
+  padding: 6px 0;
+  flex: 1;
+}
+
+.footer-action-item svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.footer-action-item span {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+}
+
+.footer-action-item:hover,
+.footer-action-item.active {
+  color: #ff5900;
+}
+
+.footer-action-item:hover span,
+.footer-action-item.active span {
+  color: #ff5900;
+}
+
+.footer-separator {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Responsive grid overrides for search */
+.anime-grid {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  padding: 16px;
+}
+
+/* Mobile responsive premium card */
+@media (max-width: 768px) {
+  .premium-card-body {
+    padding: 10px 10px 4px;
+  }
+  
+  .premium-main-title {
+    font-size: 13px;
+    height: 30px;
+  }
+  
+  .meta-val {
+    max-width: 48px;
+    font-size: 9px;
+  }
+  
+  .meta-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .meta-label {
+    font-size: 6.5px;
+  }
+  
+  .premium-card-footer {
+    margin: 0 8px 8px;
+    padding: 3px 4px;
+    border-radius: 9px;
+  }
+  
+  .footer-action-item svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .footer-action-item span {
+    font-size: 4.5px;
+  }
+}
+
 

@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
-// Import CSS since we use raw classnames matching home.css
+// Import CSS matching the new premium card design rules
 import "../Stylesheets/home.css"; 
 
 // ─── Shared singleton resize tracker ──────────────────────────────────────────
-// Instead of each card attaching its own window resize listener (100+ listeners!),
-// we use a single module-level listener that notifies all subscribers.
 const resizeCallbacks = new Set();
 let sharedIsMobile = window.innerWidth <= 768;
 
@@ -22,12 +20,21 @@ window.addEventListener('resize', handleGlobalResize, { passive: true });
 
 const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false, isGrid = false, customWidth, customHeight }) => {
     const [isMobile, setIsMobile] = useState(sharedIsMobile);
+    const [isBookmarked, setIsBookmarked] = useState(false);
+    const [isWatchlisted, setIsWatchlisted] = useState(false);
 
     useEffect(() => {
         const cb = (mobile) => setIsMobile(mobile);
         resizeCallbacks.add(cb);
+        
+        // Load initial interactive states from localStorage
+        if (anime?.id) {
+            setIsBookmarked(localStorage.getItem(`bookmark_${anime.id}`) === 'true');
+            setIsWatchlisted(localStorage.getItem(`watchlist_${anime.id}`) === 'true');
+        }
+
         return () => resizeCallbacks.delete(cb);
-    }, []);
+    }, [anime?.id]);
 
     const handleClick = useCallback((e) => {
         if (isDragging) {
@@ -38,8 +45,54 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         if (onClick) onClick(anime);
     }, [anime, onClick, isDragging]);
 
-    const defaultHeight = isMobile ? '228px' : '320px';
-    const defaultWidth = isMobile ? '160px' : '220px';
+    // Handle Bookmark Toggle
+    const handleBookmark = useCallback((e) => {
+        e.stopPropagation();
+        if (!anime?.id) return;
+        const nextState = !isBookmarked;
+        setIsBookmarked(nextState);
+        localStorage.setItem(`bookmark_${anime.id}`, String(nextState));
+    }, [anime?.id, isBookmarked]);
+
+    // Handle Watchlist Toggle
+    const handleWatchlist = useCallback((e) => {
+        e.stopPropagation();
+        if (!anime?.id) return;
+        const nextState = !isWatchlisted;
+        setIsWatchlisted(nextState);
+        localStorage.setItem(`watchlist_${anime.id}`, String(nextState));
+    }, [anime?.id, isWatchlisted]);
+
+    // Handle Native Share
+    const handleShare = useCallback((e) => {
+        e.stopPropagation();
+        const displayTitle = typeof anime?.title === 'object'
+            ? (anime.title.english || anime.title.romaji || "Anime")
+            : (anime?.title || "Anime");
+        
+        const shareUrl = `${window.location.origin}/anime/${anime?.id}`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: displayTitle,
+                text: `Check out ${displayTitle} on OtakuShelf!`,
+                url: shareUrl
+            }).catch(err => console.log('Share canceled'));
+        } else {
+            navigator.clipboard.writeText(shareUrl);
+            alert(`Link copied to clipboard: ${shareUrl}`);
+        }
+    }, [anime]);
+
+    // Handle Trailer Click
+    const handleTrailer = useCallback((e) => {
+        e.stopPropagation();
+        if (onClick) onClick(anime); // For trailer, we open the details modal where they can watch trailer
+    }, [anime, onClick]);
+
+    // Dimensions matching the smaller card layout requirements
+    const defaultHeight = isMobile ? '280px' : '380px';
+    const defaultWidth = isMobile ? '180px' : '250px';
     
     const height = customHeight || defaultHeight;
     const width = customWidth || defaultWidth;
@@ -58,59 +111,166 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         ? (anime.title.english || anime.title.romaji || anime.title.native || "Unknown Title")
         : (anime?.title || "Unknown Title");
 
+    const romajiTitle = typeof anime?.title === 'object' ? anime.title.romaji : (anime?.title || "");
+    const romajiSpaced = typeof romajiTitle === 'string'
+        ? romajiTitle.toUpperCase().split("").join(" ")
+        : "";
+
     const imageSrc = anime.coverImage?.extraLarge ||
         anime.coverImage?.large ||
         anime.bannerImage ||
         '/placeholder-anime.jpg';
 
+    // Parse Score (avoid default garbage 8.5, fallback to N/A)
+    const hasScore = (anime.averageScore && anime.averageScore > 0) || (anime.score && anime.score > 0);
+    const score = hasScore
+        ? (anime.averageScore ? (anime.averageScore / 10).toFixed(1) : (anime.score / 10).toFixed(1))
+        : "N/A";
+
+    // Parse Year
+    const releaseYear = anime.year || (anime.startDate && anime.startDate.year) || "2024";
+
+    // Parse Episodes (Ongoing if releasing, TBA if not released yet)
+    const episodesVal = anime.episodes || anime.episodes_count || anime.totalEpisodes || null;
+    const episodesText = episodesVal 
+        ? `${episodesVal} Ep` 
+        : (anime.status === 'RELEASING' ? 'Ongoing' : 'TBA');
+
+    // Parse Genre
+    const mainGenres = anime.genres && anime.genres.length > 0
+        ? anime.genres.slice(0, 2).join(", ")
+        : "Action, Fantasy";
+
     return (
         <motion.div
-            className={`anime-card2 ${isGrid ? 'grid-mode' : ''}`}
+            className={`anime-card-premium ${isGrid ? 'grid-mode' : ''}`}
             onClick={handleClick}
             style={{
                 ...cardStyle,
                 animationDelay: `${Math.min(index, 8) * 0.05}s`,
             }}
-            whileHover={{ scale: isGrid ? 1.02 : 1.04, y: -4, transition: { duration: 0.18, ease: "easeOut" } }}
             whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
         >
-            <div className="home-card-image" style={{ width: '100%', height: '100%' }}>
+            {/* Top Rating and Bookmark overlay */}
+            <div className="premium-card-header">
+                <div className="premium-rating-badge">
+                    <span className="premium-rating-star">★</span>
+                    <span className="premium-rating-number">{score}</span>
+                </div>
+                
+                <button 
+                    className={`premium-bookmark-btn ${isBookmarked ? 'active' : ''}`}
+                    onClick={handleBookmark}
+                    aria-label="Save Anime"
+                >
+                    <svg viewBox="0 0 24 24" fill={isBookmarked ? "#f59e0b" : "none"} stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                </button>
+            </div>
+
+            {/* Poster image background */}
+            <div className="premium-card-poster">
                 <img
                     src={imageSrc}
                     alt={displayTitle}
                     loading="lazy"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     decoding="async"
                 />
-                
-                <div className="card-title-bottom">
-                    <h3>{displayTitle}</h3>
+                <div className="premium-poster-fade" />
+            </div>
+
+            {/* Content Area */}
+            <div className="premium-card-body">
+                {/* Format outline pill */}
+                <div className="premium-format-tag">
+                    <span className="format-dot">○</span>
+                    {anime.format || 'TV'}
                 </div>
 
-                <div className="card-hover-overlay">
-                    <h3 className="hover-title">{displayTitle}</h3>
-                    <div className="hover-stats">
-                        <span className="hover-score">⭐ {anime.averageScore ? `${(anime.averageScore / 10).toFixed(1)}/10` : 'N/A'}</span>
-                        <span className="hover-episodes">{anime.episodes ? `${anime.episodes} EPS` : 'TBA'}</span>
-                        <span className="hover-status">{anime.status?.replace(/_/g, ' ') || 'Unknown'}</span>
-                    </div>
-                    {anime.genres && anime.genres.length > 0 && (
-                        <div className="hover-genres">
-                            {anime.genres.slice(0, 3).map((g, i) => (
-                                <span key={i} className="genre-tag">{g}</span>
-                            ))}
-                        </div>
-                    )}
-                    {anime.description && (
-                        <p className="hover-synopsis">
-                            {anime.description.replace(/<[^>]*>/g, '').substring(0, 80)}...
-                        </p>
-                    )}
-                    <button className="hover-add-btn" onClick={(e) => {
-                        e.stopPropagation(); // prevent opening modal
-                        // Future: hook up to add to list logic
-                    }}>+ Add to List</button>
+                {/* Big bold title */}
+                <h2 className="premium-main-title">{displayTitle}</h2>
+
+
+
+                {/* Secondary subtitle series/movie label */}
+                <div className="premium-type-line">
+                    <span className="type-line-dash">—</span>
+                    {anime.format === 'MOVIE' ? 'THE MOVIE' : 'TV SERIES'}
+                    <span className="type-line-dash">—</span>
                 </div>
+
+                {/* Divider x */}
+                <div className="premium-divider-x">×</div>
+
+                {/* Metadata Row */}
+                <div className="premium-meta-row">
+                    <div className="premium-meta-col">
+                        <svg className="meta-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                        <div className="meta-info">
+                            <span className="meta-label">RELEASED</span>
+                            <span className="meta-val">{releaseYear}</span>
+                        </div>
+                    </div>
+                    <div className="meta-separator" />
+                    <div className="premium-meta-col">
+                        <svg className="meta-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                            <line x1="8" y1="21" x2="16" y2="21" />
+                            <line x1="12" y1="17" x2="12" y2="21" />
+                        </svg>
+                        <div className="meta-info">
+                            <span className="meta-label">EPISODES</span>
+                            <span className="meta-val">{episodesText}</span>
+                        </div>
+                    </div>
+                    <div className="meta-separator" />
+                    <div className="premium-meta-col">
+                        <svg className="meta-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+                            <line x1="7" y1="2" x2="7" y2="22" />
+                            <line x1="17" y1="2" x2="17" y2="22" />
+                            <line x1="2" y1="12" x2="22" y2="12" />
+                            <line x1="2" y1="7" x2="7" y2="7" />
+                            <line x1="2" y1="17" x2="7" y2="17" />
+                            <line x1="17" y1="17" x2="22" y2="17" />
+                            <line x1="17" y1="7" x2="22" y2="7" />
+                        </svg>
+                        <div className="meta-info">
+                            <span className="meta-label">GENRE</span>
+                            <span className="meta-val">{mainGenres}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Actions Bar Footer */}
+            <div className="premium-card-footer">
+                <button className={`footer-action-item ${isWatchlisted ? 'active' : ''}`} onClick={handleWatchlist}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        {isWatchlisted ? (
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        ) : (
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                        )}
+                        {!isWatchlisted && <line x1="5" y1="12" x2="19" y2="12" />}
+                        {isWatchlisted && <polyline points="22 4 12 14.01 9 11.01" />}
+                    </svg>
+                    <span>{isWatchlisted ? 'ADDED' : 'WATCHLIST'}</span>
+                </button>
+                <div className="footer-separator" />
+                <button className="footer-action-item" onClick={handleShare}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                    <span>SHARE</span>
+                </button>
             </div>
         </motion.div>
     );
