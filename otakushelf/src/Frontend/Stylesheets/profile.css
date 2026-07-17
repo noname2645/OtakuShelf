@@ -981,15 +981,14 @@
   flex-direction: column;
 }
 
-/* Masonry */
+/* Favorites Grid */
 .masonry-grid {
-  columns: 5;
-  column-gap: 12px;
-  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  width: 100%;
 }
 .masonry-card {
-  break-inside: avoid;
-  margin-bottom: 11px;
   border-radius: 13px;
   overflow: hidden;
   position: relative;
@@ -999,10 +998,9 @@
 .masonry-card:hover {
   box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.5);
 }
-/* featured card hidden at full width — first poster is same size as others */
+/* featured card placeholder */
 .masonry-featured {
-  break-inside: avoid;
-  margin-bottom: 11px;
+  width: 100%;
 }
 .masonry-card img {
   width: 100%;
@@ -1329,7 +1327,7 @@
     aspect-ratio: 16 / 9;
     height: auto;
   }
-  .masonry-grid { columns: 3; }
+  .masonry-grid { grid-template-columns: repeat(4, 1fr); }
 
   /* Genre */
   .genre-pills-row { flex-wrap: wrap; }
@@ -1344,6 +1342,6 @@
   .entrance-avatar { width: 106px; height: 106px; }
   .hud-ticker { height: 62px; }
   .hud-number { font-size: 20px; }
-  .masonry-grid { columns: 2; }
+  .masonry-grid { grid-template-columns: repeat(2, 1fr); }
   .spotlight-card { width: 200px; }
 }
