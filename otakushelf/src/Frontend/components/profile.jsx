@@ -730,23 +730,56 @@ const ProfilePage = () => {
                 </div>
               </div>
             )}
-          </div>
+            {/* HUD Ticker (placed to the right of identity details) */}
+            <div className="hud-ticker">
+              {/* Row 1: Primary Stats */}
+              <div className="hud-primary-row">
+                <div className="hud-stat">
+                  <span className="hud-number">{stats?.animeWatched ?? 0}</span>
+                  <span className="hud-label">ANIME WATCHED</span>
+                </div>
+                <div className="hud-divider" />
+                <div className="hud-stat">
+                  <span className="hud-number">{stats?.hoursWatched ?? 0}</span>
+                  <span className="hud-label">HOURS WATCHED</span>
+                </div>
+                <div className="hud-divider" />
+                <div className="hud-stat">
+                  <span className="hud-number">{stats?.meanScore ?? 0}</span>
+                  <span className="hud-label">MEAN SCORE</span>
+                </div>
+              </div>
 
-          {/* HUD Ticker */}
-          <div className="hud-ticker">
-            <div className="hud-stat">
-              <span className="hud-number">{stats?.animeWatched ?? 0}</span>
-              <span className="hud-label">ANIME WATCHED</span>
-            </div>
-            <div className="hud-divider" />
-            <div className="hud-stat">
-              <span className="hud-number">{stats?.hoursWatched ?? 0}</span>
-              <span className="hud-label">HOURS WATCHED</span>
-            </div>
-            <div className="hud-divider" />
-            <div className="hud-stat">
-              <span className="hud-number">{stats?.meanScore ?? 0}</span>
-              <span className="hud-label">MEAN SCORE</span>
+              {/* Row Divider */}
+              <div className="hud-row-divider" />
+
+              {/* Row 2: Secondary Stats */}
+              <div className="hud-secondary-row">
+                <div className="ss-stat">
+                  <span className="ss-number">{stats?.currentlyWatching ?? 0}</span>
+                  <span className="ss-label">WATCHING</span>
+                </div>
+                <div className="ss-divider" />
+                <div className="ss-stat">
+                  <span className="ss-number">{stats?.animePlanned ?? 0}</span>
+                  <span className="ss-label">PLANNED</span>
+                </div>
+                <div className="ss-divider" />
+                <div className="ss-stat">
+                  <span className="ss-number">{stats?.animeDropped ?? 0}</span>
+                  <span className="ss-label">DROPPED</span>
+                </div>
+                <div className="ss-divider" />
+                <div className="ss-stat">
+                  <span className="ss-number">{stats?.totalEpisodes ?? 0}</span>
+                  <span className="ss-label">EPISODES</span>
+                </div>
+                <div className="ss-divider" />
+                <div className="ss-stat">
+                  <span className="ss-number">{stats?.favorites ?? 0}</span>
+                  <span className="ss-label">FAVORITES</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -755,36 +788,6 @@ const ProfilePage = () => {
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
               <path d="M6 9l6 6 6-6" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════════════════════
-            SECTION 1.5 — SUPPORTING STATS STRIP
-        ════════════════════════════════════════════════════════ */}
-        <section className="supporting-stats">
-          <div className="ss-stat">
-            <span className="ss-number">{stats?.currentlyWatching ?? 0}</span>
-            <span className="ss-label">WATCHING</span>
-          </div>
-          <div className="ss-divider" />
-          <div className="ss-stat">
-            <span className="ss-number">{stats?.animePlanned ?? 0}</span>
-            <span className="ss-label">PLANNED</span>
-          </div>
-          <div className="ss-divider" />
-          <div className="ss-stat">
-            <span className="ss-number">{stats?.animeDropped ?? 0}</span>
-            <span className="ss-label">DROPPED</span>
-          </div>
-          <div className="ss-divider" />
-          <div className="ss-stat">
-            <span className="ss-number">{stats?.totalEpisodes ?? 0}</span>
-            <span className="ss-label">EPISODES</span>
-          </div>
-          <div className="ss-divider" />
-          <div className="ss-stat">
-            <span className="ss-number">{stats?.favorites ?? 0}</span>
-            <span className="ss-label">FAVORITES</span>
           </div>
         </section>
 

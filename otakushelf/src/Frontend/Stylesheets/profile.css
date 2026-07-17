@@ -17,7 +17,7 @@
 ══════════════════════════════════════════════════════════════════ */
 .profile-entrance {
   position: relative;
-  min-height: 100vh;
+  min-height: 460px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -32,28 +32,34 @@
   object-position: center;
 }
 
-/* Left-to-right gradient — image clear on left, dark on right */
+/* Left-to-right gradient — dark on left, image clear on right */
 .entrance-gradient-lr {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to right,
-    rgba(3, 7, 18, 0.05) 0%,
-    rgba(3, 7, 18, 0.15) 20%,
+    rgba(3, 7, 18, 1)    0%,
+    rgba(3, 7, 18, 0.95) 25%,
     rgba(3, 7, 18, 0.65) 50%,
-    rgba(3, 7, 18, 0.96) 78%,
-    rgba(3, 7, 18, 1)    100%
+    rgba(3, 7, 18, 0.15) 80%,
+    rgba(3, 7, 18, 0.05) 100%
   );
 }
 
-/* Bottom bleed into next section */
+/* Bottom bleed into Achievements section (#0a0f1a) */
 .entrance-gradient-bottom {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 32%;
-  background: linear-gradient(to top, #030712 0%, transparent 100%);
+  height: 50%;
+  background: linear-gradient(
+    to top,
+    #0a0f1a 0%,
+    rgba(10, 15, 26, 0.85) 25%,
+    rgba(10, 15, 26, 0.3) 65%,
+    transparent 100%
+  );
   pointer-events: none;
 }
 
@@ -81,7 +87,7 @@
   color: white;
 }
 
-/* Main content: avatar + identity — pushed to the right */
+/* Main content: avatar + identity — left aligned */
 .entrance-content {
   position: relative;
   z-index: 10;
@@ -89,8 +95,8 @@
   display: flex;
   align-items: center;
   gap: 40px;
-  padding: 115px 8% 160px;
-  justify-content: flex-end;
+  padding: 120px 8% 30px;
+  justify-content: flex-start;
 }
 
 /* ── Avatar ─────────────────────────────────────────────────────── */
@@ -340,32 +346,36 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* ── HUD Ticker ─────────────────────────────────────────────────── */
+/* ── HUD Ticker (Unified Stats Card) ────────────────────────────── */
 .hud-ticker {
-  position: absolute;
-  bottom: 96px;
-  left: 0;
-  right: 0;
-  height: 78px;
+  margin-left: auto;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(28px);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 20px 24px;
+  gap: 16px;
   z-index: 15;
+  width: 100%;
+  max-width: 520px;
 }
 
+.hud-primary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+}
 .hud-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 0 56px;
 }
 .hud-number {
-  font-size: 44px;
+  font-size: 38px;
   font-weight: 900;
   color: white;
   line-height: 1;
@@ -374,7 +384,7 @@
 .hud-label {
   font-size: 8.5px;
   letter-spacing: 2.5px;
-  color: #475569;
+  color: rgba(255, 255, 255, 0.5);
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -385,10 +395,49 @@
   flex-shrink: 0;
 }
 
+.hud-row-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hud-secondary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+}
+.ss-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.ss-number {
+  font-size: 26px;
+  font-weight: 800;
+  color: white;
+  font-family: 'Space Grotesk', sans-serif;
+  line-height: 1;
+}
+.ss-label {
+  font-size: 7.5px;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.38);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.ss-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
 /* Scroll chevron */
 .scroll-indicator {
   position: absolute;
-  bottom: 182px;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 16;
@@ -398,45 +447,6 @@
 @keyframes scrollBounce {
   0%, 100% { transform: translateX(-50%) translateY(0);  opacity: 0.35; }
   50%       { transform: translateX(-50%) translateY(7px); opacity: 0.75; }
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   SECTION 1.5 — SUPPORTING STATS STRIP
-══════════════════════════════════════════════════════════════════ */
-.supporting-stats {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 44px 8%;
-  background: #030712;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-.ss-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 0 44px;
-}
-.ss-number {
-  font-size: 38px;
-  font-weight: 900;
-  color: rgba(255, 255, 255, 0.85);
-  line-height: 1;
-  font-family: 'Space Grotesk', sans-serif;
-}
-.ss-label {
-  font-size: 8.5px;
-  letter-spacing: 2.5px;
-  color: #334155;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-.ss-divider {
-  width: 1px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.06);
-  flex-shrink: 0;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -1291,10 +1301,11 @@
   /* Entrance */
   .entrance-content {
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: center;
     align-items: center;
     text-align: center;
     padding: 100px 5% 110px;
+    gap: 24px;
   }
   .entrance-avatar { width: 130px; height: 130px; }
   .entrance-identity { align-items: center; max-width: 100%; }
@@ -1302,6 +1313,13 @@
   .entrance-meta { justify-content: center; }
   .entrance-bio { text-align: center; }
   .entrance-actions { justify-content: center; }
+  .hud-ticker {
+    margin: 24px auto 0;
+    width: 100%;
+    max-width: 480px;
+    justify-content: space-around;
+    padding: 12px 6px;
+  }
   .hud-stat { padding: 0 18px; }
   .hud-number { font-size: 26px; }
   .hud-label { font-size: 7px; letter-spacing: 1.5px; }
@@ -1340,8 +1358,7 @@
 
 @media (max-width: 480px) {
   .entrance-avatar { width: 106px; height: 106px; }
-  .hud-ticker { height: 62px; }
+  .hud-ticker { margin-top: 18px; padding: 10px 4px; }
   .hud-number { font-size: 20px; }
   .masonry-grid { grid-template-columns: repeat(2, 1fr); }
-  .spotlight-card { width: 200px; }
 }
