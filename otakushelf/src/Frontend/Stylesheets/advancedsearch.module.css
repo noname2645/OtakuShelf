@@ -477,10 +477,6 @@ body {
   display: block;
 }
 
-.animeCard:hover img {
-  transform: scale(1.05);
-}
-
 .cardTitleBottom {
   position: absolute;
   bottom: 0;
