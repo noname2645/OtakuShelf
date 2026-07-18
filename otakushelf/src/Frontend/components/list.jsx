@@ -9,6 +9,332 @@ import BottomNavBar from "../components/bottom.jsx";
 import Import from "../images/import.png";
 import { useAnimePreferences } from './useAnimePreferences';
 
+const StarRating = ({ rating, onRatingChange, disabled = false }) => {
+  const [hoverRating, setHoverRating] = useState(0);
+
+  return (
+    <div className="star-rating">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          className={`star-btn ${star <= (hoverRating || rating) ? 'active' : ''}`}
+          onClick={() => !disabled && onRatingChange(Math.round(star))}
+          onMouseEnter={() => !disabled && setHoverRating(star)}
+          onMouseLeave={() => !disabled && setHoverRating(0)}
+          disabled={disabled}
+          title={`${star}/5`}
+        >
+          <Star
+            size={16}
+            fill={star <= (hoverRating || rating) ? "#ffd700" : "none"}
+            color={star <= (hoverRating || rating) ? "#ffd700" : "#ccc"}
+            className="star-icon"
+          />
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const PremiumAnimeCard = ({
+  anime,
+  activeTab,
+  user,
+  API,
+  handleStatusChange,
+  handleIncrementEpisode,
+  handleRatingChange,
+  handleRemove,
+  getFallbackImage,
+  calculateProgress
+}) => {
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showActionsDropdown, setShowActionsDropdown] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    if (anime?.animeId || anime?._id) {
+      const id = anime.animeId || anime._id;
+      setIsFavorite(localStorage.getItem(`favorite_${id}`) === 'true');
+    }
+  }, [anime]);
+
+  const toggleFavorite = (e) => {
+    e.stopPropagation();
+    const id = anime.animeId || anime._id;
+    const nextState = !isFavorite;
+    setIsFavorite(nextState);
+    localStorage.setItem(`favorite_${id}`, String(nextState));
+  };
+
+  const cardRef = useRef(null);
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (cardRef.current && !cardRef.current.contains(e.target)) {
+        setShowStatusDropdown(false);
+        setShowActionsDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  const totalEpisodes = anime.totalEpisodes || anime.episodes || anime.episodeCount || 24;
+  const episodesWatched = anime.episodesWatched || 0;
+  const progress = calculateProgress(episodesWatched, totalEpisodes);
+  const userRating = anime.userRating || 0;
+  const animeStatus = anime.status || activeTab;
+  const isCompleted = animeStatus === "completed";
+
+  const imageUrl = anime.image || anime.poster || getFallbackImage(anime.title);
+
+  // Parse compound titles into main title and subtitle
+  const parsedTitle = useMemo(() => {
+    const fullTitle = anime.title || 'Unknown Title';
+    
+    // Check for parenthesis: "Romaji (English)" or vice-versa
+    const parenMatch = fullTitle.match(/^([^(]+)\(([^)]+)\)$/);
+    if (parenMatch) {
+      return {
+        main: parenMatch[1].trim(),
+        sub: parenMatch[2].trim()
+      };
+    }
+    
+    // Check for colon: "Enen no Shouboutai: Fire Force"
+    if (fullTitle.includes(':')) {
+      const parts = fullTitle.split(':');
+      return {
+        main: parts[0].trim(),
+        sub: parts.slice(1).join(':').trim()
+      };
+    }
+    
+    // Check for dash: "Enen no Shouboutai - Fire Force"
+    if (fullTitle.includes(' - ')) {
+      const parts = fullTitle.split(' - ');
+      return {
+        main: parts[0].trim(),
+        sub: parts.slice(1).join(' - ').trim()
+      };
+    }
+
+    // Default subtitle to first genre if available
+    const fallbackSub = anime.genres && anime.genres.length > 0 ? anime.genres[0] : 'Anime';
+    
+    return { main: fullTitle, sub: fallbackSub };
+  }, [anime.title, anime.genres]);
+
+  // Handle status select click
+  const selectStatus = (newStatus) => {
+    setShowStatusDropdown(false);
+    handleStatusChange(anime, newStatus);
+  };
+
+  // Handle actions dropdown select
+  const selectAction = (action) => {
+    setShowActionsDropdown(false);
+    if (action === 'remove') {
+      handleRemove(anime._id || anime.animeId);
+    } else {
+      handleStatusChange(anime, action);
+    }
+  };
+
+  // Determine dynamic status display label
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'watching': return '✓ WATCHING';
+      case 'completed': return '✓ COMPLETED';
+      case 'planned': return '✓ PLANNED';
+      case 'dropped': return '✓ DROPPED';
+      default: return `✓ ${status.toUpperCase()}`;
+    }
+  };
+
+  // Determine dynamic brand color for bar
+  const accentColor = anime.coverImage?.color || '#ff5533';
+
+  return (
+    <div
+      ref={cardRef}
+      className={`premium-anime-card ${isCompleted ? 'status-completed' : ''}`}
+      style={{
+        '--anime-accent-color': accentColor,
+        '--status-color': animeStatus === 'completed' ? '#00e676' :
+                          animeStatus === 'watching' ? '#3b82f6' :
+                          animeStatus === 'planned' ? '#f97316' : '#9ca3af'
+      }}
+    >
+      {/* Top Overlay Badges */}
+      <div className="premium-card-header-badges">
+        {/* Favorite Heart badge */}
+        <button
+          className={`premium-badge-favorite ${isFavorite ? 'active' : ''}`}
+          onClick={toggleFavorite}
+          title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+        >
+          <svg className="heart-svg-icon" viewBox="0 0 24 24" fill={isFavorite ? "#ff2a5f" : "none"} stroke="#ff2a5f" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+        </button>
+
+        {/* Status Pill Badge with interactive custom dropdown */}
+        <div className="premium-badge-status-container">
+          <button
+            className={`premium-badge-status-pill ${animeStatus}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowStatusDropdown(prev => !prev);
+              setShowActionsDropdown(false);
+            }}
+          >
+            <span>{getStatusLabel(animeStatus)}</span>
+          </button>
+          
+          {showStatusDropdown && (
+            <div className="premium-status-menu-dropdown">
+              <button className={animeStatus === 'watching' ? 'active' : ''} onClick={() => selectStatus('watching')}>Watching</button>
+              <button className={animeStatus === 'completed' ? 'active' : ''} onClick={() => selectStatus('completed')}>Completed</button>
+              <button className={animeStatus === 'planned' ? 'active' : ''} onClick={() => selectStatus('planned')}>Planned</button>
+              <button className={animeStatus === 'dropped' ? 'active' : ''} onClick={() => selectStatus('dropped')}>Dropped</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Poster Image Area */}
+      <div className="premium-poster-area">
+        <img
+          className="premium-poster-img"
+          src={imageUrl}
+          alt={parsedTitle.main}
+          onError={(e) => (e.target.src = getFallbackImage(anime.title))}
+        />
+        <div className="premium-poster-gradient-fade" />
+      </div>
+
+      {/* Card Info and Controls Body */}
+      <div className="premium-card-body-content">
+        {/* Titles */}
+        <div className="premium-title-group">
+          <h2 className="premium-title-main" title={parsedTitle.main}>
+            {parsedTitle.main.toUpperCase()}
+          </h2>
+        </div>
+
+        {/* Grid Progress Box */}
+        <div className="premium-progress-stats-box">
+          <div className="premium-stats-grid">
+            {/* Left Col: Episodes Incrementor */}
+            <div className="premium-stat-col-left">
+              <button
+                className={`premium-ep-increment-btn-circle ${episodesWatched >= totalEpisodes || isCompleted ? 'disabled' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (episodesWatched < totalEpisodes && !isCompleted) {
+                    handleIncrementEpisode(anime);
+                  }
+                }}
+                disabled={episodesWatched >= totalEpisodes || isCompleted}
+                title="Increment Watched Episode (+1 Ep)"
+              >
+                <div className="clapboard-svg-wrapper">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="clapboard-svg">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" />
+                  </svg>
+                </div>
+              </button>
+              
+              <div className="premium-stat-info-text">
+                <span className="premium-stat-label">EPISODES</span>
+                <span className="premium-stat-value">{episodesWatched} / {totalEpisodes}</span>
+              </div>
+            </div>
+
+            <div className="premium-stats-vertical-divider" />
+
+            {/* Right Col: Progress Percent */}
+            <div className="premium-stat-col-right">
+              <span className="premium-stat-label">PROGRESS</span>
+              <span className={`premium-stat-value progress-percent ${isCompleted ? 'completed' : ''}`}>
+                {Math.round(progress)}%
+              </span>
+            </div>
+          </div>
+
+          {/* Glowing Green Progress Bar */}
+          <div className="premium-progress-glow-track">
+            <div
+              className="premium-progress-glow-bar"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Bottom Row: Rating and Action Button */}
+        <div className="premium-card-footer-row">
+          {/* Your Rating Block */}
+          <div className="premium-rating-container">
+            <span className="premium-rating-header-label">YOUR RATING</span>
+            <div className="premium-rating-stars-interactive">
+              <StarRating
+                rating={userRating}
+                onRatingChange={(newRating) => handleRatingChange(anime, newRating)}
+                disabled={!user}
+              />
+              <span className="premium-rating-text-value">{userRating > 0 ? `${userRating}/5` : '0/5'}</span>
+            </div>
+          </div>
+
+          {/* Bookmark IN YOUR LIST Button with dropdown */}
+          <div className="premium-bookmark-action-container">
+            <button
+              className="premium-in-list-button-rect"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowActionsDropdown(prev => !prev);
+                setShowStatusDropdown(false);
+              }}
+            >
+              <div className="bookmark-svg-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="bookmark-svg">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <span>IN YOUR LIST</span>
+            </button>
+
+            {showActionsDropdown && (
+              <div className="premium-list-actions-menu-dropdown">
+                <button className="remove-item-btn" onClick={() => selectAction('remove')}>
+                  <span className="action-emoji">🗑️</span> Remove from List
+                </button>
+                <div className="dropdown-divider-line" />
+                <button className={animeStatus === 'watching' ? 'selected' : ''} onClick={() => selectAction('watching')}>
+                  <span className="action-emoji">🕒</span> Move to Watching
+                </button>
+                <button className={animeStatus === 'completed' ? 'selected' : ''} onClick={() => selectAction('completed')}>
+                  <span className="action-emoji">✅</span> Move to Completed
+                </button>
+                <button className={animeStatus === 'planned' ? 'selected' : ''} onClick={() => selectAction('planned')}>
+                  <span className="action-emoji">📅</span> Move to Planned
+                </button>
+                <button className={animeStatus === 'dropped' ? 'selected' : ''} onClick={() => selectAction('dropped')}>
+                  <span className="action-emoji">❌</span> Move to Dropped
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const EnhancedAnimeList = () => {
   const { preferences } = useAnimePreferences();
   const [activeTab, setActiveTab] = useState('watching');
@@ -470,17 +796,12 @@ const EnhancedAnimeList = () => {
         if (currentStatus !== "completed") {
           moveAnimeBetweenCategories(animeId, currentStatus, "completed");
 
-          await axios.put(
+          await api.put(
             `${API}/api/list/${userId}/${animeId}`,
             {
               episodesWatched: totalEpisodes,
               status: "completed",
               fromCategory: currentStatus
-            },
-            {
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-              }
             }
           );
         }
@@ -635,36 +956,7 @@ const EnhancedAnimeList = () => {
     }
   }, [user, updateAnimeInList]);
 
-  // Add this Star Rating Component inside your component
-  const StarRating = ({ rating, onRatingChange, disabled = false }) => {
-    const [hoverRating, setHoverRating] = useState(0);
-
-    return (
-      <div className="star-rating">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            className={`star-btn ${star <= (hoverRating || rating) ? 'active' : ''}`}
-            onClick={() => !disabled && onRatingChange(Math.round(star))}
-            onMouseEnter={() => !disabled && setHoverRating(star)}
-            onMouseLeave={() => !disabled && setHoverRating(0)}
-            disabled={disabled}
-            title={`${star}/5`}
-          >
-            <Star
-              size={16}
-              fill={star <= (hoverRating || rating) ? "#ffd700" : "none"}
-              color={star <= (hoverRating || rating) ? "#ffd700" : "#ccc"}
-            />
-          </button>
-        ))}
-        <span className="rating-text">
-          {rating > 0 ? `${rating}/5` : ''}
-        </span>
-      </div>
-    );
-  };
+  // StarRating is declared at top level
 
   return (
     <>
@@ -756,106 +1048,21 @@ const EnhancedAnimeList = () => {
                     <span>{group.title}</span>
                   </h3>
                   <div className="month-group-cards">
-                    {group.anime.map(anime => {
-                      const totalEpisodes = anime.totalEpisodes || anime.episodes || anime.episodeCount || 24;
-                      const episodesWatched = anime.episodesWatched || 0;
-                      const progress = calculateProgress(episodesWatched, totalEpisodes);
-                      const userRating = anime.userRating || 0;
-                      const animeStatus = anime.status || activeTab;
-                      const isCompleted = animeStatus === "completed";
-
-                      const progressPercentage = `${progress}%`;
-                      const imageUrl = anime.image || anime.poster || getFallbackImage(anime.title);
-
-                      return (
-                        <div
-                          key={anime._id || anime.animeId || anime.title}
-                          className={`anime-card3 ${isCompleted ? 'status-completed' : ''}`}
-                        >
-                          <div className={`status-badge2 ${getStatusBadgeClass(animeStatus)}`}>
-                            <select
-                              className="status-badge-select"
-                              value={animeStatus}
-                              onChange={(e) => handleStatusChange(anime, e.target.value)}
-                            >
-                              <option value="watching">Watching</option>
-                              <option value="completed">Completed</option>
-                              <option value="planned">Planned</option>
-                              <option value="dropped">Dropped</option>
-                            </select>
-                          </div>
-
-                          <div
-                            className="card-poster"
-                            style={{ '--progress': `${progress}%` }}
-                          >
-                            <img
-                              className="poster-img grayscale"
-                              src={imageUrl}
-                              alt={anime.title}
-                              onError={(e) => (e.target.src = getFallbackImage(anime.title))}
-                            />
-
-                            <img
-                              className="poster-img color"
-                              src={imageUrl}
-                              alt=""
-                              aria-hidden
-                              onError={(e) => (e.target.src = getFallbackImage(anime.title))}
-                            />
-                          </div>
-
-                          <div className="card-info-content">
-                            <h3 className="anime-title-card" title={anime.title}>
-                              {anime.title || 'Unknown Title'}
-                            </h3>
-
-                            <div className="episode-row">
-                              <div className="episode-info">
-                                <span className="episode-dot"></span>
-                                <span>{formatEpisodeText(episodesWatched, totalEpisodes)}</span>
-                              </div>
-                              <button
-                                className="epincbtn"
-                                onClick={() => handleIncrementEpisode(anime)}
-                                disabled={episodesWatched >= totalEpisodes || isCompleted}
-                              >
-                                +1 Ep
-                              </button>
-                            </div>
-
-                            <div className="progress-section">
-                              <div className="progress-bar-container">
-                                <div
-                                  className="progress-bar-fill"
-                                  style={{ width: progressPercentage }}
-                                ></div>
-                              </div>
-                              <div className="progress-text">
-                                <span>Progress</span>
-                                <span>{Math.round(progress)}%</span>
-                              </div>
-                            </div>
-
-                            <div className="rating-row">
-                              <div className="rating-left">
-                                <StarRating
-                                  rating={userRating || 0}
-                                  onRatingChange={(newRating) => handleRatingChange(anime, newRating)}
-                                  disabled={!user}
-                                />
-                              </div>
-                              <button
-                                className="action-btn remove-btn-card"
-                                onClick={() => handleRemove(anime._id || anime.animeId)}
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {group.anime.map(anime => (
+                      <PremiumAnimeCard
+                        key={anime._id || anime.animeId || anime.title}
+                        anime={anime}
+                        activeTab={activeTab}
+                        user={user}
+                        API={API}
+                        handleStatusChange={handleStatusChange}
+                        handleIncrementEpisode={handleIncrementEpisode}
+                        handleRatingChange={handleRatingChange}
+                        handleRemove={handleRemove}
+                        getFallbackImage={getFallbackImage}
+                        calculateProgress={calculateProgress}
+                      />
+                    ))}
                   </div>
                 </div>
               ))
