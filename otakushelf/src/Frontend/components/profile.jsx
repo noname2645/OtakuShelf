@@ -1061,12 +1061,17 @@ const ProfilePage = () => {
                   );
                 })()}
 
-                {/* Filmstrip — 2×2 grid (1fr), premium design, aspect-ratio 2/3 */}
+                {/* Filmstrip — up to 5 cards in 2-col grid, premium design, aspect-ratio 2/3 */}
                 {recentlyWatched.length > 1 && (
                   <div className="filmstrip">
-                    {recentlyWatched.slice(1, 5).map((anime, idx) => {
+                    {recentlyWatched.slice(1, 6).map((anime, idx) => {
                       const hasScore = anime.averageScore && anime.averageScore > 0;
                       const score = hasScore ? (anime.averageScore / 10).toFixed(1) : (anime.score ? (anime.score / 10).toFixed(1) : "N/A");
+                      const releaseYear = anime.year || (anime.startDate && anime.startDate.year) || "N/A";
+                      const episodesVal = anime.episodes || anime.episodes_count || anime.totalEpisodes || null;
+                      const episodesText = episodesVal
+                        ? `${episodesVal} Ep`
+                        : (anime.status === 'RELEASING' ? 'Ongoing' : 'TBA');
                       const displayTitle = typeof anime?.title === 'object'
                         ? (anime.title.english || anime.title.romaji || anime.title.native || String(anime.title))
                         : (anime?.title || "Unknown Title");
@@ -1089,6 +1094,21 @@ const ProfilePage = () => {
                               <span className="format-dot">○</span>{format}
                             </div>
                             <h2 className="premium-main-title" style={{ fontSize: '11px', height: 'auto' }}>{displayTitle}</h2>
+                            <div className="rw-filmstrip-meta">
+                              <span className="rw-filmstrip-meta-item">
+                                <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                                {releaseYear}
+                              </span>
+                              <span className="rw-filmstrip-meta-dot">·</span>
+                              <span className="rw-filmstrip-meta-item">
+                                <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
+                                </svg>
+                                {episodesText}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       );
