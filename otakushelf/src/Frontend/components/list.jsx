@@ -60,12 +60,24 @@ const PremiumAnimeCard = ({
     }
   }, [anime]);
 
-  const toggleFavorite = (e) => {
+  const toggleFavorite = async (e) => {
     e.stopPropagation();
-    const id = anime.animeId || anime._id;
+    const id = anime.animeId || anime._id || anime.id;
     const nextState = !isFavorite;
     setIsFavorite(nextState);
     localStorage.setItem(`favorite_${id}`, String(nextState));
+
+    if (user && user._id) {
+      try {
+        await api.post(`/api/list/favorite/${user._id}`, {
+          animeId: id,
+          isFavorite: nextState,
+          animeData: anime
+        });
+      } catch (err) {
+        console.error("Failed to sync favorite with backend", err);
+      }
+    }
   };
 
   const cardRef = useRef(null);

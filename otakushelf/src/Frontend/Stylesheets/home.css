@@ -1407,8 +1407,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  background: rgba(12, 16, 28, 0.45);
-  backdrop-filter: blur(20px);
+  background: rgba(12, 16, 28, 0.85); /* Increased opacity to compensate for lack of blur */
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
@@ -1438,11 +1437,10 @@
   flex-direction: row;
   align-items: center;
   gap: 4px;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.85); /* Increased opacity */
   padding: 4px 8px;
   border-radius: 9px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
   color: white;
   line-height: 1;
 }
@@ -1468,8 +1466,7 @@
   height: 30px;
   border-radius: 9px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.85); /* Increased opacity */
   display: flex;
   align-items: center;
   justify-content: center;

@@ -56,6 +56,16 @@ const animeListSchema = new mongoose.Schema({
         episodesWatched: { type: Number, default: 0 },
         status: { type: String, default: 'dropped' },
         genres: [String]
+    }],
+    favorites: [{
+        title: String,
+        animeId: String,
+        malId: String,
+        image: String,
+        totalEpisodes: Number,
+        addedDate: { type: Date, default: Date.now },
+        userRating: Number,
+        genres: [String]
     }]
 });
 

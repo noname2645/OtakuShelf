@@ -1771,20 +1771,18 @@ async function getRecentlyWatched(userId, limit = 4) {
 
 async function getFavoriteAnime(userId, limit = 4) {
   const animeList = await AnimeList.findOne({ userId });
-  if (!animeList) return [];
+  if (!animeList || !animeList.favorites) return [];
 
-  const allAnime = [
-    ...(animeList.completed || []),
-    ...(animeList.watching || []),
-  ].filter(anime => anime.userRating && anime.userRating >= 4)
-    .sort((a, b) => b.userRating - a.userRating)
+  const favorites = animeList.favorites
+    .sort((a, b) => new Date(b.addedDate) - new Date(a.addedDate))
     .slice(0, limit);
 
-  return allAnime.map(anime => ({
-    id: anime._id,
+  return favorites.map(anime => ({
+    id: anime.animeId || anime.malId || anime._id,
     title: anime.title,
     image: anime.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=250&fit=crop',
-    rating: anime.userRating
+    rating: anime.userRating || 0,
+    genres: anime.genres || []
   }));
 }
 
@@ -1856,6 +1854,43 @@ app.get("/api/badges/all", (req, res) => {
     id, title, description, icon, rarity, category,
   }));
   res.sendSuccess("All badge definitions", { badges: definitions, total: definitions.length });
+});
+
+// Route: POST /api/list/favorite/:userId — Toggle anime favorite status
+app.post("/api/list/favorite/:userId", authenticateToken, authorizeUser, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { animeId, isFavorite, animeData } = req.body;
+    
+    let list = await AnimeList.findOne({ userId });
+    if (!list) {
+      list = new AnimeList({ userId, favorites: [] });
+    }
+
+    const existingIndex = list.favorites.findIndex(a => (String(a.animeId) === String(animeId) || String(a.malId) === String(animeId) || String(a._id) === String(animeId)));
+    
+    if (isFavorite && existingIndex === -1) {
+      // Add to favorites
+      list.favorites.push({
+        title: animeData?.title?.english || animeData?.title?.romaji || animeData?.title || 'Unknown',
+        animeId: animeId,
+        malId: animeData?.idMal || animeData?.malId || null,
+        image: animeData?.coverImage?.large || animeData?.image || animeData?.coverImage?.extraLarge,
+        totalEpisodes: animeData?.episodes || animeData?.totalEpisodes || 0,
+        userRating: animeData?.userRating || 0,
+        genres: animeData?.genres || [],
+        addedDate: new Date()
+      });
+    } else if (!isFavorite && existingIndex !== -1) {
+      // Remove from favorites
+      list.favorites.splice(existingIndex, 1);
+    }
+    
+    await list.save();
+    res.sendSuccess("Favorite toggled successfully", { isFavorite });
+  } catch (err) {
+    res.sendError("Failed to toggle favorite", 500, err);
+  }
 });
 
 // Route 19: PUT /api/list/:userId/:animeId — Update anime in list

@@ -20,7 +20,7 @@ window.addEventListener('resize', handleGlobalResize, { passive: true });
 
 const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false, isGrid = false, customWidth, customHeight }) => {
     const [isMobile, setIsMobile] = useState(sharedIsMobile);
-    const [isBookmarked, setIsBookmarked] = useState(false);
+    const [isFavorite, setIsFavorite] = useState(false);
     const [isWatchlisted, setIsWatchlisted] = useState(false);
 
     useEffect(() => {
@@ -29,7 +29,7 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         
         // Load initial interactive states from localStorage
         if (anime?.id) {
-            setIsBookmarked(localStorage.getItem(`bookmark_${anime.id}`) === 'true');
+            setIsFavorite(localStorage.getItem(`favorite_${anime.id}`) === 'true');
             setIsWatchlisted(localStorage.getItem(`watchlist_${anime.id}`) === 'true');
         }
 
@@ -45,14 +45,31 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         if (onClick) onClick(anime);
     }, [anime, onClick, isDragging]);
 
-    // Handle Bookmark Toggle
-    const handleBookmark = useCallback((e) => {
+    // Handle Favorite Toggle
+    const handleFavorite = useCallback(async (e) => {
         e.stopPropagation();
         if (!anime?.id) return;
-        const nextState = !isBookmarked;
-        setIsBookmarked(nextState);
-        localStorage.setItem(`bookmark_${anime.id}`, String(nextState));
-    }, [anime?.id, isBookmarked]);
+        const nextState = !isFavorite;
+        setIsFavorite(nextState);
+        localStorage.setItem(`favorite_${anime.id}`, String(nextState));
+
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                if (user && user._id) {
+                    const { default: api } = await import('../api.js');
+                    await api.post(`/api/list/favorite/${user._id}`, {
+                        animeId: anime.id,
+                        isFavorite: nextState,
+                        animeData: anime
+                    });
+                }
+            }
+        } catch (err) {
+            console.error("Failed to sync favorite with backend", err);
+        }
+    }, [anime, isFavorite]);
 
     // Handle Watchlist Toggle
     const handleWatchlist = useCallback((e) => {
@@ -159,12 +176,13 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
                 </div>
                 
                 <button 
-                    className={`premium-bookmark-btn ${isBookmarked ? 'active' : ''}`}
-                    onClick={handleBookmark}
-                    aria-label="Save Anime"
+                    className={`premium-bookmark-btn ${isFavorite ? 'active' : ''}`}
+                    onClick={handleFavorite}
+                    aria-label={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                    title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
                 >
-                    <svg viewBox="0 0 24 24" fill={isBookmarked ? "#f59e0b" : "none"} stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    <svg className="heart-svg-icon" viewBox="0 0 24 24" fill={isFavorite ? "#ff2a5f" : "none"} stroke="#ff2a5f" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}>
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                     </svg>
                 </button>
             </div>
