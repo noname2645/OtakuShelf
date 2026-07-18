@@ -1377,13 +1377,16 @@
 
 @media (max-width: 768px) {
   .enhanced-anime-list {
-    padding: 90px 0.5rem 5rem; /* Increased top padding to clear fixed header */
+    padding: 110px 0.5rem 5rem; /* top clears fixed header + gap */
     margin: 0 !important;
     width: 100% !important;
+    overflow-x: hidden;
   }
 
   .list-header {
-    padding: 1rem 0.5rem;
+    padding: 0;
+    margin-bottom: 0;
+    text-align: center;
   }
 
   .list-header h1 {
@@ -1434,25 +1437,31 @@
   }
   
   .list-tabs {
-    margin-top: 20px;
-    gap: 8px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     width: 100%;
+    gap: 10px;
   }
 
-  .list-tabs-scroll {
+  /* Horizontal scrollable tab strip */
+  .tabs-row {
     display: flex;
-    gap: 8px;
+    flex-direction: row;
+    flex-wrap: nowrap;
     overflow-x: auto;
-    width: 100%;
-    justify-content: flex-start;
-    padding: 4px 8px;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-start; /* flex-start required for overflow-x scroll to work */
+    width: 100%;
+    padding: 4px 12px;
+    box-sizing: border-box;
   }
 
-  .list-tabs-scroll::-webkit-scrollbar {
+  .tabs-row::-webkit-scrollbar {
     display: none;
   }
 
@@ -1461,15 +1470,25 @@
     font-size: 0.8rem;
     flex: 0 0 auto !important;
     min-width: unset !important;
+    white-space: nowrap;
   }
 
+  /* Import section: full width below the tab strip */
   .import-section {
     width: 100%;
-    margin-top: 10px;
+    margin-top: 0;
   }
 
   .import-btn {
     width: 100%;
+  }
+
+  /* Wrap list-header to stack tabs + import vertically */
+  .list-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
   }
 }
 
@@ -2051,10 +2070,12 @@
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px !important;
     padding: 0.2rem !important;
+    align-items: start !important; /* Prevent rows from stretching cards to unequal heights */
   }
 
+  /* Card overall: taller to fit all elements */
   .premium-anime-card {
-    height: 255px;
+    height: 300px !important;
     max-width: 100%;
     border-radius: 12px;
   }
@@ -2064,7 +2085,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 165px;
+    height: 170px !important;
     overflow: hidden;
     z-index: 1;
   }
@@ -2074,100 +2095,130 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 8px 10px 10px;
-    height: 110px;
+    padding: 7px 8px 8px !important;
+    height: 148px !important;
     display: flex !important;
     flex-direction: column !important;
+    justify-content: space-between !important;
     z-index: 5;
     background: linear-gradient(to top, 
       #070a13 0%, 
-      #070a13 60%, 
-      rgba(7, 10, 19, 0.95) 86%, 
+      #070a13 65%, 
+      rgba(7, 10, 19, 0.95) 88%, 
       transparent 100%
     );
   }
   
+  /* Badges row */
   .premium-card-header-badges {
-    top: 8px;
-    left: 8px;
-    right: 8px;
+    top: 7px !important;
+    left: 7px !important;
+    right: 7px !important;
     display: flex !important;
+    flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
+    flex-wrap: nowrap !important;
     z-index: 10;
   }
 
+  /* Heart badge */
   .premium-badge-favorite {
-    width: 24px !important;
-    height: 24px !important;
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
     border-radius: 8px !important;
     border: 1px solid rgba(255, 42, 95, 0.3) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    align-self: center !important;
     aspect-ratio: 1 / 1 !important;
-    box-shadow: 0 2px 8px rgba(255, 42, 95, 0.15);
   }
   
   .premium-badge-favorite .heart-svg-icon {
-    width: 11px !important;
-    height: 11px !important;
+    width: 12px !important;
+    height: 12px !important;
+    min-width: 12px !important;
+    min-height: 12px !important;
+    flex-shrink: 0 !important;
   }
   
+  /* Status pill */
   .premium-badge-status-pill {
-    border-radius: 12px !important;
-    padding: 0 8px !important;
-    height: 22px !important;
+    border-radius: 14px !important;
+    padding: 3px 8px !important;
+    height: auto !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    border: 1px solid var(--status-color) !important;
     flex-shrink: 0 !important;
   }
   
   .premium-badge-status-pill span {
-    font-size: 0.52rem !important;
-    letter-spacing: 0.4px !important;
+    font-size: 0.55rem !important;
+    letter-spacing: 0.5px !important;
     line-height: 1 !important;
   }
   
+  /* Title */
   .premium-title-group {
     min-height: auto !important;
-    max-height: 24px !important;
-    margin-bottom: 4px !important;
-    display: flex !important;
-    justify-content: center !important;
+    margin-bottom: 3px !important;
   }
   
   .premium-title-main {
-    font-size: 0.72rem !important;
-    line-height: 1.25 !important;
-    -webkit-line-clamp: 2;
+    font-size: 0.75rem !important;
+    line-height: 1.2 !important;
+    -webkit-line-clamp: 2 !important;
   }
   
+  /* Stats box — same structure as desktop, just smaller */
   .premium-progress-stats-box {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
+    padding: 5px 6px !important;
     gap: 3px !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 3px !important;
+    border-radius: 8px !important;
+  }
+
+  .premium-stats-grid {
+    gap: 4px !important;
   }
   
+  /* Show EPISODES and PROGRESS labels — same as desktop */
   .premium-stat-label {
-    display: none !important;
+    display: block !important;
+    font-size: 0.46rem !important;
+    letter-spacing: 0.5px !important;
   }
   
   .premium-stat-value {
-    font-size: 0.72rem !important;
+    font-size: 0.7rem !important;
+    line-height: 1 !important;
   }
   
+  .premium-stats-vertical-divider {
+    height: 20px !important;
+  }
+
+  .premium-stat-col-left {
+    gap: 4px !important;
+    align-items: center !important;
+  }
+
+  /* Play circle button — locked to perfect circle, never oval */
   .premium-ep-increment-btn-circle {
     width: 20px !important;
     height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
     border-width: 1px !important;
     flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    align-self: center !important;
     aspect-ratio: 1 / 1 !important;
     border-radius: 50% !important;
     display: flex !important;
@@ -2176,65 +2227,120 @@
   }
   
   .clapboard-svg {
-    width: 10px !important;
-    height: 10px !important;
+    width: 9px !important;
+    height: 9px !important;
   }
   
   .premium-progress-glow-track {
-    height: 3.5px !important;
-    margin-top: 3px !important;
+    height: 3px !important;
+    margin-top: 2px !important;
   }
   
+  /* Footer row */
+  .premium-card-footer-row {
+    gap: 4px !important;
+    align-items: center !important;
+  }
+
+  /* Rating — YOUR RATING label + stars visible, same as desktop */
+  .premium-rating-container {
+    gap: 1px !important;
+  }
+
   .premium-rating-header-label {
-    display: none !important;
+    font-size: 0.42rem !important;
+    letter-spacing: 0.5px !important;
+    display: block !important;
+  }
+
+  .premium-rating-stars-interactive {
+    gap: 1px !important;
   }
   
   .premium-rating-stars-interactive .star-rating {
-    display: none !important;
+    display: flex !important;
+    gap: 1px !important;
+  }
+
+  .star-btn svg,
+  .star-btn .star-icon {
+    width: 9px !important;
+    height: 9px !important;
+  }
+
+  /* Remove pseudo star prefix */
+  .premium-rating-text-value::before {
+    content: none !important;
   }
   
   .premium-rating-text-value {
-    font-size: 0.72rem !important;
-    margin-left: 0 !important;
-  }
-
-  .premium-rating-text-value::before {
-    content: '★ ' !important;
-    color: #ffb300 !important;
-    font-size: 0.8rem !important;
-    margin-right: 2px !important;
+    font-size: 0.6rem !important;
+    margin-left: 2px !important;
   }
   
-  .premium-in-list-button-rect {
-    width: 20px !important;
-    height: 20px !important;
-    padding: 0 !important;
-    border-radius: 6px !important;
-    border: 1px solid rgba(239, 68, 68, 0.35) !important;
-    display: flex !important;
+  /* IN YOUR LIST button — hidden on mobile, replaced by Remove */
+  .desktop-only-btn {
+    display: none !important;
+  }
+
+  /* Mobile Remove button */
+  .mobile-only-btn {
+    display: inline-flex !important;
+  }
+
+  .premium-mobile-remove-btn {
+    display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    gap: 4px !important;
+    padding: 4px 8px !important;
+    border-radius: 8px !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    color: #ff4d4d !important;
+    cursor: pointer !important;
     flex-shrink: 0 !important;
-    aspect-ratio: 1 / 1 !important;
+    transition: background 0.2s ease !important;
+  }
+
+  .premium-mobile-remove-btn span {
+    font-size: 0.55rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.3px !important;
+    white-space: nowrap !important;
+  }
+
+  .premium-mobile-remove-btn svg {
+    flex-shrink: 0 !important;
+  }
+
+  /* IN YOUR LIST original button styles on mobile (now unused but keep for safety) */
+  .premium-in-list-button-rect {
+    padding: 4px 6px !important;
+    border-radius: 8px !important;
+    gap: 3px !important;
+    height: auto !important;
+    width: auto !important;
+    aspect-ratio: unset !important;
+    flex-shrink: 0 !important;
   }
   
   .premium-in-list-button-rect span {
-    display: none !important;
+    display: inline !important;
+    font-size: 0.5rem !important;
+    white-space: nowrap !important;
+    letter-spacing: 0.3px !important;
   }
   
   .bookmark-svg {
-    width: 10px !important;
-    height: 10px !important;
+    width: 9px !important;
+    height: 9px !important;
   }
 
+  /* Dropdowns */
   .premium-status-menu-dropdown {
     width: 110px !important;
     top: calc(100% + 4px) !important;
-  }
-
-  .premium-status-menu-dropdown button {
-    padding: 6px 8px !important;
-    font-size: 0.7rem !important;
   }
 
   .premium-list-actions-menu-dropdown {
@@ -2247,4 +2353,9 @@
     font-size: 0.7rem !important;
     gap: 6px !important;
   }
+}
+
+/* Base: hide mobile-only elements on desktop */
+.mobile-only-btn {
+  display: none;
 }

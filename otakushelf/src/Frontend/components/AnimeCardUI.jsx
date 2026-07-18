@@ -91,7 +91,7 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
     }, [anime, onClick]);
 
     // Dimensions matching the smaller card layout requirements
-    const defaultHeight = isMobile ? '280px' : '380px';
+    const defaultHeight = isMobile ? '230px' : '380px';
     const defaultWidth = isMobile ? '180px' : '250px';
     
     const height = customHeight || defaultHeight;
@@ -101,10 +101,10 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         '--brand-color': anime.coverImage?.color || '#ff6b6b',
         height: height,
         width: isGrid ? '100%' : width,
-        maxWidth: width,
+        maxWidth: isGrid ? '100%' : width,   // grid: fill the cell; list: fixed width
         minHeight: height,
         minWidth: isGrid ? 'auto' : width,
-        margin: isGrid ? '0 auto' : '0'
+        margin: '0'
     };
 
     const displayTitle = typeof anime?.title === 'object' 

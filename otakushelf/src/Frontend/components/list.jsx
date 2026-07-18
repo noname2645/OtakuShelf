@@ -289,10 +289,10 @@ const PremiumAnimeCard = ({
             </div>
           </div>
 
-          {/* Bookmark IN YOUR LIST Button with dropdown */}
+          {/* Bookmark IN YOUR LIST Button with dropdown — desktop only */}
           <div className="premium-bookmark-action-container">
             <button
-              className="premium-in-list-button-rect"
+              className="premium-in-list-button-rect desktop-only-btn"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowActionsDropdown(prev => !prev);
@@ -305,6 +305,24 @@ const PremiumAnimeCard = ({
                 </svg>
               </div>
               <span>IN YOUR LIST</span>
+            </button>
+
+            {/* Mobile-only compact Remove button */}
+            <button
+              className="premium-mobile-remove-btn mobile-only-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemove(anime._id || anime.animeId);
+              }}
+              title="Remove from list"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="10" height="10">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14H6L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4h6v2" />
+              </svg>
+              <span>Remove</span>
             </button>
 
             {showActionsDropdown && (
@@ -986,15 +1004,17 @@ const EnhancedAnimeList = () => {
       <div className="enhanced-anime-list">
         <div className="list-header">
           <div className="list-tabs">
-            {["watching", "completed", "planned", "dropped"].map(tab => (
-              <button
-                key={tab}
-                className={activeTab === tab ? 'active' : ''}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
+            <div className="tabs-row">
+              {["watching", "completed", "planned", "dropped"].map(tab => (
+                <button
+                  key={tab}
+                  className={activeTab === tab ? 'active' : ''}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
             <div className="import-section">
               <label className={`import-btn ${importing ? 'importing' : ''}`}>
                 <input
