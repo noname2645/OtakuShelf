@@ -1377,7 +1377,7 @@
 
 @media (max-width: 768px) {
   .enhanced-anime-list {
-    padding: 1rem 0.5rem 5rem; /* Added bottom padding for bar */
+    padding: 90px 0.5rem 5rem; /* Increased top padding to clear fixed header */
   }
 
   .list-header {
@@ -1747,6 +1747,7 @@
   outline: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+  flex-shrink: 0;
 }
 
 .premium-ep-increment-btn-circle:hover:not(.disabled) {
@@ -2020,9 +2021,210 @@
 }
 
 @media (max-width: 480px) {
+  /* Set box-sizing globally for the premium card components */
+  .premium-anime-card,
+  .premium-anime-card * {
+    box-sizing: border-box !important;
+  }
+
   .month-group-cards {
-    grid-template-columns: 1fr !important;
-    gap: 16px !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
     padding: 0.2rem !important;
+  }
+
+  .premium-anime-card {
+    height: 255px;
+    max-width: 100%;
+    border-radius: 12px;
+  }
+  
+  .premium-poster-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 165px;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .premium-card-body-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 10px 10px;
+    height: 110px;
+    display: flex !important;
+    flex-direction: column !important;
+    z-index: 5;
+    background: linear-gradient(to top, 
+      #070a13 0%, 
+      #070a13 60%, 
+      rgba(7, 10, 19, 0.95) 86%, 
+      transparent 100%
+    );
+  }
+  
+  .premium-card-header-badges {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    z-index: 10;
+  }
+
+  .premium-badge-favorite {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 42, 95, 0.3) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    aspect-ratio: 1 / 1 !important;
+    box-shadow: 0 2px 8px rgba(255, 42, 95, 0.15);
+  }
+  
+  .premium-badge-favorite .heart-svg-icon {
+    width: 11px !important;
+    height: 11px !important;
+  }
+  
+  .premium-badge-status-pill {
+    border-radius: 12px !important;
+    padding: 0 8px !important;
+    height: 22px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid var(--status-color) !important;
+    flex-shrink: 0 !important;
+  }
+  
+  .premium-badge-status-pill span {
+    font-size: 0.52rem !important;
+    letter-spacing: 0.4px !important;
+    line-height: 1 !important;
+  }
+  
+  .premium-title-group {
+    min-height: auto !important;
+    max-height: 24px !important;
+    margin-bottom: 4px !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+  
+  .premium-title-main {
+    font-size: 0.72rem !important;
+    line-height: 1.25 !important;
+    -webkit-line-clamp: 2;
+  }
+  
+  .premium-progress-stats-box {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    gap: 3px !important;
+    margin-bottom: 6px !important;
+  }
+  
+  .premium-stat-label {
+    display: none !important;
+  }
+  
+  .premium-stat-value {
+    font-size: 0.72rem !important;
+  }
+  
+  .premium-ep-increment-btn-circle {
+    width: 20px !important;
+    height: 20px !important;
+    border-width: 1px !important;
+    flex-shrink: 0 !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .clapboard-svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+  
+  .premium-progress-glow-track {
+    height: 3.5px !important;
+    margin-top: 3px !important;
+  }
+  
+  .premium-rating-header-label {
+    display: none !important;
+  }
+  
+  .premium-rating-stars-interactive .star-rating {
+    display: none !important;
+  }
+  
+  .premium-rating-text-value {
+    font-size: 0.72rem !important;
+    margin-left: 0 !important;
+  }
+
+  .premium-rating-text-value::before {
+    content: '★ ' !important;
+    color: #ffb300 !important;
+    font-size: 0.8rem !important;
+    margin-right: 2px !important;
+  }
+  
+  .premium-in-list-button-rect {
+    width: 20px !important;
+    height: 20px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+  
+  .premium-in-list-button-rect span {
+    display: none !important;
+  }
+  
+  .bookmark-svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .premium-status-menu-dropdown {
+    width: 110px !important;
+    top: calc(100% + 4px) !important;
+  }
+
+  .premium-status-menu-dropdown button {
+    padding: 6px 8px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .premium-list-actions-menu-dropdown {
+    width: 120px !important;
+    bottom: calc(100% + 4px) !important;
+  }
+
+  .premium-list-actions-menu-dropdown button {
+    padding: 6px 8px !important;
+    font-size: 0.7rem !important;
+    gap: 6px !important;
   }
 }
