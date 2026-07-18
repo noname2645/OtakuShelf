@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import api from '../api.js';
 
 // Import CSS matching the new premium card design rules
 import "../Stylesheets/home.css"; 
@@ -57,13 +58,16 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
             const userStr = localStorage.getItem('user');
             if (userStr) {
                 const user = JSON.parse(userStr);
-                if (user && user._id) {
-                    const { default: api } = await import('../api.js');
-                    await api.post(`/api/list/favorite/${user._id}`, {
+                // AuthContext stores user as { id } not { _id }, so check both
+                const userId = user?._id || user?.id;
+                if (userId) {
+                    await api.post(`/api/list/favorite/${userId}`, {
                         animeId: anime.id,
                         isFavorite: nextState,
                         animeData: anime
                     });
+                } else {
+                    console.warn('Favorite: no user ID found in localStorage', user);
                 }
             }
         } catch (err) {
@@ -211,15 +215,7 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
 
 
 
-                {/* Secondary subtitle series/movie label */}
-                <div className="premium-type-line">
-                    <span className="type-line-dash">—</span>
-                    {anime.format === 'MOVIE' ? 'THE MOVIE' : 'TV SERIES'}
-                    <span className="type-line-dash">—</span>
-                </div>
 
-                {/* Divider x */}
-                <div className="premium-divider-x">×</div>
 
                 {/* Metadata Row */}
                 <div className="premium-meta-row">
