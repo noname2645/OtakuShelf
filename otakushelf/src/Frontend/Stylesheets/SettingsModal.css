@@ -92,3 +92,44 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .smodal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  
+  .smodal-panel {
+    width: 100% !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
+    border-radius: 24px 24px 0 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-bottom: none !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .smodal-close {
+    top: 12px !important;
+    right: 12px !important;
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  }
+
+  /* Override general settings page layout when in modal */
+  .smodal-inner .settings-page {
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .smodal-inner .settings-container {
+    padding: 20px 16px 40px !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}

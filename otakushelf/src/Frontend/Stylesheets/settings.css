@@ -902,6 +902,28 @@
   justify-content: center;
 }
 
+@media (max-width: 480px) {
+  .settings-modal {
+    padding: 24px 20px !important;
+    width: 92% !important;
+  }
+  .settings-modal h3 {
+    font-size: 20px !important;
+  }
+  .settings-modal-icon {
+    font-size: 44px !important;
+    margin-bottom: 12px !important;
+  }
+  .settings-modal-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .settings-modal-actions button {
+    width: 100% !important;
+  }
+}
+
+
 /* ── Profile Preview (in Profile tab) ──────────────────────────── */
 .settings-profile-preview {
   display: flex;

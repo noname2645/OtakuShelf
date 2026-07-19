@@ -517,13 +517,13 @@ function AdvancedSearch() {
 
   // Optimized infinite scroll
   const handleScrollToBottom = useCallback(() => {
-    if (isLoadingMore || !hasMorePages) return;
+    if (isSearching || isLoadingMore || !hasMorePages || searchResults.length === 0) return;
 
     const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
     if (scrollTop + clientHeight >= scrollHeight - 200) {
       searchForAnime(currentPageNumber + 1, false, searchText.trim());
     }
-  }, [isLoadingMore, hasMorePages, currentPageNumber, searchText, searchForAnime]);
+  }, [isSearching, isLoadingMore, hasMorePages, currentPageNumber, searchText, searchResults.length, searchForAnime]);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScrollToBottom, { passive: true });

@@ -1078,7 +1078,7 @@
   }
 
   .skeleton-card {
-    height: 240px !important;
+    height: 270px !important;
   }
 }
 
@@ -1127,7 +1127,7 @@
   }
 
   .skeleton-card {
-    height: 220px !important;
+    height: 270px !important;
   }
 }
 
@@ -1154,7 +1154,7 @@
   }
 
   .skeleton-card {
-    height: 200px !important;
+    height: 270px !important;
   }
 }
 
@@ -1357,7 +1357,7 @@
   }
 
   .skeleton-card {
-    height: 200px;
+    height: 270px;
   }
 }
 
@@ -1393,7 +1393,7 @@
   }
 
   .skeleton-card {
-    height: 185px;
+    height: 270px;
   }
 }
 
@@ -1716,8 +1716,8 @@
   }
   
   .premium-main-title {
-    font-size: 13px;
-    height: 30px;
+    font-size: 11px !important;
+    height: 26px !important;
   }
   
   .meta-val {

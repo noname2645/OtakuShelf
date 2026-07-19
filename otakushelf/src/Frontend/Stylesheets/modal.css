@@ -629,7 +629,6 @@ body.modal-open {
 }
 
 /* ==================== RESPONSIVE MEDIA QUERIES ==================== */
-/* Keep all your existing responsive styles, but remove animations */
 
 /* Extra Large Screens (1200px - 1400px) */
 @media (max-width: 1400px) {
@@ -841,368 +840,415 @@ body.modal-open {
   }
 }
 
-/* Small Tablets and Large Phones (576px - 767px) */
+/* ══════════════════════════════════════════════════════════
+   MOBILE MODAL — Bottom-sheet style (max-width: 767px)
+   ══════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
-  .modal-content {
-    width: 98%;
-    height: 95vh;
-    max-height: 95vh;
-    border-radius: 16px;
-    padding: 12px;
-  }
-
-  .modal-image-wrapper {
-    height: 300px;
-  }
-
-  .image-container {
-    height: 300px;
-    max-width: 250px;
-  }
-
-  .image-container img {
-    height: 300px;
-  }
-
-  .modal-title {
-    min-height: 45px;
-    margin-bottom: 8px;
-  }
-
-  .modal-title h2 {
-    font-size: 1.6rem;
-  }
-
-  .modal-title h2.long-title {
-    font-size: 1.4rem;
-  }
-
-  .modal-title h2.very-long-title {
-    font-size: 1.2rem;
-  }
-
-  .title-decoration {
-    width: 80px;
-    height: 2px;
-    margin: 5px auto 0;
-  }
-
-  .info-buttons {
-    gap: 8px;
-  }
-
-  .info-btn {
-    min-width: calc(50% - 8px);
-    padding: 10px 12px;
-  }
-
-  .btn-text {
-    font-size: 0.85rem;
-  }
-
-  .stats-grid2 {
-    gap: 5px;
-  }
-
-  .stat-item {
-    min-width: 100px;
-    padding: 8px 12px;
-  }
-
-  .stat-label2 {
-    font-size: 0.75rem;
-  }
-
-  .stat-value {
-    font-size: 0.85rem;
-  }
-
-  .synopsis-section {
-    padding: 12px;
-  }
-
-  .synopsis-text {
-    font-size: 0.9rem;
-    line-height: 1.3;
-  }
-
-  .read-more-btn {
-    padding: 6px 14px;
-    font-size: 0.8rem;
-  }
-
-  .modal-close {
-    width: 35px;
-    height: 35px;
-    right: 8px;
-    top: 8px;
-  }
-}
-
-/* Small Phones (480px and below) */
-@media (max-width: 480px) {
-  .modal-content {
-    width: 100%;
-    height: 100vh;
-    max-height: 100vh;
-    border-radius: 16px;
-    padding: 10px;
-  }
-
-  .modal-background {
-    background-size: cover;
-    background-position: center top;
-    filter: brightness(0.3);
-  }
-
+  /* Overlay anchors to the bottom */
   .modal-overlay {
-    background: rgba(0, 0, 0, 0.95);
+    align-items: flex-end !important;
+    padding: 0 !important;
   }
 
-  .modal-image-wrapper {
-    height: 200px;
-  }
-
-  .image-container {
-    height: 200px;
-    width: 100%;
-    max-width: 350px;
-    margin: 0 auto;
-  }
-
-  .image-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-  }
-
-  .modal-title {
-    min-height: 40px;
-    margin-bottom: 5px;
-  }
-
-  .modal-title h2 {
-    font-size: 1.4rem;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    line-height: 1.1;
-  }
-
-  .modal-title h2.long-title {
-    font-size: 1.2rem;
-  }
-
-  .modal-title h2.very-long-title {
-    font-size: 1.1rem;
-  }
-
-  .info-buttons {
-    justify-content: center;
-    align-items: center;
-    width: 60vw;
-    margin: 0 auto;
-  }
-
-  .info-btn {
-    padding: 5px;
-  }
-
-  .stats-grid2 {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 50px;
-    padding: 10px;
-    border-radius: 999px;
-    width: fit-content;
-    margin: 0 auto;
-  }
-
-  /* Individual stat items */
-  .stat-item {
-    background: transparent;
-    border: none;
-    padding: 0px;
-    margin: 0 auto;
-  }
-
-  .synopsis-text {
-    top: 0;
-    font-size: 0.85rem;
-    line-height: 1.25;
-  }
-
-  .anime-info-vertical {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .info-row {
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-    margin: 0;
-  }
-
-  /* Make status look like a pill */
-  .status-value {
-    background: rgba(0, 0, 0, 0.35);
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 0.8rem;
-  }
-
-  /* Genre pills tighter */
-  .genre-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .genre-pill {
-    font-size: 0.5rem;
-    padding: 4px 10px;
-  }
-
-  .badge-content {
-    margin: 0 auto;
-  }
-
-  .anime-type-badge {
-    width: 70%;
-    margin: 0 auto;
-  }
-
-  .badge-type,
-  .badge-date {
-    font-size: 0.9rem;
-  }
-
-  .modal-close {
-    width: 30px;
-    height: 30px;
-    right: 5px;
-    top: 5px;
-  }
-}
-
-@media (max-width: 480px) {
-  .desktop-only {
-    display: none;
-  }
-
-  .stat-item {
-    padding: 6px 10px;
-    min-width: unset;
-  }
-
-  .stat-value {
-    font-size: 0.85rem;
-    font-weight: 600;
-  }
-}
-
-/* Very Small Phones (360px and below) */
-@media (max-width: 360px) {
-  .modal-title h2 {
-    font-size: 1.2rem;
-  }
-
-  .modal-title h2.long-title {
-    font-size: 1.1rem;
-  }
-
-  .modal-title h2.very-long-title {
-    font-size: 1rem;
-  }
-
-  .modal-image-wrapper {
-    height: 220px;
-  }
-
-  .image-container {
-    height: 220px;
-    max-width: 200px;
-  }
-
-  .image-container img {
-    height: 220px;
-  }
-
-  .info-btn {
-    padding: 8px 10px;
-  }
-
-  .btn-text {
-    font-size: 0.8rem;
-  }
-
-  .stats-grid2 {
-    gap: 5px;
-  }
-
-  .synopsis-text {
-    font-size: 0.8rem;
-  }
-
-  .genre-pill {
-    padding: 4px 10px;
-    font-size: 0.75rem;
-  }
-}
-
-/* Landscape Orientation for Phones */
-@media (max-height: 600px) and (orientation: landscape) {
+  /* Bottom sheet container */
   .modal-content {
-    height: 95vh;
-    max-height: 95vh;
-    padding: 10px;
+    width: 100% !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
+    border-radius: 24px 24px 0 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
   }
 
-  .modal-body {
-    flex-direction: row;
-    gap: 15px;
-  }
-
-  .modal-image-wrapper {
-    width: 200px;
-    height: 280px;
+  /* Drag handle */
+  .modal-content::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    margin: 10px auto 0;
     flex-shrink: 0;
   }
 
-  .image-container,
-  .image-container img {
-    width: 200px;
-    height: 280px;
+  /* Sticky close button */
+  .modal-close {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    width: 32px !important;
+    height: 32px !important;
+    z-index: 200 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
   }
 
+  /* ── Header: Centered title ── */
   .modal-title {
-    min-height: 35px;
-    margin-bottom: 5px;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: unset !important;
+    padding: 14px 44px 10px !important; /* Leave space for the close button on both sides */
+    flex-shrink: 0 !important;
+    position: relative !important;
+    z-index: 10 !important;
+    margin-bottom: 0 !important;
+    text-align: center !important;
   }
 
   .modal-title h2 {
-    font-size: 1.4rem;
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
+    font-size: clamp(1.1rem, 5vw, 1.45rem) !important;
+    letter-spacing: 0 !important;
+    line-height: 1.25 !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    max-height: unset !important;
+    margin: 0 !important;
+    flex: unset !important;
+    text-align: center !important;
+    width: 100% !important;
   }
 
+  /* ── Scrollable body ── */
+  .modal-body {
+    flex: 1 !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 0 14px 80px !important;
+  }
+
+  /* ── Poster image: centered and enlarged ── */
+  .modal-image-wrapper {
+    width: 100% !important;
+    height: 280px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin-bottom: 18px !important;
+  }
+
+  .image-container {
+    width: 180px !important;
+    height: 270px !important;
+    max-width: 180px !important;
+    margin: 0 auto !important;
+    border-radius: 12px !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .image-container img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center top !important;
+  }
+
+  /* ── Info panel ── */
+  .modal-info {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  /* ── Tabs: Synopsis / Related / Trailer ── */
+  .info-buttons {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px !important;
+    scrollbar-width: none !important;
+    margin: 0 !important;
+  }
+
+  .info-buttons::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .info-btn {
+    flex: 0 0 auto !important;
+    min-width: unset !important;
+    padding: 8px 16px !important;
+    border-radius: 20px !important;
+    font-size: 0.8rem !important;
+    white-space: nowrap !important;
+  }
+
+  .btn-icon {
+    display: none !important;
+  }
+
+  .btn-text {
+    font-size: 0.8rem !important;
+  }
+
+  /* ── Stats: single scrollable row ── */
+  .stats-grid2 {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 4px 0 6px !important;
+    scrollbar-width: none !important;
+    justify-content: center !important;
+    width: 100% !important;
+    border-radius: 0 !important;
+    margin-top: 12px !important;
+  }
+
+  .stats-grid2::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .stat-item {
+    flex: 0 0 auto !important;
+    min-width: unset !important;
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+  }
+
+  .stat-label2 {
+    font-size: 0.72rem !important;
+    color: rgba(255,255,255,0.5) !important;
+  }
+
+  .stat-value {
+    font-size: 0.8rem !important;
+  }
+
+  /* ── Synopsis ── */
   .synopsis-section {
-    max-height: 150px;
+    padding: 12px !important;
+    margin-top: 18px !important;
+    border-radius: 10px !important;
   }
 
   .synopsis-text {
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    font-size: 0.85rem !important;
+    line-height: 1.5 !important;
+    letter-spacing: 0.2px !important;
   }
 
+  .read-more-btn {
+    padding: 6px 14px !important;
+    font-size: 0.78rem !important;
+    margin-top: 8px !important;
+  }
+
+  /* ── Info rows ── */
   .anime-info-vertical {
-    max-height: 120px;
-    overflow-y: auto;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    margin-top: 6px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .info-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    flex-wrap: wrap !important;
+  }
+
+  .info-label {
+    min-width: 80px !important;
+    font-size: 0.78rem !important;
+    padding: 3px 6px !important;
+  }
+
+  .info-value {
+    font-size: 0.82rem !important;
+    padding: 3px 6px !important;
+  }
+
+  /* ── Genre pills ── */
+  .genre-tags {
+    gap: 5px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .genre-pill {
+    font-size: 0.68rem !important;
+    padding: 4px 10px !important;
+    letter-spacing: 0.3px !important;
+  }
+
+  /* ── Badge ── */
+  .anime-type-badge {
+    position: absolute !important;
+    bottom: 14px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 20 !important;
+    width: auto !important;
+    max-width: 90% !important;
+    pointer-events: none !important;
+    display: block !important;
+  }
+
+  .badge-content {
+    background: rgba(15, 15, 15, 0.92) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 4px !important;
+    padding: 2px 5px !important;
+    display: inline-block !important;
+    width: auto !important;
+    position: relative !important;
+    left: 0 !important;
+  }
+
+  .badge-row {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 3px !important;
+  }
+
+  .badge-type {
+    font-size: 0.58rem !important;
+    font-weight: 700 !important;
+    color: #4facfe !important;
+  }
+
+  .badge-date {
+    font-size: 0.58rem !important;
+    font-weight: 500 !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    white-space: nowrap !important;
+  }
+
+  /* ── Synopsis modal (nested) ── */
+  .synopsis-modal-content {
+    width: 96% !important;
+    max-height: 85vh !important;
+    border-radius: 16px !important;
+  }
+
+  .synopsis-modal-header h3 {
+    font-size: 1.1rem !important;
+  }
+
+  .full-synopsis-text {
+    font-size: 0.9rem !important;
+    line-height: 1.55 !important;
+  }
+
+  /* ── Trailer embed ── */
+  .trailer-tab-wrapper,
+  .video-container {
+    width: 100% !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* ── Very small phones ── */
+@media (max-width: 380px) {
+  .modal-content {
+    height: 96vh !important;
+    max-height: 96vh !important;
+  }
+
+  .modal-title h2 {
+    font-size: 1rem !important;
+  }
+
+  .info-btn {
+    padding: 7px 12px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .modal-image-wrapper {
+    height: 200px !important;
+  }
+
+  .image-container {
+    width: 130px !important;
+    height: 190px !important;
+    max-width: 130px !important;
+  }
+}
+
+/* ── Landscape orientation for phones ── */
+@media (max-height: 600px) and (orientation: landscape) {
+  .modal-content {
+    height: 95vh !important;
+    max-height: 95vh !important;
+    padding: 0 !important;
+  }
+
+  .modal-body {
+    flex-direction: row !important;
+    gap: 12px !important;
+    padding: 8px 12px 20px !important;
+  }
+
+  .modal-image-wrapper {
+    width: 130px !important;
+    height: 190px !important;
+    flex-shrink: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .image-container {
+    width: 130px !important;
+    height: 190px !important;
+    max-width: 130px !important;
+  }
+
+  .modal-title {
+    padding: 8px 12px 6px !important;
+  }
+
+  .modal-title h2 {
+    font-size: 1rem !important;
+    -webkit-line-clamp: 1 !important;
+    line-clamp: 1 !important;
+  }
+
+  .synopsis-section {
+    max-height: 120px !important;
+    overflow: hidden !important;
+  }
+
+  .synopsis-text {
+    -webkit-line-clamp: 4 !important;
+    line-clamp: 4 !important;
   }
 }
 
