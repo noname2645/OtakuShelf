@@ -429,18 +429,18 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                                         </div>
                                     )}
                                 </div>
-                            </div>
 
-                            {(animeData.format || getAiredRange()) && (
-                                <div className="anime-type-badge">
-                                    <div className="badge-content">
-                                        <div className="badge-row">
-                                            <span className="badge-type">{animeData.format}</span>
-                                            <span className="badge-date">{getAiredRange()}</span>
+                                {(animeData.format || getAiredRange()) && (
+                                    <div className="anime-type-badge">
+                                        <div className="badge-content">
+                                            <div className="badge-row">
+                                                <span className="badge-type">{animeData.format}</span>
+                                                <span className="badge-date">{getAiredRange()}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
 
                         <div className="modal-info">

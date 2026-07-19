@@ -302,7 +302,7 @@ input, select, textarea {
 
     /* Carousel arrow buttons — hidden on mobile (use swipe instead) */
     .carousel-btn,
-    .carousel-wrapper .slider-btns {
+    .anime-sections .carousel-wrapper .slider-btns {
         display: none !important;
     }
 

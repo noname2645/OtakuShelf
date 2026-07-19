@@ -243,9 +243,6 @@ export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-              <div className="otaku-ai-label">
-                🤖 <span>OtakuAI</span>
-              </div>
               {customAction && (
                 <div className="header-custom-action">{customAction}</div>
               )}

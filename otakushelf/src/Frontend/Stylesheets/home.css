@@ -968,7 +968,7 @@
 
   /* Hide carousel buttons on touch devices */
   .carousel-btn,
-  .carousel-wrapper .slider-btns {
+  .anime-sections .carousel-wrapper .slider-btns {
     display: none;
   }
 
@@ -1750,4 +1750,4 @@
   }
 }
 
-
+

@@ -189,6 +189,7 @@ const AnimeHomepage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAnime, setSelectedAnime] = useState(null);
     const [isMobile, setIsMobile] = useState(false);
+    const [isComputer, setIsComputer] = useState(true);
 
     const controllerRef = useRef(null);
     const searchResultsRef = useRef(null);
@@ -289,6 +290,21 @@ const AnimeHomepage = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Detect whether device is a "computer" (supports hover + fine pointer)
+    useEffect(() => {
+        const mq = window.matchMedia('(hover: hover) and (pointer: fine)');
+        const update = () => setIsComputer(mq.matches);
+        update();
+        if (mq.addEventListener) mq.addEventListener('change', update);
+        else mq.addListener(update);
+        window.addEventListener('resize', update, { passive: true });
+        return () => {
+            if (mq.removeEventListener) mq.removeEventListener('change', update);
+            else mq.removeListener(update);
+            window.removeEventListener('resize', update);
+        };
+    }, []);
+
     // Search Logic
     useEffect(() => {
         if (!searchQuery.trim()) {
@@ -357,7 +373,7 @@ const AnimeHomepage = () => {
             <BottomNavBar />
             <div className="homepage">
                 <div className="main-content">
-                    <Header showSearch={true} onSearchChange={setSearchQuery} />
+                    <Header showSearch={isComputer} onSearchChange={setSearchQuery} />
 
                     <TrailerHero onOpenModal={openModal} isMobile={isMobile} />
 

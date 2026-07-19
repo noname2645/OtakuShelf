@@ -7,7 +7,7 @@
     width: 90%;
     max-width: 1200px;
     margin: 5px auto;
-    top: 10px;
+    top: env(safe-area-inset-top, 10px);
     left: 0;
     right: 0;
     display: flex;
@@ -445,26 +445,29 @@
 
     /* Profile adjustments */
     .profile-button {
-        padding: 6px 12px !important;
+        padding: 6px 10px !important;
         gap: 6px !important;
         font-size: 11px !important;
         border-radius: 12px !important;
+        min-height: 44px !important;
+        align-items: center !important;
     }
 
-    .profile-avatar,
-    .profile-initials {
-        width: 28px !important;
-        height: 28px !important;
+    .pill-avatar-wrap {
+        width: 34px !important;
+        height: 34px !important;
     }
 
-    .profile-avatar img {
-        width: 28px;
-        height: 28px;
+    .pill-avatar-img,
+    .pill-avatar-initials {
+        width: 34px !important;
+        height: 34px !important;
     }
 
-    .profile-initials {
-        font-size: 12px !important;
-    }
+    .pill-avatar-initials { font-size: 13px !important; }
+
+    /* Hide the name block on small/tablet so avatar doesn't overflow */
+    .pill-info { display: none !important; }
 
     .welcome-text {
         display: none;
@@ -494,6 +497,12 @@
         top: 50px !important;
         margin: 0;
         max-width: calc(100vw - 20px);
+    }
+
+    /* Ensure header sits above hero and has enough top spacing */
+    .header {
+        z-index: 1200 !important;
+        padding-top: calc(env(safe-area-inset-top, 10px));
     }
 
     /* Auth buttons */

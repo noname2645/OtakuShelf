@@ -105,11 +105,31 @@
 
 .list-tabs {
   display: flex;
-  gap: 12px;
-  margin-top: 40px;
+  align-items: center;
   justify-content: center;
+  gap: 16px;
+  margin: 40px auto 0;
+  width: 100%;
+  max-width: 1200px;
   flex-wrap: wrap;
   padding: 0 10px;
+}
+
+.tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.import-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0;
+  width: auto;
+  flex: 0 0 auto;
 }
 
 .list-tabs button {
@@ -1453,12 +1473,20 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    gap: 8px;
+    gap: 12px;
     align-items: center;
     justify-content: flex-start; /* flex-start required for overflow-x scroll to work */
     width: 100%;
     padding: 4px 12px;
     box-sizing: border-box;
+  }
+
+  .import-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0;
   }
 
   .tabs-row::-webkit-scrollbar {

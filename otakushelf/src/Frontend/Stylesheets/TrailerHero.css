@@ -557,7 +557,8 @@
 /* Tablet (768px and below) */
 @media (max-width: 768px) {
     .content-overlay {
-        bottom: 30%;
+        /* moved up to avoid bottom nav overlap on tablets */
+        bottom: 34%;
         left: 3%;
         right: 3%;
         padding: 1rem;
@@ -593,14 +594,17 @@
     }
 
     .slider-btns {
+        display: flex !important;
         padding: 0 3%;
-        top: 12%;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .slider-btns button {
         width: clamp(40px, 10vw, 50px);
         height: clamp(40px, 10vw, 50px);
         font-size: clamp(1.5rem, 4vw, 1.8rem);
+        opacity: 1 !important;
     }
 
     .mute-button {
@@ -646,7 +650,8 @@
 /* Mobile (480px and below) */
 @media (max-width: 480px) {
     .content-overlay {
-        bottom: 30%;
+        /* lift description further on small phones */
+        bottom: 36%;
         left: 3%;
         right: 3%;
         padding: 1rem;
@@ -685,10 +690,17 @@
         min-width: 140px;
     }
 
+    .slider-btns {
+        display: flex !important;
+        justify-content: space-between;
+        width: 100%;
+    }
+
     .slider-btns button {
         width: 40px;
         height: 40px;
         font-size: 1.2rem;
+        opacity: 1 !important;
     }
 
     .mute-button {
@@ -723,6 +735,10 @@
 
 /* Small Mobile (375px and below) */
 @media (max-width: 375px) {
+    .content-overlay {
+        /* ensure small screens keep the description well above controls */
+        bottom: 40%;
+    }
     .anime-title {
         font-size: 1.3rem;
     }
@@ -1091,5 +1107,80 @@
 
     .skeleton-title {
         height: 34px;
+    }
+}
+
+/* Surface Pro / Large Tablet / Small Laptop (769px - 1366px) */
+@media (min-width: 769px) and (max-width: 1366px) {
+    /* Slightly reduce hero content width and lift it for tablet viewing */
+    .content-overlay {
+        bottom: 18%;
+        left: 4%;
+        right: 4%;
+        max-width: 720px;
+        padding: 1rem 1.2rem;
+    }
+
+    .anime-title {
+        font-size: clamp(2rem, 3.2vw, 3rem);
+        -webkit-line-clamp: 2;
+    }
+
+    .anime-meta {
+        gap: 0.75rem;
+        font-size: clamp(1rem, 1.6vw, 1.15rem);
+    }
+
+    .anime-description {
+        font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+        max-width: 85%;
+    }
+
+    .details-button {
+        min-width: 140px;
+        max-width: 320px;
+        padding: 0.9rem 1.8rem;
+        font-size: 1.05rem;
+    }
+
+    .slider-btns {
+        top: 50%;
+        padding: 0 2.5%;
+        transform: translateY(-50%);
+    }
+
+    .slider-btns button {
+        width: 52px;
+        height: 52px;
+        font-size: 1.6rem;
+    }
+
+    .mute-button {
+        bottom: 22px;
+        left: 22px;
+        width: 48px;
+        height: 48px;
+        font-size: 18px;
+    }
+
+    .youtube-container {
+        transform: translate(-50%, -130%);
+    }
+
+    .hero-bottom-controls {
+        bottom: 22px;
+        right: 28px;
+    }
+
+    /* Improve touch target sizes on coarse pointers */
+    @media (hover: none) and (pointer: coarse) {
+        .slider-btns button, .details-button, .mute-button {
+            min-width: 48px;
+            min-height: 48px;
+        }
+        .details-button {
+            width: 100%;
+            max-width: 300px;
+        }
     }
 }
