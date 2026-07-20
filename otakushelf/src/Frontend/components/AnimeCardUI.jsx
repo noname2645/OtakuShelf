@@ -128,6 +128,13 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         margin: '0'
     };
 
+    // Detect low-spec or reduced-motion to disable heavy animations
+    const prefersReduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const rootLowSpec = typeof document !== 'undefined' && document.documentElement.classList.contains('low-spec');
+    const deviceLowMemory = typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory < 1.5;
+    const lowCpu = typeof navigator !== 'undefined' && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2;
+    const shouldReduceMotion = prefersReduced || rootLowSpec || deviceLowMemory || lowCpu;
+
     const displayTitle = typeof anime?.title === 'object' 
         ? (anime.title.english || anime.title.romaji || anime.title.native || "Unknown Title")
         : (anime?.title || "Unknown Title");
@@ -137,10 +144,10 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         ? romajiTitle.toUpperCase().split("").join(" ")
         : "";
 
-    const imageSrc = anime.coverImage?.extraLarge ||
-        anime.coverImage?.large ||
-        anime.bannerImage ||
-        '/placeholder-anime.jpg';
+    // Prefer lower-res images on low-spec devices to save memory and bandwidth
+    const shouldUseLowRes = shouldReduceMotion;
+
+    const imageSrc = (shouldUseLowRes ? (anime.coverImage?.medium || anime.coverImage?.large) : (anime.coverImage?.extraLarge || anime.coverImage?.large)) || anime.bannerImage || '/placeholder-anime.jpg';
 
     // Parse Score (avoid default garbage 8.5, fallback to N/A)
     const hasScore = (anime.averageScore && anime.averageScore > 0) || (anime.score && anime.score > 0);
@@ -162,15 +169,17 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         ? anime.genres.slice(0, 2).join(", ")
         : "Action, Fantasy";
 
+    const Card = shouldReduceMotion ? 'div' : motion.div;
+
     return (
-        <motion.div
+        <Card
             className={`anime-card-premium ${isGrid ? 'grid-mode' : ''}`}
             onClick={handleClick}
             style={{
                 ...cardStyle,
                 animationDelay: `${Math.min(index, 8) * 0.05}s`,
             }}
-            whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
+            {...(!shouldReduceMotion ? { whileTap: { scale: 0.98, transition: { duration: 0.1 } } } : {})}
         >
             {/* Top Rating and Bookmark overlay */}
             <div className="premium-card-header">
@@ -286,7 +295,7 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
                     <span>SHARE</span>
                 </button>
             </div>
-        </motion.div>
+        </Card>
     );
 });
 

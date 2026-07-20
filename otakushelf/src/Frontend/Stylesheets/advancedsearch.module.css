@@ -24,6 +24,165 @@ body {
   align-items: center;
 }
 
+.searchOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.searchPopup {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(10, 12, 24, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.searchPopupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 700;
+  color: #fff;
+}
+
+.searchPopupClose {
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.searchPopupBody {
+  padding: 18px 20px 24px;
+}
+
+.searchInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 10px 14px;
+}
+
+.searchPopupInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.searchIcon {
+  width: 18px;
+  height: 18px;
+  opacity: 0.75;
+}
+
+.mobileSearchBarButtonWrapper {
+  display: none;
+  margin-bottom: 22px;
+}
+
+.mobileSearchBarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.mobileSearchBarButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 767px) {
+  .mobileSearchBarButtonWrapper {
+    display: block;
+  }
+
+  .dropdownFilters {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    width: calc(100% - 24px);
+    border-radius: 14px;
+    justify-content: space-between;
+  }
+
+  .dropdown {
+    flex: 1 1 48%;
+    min-width: 140px;
+  }
+
+  .resetBtn {
+    flex: 1 1 100%;
+    margin-top: 6px;
+  }
+
+  .dropdownToggle {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .dropdownMenu {
+    /* Render dropdowns as fixed panels to avoid clipping and fit narrow screens */
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: calc(120px + 12px) !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    border-radius: 12px !important;
+    z-index: 1200 !important;
+    max-height: calc(100vh - 180px) !important;
+    overflow-y: auto !important;
+  }
+
+  .genresMenu {
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+  }
+
+  .dropdownContent {
+    grid-template-columns: 1fr !important;
+    gap: 6px;
+    padding: 10px !important;
+  }
+
+  .dropdownContent .genresGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 /* ── Filter Buttons & Reset ─────────────────────────────────────────────── */
 .resetBtn,
 .searchBtn {
@@ -202,6 +361,67 @@ body {
 
 .genresMenu {
   width: 420px;
+}
+
+/* Mobile responsive adjustments for filter bar and dropdowns */
+@media (max-width: 767px) {
+  .dropdownFilters {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    width: calc(100% - 24px);
+    border-radius: 14px;
+    justify-content: space-between;
+  }
+
+  .dropdown {
+    flex: 1 1 48%;
+    min-width: 140px;
+  }
+
+  .resetBtn {
+    flex: 1 1 100%;
+    margin-top: 6px;
+  }
+
+  .dropdownToggle {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .dropdownMenu {
+    /* Render dropdowns as fixed panels to avoid clipping and fit narrow screens */
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: calc(120px + 12px) !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    border-radius: 12px !important;
+    z-index: 1200 !important;
+    max-height: calc(100vh - 180px) !important;
+    overflow-y: auto !important;
+  }
+
+  .genresMenu {
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+  }
+
+  .dropdownContent {
+    grid-template-columns: 1fr !important;
+    gap: 6px;
+    padding: 10px !important;
+  }
+
+  .dropdownContent .genresGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
 
 .seasonGrid {

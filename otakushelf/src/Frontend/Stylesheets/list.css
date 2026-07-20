@@ -242,27 +242,27 @@
 /* Import Confirmation Modal Styles */
 .import-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(10, 17, 36, 0.85);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
-  padding: 20px;
+  z-index: 110000 !important;
+  padding: 16px;
+  overflow-y: auto;
 }
 
 .import-modal {
   background: #1a1f38;
   border-radius: 20px;
-  width: 100%;
-  max-width: 500px;
+  width: min(100%, 500px);
+  max-width: min(100%, 500px);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  overflow: hidden;
+  box-sizing: border-box;
   animation: modalSlideIn 0.3s ease-out;
 }
 
@@ -319,6 +319,22 @@
 .modal-close-btn:hover {
   background: rgba(255, 85, 51, 0.2);
   color: #FF5533;
+}
+
+/* Apply unified responsive close style to import modal close button */
+.modal-close-btn {
+  background: rgba(0,0,0,0.6) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: #fff !important;
+  font-size: 18px !important;
+}
+
+@media (max-width:480px) {
+  .modal-close-btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 16px !important;
+  }
 }
 
 .import-modal-content {
@@ -2378,4 +2394,66 @@
 /* Base: hide mobile-only elements on desktop */
 .mobile-only-btn {
   display: none;
+}
+
+/* Mobile: make status pills compact and wrap without horizontal scrolling */
+@media (max-width: 767px) {
+  .list-tabs {
+    gap: 8px;
+    padding: 8px 12px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .list-tabs button {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    border-radius: 28px;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .import-section {
+    flex-basis: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 6px;
+  }
+
+  /* Reduce size of in-card status pill to avoid overflow */
+  .premium-badge-status-pill {
+    padding: 6px 12px;
+  }
+
+  .premium-badge-status-pill span {
+    font-size: 0.62rem;
+    letter-spacing: 0.6px;
+  }
+
+  /* Ensure dropdown opens in a compact position on small screens */
+  .premium-status-menu-dropdown {
+    right: 6px;
+    width: 160px;
+  }
+}
+
+/* Small extra spacing and alignment fixes for import button and tabs on mobile */
+@media (max-width: 767px) {
+  .list-tabs {
+    margin-top: 8px;
+    margin-bottom: 10px; /* keep some gap below tabs */
+  }
+
+  .import-section {
+    margin-top: 14px !important; /* more breathing room */
+    padding: 0 12px;
+  }
+
+  .import-btn {
+    width: 100%;
+    max-width: 520px;
+    box-sizing: border-box;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
 }

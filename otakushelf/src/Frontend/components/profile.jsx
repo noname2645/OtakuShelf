@@ -981,140 +981,21 @@ const ProfilePage = () => {
             <span className="story-label">RECENTLY WATCHED</span>
 
             {recentlyWatched.length > 0 ? (
-              <div className="recently-watched-layout">
-                {/* Featured card — large (2.4fr), premium design */}
-                {(() => {
-                  const anime = recentlyWatched[0];
-                  const hasScore = anime.averageScore && anime.averageScore > 0;
-                  const score = hasScore ? (anime.averageScore / 10).toFixed(1) : (anime.score ? (anime.score / 10).toFixed(1) : "N/A");
-                  const releaseYear = anime.year || (anime.startDate && anime.startDate.year) || "";
-                  const episodesVal = anime.episodes || anime.episodes_count || anime.totalEpisodes || null;
-                  const episodesText = episodesVal ? `${episodesVal} Ep` : (anime.status === 'RELEASING' ? 'Ongoing' : 'TBA');
-                  const mainGenres = anime.genres && anime.genres.length > 0 ? anime.genres.slice(0, 2).join(", ") : "";
+              <div className="recently-watched-grid masonry-grid">
+                {recentlyWatched.slice(0, 8).map((anime, idx) => {
                   const displayTitle = typeof anime?.title === 'object'
                     ? (anime.title.english || anime.title.romaji || anime.title.native || String(anime.title))
                     : (anime?.title || "Unknown Title");
                   const imageSrc = anime.coverImage?.extraLarge || anime.coverImage?.large || anime.image || '/placeholder-anime.jpg';
-                  const format = anime.format || 'TV';
                   return (
-                    <div className="rw-featured-card">
-                      <div className="premium-card-header">
-                        <div className="premium-rating-badge">
-                          <span className="premium-rating-star">★</span>
-                          <span className="premium-rating-number">{score}</span>
-                        </div>
-                      </div>
-                      <div className="premium-card-poster">
-                        <img src={imageSrc} alt={displayTitle} loading="lazy" decoding="async" />
-                        <div className="premium-poster-fade" />
-                      </div>
-                      <div className="premium-card-body">
-                        <div className="premium-format-tag">
-                          <span className="format-dot">○</span>{format}
-                        </div>
-                        <h2 className="premium-main-title" style={{ fontSize: '22px', height: 'auto' }}>{displayTitle}</h2>
-                        <div className="premium-meta-row">
-                          <div className="premium-meta-col">
-                            <svg className="meta-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                              <line x1="16" y1="2" x2="16" y2="6" />
-                              <line x1="8" y1="2" x2="8" y2="6" />
-                              <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <div className="meta-info">
-                              <span className="meta-label">RELEASED</span>
-                              <span className="meta-val">{releaseYear}</span>
-                            </div>
-                          </div>
-                          <div className="meta-separator" />
-                          <div className="premium-meta-col">
-                            <svg className="meta-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                              <line x1="8" y1="21" x2="16" y2="21" />
-                              <line x1="12" y1="17" x2="12" y2="21" />
-                            </svg>
-                            <div className="meta-info">
-                              <span className="meta-label">EPISODES</span>
-                              <span className="meta-val">{episodesText}</span>
-                            </div>
-                          </div>
-                          {mainGenres && (
-                            <>
-                              <div className="meta-separator" />
-                              <div className="premium-meta-col">
-                                <svg className="meta-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
-                                  <line x1="7" y1="2" x2="7" y2="22" />
-                                  <line x1="17" y1="2" x2="17" y2="22" />
-                                  <line x1="2" y1="12" x2="22" y2="12" />
-                                </svg>
-                                <div className="meta-info">
-                                  <span className="meta-label">GENRE</span>
-                                  <span className="meta-val">{mainGenres}</span>
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
+                    <div key={anime.id || anime.title || idx} className="masonry-card">
+                      <img src={imageSrc} alt={displayTitle} />
+                      <div className="masonry-overlay">
+                        <span className="masonry-title">{displayTitle}</span>
                       </div>
                     </div>
                   );
-                })()}
-
-                {/* Filmstrip — up to 5 cards in 2-col grid, premium design, aspect-ratio 2/3 */}
-                {recentlyWatched.length > 1 && (
-                  <div className="filmstrip">
-                    {recentlyWatched.slice(1, 6).map((anime, idx) => {
-                      const hasScore = anime.averageScore && anime.averageScore > 0;
-                      const score = hasScore ? (anime.averageScore / 10).toFixed(1) : (anime.score ? (anime.score / 10).toFixed(1) : "N/A");
-                      const releaseYear = anime.year || (anime.startDate && anime.startDate.year) || "N/A";
-                      const episodesVal = anime.episodes || anime.episodes_count || anime.totalEpisodes || null;
-                      const episodesText = episodesVal
-                        ? `${episodesVal} Ep`
-                        : (anime.status === 'RELEASING' ? 'Ongoing' : 'TBA');
-                      const displayTitle = typeof anime?.title === 'object'
-                        ? (anime.title.english || anime.title.romaji || anime.title.native || String(anime.title))
-                        : (anime?.title || "Unknown Title");
-                      const imageSrc = anime.coverImage?.extraLarge || anime.coverImage?.large || anime.image || '/placeholder-anime.jpg';
-                      const format = anime.format || 'TV';
-                      return (
-                        <div key={anime.id || anime.title || idx} className="rw-filmstrip-card">
-                          <div className="premium-card-header">
-                            <div className="premium-rating-badge">
-                              <span className="premium-rating-star">★</span>
-                              <span className="premium-rating-number">{score}</span>
-                            </div>
-                          </div>
-                          <div className="premium-card-poster">
-                            <img src={imageSrc} alt={displayTitle} loading="lazy" decoding="async" />
-                            <div className="premium-poster-fade" />
-                          </div>
-                          <div className="premium-card-body" style={{ padding: '8px 6px 4px' }}>
-                            <div className="premium-format-tag" style={{ fontSize: '6px' }}>
-                              <span className="format-dot">○</span>{format}
-                            </div>
-                            <h2 className="premium-main-title" style={{ fontSize: '11px', height: 'auto' }}>{displayTitle}</h2>
-                            <div className="rw-filmstrip-meta">
-                              <span className="rw-filmstrip-meta-item">
-                                <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                                </svg>
-                                {releaseYear}
-                              </span>
-                              <span className="rw-filmstrip-meta-dot">·</span>
-                              <span className="rw-filmstrip-meta-item">
-                                <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
-                                </svg>
-                                {episodesText}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                })}
               </div>
             ) : (
               <div className="story-empty">

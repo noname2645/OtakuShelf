@@ -12,15 +12,14 @@ body.modal-open {
 /* Modal Overlay - No blur on slow devices */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.85);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 2000;
+  z-index: 100000 !important;
+  padding: 16px;
+  overflow-y: auto;
   animation: none;
   /* Remove animation */
 }
@@ -56,10 +55,14 @@ body.modal-open {
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: white;
   border-radius: 16px;
-  width: 1350px;
-  height: 690px;
-  padding: 10px;
+  width: min(1350px, calc(100vw - 2rem));
+  max-width: min(1350px, calc(100vw - 2rem));
+  height: min(690px, calc(100dvh - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: clamp(12px, 2vw, 20px);
   position: relative;
+  z-index: 100100 !important;
+  box-sizing: border-box;
   animation: none;
   /* Remove animation */
   overflow: hidden;
@@ -116,6 +119,39 @@ body.modal-open {
   font-weight: bold;
 }
 
+/* Unified responsive close button (uses the mobile-friendly circular X) */
+.modal-close,
+.smodal-close,
+.modal-close-btn,
+.synopsis-modal-close {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 999px !important;
+  background: rgba(0,0,0,0.6) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: #fff !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+}
+
+@media (max-width: 480px) {
+  .modal-close,
+  .smodal-close,
+  .modal-close-btn,
+  .synopsis-modal-close {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 16px !important;
+    background: rgba(0,0,0,0.5) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+  }
+}
+
 /* Modal Title */
 .modal-title {
   text-align: center;
@@ -132,7 +168,7 @@ body.modal-open {
   font-family: "Outfit", sans-serif;
   font-weight: 650;
   margin: 0;
-  font-size: 2.5rem;
+  font-size: clamp(1.15rem, 2.2vw, 2.5rem);
   color: #4facfe;
   /* Solid color instead of gradient for performance */
   letter-spacing: 2px;
@@ -185,8 +221,8 @@ body.modal-open {
 .modal-image-wrapper {
   flex-shrink: 0;
   position: relative;
-  width: 390px;
-  height: 590px;
+  width: min(390px, 100%);
+  height: clamp(280px, 45dvh, 590px);
 }
 
 .image-container {
@@ -194,13 +230,13 @@ body.modal-open {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  width: 390px;
-  height: 590px;
+  width: 100%;
+  height: 100%;
 }
 
 .image-container img {
-  width: 390px;
-  height: 590px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -278,10 +314,24 @@ body.modal-open {
   height: 100%;
 }
 
-/* Info Buttons */
+/* Info Buttons (floating row under the title) */
 .info-buttons {
   display: flex;
-  gap: 20px;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 640px;
+  margin: 10px auto 4px auto;
+  padding: 8px 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  z-index: 120000 !important;
+  background: rgba(0,0,0,0.12) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  position: relative !important;
 }
 
 .info-btn {
@@ -289,15 +339,13 @@ body.modal-open {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 20px;
-  padding: 12px 20px;
+  padding: 10px 14px;
   color: white;
   cursor: pointer;
   font-family: 'Outfit', sans-serif;
   font-weight: 500;
   overflow: hidden;
-  text-align: center;
   transition: none;
-  /* Remove transition */
 }
 
 /* Add hover only for desktop */
@@ -534,7 +582,7 @@ body.modal-open {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 3000;
+  z-index: 110000 !important;
   animation: none;
   /* Remove animation */
 }
@@ -840,6 +888,32 @@ body.modal-open {
   }
 }
 
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 12px;
+  }
+
+  .modal-title {
+    padding: 6px 40px 6px;
+  }
+
+  .modal-title h2 {
+    font-size: clamp(1rem, 4vw, 1.35rem);
+  }
+
+  .modal-body {
+    padding: 0 2px 64px;
+  }
+
+  .modal-image-wrapper {
+    height: 230px;
+  }
+
+  .image-container {
+    max-width: 170px;
+  }
+}
+
 /* ══════════════════════════════════════════════════════════
    MOBILE MODAL — Bottom-sheet style (max-width: 767px)
    ══════════════════════════════════════════════════════════ */
@@ -859,7 +933,8 @@ body.modal-open {
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    overflow: hidden !important;
+    /* Allow visible overflow so header and tabs aren't clipped on small screens */
+    overflow: visible !important;
   }
 
   /* Drag handle */
@@ -870,7 +945,7 @@ body.modal-open {
     height: 4px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
-    margin: 10px auto 0;
+    margin: 12px auto 0;
     flex-shrink: 0;
   }
 
@@ -893,7 +968,7 @@ body.modal-open {
     align-items: center !important;
     justify-content: center !important;
     min-height: unset !important;
-    padding: 14px 44px 10px !important; /* Leave space for the close button on both sides */
+    padding: 18px 44px 12px !important; /* Leave space for the close button on both sides */
     flex-shrink: 0 !important;
     position: relative !important;
     z-index: 10 !important;
@@ -912,6 +987,16 @@ body.modal-open {
     flex: unset !important;
     text-align: center !important;
     width: 100% !important;
+  }
+
+  /* Add safe spacing so tab pills are not clipped by the drag-handle or close button */
+  .modal-content {
+    padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+    box-sizing: border-box !important;
+  }
+
+  .modal-title {
+    padding-bottom: 10px !important;
   }
 
   /* ── Scrollable body ── */
@@ -948,6 +1033,26 @@ body.modal-open {
     overflow: hidden !important;
   }
 
+  /* Pills directly below the poster image */
+  .pills-below-pic {
+    display: flex !important;
+    gap: 10px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 6px auto 4px !important;
+    width: auto !important;
+    padding: 0 8px !important;
+    z-index: 50 !important;
+  }
+  /* Slight spacing tweak when tabs appear above pills */
+  .info-buttons + .pills-below-pic {
+    margin-top: 6px !important;
+  }
+  /* When pills are directly followed by the modal info (synopsis), reduce the gap */
+  .pills-below-pic + .modal-info .tab-content .synopsis-section {
+    margin-top: 8px !important;
+  }
+
   .image-container img {
     width: 100% !important;
     height: 100% !important;
@@ -965,20 +1070,32 @@ body.modal-open {
     height: auto !important;
   }
 
-  /* ── Tabs: Synopsis / Related / Trailer ── */
+  /* ── Tabs: Synopsis / Related / Trailer (mobile overrides) ── */
   .info-buttons {
     display: flex !important;
     flex-direction: row !important;
-    gap: 6px !important;
+    gap: 8px !important;
     justify-content: center !important;
     align-items: center !important;
-    width: 100% !important;
+    width: auto !important;
+    max-width: calc(100% - 48px) !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    padding-bottom: 4px !important;
+    padding: 8px 10px !important;
     scrollbar-width: none !important;
-    margin: 0 !important;
+    margin: 8px auto !important;
+    z-index: 120000 !important;
+    background: rgba(0,0,0,0.12) !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(255,255,255,0.06) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35) !important;
+    position: relative !important;
+    left: 0 !important;
+  }
+
+  .tab-content {
+    margin-top: 8px !important;
   }
 
   .info-buttons::-webkit-scrollbar {
@@ -988,9 +1105,9 @@ body.modal-open {
   .info-btn {
     flex: 0 0 auto !important;
     min-width: unset !important;
-    padding: 8px 16px !important;
+    padding: 8px 14px !important;
     border-radius: 20px !important;
-    font-size: 0.8rem !important;
+    font-size: 0.82rem !important;
     white-space: nowrap !important;
   }
 

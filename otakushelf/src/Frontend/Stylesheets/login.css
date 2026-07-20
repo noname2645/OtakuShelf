@@ -472,14 +472,39 @@
    RESPONSIVE
    ============================================================ */
 
-@media (max-width: 480px) {
+@media (max-width: 767px) {
+  .login-container {
+    padding: 20px 12px 16px;
+  }
+
   .login-card {
-    padding: 44px 22px 28px;
+    width: 100%;
+    max-width: 100%;
+    padding: 36px 16px 24px;
     border-radius: 22px;
+  }
+
+  .login-back-home {
+    top: 12px;
+    left: 12px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .login-auth-header {
+    margin-bottom: 22px;
   }
 
   .login-auth-title {
     font-size: 24px;
+  }
+
+  .login-auth-subtitle {
+    font-size: 13px;
+  }
+
+  .login-auth-form {
+    gap: 14px;
   }
 
   .login-form-input {
@@ -496,17 +521,24 @@
     height: 16px;
   }
 
-  .login-btn {
+  .login-btn,
+  .login-btn-modern {
     padding: 14px;
     font-size: 14px;
   }
 
-  .login-bg-circle-1,
-  .login-bg-circle-2 {
-    width: 250px;
-    height: 250px;
+  .login-divider {
+    margin: 18px 0;
   }
 
+  .login-bg-circle-1,
+  .login-bg-circle-2,
+  .login-bg-circle-3 {
+    width: 220px;
+    height: 220px;
+  }
+
+  .login-anime-icon-1,
   .login-anime-icon-2,
   .login-anime-icon-3 {
     display: none;
@@ -526,5 +558,55 @@
   .login-auth-footer {
     margin-top: 18px;
     padding-top: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 32px 14px 20px;
+  }
+
+  .login-auth-title {
+    font-size: 22px;
+  }
+
+  .login-auth-subtitle {
+    font-size: 12.5px;
+  }
+
+  .login-auth-form {
+    gap: 12px;
+  }
+
+  .login-form-input {
+    padding: 13px 13px 13px 42px;
+  }
+
+  .login-btn,
+  .login-btn-modern {
+    padding: 13px;
+    font-size: 13px;
+  }
+
+  .login-google-icon,
+  .login-loading-spinner {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 360px) {
+  .login-card {
+    padding: 28px 12px 18px;
+    border-radius: 18px;
+  }
+
+  .login-auth-title {
+    font-size: 20px;
+  }
+
+  .login-auth-footer {
+    margin-top: 16px;
+    padding-top: 16px;
   }
 }

@@ -453,35 +453,56 @@
 
 @media (max-width: 480px) {
   .register-container {
-    padding: 56px 14px 24px;
+    padding: 22px 12px 16px;
   }
 
   .register-card {
-    padding: 44px 22px 28px;
+    padding: 32px 14px 20px;
     border-radius: 22px;
   }
 
+  .reg-back-home {
+    top: 12px;
+    left: 12px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .auth-header {
+    margin-bottom: 20px;
+  }
+
   .auth-title {
-    font-size: 24px;
+    font-size: 22px;
+  }
+
+  .auth-subtitle {
+    font-size: 13px;
+  }
+
+  .auth-form {
+    gap: 12px;
   }
 
   .form-input {
     font-size: 14px;
-    padding: 14px 14px 14px 44px;
+    padding: 13px 13px 13px 44px;
   }
 
   .btn,
   .google-btn {
-    padding: 14px;
-    font-size: 14px;
+    padding: 13px;
+    font-size: 13px;
   }
 
   .bg-circle-1,
-  .bg-circle-2 {
-    width: 250px;
-    height: 250px;
+  .bg-circle-2,
+  .bg-circle-3 {
+    width: 220px;
+    height: 220px;
   }
 
+  .anime-icon-1,
   .anime-icon-2,
   .anime-icon-3 {
     display: none;
@@ -490,11 +511,11 @@
 
 @media (max-width: 360px) {
   .register-card {
-    padding: 40px 18px 24px;
+    padding: 28px 12px 18px;
     border-radius: 18px;
   }
 
   .auth-title {
-    font-size: 22px;
+    font-size: 20px;
   }
 }

@@ -784,6 +784,18 @@
   color: rgba(255, 255, 255, 0.42);
   line-height: 1.4;
 }
+
+@media (max-width: 480px) {
+  .spotlight-desc,
+  .badge-card-desc {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
 .badge-rarity-label {
   font-size: 9.5px;
   font-weight: 800;
@@ -1144,6 +1156,25 @@
   display: block;
 }
 
+.recently-watched-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .recently-watched-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .recently-watched-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
 /* ══════════════════════════════════════════════════════════════════
    SECTION 4 — GENRE IDENTITY
 ══════════════════════════════════════════════════════════════════ */
@@ -1254,6 +1285,48 @@
   grid-template-columns: 1fr 1fr;
   gap: 52px;
   align-items: start;
+}
+
+/* Reduce genre pill size on mobile so they match desktop density */
+@media (max-width: 768px) {
+  .genre-pills-row {
+    gap: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .genre-pill {
+    height: 34px !important;
+    padding: 0 8px !important;
+    min-width: 48px !important;
+    border-radius: 999px !important;
+  }
+
+  .genre-pill-name {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+  }
+
+  .genre-pill-pct {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .genre-pills-row {
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+
+  .genre-pill {
+    height: 30px !important;
+    padding: 0 6px !important;
+    min-width: 40px !important;
+  }
+
+  .genre-pill-name {
+    font-size: 9px !important;
+  }
 }
 .genre-chart-col {
   display: flex;
@@ -1403,70 +1476,130 @@
 @media (max-width: 1100px) {
   .genre-content { grid-template-columns: 1fr; }
   .genre-legend-col { max-height: none; }
+  .story-left, .story-right { max-width: 100%; }
+}
+
+@media (max-width: 900px) {
+  .hud-ticker {
+    max-width: 100%;
+    padding: 18px 14px;
+  }
+  .hud-primary-row,
+  .hud-secondary-row {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .hud-stat,
+  .ss-stat {
+    flex: 1 1 calc(50% - 12px);
+    min-width: 120px;
+  }
+  .hud-divider,
+  .ss-divider {
+    display: none;
+  }
 }
 
 @media (max-width: 768px) {
-  /* Entrance */
   .entrance-content {
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 100px 5% 110px;
+    padding: 90px 5% 48px;
     gap: 24px;
+  }
+  .entrance-cover-img { object-position: center top; }
+  .cover-change-btn {
+    top: 18px;
+    right: 18px;
+    padding: 9px 16px;
+    font-size: 11px;
   }
   .entrance-avatar { width: 130px; height: 130px; }
   .entrance-identity { align-items: center; max-width: 100%; }
-  .entrance-name { letter-spacing: -0.5px; }
-  .entrance-meta { justify-content: center; }
-  .entrance-bio { text-align: center; }
-  .entrance-actions { justify-content: center; }
+  .entrance-name { letter-spacing: -0.5px; font-size: clamp(32px, 7vw, 52px); }
+  .entrance-meta { justify-content: center; gap: 8px; }
+  .entrance-bio { text-align: center; max-width: 100%; }
+  .entrance-actions { justify-content: center; flex-wrap: wrap; gap: 10px; }
+  .btn-edit-new,
+  .btn-share-new {
+    width: auto;
+    min-width: 0;
+  }
   .hud-ticker {
     margin: 24px auto 0;
     width: 100%;
-    max-width: 480px;
-    justify-content: space-around;
-    padding: 12px 6px;
+    max-width: 580px;
+    justify-content: space-between;
+    padding: 14px 14px;
   }
-  .hud-stat { padding: 0 18px; }
-  .hud-number { font-size: 26px; }
-  .hud-label { font-size: 7px; letter-spacing: 1.5px; }
+  .hud-stat { padding: 10px 12px; }
+  .hud-number { font-size: 28px; }
+  .hud-label { font-size: 7.5px; letter-spacing: 1.5px; }
 
-  /* Supporting stats */
   .supporting-stats { flex-wrap: wrap; gap: 10px; padding: 32px 5%; }
-  .ss-stat { padding: 12px 20px; }
+  .ss-stat { padding: 12px 18px; }
   .ss-divider { display: none; }
   .ss-number { font-size: 28px; }
 
-  /* Wall */
-  .wall-inner { padding: 0 20px; }
-  .badges-grid-new { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .wall-inner { padding: 0 18px; }
+  .badges-grid-new { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .badge-controls-row { flex-direction: column; align-items: stretch; gap: 12px; }
+  .badge-sort-control { justify-content: flex-start; }
 
-  /* Story zone */
-  .story-zone { padding: 52px 5%; }
-  .story-left { padding-bottom: 32px; }
+  .story-zone { padding: 42px 5%; }
+  .story-left { padding-bottom: 28px; }
   .recently-watched-layout {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 18px;
   }
-  .featured-watch-card {
-    aspect-ratio: 16 / 9;
-    height: auto;
-  }
-  .masonry-grid { grid-template-columns: repeat(4, 1fr); }
+  .rw-premium-card,
+  .featured-watch-card { width: 100%; }
+  .filmstrip { grid-template-columns: 1fr; }
+  .rw-filmstrip-card { aspect-ratio: 16 / 9; }
+  .masonry-grid { grid-template-columns: repeat(3, 1fr); }
+  .story-right { width: 100%; }
 
-  /* Genre */
-  .genre-pills-row { flex-wrap: wrap; }
-  .genre-watermark { font-size: 56px; }
-  .genre-legend-col { max-height: none; }
-
-  /* Cover btn */
-  .cover-change-btn { top: 80px; right: 16px; }
+  .genre-identity { padding: 60px 5% 70px; }
+  .genre-pills-row { flex-wrap: wrap; gap: 10px; margin-bottom: 36px; }
+  .genre-pill { flex: 1 1 auto; min-width: 120px; }
+  .genre-watermark { font-size: 48px; }
+  .genre-title-large { font-size: clamp(28px, 6vw, 38px); }
+  .genre-content { gap: 32px; }
+  .genre-chart-col { gap: 22px; }
+  .genre-ticker { flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .gt-stat { padding: 0 12px; }
+  .genre-legend-col { max-height: none; padding-right: 0; }
 }
 
 @media (max-width: 480px) {
+  .entrance-content { padding: 78px 4% 42px; gap: 18px; }
   .entrance-avatar { width: 106px; height: 106px; }
-  .hud-ticker { margin-top: 18px; padding: 10px 4px; }
-  .hud-number { font-size: 20px; }
-  .masonry-grid { grid-template-columns: repeat(2, 1fr); }
+  .entrance-name { font-size: 32px; }
+  .entrance-meta { gap: 6px; }
+  .entrance-bio { font-size: 0.95rem; }
+  .cover-change-btn { top: 12px; right: 12px; padding: 8px 14px; }
+
+  .hud-ticker {
+    margin-top: 18px;
+    padding: 10px 10px;
+  }
+  .hud-number { font-size: 22px; }
+
+  .badges-grid-new { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .badge-controls-row { gap: 10px; }
+  .badge-sort-control { width: 100%; }
+
+  .story-zone { padding: 42px 4%; }
+  .masonry-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .filmstrip { gap: 12px; }
+  .genre-content { gap: 24px; }
+  .genre-pills-row { margin-bottom: 32px; }
+  .genre-chart-col { gap: 18px; }
+  .genre-ticker { padding: 16px 0; }
+
+  .genre-watermark { font-size: 42px; }
+  .genre-title-large { font-size: 28px; }
 }

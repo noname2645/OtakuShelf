@@ -6,6 +6,7 @@ import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
 import "../Stylesheets/home.css";
 import AnimeCardUI from "./AnimeCardUI.jsx";
+import Search from "../images/search.png";
 
 // Create a clean axios instance for AniList without auth headers
 const anilistClient = axios.create({
@@ -163,6 +164,7 @@ const ANIME_SEARCH_QUERY = `
 
 function AdvancedSearch() {
   const [searchText, setSearchText] = useState("");
+  const [isSearchPopupOpen, setIsSearchPopupOpen] = useState(false);
 
   // Simplified filter state
   const [filterOptions, setFilterOptions] = useState({
@@ -585,7 +587,41 @@ function AdvancedSearch() {
 
   return (
     <>
-      <Header showSearch={true} onSearchChange={(value) => setSearchText(value)} />
+      <Header
+        showSearch={true}
+        hideSearchOnMobile={true}
+        onSearchChange={(value) => setSearchText(value)}
+      />
+
+      {isSearchPopupOpen && (
+        <div className={styles.searchOverlay}>
+          <div className={styles.searchPopup}>
+            <div className={styles.searchPopupHeader}>
+              <span>Search Anime</span>
+              <button
+                className={styles.searchPopupClose}
+                onClick={() => setIsSearchPopupOpen(false)}
+                aria-label="Close search"
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.searchPopupBody}>
+              <div className={styles.searchInputWrapper}>
+                <img src={Search} alt="Search" className={styles.searchIcon} />
+                <input
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="Search anime..."
+                  className={styles.searchPopupInput}
+                  autoFocus
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Navigation Component */}
       <BottomNavBar />
@@ -723,6 +759,16 @@ function AdvancedSearch() {
         </div>
 
         {/* Search Results Section */}
+        <div className={styles.mobileSearchBarButtonWrapper}>
+          <button
+            className={styles.mobileSearchBarButton}
+            onClick={() => setIsSearchPopupOpen(true)}
+            type="button"
+          >
+            Tap to search anime
+          </button>
+        </div>
+
         <div className={styles.resultsSection}>
           {isSearching && <div className={styles.loader}></div>}
 

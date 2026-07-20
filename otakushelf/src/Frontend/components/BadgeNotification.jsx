@@ -71,59 +71,93 @@ const BadgeNotification = () => {
   return (
     <div style={{ position: 'fixed', bottom: 40, right: 40, zIndex: 99999, pointerEvents: 'none' }}>
       <AnimatePresence>
-        {currentBadge && (
-          <motion.div
-            key={currentBadge.id}
-            initial={{ opacity: 0, y: 50, scale: 0.8, rotateX: 45 }}
-            animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
-            exit={{ opacity: 0, y: -20, scale: 0.9, filter: 'blur(10px)' }}
-            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            style={{
-              background: 'rgba(15, 23, 42, 0.85)',
-              backdropFilter: 'blur(12px)',
-              border: `1px solid ${getRarityColor(currentBadge.rarity)}`,
-              boxShadow: `0 10px 40px -10px ${getRarityColor(currentBadge.rarity, 0.5)}, inset 0 0 20px ${getRarityColor(currentBadge.rarity, 0.2)}`,
-              borderRadius: '20px',
-              padding: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              width: '340px',
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
-            {/* Shimmer effect */}
-            <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: '200%' }}
-              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-              style={{
-                position: 'absolute',
-                top: 0, bottom: 0, left: 0, width: '40%',
-                background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)`,
-                transform: 'skewX(-20deg)',
-                zIndex: 0
-              }}
-            />
+        {currentBadge && (() => {
+          // Low-spec detection
+          const prefersReduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          const rootLowSpec = typeof document !== 'undefined' && document.documentElement.classList.contains('low-spec');
+          const deviceLowMemory = typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory < 1.5;
+          const lowCpu = typeof navigator !== 'undefined' && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2;
+          const simpleMode = prefersReduced || rootLowSpec || deviceLowMemory || lowCpu;
 
-            <div style={{ fontSize: '3rem', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.3))', zIndex: 1 }}>
-              {currentBadge.icon}
-            </div>
-            <div style={{ zIndex: 1 }}>
-              <div style={{ fontSize: '0.8rem', color: getRarityColor(currentBadge.rarity), textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 'bold', marginBottom: '4px' }}>
-                New Badge Unlocked!
+          if (simpleMode) {
+            // static simplified notification
+            return (
+              <div key={currentBadge.id} style={{
+                background: 'rgba(15, 23, 42, 0.95)',
+                border: `1px solid ${getRarityColor(currentBadge.rarity)}`,
+                borderRadius: '12px',
+                padding: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                width: '300px',
+                color: 'white',
+                position: 'relative'
+              }}>
+                <div style={{ fontSize: '2rem' }}>{currentBadge.icon}</div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: getRarityColor(currentBadge.rarity), textTransform: 'uppercase', fontWeight: '700' }}>New Badge</div>
+                  <div style={{ fontSize: '1rem', fontWeight: '700' }}>{currentBadge.title}</div>
+                </div>
               </div>
-              <div style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '4px' }}>
-                {currentBadge.title}
+            );
+          }
+
+          return (
+            <motion.div
+              key={currentBadge.id}
+              initial={{ opacity: 0, y: 50, scale: 0.8, rotateX: 45 }}
+              animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+              exit={{ opacity: 0, y: -20, scale: 0.9, filter: 'blur(10px)' }}
+              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                backdropFilter: 'blur(12px)',
+                border: `1px solid ${getRarityColor(currentBadge.rarity)}`,
+                boxShadow: `0 10px 40px -10px ${getRarityColor(currentBadge.rarity, 0.5)}, inset 0 0 20px ${getRarityColor(currentBadge.rarity, 0.2)}`,
+                borderRadius: '20px',
+                padding: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                width: '340px',
+                color: 'white',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Shimmer effect */}
+              <motion.div
+                initial={{ x: '-100%' }}
+                animate={{ x: '200%' }}
+                transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                style={{
+                  position: 'absolute',
+                  top: 0, bottom: 0, left: 0, width: '40%',
+                  background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)`,
+                  transform: 'skewX(-20deg)',
+                  zIndex: 0
+                }}
+              />
+
+              <div style={{ fontSize: '3rem', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.3))', zIndex: 1 }}>
+                {currentBadge.icon}
               </div>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.4 }}>
-                {currentBadge.description}
+              <div style={{ zIndex: 1 }}>
+                <div style={{ fontSize: '0.8rem', color: getRarityColor(currentBadge.rarity), textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 'bold', marginBottom: '4px' }}>
+                  New Badge Unlocked!
+                </div>
+                <div style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '4px' }}>
+                  {currentBadge.title}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                  {currentBadge.description}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          );
+        })()
+        }
       </AnimatePresence>
     </div>
   );

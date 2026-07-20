@@ -164,10 +164,11 @@ const ProfileDropdown = ({ onOpenSettings }) => {
   );
 };
 
-export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
+export const Header = ({ showSearch = true, onSearchChange, customAction, hideSearchOnMobile = false }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(typeof window !== 'undefined' ? window.innerWidth <= 767 : false);
   const { user } = useAuth();
   const rafRef = useRef(null);
   const isScrolledRef = useRef(false);
@@ -189,6 +190,14 @@ export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
       window.removeEventListener("scroll", handleScroll);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth <= 767);
+    };
+    window.addEventListener("resize", handleResize, { passive: true });
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const handleKeyDown = (e) => {
@@ -225,7 +234,7 @@ export const Header = ({ showSearch = true, onSearchChange, customAction }) => {
         </div>
 
         <div className="header-center">
-          {showSearch ? (
+          {showSearch && !(hideSearchOnMobile && isMobileView) ? (
             <div className={`InputContainer ${onSearchChange ? "active" : ""} ${isSearchFocused ? "focused" : ""}`}>
               <img src={Search} alt="Search" className="search-icon" />
               <input
