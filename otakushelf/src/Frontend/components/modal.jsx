@@ -445,48 +445,46 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                             </div>
                         </div>
 
-                        {/* Tab row: place directly above the stat pills (interchanged) */}
-                        <div className="info-buttons">
-                            <button
-                                className={`info-btn synopsis-btn ${activeTab === 'info' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('info')}
-                            >
-                                <span className="btn-icon"></span>
-                                <span className="btn-text">Synopsis</span>
-                            </button>
-                            <button
-                                className={`info-btn related-btn ${activeTab === 'related' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('related')}
-                            >
-                                <span className="btn-icon"></span>
-                                <span className="btn-text">Related</span>
-                            </button>
-                            <button
-                                className={`info-btn trailer-btn ${activeTab === 'trailer' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('trailer')}
-                            >
-                                <span className="btn-icon"></span>
-                                <span className="btn-text">Trailer</span>
-                            </button>
-                        </div>
-
-                        {/* Place stat pills directly below the poster container so they're visible (not clipped by image overflow) */}
-                        <div className="stats-grid2 pills-below-pic">
-                            <div className="stat-item">
-                                <span className="stat-label2 desktop-only">Episodes :</span>
-                                <span className="stat-value">{animeData.episodes} Episodes</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-label2 desktop-only">Score :</span>
-                                <span className="stat-value score">⭐ {animeData.score || "N/A"}</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-label2 desktop-only">Age Rating :</span>
-                                <span className="stat-value age-rating">{animeData.rating}</span>
-                            </div>
-                        </div>
-
                         <div className="modal-info">
+                            <div className="info-buttons">
+                                <button
+                                    className={`info-btn synopsis-btn ${activeTab === 'info' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('info')}
+                                >
+                                    <span className="btn-icon"></span>
+                                    <span className="btn-text">Synopsis</span>
+                                </button>
+                                <button
+                                    className={`info-btn related-btn ${activeTab === 'related' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('related')}
+                                >
+                                    <span className="btn-icon"></span>
+                                    <span className="btn-text">Related</span>
+                                </button>
+                                <button
+                                    className={`info-btn trailer-btn ${activeTab === 'trailer' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('trailer')}
+                                >
+                                    <span className="btn-icon"></span>
+                                    <span className="btn-text">Trailer</span>
+                                </button>
+                            </div>
+
+                            <div className="stats-grid2 pills-below-pic">
+                                <div className="stat-item">
+                                    <span className="stat-label2 desktop-only">Episodes :</span>
+                                    <span className="stat-value">{animeData.episodes} Episodes</span>
+                                </div>
+                                <div className="stat-item">
+                                    <span className="stat-label2 desktop-only">Score :</span>
+                                    <span className="stat-value score">⭐ {animeData.score || "N/A"}</span>
+                                </div>
+                                <div className="stat-item">
+                                    <span className="stat-label2 desktop-only">Age Rating :</span>
+                                    <span className="stat-value age-rating">{animeData.rating}</span>
+                                </div>
+                            </div>
+
                             <div className="tab-content">
                                 <AnimatePresence mode="wait">
                                     {activeTab === "info" && (

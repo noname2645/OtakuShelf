@@ -213,16 +213,40 @@ body.modal-open {
   z-index: 10;
   min-height: 0;
   height: calc(100% - 140px);
+  align-items: flex-start;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
 /* Image Section */
 .modal-image-wrapper {
   flex-shrink: 0;
+  align-self: flex-start;
   position: relative;
   width: min(390px, 100%);
   height: clamp(280px, 45dvh, 590px);
+}
+
+.modal-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+}
+
+.modal-info .tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tab-content > .info-tab-content,
+.tab-content > .related-tab-wrapper,
+.tab-content > .trailer-tab-wrapper {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .image-container {
@@ -247,7 +271,7 @@ body.modal-open {
 
 .anime-type-badge {
   position: absolute;
-  bottom: 20px;
+  bottom: 64px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
@@ -786,6 +810,7 @@ body.modal-open {
     flex-direction: column;
     gap: 20px;
     height: auto;
+    overflow: visible;
   }
 
   .modal-image-wrapper {
@@ -1291,6 +1316,67 @@ body.modal-open {
 
   .desktop-only {
     display: none !important;
+  }
+}
+
+@media (min-width: 992px) {
+  .modal-content {
+    padding: 20px !important;
+    max-height: 90vh !important;
+    height: min(690px, calc(100dvh - 2rem)) !important;
+  }
+
+  .modal-body {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    height: calc(100% - 140px) !important;
+    gap: 30px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .modal-image-wrapper {
+    width: min(390px, 100%) !important;
+    height: 590px !important;
+    min-height: 590px !important;
+    max-height: 590px !important;
+    margin: 0 !important;
+    align-self: flex-start !important;
+  }
+
+  .image-container {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+  }
+
+  .modal-info {
+    flex: 1 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 18px !important;
+  }
+
+  .modal-info .tab-content {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .info-buttons {
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    gap: 14px !important;
+    margin: 10px 0 4px 0 !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+
+  .stats-grid2.pills-below-pic {
+    margin-top: 16px !important;
+    width: 100% !important;
   }
 }
 
