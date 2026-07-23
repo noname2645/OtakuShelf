@@ -117,6 +117,8 @@ const getEmailTransporter = async () => {
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT, 10) || 587,
+        secure: false, // false for 587 (STARTTLS), true for 465
+        requireTLS: true,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS,
