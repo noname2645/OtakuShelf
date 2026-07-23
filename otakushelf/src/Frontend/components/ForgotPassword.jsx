@@ -279,15 +279,6 @@ const ForgotPassword = () => {
                                 ) : "Reset Password"}
                             </motion.button>
 
-                            <motion.p
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                style={{ textAlign: "center", marginTop: "16px" }}
-                            >
-                                <button type="button" onClick={() => { setStep("email"); setForgotStatus(null); setForgotMessage(""); setOtp(""); setNewPassword(""); setConfirmPassword(""); setResetStatus(null); setResetMessage(""); }}
-                                    style={{ background: "none", border: "none", color: "#ec4899", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}>
-                                    ← Try a different email
-                                </button>
-                            </motion.p>
                         </motion.form>
                     )}
 
