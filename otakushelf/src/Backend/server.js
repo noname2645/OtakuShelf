@@ -82,6 +82,13 @@ function validateEnvVars() {
     }
   }
 
+  // Warn about missing SMTP config (emails will fail but server can still run for core features)
+  const smtpVars = ['SMTP_HOST', 'SMTP_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'EMAIL_FROM'];
+  const missingSmtp = smtpVars.filter(key => !process.env[key]);
+  if (missingSmtp.length > 0) {
+    console.warn('⚠️  Missing SMTP environment variables (password reset / security emails will fail):', missingSmtp);
+  }
+
   console.log('✅ Environment variables validated');
 }
 
@@ -102,20 +109,35 @@ app.use((req, res, next) => {
 });
 
 // ─── Email Transporter (Reusable Singleton) ──────────────────────────────────
-let emailTransporter = null;
+let emailTransporterPromise = null;
 
-const getEmailTransporter = () => {
-  if (!emailTransporter) {
-    emailTransporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT, 10) || 587,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+const getEmailTransporter = async () => {
+  if (!emailTransporterPromise) {
+    emailTransporterPromise = (async () => {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT, 10) || 587,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+      try {
+        await transporter.verify();
+        console.log('✅ SMTP transporter verified — ready to send emails');
+      } catch (verifyErr) {
+        console.error('❌ SMTP transporter verification failed:', verifyErr.message);
+        // Don't reset — createTransport itself might be fine; let sendMail attempt
+      }
+      return transporter;
+    })();
   }
-  return emailTransporter;
+  try {
+    return await emailTransporterPromise;
+  } catch (err) {
+    emailTransporterPromise = null;
+    throw err;
+  }
 };
 
 // ─── Security Email Helper ───────────────────────────────────────────────────
@@ -147,7 +169,7 @@ const sendSecurityEmail = async (email, type, data = {}) => {
       message = 'Your account and all associated data have been permanently removed. We\'re sad to see you go!';
     }
 
-    await getEmailTransporter().sendMail({
+    await (await getEmailTransporter()).sendMail({
       from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
       to: email,
       subject,
@@ -688,7 +710,7 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
     try {
-      await getEmailTransporter().sendMail({
+      await (await getEmailTransporter()).sendMail({
         from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
         to: normalizedEmail,
         subject: '🔑 OtakuShelf — Reset Your Password',
