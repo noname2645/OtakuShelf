@@ -21,7 +21,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import aiChat from "./aiChat.js";
-import nodemailer from 'nodemailer';
+
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import { OAuth2Client } from 'google-auth-library';
@@ -108,38 +108,46 @@ app.use((req, res, next) => {
   next();
 });
 
-// ─── Email Transporter (Reusable Singleton) ──────────────────────────────────
-let emailTransporterPromise = null;
+// ─── Email Sender (SMTP → Brevo API fallback) ──────────────────────────────
+const parseFromAddress = (fromStr) => {
+  const match = fromStr.match(/^(?:"?([^"]*)"?\s)?<?([^>]+)>?$/);
+  if (match) return { name: match[1]?.trim() || '', email: match[2] };
+  return { name: '', email: fromStr };
+};
 
-const getEmailTransporter = async () => {
-  if (!emailTransporterPromise) {
-    emailTransporterPromise = (async () => {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT, 10) || 587,
-        secure: false, // false for 587 (STARTTLS), true for 465
-        requireTLS: true,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
+let emailSenderPromise = null;
+
+const getEmailSender = async () => {
+  if (!emailSenderPromise) {
+    emailSenderPromise = (async () => {
+      return {
+        sendMail: async ({ from, to, subject, html }) => {
+          const sender = parseFromAddress(from);
+          try {
+            const res = await axios.post('https://api.brevo.com/v3/smtp/email', {
+              sender: { name: sender.name, email: sender.email },
+              to: [{ email: to }],
+              subject,
+              htmlContent: html,
+            }, {
+              headers: {
+                'api-key': process.env.BREVO_API_KEY || process.env.EMAIL_PASS,
+                'Content-Type': 'application/json',
+              },
+              timeout: 15000,
+            });
+            console.log(`✅ Email sent via Brevo API to ${to}`);
+            return res.data;
+          } catch (apiErr) {
+            const detail = apiErr.response?.data?.message || apiErr.message;
+            console.error(`❌ Brevo API email failed: ${detail}`);
+            throw new Error(`Failed to send email: ${detail}`);
+          }
         },
-      });
-      try {
-        await transporter.verify();
-        console.log('✅ SMTP transporter verified — ready to send emails');
-      } catch (verifyErr) {
-        console.error('❌ SMTP transporter verification failed:', verifyErr.message);
-        // Don't reset — createTransport itself might be fine; let sendMail attempt
-      }
-      return transporter;
+      };
     })();
   }
-  try {
-    return await emailTransporterPromise;
-  } catch (err) {
-    emailTransporterPromise = null;
-    throw err;
-  }
+  return await emailSenderPromise;
 };
 
 // ─── Security Email Helper ───────────────────────────────────────────────────
@@ -171,7 +179,7 @@ const sendSecurityEmail = async (email, type, data = {}) => {
       message = 'Your account and all associated data have been permanently removed. We\'re sad to see you go!';
     }
 
-    await (await getEmailTransporter()).sendMail({
+    await (await getEmailSender()).sendMail({
       from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
       to: email,
       subject,
@@ -712,7 +720,7 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
     try {
-      await (await getEmailTransporter()).sendMail({
+      await (await getEmailSender()).sendMail({
         from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
         to: normalizedEmail,
         subject: '🔑 OtakuShelf — Reset Your Password',
