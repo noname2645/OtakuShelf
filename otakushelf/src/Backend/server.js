@@ -433,14 +433,15 @@ app.post("/auth/register", authLimiter, async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    const existing = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       return res.status(400).json({ message: "User already exists" });
     }
 
     const hashed = await bcrypt.hash(password, 12);
     const newUser = new User({
-      email,
+      email: normalizedEmail,
       password: hashed,
       authType: "local",
     });
@@ -461,7 +462,8 @@ app.post("/auth/login", authLimiter, async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -667,7 +669,8 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email is required" });
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
     // Always respond OK to prevent email enumeration
     if (!user || user.authType !== 'local') {
       return res.json({ message: "If that email exists, a reset link has been sent." });
@@ -682,12 +685,12 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
     user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     await user.save();
 
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
     try {
       await getEmailTransporter().sendMail({
         from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
-        to: email,
+        to: normalizedEmail,
         subject: '🔑 OtakuShelf — Reset Your Password',
         html: `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0d0d1a;color:#fff;border-radius:16px;overflow:hidden">
@@ -709,8 +712,8 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
         `,
       });
     } catch (emailErr) {
-      user.passwordResetToken = undefined;
-      user.passwordResetExpires = undefined;
+      user.passwordResetToken = null;
+      user.passwordResetExpires = null;
       await user.save();
       console.error('Failed to send password reset email:', emailErr);
       return res.status(500).json({ message: "Failed to send reset email. Please try again." });

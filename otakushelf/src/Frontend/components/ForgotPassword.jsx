@@ -7,7 +7,7 @@ import "../Stylesheets/login.css";
 const ForgotPassword = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const API = import.meta.env.VITE_API_BASE_URL;
+    const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
     // Read token + email from URL — if present, we're in reset mode
     const token = searchParams.get("token");
