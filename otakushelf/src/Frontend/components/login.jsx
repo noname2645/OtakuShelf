@@ -46,7 +46,7 @@ const Login = () => {
 
       setMessage(res.data.message);
       if (res.data.data && res.data.data.user) {
-        login(res.data.data.user, res.data.data.token);
+        login(res.data.data.user, res.data.data.accessToken, res.data.data.refreshToken);
         setEmail(""); setPassword(""); setMfaCode("");
         navigate("/");
       }

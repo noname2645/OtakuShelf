@@ -49,10 +49,9 @@ const Register = ({ onRegisterSuccess }) => {
     try {
       const res = await axios.post(`${API}/auth/register`, { email, password }, { withCredentials: true });
       setMessage(res.data.message);
-      const loginRes = await axios.post(`${API}/auth/login`, { email, password }, { withCredentials: true });
-      if (loginRes.data.data && loginRes.data.data.user) {
-        login(loginRes.data.data.user, loginRes.data.data.token);
-        if (onRegisterSuccess) onRegisterSuccess(loginRes.data.data.user);
+      if (res.data.data?.user) {
+        login(res.data.data.user, res.data.data.accessToken, res.data.data.refreshToken);
+        if (onRegisterSuccess) onRegisterSuccess(res.data.data.user);
         navigate("/");
       }
     } catch (err) {

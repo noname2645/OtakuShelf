@@ -72,7 +72,7 @@ const SettingsPage = ({ isModal = false }) => {
   });
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [sessions, setSessions] = useState([]);
+
 
   const [mfaSetup, setMfaSetup] = useState(null);
   const [mfaTokenInput, setMfaTokenInput] = useState("");
@@ -308,27 +308,6 @@ const SettingsPage = ({ isModal = false }) => {
     }
   };
 
-  // Load sessions
-  const loadSessions = async () => {
-    try {
-      const response = await api.get(`${API}/api/settings/${userId}/sessions`);
-      setSessions(response.data.data?.sessions || []);
-    } catch (err) {
-      console.error("Failed to load sessions:", err);
-    }
-  };
-
-  // Logout all other sessions
-  const handleLogoutAll = async () => {
-    try {
-      await api.delete(`${API}/api/settings/${userId}/sessions`);
-      showToast("All other sessions terminated");
-      loadSessions();
-    } catch (err) {
-      showToast("Failed to terminate sessions", "error");
-    }
-  };
-
   // Export data
   const handleExportData = async () => {
     try {
@@ -348,13 +327,6 @@ const SettingsPage = ({ isModal = false }) => {
       showToast("Failed to export data", "error");
     }
   };
-
-  // Load sessions when security tab is active
-  useEffect(() => {
-    if (activeTab === "security" && userId) {
-      loadSessions();
-    }
-  }, [activeTab, userId]);
 
   if (!user) {
     return (
@@ -656,75 +628,34 @@ const SettingsPage = ({ isModal = false }) => {
           <h3>Active Sessions</h3>
         </div>
         <p className="settings-card-desc">
-          Manage devices where you're currently logged in.
+          Manage your login sessions. Refresh tokens are valid for 7 days.
         </p>
         <div className="settings-sessions-list">
-          {sessions.length > 0 ? (
-            sessions.map((session, idx) => (
-              <div key={idx} className="settings-session-item">
-                <div className="session-device-icon">💻</div>
-                <div className="session-info">
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      flexWrap: "wrap",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    <span className="session-name">Session {idx + 1}</span>
-                    {session.ip && (
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          padding: "2px 8px",
-                          borderRadius: "12px",
-                          background: "rgba(255,255,255,0.06)",
-                          color: "rgba(255,255,255,0.6)",
-                        }}
-                      >
-                        {session.ip}
-                      </span>
-                    )}
-                    {session.area && (
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          padding: "2px 8px",
-                          borderRadius: "12px",
-                          background: "rgba(255, 107, 107, 0.1)",
-                          color: "#ff6b6b",
-                          fontWeight: "500",
-                        }}
-                      >
-                        📍 {session.area}
-                      </span>
-                    )}
-                  </div>
-                  <span className="session-expires">
-                    Expires: {new Date(session.expires).toLocaleDateString()}
-                  </span>
-                </div>
-                {idx === 0 && (
-                  <span className="session-current-badge">Current</span>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="settings-empty-sessions">
-              No active sessions found.
+          <div className="settings-session-item">
+            <div className="session-device-icon">🔑</div>
+            <div className="session-info">
+              <span className="session-name">Refresh Token</span>
+              <span className="session-expires">
+                Your session stays active for 7 days. Revoking tokens will require you to sign in again.
+              </span>
             </div>
-          )}
+          </div>
         </div>
-        {sessions.length > 1 && (
-          <button
-            className="settings-btn-danger-outline"
-            onClick={handleLogoutAll}
-          >
-            🚪 Log Out All Other Devices
-          </button>
-        )}
+        <button
+          className="settings-btn-danger-outline"
+          onClick={async () => {
+            try {
+              await api.post(`${API}/api/settings/${userId}/revoke-tokens`);
+              showToast("All tokens revoked");
+              logout();
+            } catch {
+              showToast("Failed to revoke tokens", "error");
+            }
+          }}
+          style={{ marginTop: "12px" }}
+        >
+          🔑 Revoke All Tokens
+        </button>
       </div>
 
       {/* Connected Accounts */}

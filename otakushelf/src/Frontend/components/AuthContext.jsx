@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }) => {
   const clearStorage = useCallback(() => {
     const keysToRemove = [];
     Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('user') || key === 'token') {
+      if (key.startsWith('user') || key === 'accessToken' || key === 'refreshToken') {
         keysToRemove.push(key);
       }
     });
@@ -131,12 +131,14 @@ export const AuthProvider = ({ children }) => {
   // Handle OAuth token from URL redirect (Google login)
   const handleTokenFromUrl = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
+    const accessToken = params.get("accessToken") || params.get("token");
+    const refreshToken = params.get("refreshToken");
 
-    if (!token) return false;
+    if (!accessToken) return false;
 
     console.log('Processing OAuth token from URL...');
-    localStorage.setItem("token", token);
+    localStorage.setItem("accessToken", accessToken);
+    if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
     window.history.replaceState({}, document.title, window.location.pathname);
 
     try {
@@ -164,7 +166,6 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('OAuth token validation failed:', error.message);
-      // Keep the token stored — user might be offline, let checkAuthStatus retry
       const storedUser = loadFromStorage();
       if (storedUser) {
         setUser(storedUser);
@@ -173,17 +174,39 @@ export const AuthProvider = ({ children }) => {
     return false;
   }, [API, fetchFreshProfile, storeMinimalUser, loadFromStorage, fixPhotoUrl]);
 
-  // Main auth check — handles Render cold-starts with retries
-  const checkAuthStatus = useCallback(async () => {
-    const token = localStorage.getItem("token");
+  // Try to refresh the access token
+  const tryRefresh = useCallback(async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) return false;
 
-    // No token — use stored user (offline/not logged in)
-    if (!token) {
+    try {
+      const res = await axios.post(`${API}/auth/refresh`, { refreshToken });
+      const { accessToken, refreshToken: newRefresh } = res.data.data;
+      localStorage.setItem("accessToken", accessToken);
+      if (newRefresh) localStorage.setItem("refreshToken", newRefresh);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [API]);
+
+  // Main auth check — with refresh support
+  const checkAuthStatus = useCallback(async () => {
+    let accessToken = localStorage.getItem("accessToken");
+
+    // Try refresh if no access token but have refresh token
+    if (!accessToken) {
+      const refreshed = await tryRefresh();
+      if (refreshed) {
+        accessToken = localStorage.getItem("accessToken");
+      }
+    }
+
+    if (!accessToken) {
       const storedUser = loadFromStorage();
       if (storedUser) {
         storedUser.photo = fixPhotoUrl(storedUser.photo);
         setUser(storedUser);
-        // Try profile fetch in background
         fetchFreshProfile(storedUser.id).then(p => { if (p) setProfile(p); }).catch(() => { });
       }
       setLoading(false);
@@ -191,7 +214,6 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      // With retries for Render cold-start (up to ~21 seconds total wait)
       const response = await createApiCall(
         `${API}/auth/me`,
         {},
@@ -207,7 +229,6 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         storeMinimalUser(userData);
 
-        // Fetch profile in background
         fetchFreshProfile(userData._id).then(profileData => {
           if (profileData) setProfile(profileData);
         });
@@ -215,27 +236,18 @@ export const AuthProvider = ({ children }) => {
         clearStorage();
       }
     } catch (error) {
-      console.error('Auth check failed:', error.message);
-
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        // Invalid token — clear it
-        clearStorage();
-      } else {
-        // Network error or server error — use cached data (offline mode)
-        const storedUser = loadFromStorage();
-        if (storedUser) {
-          storedUser.photo = fixPhotoUrl(storedUser.photo);
-          setUser(storedUser);
-          console.log('Using cached auth (server unreachable)');
-        } else {
-          // No cached data, definitely logged out
-          setUser(null);
+      // Try to refresh on 401
+      if (error.response?.status === 401) {
+        const refreshed = await tryRefresh();
+        if (refreshed) {
+          return checkAuthStatus(); // Retry with new token
         }
       }
+      clearStorage();
     } finally {
       setLoading(false);
     }
-  }, [API, fetchFreshProfile, storeMinimalUser, clearStorage, loadFromStorage, fixPhotoUrl]);
+  }, [API, fetchFreshProfile, storeMinimalUser, clearStorage, loadFromStorage, fixPhotoUrl, tryRefresh]);
 
   // Initialize auth on mount
   useEffect(() => {
@@ -276,10 +288,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login — stores token and user, fetches profile
-  const login = useCallback(async (userData, authToken) => {
-    if (authToken) {
-      localStorage.setItem("token", authToken);
+  // Login — stores tokens and user, fetches profile
+  const login = useCallback(async (userData, accessToken, refreshToken) => {
+    if (accessToken) {
+      localStorage.setItem("accessToken", accessToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem("refreshToken", refreshToken);
     }
 
     userData.photo = fixPhotoUrl(userData.photo);
@@ -287,7 +302,6 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     storeMinimalUser(userData);
 
-    // Fetch profile in background
     const userId = userData._id || userData.id;
     if (userId) {
       fetchFreshProfile(userId).then(profileData => {
@@ -317,7 +331,7 @@ export const AuthProvider = ({ children }) => {
 
       if (!userId) throw new Error('User not authenticated');
 
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("accessToken");
       if (!token) throw new Error('Authentication token missing');
 
       const response = await api.put(`/api/profile/${userId}`, profileData);

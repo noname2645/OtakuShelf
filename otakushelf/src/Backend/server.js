@@ -7,10 +7,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import animeRoutes from './routes/animeRoutes.js';
 import anilistRoutes from './routes/anilistRoute.js';
-import passport from "passport";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import session from "express-session";
-import MongoStore from 'connect-mongo';
 import dotenv from "dotenv";
 import xml2js from 'xml2js';
 import fileUpload from 'express-fileupload';
@@ -30,6 +26,14 @@ import { authenticateToken, authorizeUser } from './utils/authMiddleware.js';
 import evaluateBadges from './utils/badgeEngine.js';
 import BADGES from './utils/badgeDefinitions.js';
 import badgeEvents from './utils/badgeEvents.js';
+
+import {
+  generateAccessToken, generateRefreshToken, hashRefreshToken,
+  verifyAccessToken, hashPassword, comparePassword, generateOtp,
+  generateVerificationToken, hasLocalProvider, hasGoogleProvider,
+  getProvider, addProvider, sanitizeUser
+} from './services/authService.js';
+import { sendSecurityEmail, buildEmailHtml, getEmailSender } from './services/emailService.js';
 
 // Security packages
 import helmet from 'helmet';
@@ -54,7 +58,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Validate critical environment variables
 function validateEnvVars() {
-  const required = ['JWT_SECRET', 'SESSION_SECRET', 'MONGO_URI'];
+  const required = ['JWT_SECRET', 'MONGO_URI'];
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length > 0) {
@@ -67,26 +71,10 @@ function validateEnvVars() {
     process.exit(1);
   }
 
-  if (process.env.SESSION_SECRET.length < 16) {
-    console.error('❌ SESSION_SECRET must be at least 16 characters');
-    process.exit(1);
-  }
-
-  // Warn about short secrets in production
   if (process.env.NODE_ENV === 'production') {
     if (process.env.JWT_SECRET.length < 32) {
       console.warn('⚠️  JWT_SECRET is shorter than 32 characters — consider a longer secret in production');
     }
-    if (process.env.SESSION_SECRET.length < 32) {
-      console.warn('⚠️  SESSION_SECRET is shorter than 32 characters — consider a longer secret in production');
-    }
-  }
-
-  // Warn about missing SMTP config (emails will fail but server can still run for core features)
-  const smtpVars = ['SMTP_HOST', 'SMTP_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'EMAIL_FROM'];
-  const missingSmtp = smtpVars.filter(key => !process.env[key]);
-  if (missingSmtp.length > 0) {
-    console.warn('⚠️  Missing SMTP environment variables (password reset / security emails will fail):', missingSmtp);
   }
 
   console.log('✅ Environment variables validated');
@@ -108,137 +96,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ─── Email Sender (SMTP → Brevo API fallback) ──────────────────────────────
-const parseFromAddress = (fromStr) => {
-  const match = fromStr.match(/^(?:"?([^"]*)"?\s)?<?([^>]+)>?$/);
-  if (match) return { name: match[1]?.trim() || '', email: match[2] };
-  return { name: '', email: fromStr };
-};
 
-let emailSenderPromise = null;
-
-const getEmailSender = async () => {
-  if (!emailSenderPromise) {
-    emailSenderPromise = (async () => {
-      return {
-        sendMail: async ({ from, to, subject, html }) => {
-          const sender = parseFromAddress(from);
-          try {
-            const res = await axios.post('https://api.brevo.com/v3/smtp/email', {
-              sender: { name: sender.name, email: sender.email },
-              to: [{ email: to }],
-              subject,
-              htmlContent: html,
-            }, {
-              headers: {
-                'api-key': process.env.BREVO_API_KEY || process.env.EMAIL_PASS,
-                'Content-Type': 'application/json',
-              },
-              timeout: 15000,
-            });
-            console.log(`✅ Email sent via Brevo API to ${to}`);
-            return res.data;
-          } catch (apiErr) {
-            const detail = apiErr.response?.data?.message || apiErr.message;
-            console.error(`❌ Brevo API email failed: ${detail}`);
-            throw new Error(`Failed to send email: ${detail}`);
-          }
-        },
-      };
-    })();
-  }
-  return await emailSenderPromise;
-};
-
-// ─── Premium Email HTML Builder ──────────────────────────────────────────────
-const buildEmailHtml = ({ title, greeting = 'Hey there, Otaku!', isOtp = false, otpCode = '', body, icon = '🔐' }) => `
-  <div style="background:#0a0b0e;padding:32px 16px;font-family:'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-    <table align="center" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;margin:0 auto;border-collapse:separate;border-spacing:0">
-      <tr>
-        <td style="padding:0 0 24px;text-align:center">
-          <table cellpadding="0" cellspacing="0" style="margin:0 auto">
-            <tr>
-              <td style="background:linear-gradient(135deg,#ff6b6b,#ff4757);border-radius:12px;padding:8px 18px;font-size:13px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:1.5px">
-                ${icon} ${title}
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <tr>
-        <td style="background:#12141a;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:40px 36px 32px">
-          <div style="text-align:center;margin-bottom:28px;line-height:1">
-            <span style="font-family:'Outfit',sans-serif;font-size:32px;font-weight:800;color:#f1f5f9;letter-spacing:-0.5px">Otaku</span><span style="font-family:'Outfit',sans-serif;font-size:32px;font-weight:800;color:#FFD700;letter-spacing:-0.5px">Shelf</span>
-          </div>
-          <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#e2e8f0">${greeting}</p>
-          <div style="font-size:14px;line-height:1.8;color:#94a3b8">${body}</div>
-          ${isOtp && otpCode ? `
-          <div style="background:rgba(255,107,107,0.06);border:1px solid rgba(255,107,107,0.15);border-radius:14px;padding:24px;margin:28px 0;text-align:center">
-            <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#ff6b6b;text-transform:uppercase;letter-spacing:2px">Verification Code</p>
-            <div style="font-family:'Space Grotesk','Courier New',monospace;font-size:32px;font-weight:700;color:#fff;letter-spacing:12px;margin:0">${otpCode}</div>
-            <p style="margin:14px 0 0;font-size:12px;color:#64748b">Expires in 10 minutes</p>
-          </div>` : ''}
-          <div style="border-top:1px solid rgba(255,255,255,0.04);margin:28px 0 16px"></div>
-          <p style="margin:0;font-size:11px;line-height:1.6;color:rgba(255,255,255,0.25);text-align:center;text-transform:uppercase;letter-spacing:0.5px">
-            OtakuShelf &mdash; Your Anime Universe
-          </p>
-        </td>
-      </tr>
-    </table>
-  </div>
-`;
-
-// ─── Security Email Helper ───────────────────────────────────────────────────
-const sendSecurityEmail = async (email, type, data = {}) => {
-  try {
-    let subject = '🔐 OtakuShelf — Security Alert';
-    let title = 'Security Alert';
-    let body = '';
-    let icon = '🔐';
-    let isOtp = false;
-    let otpCode = '';
-
-    if (type === 'otp') {
-      subject = `${data.action} Verification Code`;
-      title = `${data.action} Verification`;
-      icon = '🔑';
-      isOtp = true;
-      otpCode = data.otp;
-      body = 'Enter this code to authorize the action. Never share this code with anyone.';
-    } else if (type === 'mfa_enabled') {
-      subject = '2FA Successfully Enabled';
-      title = 'Two-Factor Authentication Enabled';
-      icon = '🛡️';
-      body = 'Two-Factor Authentication has been successfully enabled on your <strong>OtakuShelf</strong> account. Your account is now more secure.';
-    } else if (type === 'mfa_disabled') {
-      subject = '2FA Successfully Disabled';
-      title = 'Two-Factor Authentication Disabled';
-      icon = '⚠️';
-      body = 'Two-Factor Authentication has been disabled on your <strong>OtakuShelf</strong> account. If you did not make this change, please contact support immediately.';
-    } else if (type === 'password_changed') {
-      subject = 'Password Changed Successfully';
-      title = 'Password Changed';
-      icon = '🔒';
-      body = 'The password for your <strong>OtakuShelf</strong> account was recently changed. If you did not make this change, please contact support immediately.';
-    } else if (type === 'account_deleted') {
-      subject = 'Account Deleted';
-      title = 'Account Deleted';
-      icon = '👋';
-      body = 'Your account and all associated data have been permanently removed. We\'re sad to see you go! If you change your mind, you can always create a new account.';
-    }
-
-    await (await getEmailSender()).sendMail({
-      from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
-      to: email,
-      subject,
-      html: buildEmailHtml({ title, body, icon, isOtp, otpCode }),
-    });
-    return true;
-  } catch (err) {
-    console.error('Email sending failed:', err);
-    return false;
-  }
-};
 
 // Security Headers (Helmet)
 // CSP is always set — permissive in dev (allows Vite HMR), strict in production.
@@ -365,130 +223,26 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.error("MongoDB Error:", err));
 
-app.use(session({
-  secret: process.env.SESSION_SECRET, // No fallback!
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI,
-    collectionName: 'sessions'
-  }),
-  cookie: {
-    secure: isProduction,
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24,
-    sameSite: isProduction ? 'none' : 'lax'
-  },
-  name: 'sessionId'
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-// GeoIP lookup helper
-async function getAreaFromIp(ip) {
-  if (!ip || ip === '::1' || ip === '127.0.0.1' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) {
-    return 'Localhost / Dev';
-  }
-  try {
-    const response = await axios.get(`http://ip-api.com/json/${ip}`, { timeout: 3000 });
-    if (response.data && response.data.status === 'success') {
-      return `${response.data.city}, ${response.data.country}`;
-    }
-  } catch (err) {
-    console.error('GeoIP lookup failed:', err.message);
-  }
-  return 'Unknown Location';
-}
-
-// Log IP and Area inside session object automatically
-app.use((req, res, next) => {
-  if (req.session) {
-    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-    if (Array.isArray(ip)) ip = ip[0];
-    if (ip.includes(',')) ip = ip.split(',')[0].trim();
-    if (ip.startsWith('::ffff:')) {
-      ip = ip.substring(7);
-    }
-    
-    if (req.session.ip !== ip) {
-      req.session.ip = ip;
-      req.session.area = 'Locating...';
-      
-      getAreaFromIp(ip).then(area => {
-        req.session.area = area;
-        req.session.save((err) => {
-          if (err) console.error('Session save error:', err);
-        });
-      }).catch(() => {
-        req.session.area = 'Unknown Location';
-        req.session.save();
-      });
-    }
-  }
-  next();
-});
-
 import User from './models/User.js';
 import AnimeList from './models/AnimeList.js';
 
-
-passport.use(new GoogleStrategy(
-  {
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL,
-    scope: ['profile', 'email']
-  },
-  async (accessToken, refreshToken, profile, done) => {
-    try {
-      let user = await User.findOne({ email: profile.emails[0].value });
-      if (!user) {
-        user = new User({
-          email: profile.emails[0].value,
-          authType: "google",
-          photo: profile.photos?.[0]?.value || null,
-          name: profile.displayName || null
-        });
-        await user.save();
-      } else {
-        if (!user.photo && profile.photos?.[0]?.value) {
-          user.photo = profile.photos[0].value;
-          await user.save();
-        }
-        if (!user.name && profile.displayName) {
-          user.name = profile.displayName;
-          await user.save();
-        }
-      }
-      return done(null, user);
-    } catch (err) {
-      return done(err, null);
-    }
-  }
-));
-
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
-
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findById(id);
-    done(null, user);
-  } catch (err) {
-    done(err, null);
-  }
-});
+// ─── Auth Routes ────────────────────────────────────────────────────────────
 
 // Route 1: GET /healthz — Health check
 app.get('/healthz', (req, res) => res.sendSuccess('System is healthy', 'ok'));
 
-// Wake-up / keep-alive ping endpoint (used by frontend for cold-start)
 // Route 2: GET /api/ping — Connectivity test
 app.get('/api/ping', (req, res) => {
   res.sendSuccess('Server is awake', { status: 'awake', timestamp: Date.now(), uptime: process.uptime() });
 });
+
+// Helper: issue tokens for a user
+const issueTokens = (user) => {
+  const accessToken = generateAccessToken(user._id);
+  const refreshToken = generateRefreshToken();
+  user.refreshTokenHash = hashRefreshToken(refreshToken);
+  return { accessToken, refreshToken };
+};
 
 // Route 3: POST /auth/register — User registration
 app.post("/auth/register", authLimiter, async (req, res) => {
@@ -505,14 +259,42 @@ app.post("/auth/register", authLimiter, async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const hashed = await bcrypt.hash(password, 12);
-    const newUser = new User({
+    const hashed = await hashPassword(password);
+    const verifyToken = generateVerificationToken();
+    const user = new User({
       email: normalizedEmail,
-      password: hashed,
-      authType: "local",
+      providers: [{ type: 'local', hashedPassword: hashed }],
+      emailVerificationToken: verifyToken,
     });
-    await newUser.save();
-    res.sendSuccess("Registration successful!");
+    await user.save();
+
+    // Send verification email
+    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${verifyToken}&email=${encodeURIComponent(normalizedEmail)}`;
+    try {
+      await (await getEmailSender()).sendMail({
+        from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
+        to: normalizedEmail,
+        subject: '🎉 OtakuShelf — Verify Your Email',
+        html: buildEmailHtml({
+          title: 'Welcome to OtakuShelf',
+          icon: '🎉',
+          body: `Thanks for joining! Verify your email by clicking the link below:<br><br>
+            <a href="${verifyUrl}" style="display:inline-block;background:linear-gradient(135deg,#ff6b6b,#ff4757);color:#fff;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:14px">Verify Email</a>
+            <br><br>This link expires in 24 hours.`,
+        }),
+      });
+    } catch (emailErr) {
+      console.error('Failed to send verification email:', emailErr);
+    }
+
+    const { accessToken, refreshToken } = issueTokens(user);
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Registration successful! Check your email to verify your account.",
+      data: { user: sanitizeUser(user), accessToken, refreshToken }
+    });
   } catch (err) {
     console.error('Registration error:', err);
     res.sendError("Server error", 500, err.message);
@@ -534,19 +316,19 @@ app.post("/auth/login", authLimiter, async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    if (user.authType !== "local") {
-      return res.status(400).json({ message: "This account uses Google login only" });
+    const localProvider = getProvider(user, 'local');
+    if (!localProvider) {
+      return res.status(400).json({ message: "This account doesn't have a password. Try Google login." });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await comparePassword(password, localProvider.hashedPassword);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Handle MFA Flow
+    // Handle MFA
     if (user.isMfaEnabled) {
       if (!req.body.mfaCode) {
-        // Return 200 with requiresMfa flag so frontend can show input
         return res.status(200).json({
           success: true,
           message: "MFA code required",
@@ -554,7 +336,6 @@ app.post("/auth/login", authLimiter, async (req, res) => {
         });
       }
 
-      // Verify the code
       const verified = speakeasy.totp.verify({
         secret: user.mfaSecret,
         encoding: 'base32',
@@ -566,25 +347,13 @@ app.post("/auth/login", authLimiter, async (req, res) => {
       }
     }
 
-    req.login(user, (err) => {
-      if (err) {
-        console.error("Session login error:", err);
-        return res.sendError("Session error", 500);
-      }
+    const { accessToken, refreshToken } = issueTokens(user);
+    await user.save();
 
-      const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "24h" });
-
-      res.sendSuccess("Login successful!", {
-        user: {
-          _id: user._id,
-          email: user.email,
-          authType: user.authType,
-          photo: user.photo || null,
-          name: user.name || null,
-          isMfaEnabled: user.isMfaEnabled || false
-        },
-        token,
-      });
+    res.sendSuccess("Login successful!", {
+      user: sanitizeUser(user),
+      accessToken,
+      refreshToken,
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -592,12 +361,11 @@ app.post("/auth/login", authLimiter, async (req, res) => {
   }
 });
 
-// Route 5: GET /auth/google — Google OAuth initiate (Web flow)
-app.get("/auth/google", (req, res, next) => {
-  if (req.query.redirect) {
-    req.session.oauthRedirect = req.query.redirect;
-  }
-  passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+// Route 5a: GET /auth/google — Google OAuth initiate (Web flow)
+app.get("/auth/google", (req, res) => {
+  const redirectParam = req.query.redirect || '';
+  const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.GOOGLE_CALLBACK_URL)}&response_type=code&scope=profile+email&state=${encodeURIComponent(redirectParam)}`;
+  res.redirect(googleUrl);
 });
 
 // Route 5b: POST /auth/google — Google ID token login (Mobile / React Native flow)
@@ -616,39 +384,31 @@ app.post("/auth/google", async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    const { email, name, picture } = payload;
+    const { email, name, picture, sub } = payload;
 
     let user = await User.findOne({ email });
     if (!user) {
       user = new User({
         email,
-        authType: "google",
+        providers: [{ type: 'google', id: sub }],
         photo: picture || null,
         name: name || null,
+        emailVerified: true,
       });
-      await user.save();
     } else {
-      if (!user.photo && picture) {
-        user.photo = picture;
-        await user.save();
-      }
-      if (!user.name && name) {
-        user.name = name;
-        await user.save();
-      }
+      addProvider(user, 'google', { id: sub });
+      if (!user.photo && picture) user.photo = picture;
+      if (!user.name && name) user.name = name;
+      user.emailVerified = true;
     }
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "24h" });
+    const { accessToken, refreshToken } = issueTokens(user);
+    await user.save();
 
     res.sendSuccess("Login successful!", {
-      user: {
-        _id: user._id,
-        email: user.email,
-        authType: user.authType,
-        photo: user.photo || null,
-        name: user.name || null,
-      },
-      token,
+      user: sanitizeUser(user),
+      accessToken,
+      refreshToken,
     });
   } catch (err) {
     console.error("Google ID token verification error:", err);
@@ -656,80 +416,154 @@ app.post("/auth/google", async (req, res) => {
   }
 });
 
-// Route 6: GET /auth/google/callback — Google OAuth callback (Web flow)
-app.get("/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed` }),
-  (req, res) => {
-    try {
-      const token = jwt.sign({ id: req.user._id }, JWT_SECRET, { expiresIn: "24h" });
-      const redirectUrl = req.session.oauthRedirect;
-      delete req.session.oauthRedirect;
-      if (redirectUrl) {
-        res.redirect(`${redirectUrl}?token=${token}`);
-      } else {
-        res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
-      }
-    } catch (err) {
-      console.error('Google callback error:', err);
-      res.redirect(`${process.env.FRONTEND_URL}/login?error=token_generation_failed`);
+// Route 5c: GET /auth/google/callback — Google OAuth callback (Web flow)
+app.get("/auth/google/callback", async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    if (!code) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
     }
+
+    const tokenRes = await axios.post('https://oauth2.googleapis.com/token', {
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: process.env.GOOGLE_CALLBACK_URL,
+      grant_type: 'authorization_code',
+    });
+
+    const profileRes = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokenRes.data.access_token}` },
+    });
+
+    const { email, name, picture, id } = profileRes.data;
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = new User({
+        email,
+        providers: [{ type: 'google', id }],
+        photo: picture || null,
+        name: name || null,
+        emailVerified: true,
+      });
+    } else {
+      addProvider(user, 'google', { id });
+      if (!user.photo && picture) user.photo = picture;
+      if (!user.name && name) user.name = name;
+      user.emailVerified = true;
+    }
+
+    const { accessToken, refreshToken } = issueTokens(user);
+    await user.save();
+
+    const redirectUrl = state || `${process.env.FRONTEND_URL}/`;
+    res.redirect(`${redirectUrl}?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+  } catch (err) {
+    console.error('Google callback error:', err);
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
   }
-);
+});
+
+// Route 6: POST /auth/refresh — Refresh access token
+app.post("/auth/refresh", async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ message: "Refresh token required" });
+    }
+
+    const tokenHash = hashRefreshToken(refreshToken);
+    const user = await User.findOne({ refreshTokenHash: tokenHash });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    const { accessToken: newAccess, refreshToken: newRefresh } = issueTokens(user);
+    await user.save();
+
+    res.json({
+      success: true,
+      data: { accessToken: newAccess, refreshToken: newRefresh }
+    });
+  } catch (err) {
+    console.error('Refresh error:', err);
+    res.sendError("Token refresh failed", 500, err.message);
+  }
+});
 
 // Route 7: GET /auth/me — Get current authenticated user
-app.get("/auth/me", (req, res) => {
-  const authHeader = req.headers["authorization"];
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.split(" ")[1];
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      return User.findById(decoded.id).then(user => {
-        if (!user) return res.sendError("Invalid token", 401);
-        res.sendSuccess("User authenticated", {
-          user: {
-            _id: user._id,
-            email: user.email,
-            authType: user.authType,
-            photo: user.photo || null,
-            name: user.name || null
-          }
-        });
-      });
-    } catch (err) {
-      return res.sendError("Invalid token", 401, err.message);
-    }
-  }
+app.get("/auth/me", authenticateToken, (req, res) => {
+  res.sendSuccess("User authenticated", { user: sanitizeUser(req.fullUser) });
+});
 
-  if (req.isAuthenticated() && req.user) {
-    return res.sendSuccess("User authenticated", { user: req.user });
-  } else {
-    return res.sendError("Not authenticated", 401);
+// Route 8: GET /auth/logout — Invalidate refresh token
+app.get("/auth/logout", authenticateToken, async (req, res) => {
+  try {
+    req.fullUser.refreshTokenHash = null;
+    await req.fullUser.save();
+    res.sendSuccess("Logged out successfully");
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.sendError("Logout error", 500);
   }
 });
 
-// Route 8: GET /auth/logout — User logout
-app.get("/auth/logout", (req, res) => {
-  req.logout((err) => {
-    if (err) {
-      console.error("Logout error:", err);
-      return res.sendError("Logout error", 500);
-    }
+// Route 9: POST /auth/verify-email — Verify email address
+app.post("/auth/verify-email", async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ message: "Verification token required" });
 
-    req.session.destroy((err) => {
-      if (err) {
-        console.error("Session destroy error:", err);
-        return res.sendError("Session destroy error", 500);
-      }
-
-      res.clearCookie('sessionId');
-      res.clearCookie('connect.sid');
-      res.sendSuccess("Logged out successfully");
+    const user = await User.findOne({
+      emailVerificationToken: token,
     });
-  });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired verification token" });
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationToken = null;
+    await user.save();
+
+    res.json({ message: "Email verified successfully! You can now log in." });
+  } catch (err) {
+    console.error('Email verification error:', err);
+    res.status(500).json({ message: "Server error during email verification" });
+  }
 });
 
-// ─── Forgot Password ───────────────────────────────────────────────────────
-// Route 9: POST /auth/forgot-password — Send 6-digit OTP code
+// GET route for email verification (link in email)
+app.get("/auth/verify-email", async (req, res) => {
+  try {
+    const { token, email } = req.query;
+    if (!token || !email) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=invalid_verification`);
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+      emailVerificationToken: token,
+    });
+
+    if (!user) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=invalid_verification`);
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationToken = null;
+    await user.save();
+
+    res.redirect(`${process.env.FRONTEND_URL}/login?verified=true`);
+  } catch (err) {
+    console.error('Email verification error:', err);
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=verification_failed`);
+  }
+});
+
+// Route 10: POST /auth/forgot-password — Send 6-digit OTP
 app.post("/auth/forgot-password", authLimiter, async (req, res) => {
   try {
     const { email } = req.body;
@@ -737,15 +571,13 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
     const user = await User.findOne({ email: normalizedEmail });
-    // Always respond OK to prevent email enumeration
-    if (!user || user.authType !== 'local') {
+    if (!user || !hasLocalProvider(user)) {
       return res.json({ message: "If that email exists, a code has been sent." });
     }
 
-    // Generate a 6-digit OTP
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const otp = generateOtp();
     user.passwordResetToken = otp;
-    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
     try {
@@ -765,7 +597,6 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
       user.passwordResetToken = null;
       user.passwordResetExpires = null;
       await user.save();
-      console.error('Failed to send OTP email:', emailErr);
       return res.status(500).json({ message: "Failed to send code. Please try again." });
     }
 
@@ -776,8 +607,7 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
   }
 });
 
-// ─── Reset Password ─────────────────────────────────────────────────────────
-// Route 10: POST /auth/reset-password — Reset password with OTP
+// Route 11: POST /auth/reset-password — Reset password with OTP
 app.post("/auth/reset-password", async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
@@ -800,7 +630,8 @@ app.post("/auth/reset-password", async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired verification code. Please request a new one." });
     }
 
-    user.password = await bcrypt.hash(newPassword, 12);
+    const hashed = await hashPassword(newPassword);
+    addProvider(user, 'local', { hashedPassword: hashed });
     user.passwordResetToken = null;
     user.passwordResetExpires = null;
     await user.save();
@@ -809,6 +640,63 @@ app.post("/auth/reset-password", async (req, res) => {
   } catch (err) {
     console.error('Reset password error:', err);
     res.status(500).json({ message: "Server error during password reset" });
+  }
+});
+
+// Route 12: POST /auth/link-google — Link Google account to existing local user
+app.post("/auth/link-google", authenticateToken, async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) return res.status(400).json({ message: "idToken required" });
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { email, sub } = payload;
+
+    if (email !== req.fullUser.email) {
+      return res.status(400).json({ message: "Google email must match your account email" });
+    }
+
+    addProvider(req.fullUser, 'google', { id: sub });
+    if (!req.fullUser.photo && payload.picture) req.fullUser.photo = payload.picture;
+    if (!req.fullUser.name && payload.name) req.fullUser.name = payload.name;
+    req.fullUser.emailVerified = true;
+    await req.fullUser.save();
+
+    res.sendSuccess("Google account linked successfully", { user: sanitizeUser(req.fullUser) });
+  } catch (err) {
+    console.error('Link Google error:', err);
+    res.sendError("Failed to link Google account", 500, err.message);
+  }
+});
+
+// Route 13: POST /auth/set-password — Set password on a Google-only account
+app.post("/auth/set-password", authenticateToken, async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    if (hasLocalProvider(req.fullUser)) {
+      return res.status(400).json({ message: "You already have a password set" });
+    }
+
+    if (!hasGoogleProvider(req.fullUser)) {
+      return res.status(400).json({ message: "Only Google accounts can set a password" });
+    }
+
+    const hashed = await hashPassword(newPassword);
+    addProvider(req.fullUser, 'local', { hashedPassword: hashed });
+    await req.fullUser.save();
+
+    res.sendSuccess("Password set successfully! You can now log in with email and password.");
+  } catch (err) {
+    console.error('Set password error:', err);
+    res.sendError("Failed to set password", 500, err.message);
   }
 });
 
@@ -1120,17 +1008,17 @@ app.put("/auth/change-password", authenticateToken, async (req, res) => {
 
     const user = await User.findById(req.user.id);
     if (!user) return res.sendError("User not found", 404);
-    if (user.authType !== 'local') {
+    if (!hasLocalProvider(user)) {
       return res.sendError("Password change is not available for Google accounts", 400);
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    const localProvider = getProvider(user, 'local');
+    const isMatch = await comparePassword(currentPassword, localProvider.hashedPassword);
     if (!isMatch) {
       return res.sendError("Current password is incorrect", 400);
     }
 
-    const salt = await bcrypt.genSalt(12);
-    user.password = await bcrypt.hash(newPassword, salt);
+    localProvider.hashedPassword = await hashPassword(newPassword);
     await user.save();
 
     // Send security alert
@@ -1161,9 +1049,10 @@ app.delete("/auth/delete-account", authenticateToken, async (req, res) => {
     }
 
     // For local auth, verify password before deletion
-    if (user.authType === 'local') {
+    if (hasLocalProvider(user)) {
       if (!password) return res.sendError("Password is required to delete your account", 400);
-      const isMatch = await bcrypt.compare(password, user.password);
+      const localProvider = getProvider(user, 'local');
+      const isMatch = await comparePassword(password, localProvider.hashedPassword);
       if (!isMatch) return res.sendError("Incorrect password", 400);
     }
 
@@ -1182,61 +1071,17 @@ app.delete("/auth/delete-account", authenticateToken, async (req, res) => {
   }
 });
 
-// Route 19: GET /api/settings/:userId/sessions — Get active sessions
-app.get("/api/settings/:userId/sessions", authenticateToken, authorizeUser, async (req, res) => {
+// Route 19: POST /api/settings/:userId/revoke-tokens — Revoke all refresh tokens
+app.post("/api/settings/:userId/revoke-tokens", authenticateToken, authorizeUser, async (req, res) => {
   try {
-    const mongoose = await import('mongoose');
-    const db = mongoose.default.connection.db;
-    const sessionsCollection = db.collection('sessions');
-
-    const sessions = await sessionsCollection.find({}).toArray();
-
-    const userSessions = sessions.filter(s => {
-      try {
-        const sessionData = typeof s.session === 'string' ? JSON.parse(s.session) : s.session;
-        return sessionData?.passport?.user === req.params.userId;
-      } catch { return false; }
-    }).map(s => {
-      let sessionData = {};
-      try {
-        sessionData = typeof s.session === 'string' ? JSON.parse(s.session) : s.session;
-      } catch {}
-      return {
-        id: s._id,
-        expires: s.expires,
-        createdAt: s._id.toString().substring(0, 8),
-        ip: sessionData?.ip || 'Unknown IP',
-        area: sessionData?.area || 'Unknown Location'
-      };
-    });
-
-
-
-    res.sendSuccess("Active sessions", { sessions: userSessions, count: userSessions.length });
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.sendError("User not found", 404);
+    user.refreshTokenHash = null;
+    await user.save();
+    res.sendSuccess("All tokens revoked. You will need to log in again.");
   } catch (err) {
-    console.error('Sessions fetch error:', err);
-    res.sendError("Error fetching sessions", 500, err.message);
-  }
-});
-
-// Route 20: DELETE /api/settings/:userId/sessions — Logout all other sessions
-app.delete("/api/settings/:userId/sessions", authenticateToken, authorizeUser, async (req, res) => {
-  try {
-    const mongoose = await import('mongoose');
-    const db = mongoose.default.connection.db;
-    const sessionsCollection = db.collection('sessions');
-
-    const currentSessionId = req.sessionID;
-
-    // Delete all sessions except the current one
-    const result = await sessionsCollection.deleteMany({
-      _id: { $ne: currentSessionId }
-    });
-
-    res.sendSuccess("All other sessions terminated", { deletedCount: result.deletedCount });
-  } catch (err) {
-    console.error('Session deletion error:', err);
-    res.sendError("Error terminating sessions", 500, err.message);
+    console.error('Token revocation error:', err);
+    res.sendError("Error revoking tokens", 500, err.message);
   }
 });
 
@@ -1284,14 +1129,15 @@ app.post("/api/auth/request-security-otp/:userId", authenticateToken, authorizeU
     if (!user) return res.sendError("User not found", 404);
 
     // Verify password for local users before generating OTP
-    if (user.authType === 'local') {
+    if (hasLocalProvider(user)) {
       if (!password) return res.sendError("Password required to verify identity", 400);
-      const isMatch = await bcrypt.compare(password, user.password);
+      const localProvider = getProvider(user, 'local');
+      const isMatch = await comparePassword(password, localProvider.hashedPassword);
       if (!isMatch) return res.sendError("Incorrect password", 400);
     }
 
     // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOtp();
 
     user.securityOtp = otp;
     user.securityOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
