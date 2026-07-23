@@ -24,6 +24,7 @@ import aiChat from "./aiChat.js";
 import nodemailer from 'nodemailer';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
+import { OAuth2Client } from 'google-auth-library';
 import { success, error } from './utils/responseHandler.js';
 import { authenticateToken, authorizeUser } from './utils/authMiddleware.js';
 import evaluateBadges from './utils/badgeEngine.js';
@@ -100,23 +101,29 @@ app.use((req, res, next) => {
   next();
 });
 
-// ─── Security Email Helper ───────────────────────────────────────────────────
-const sendSecurityEmail = async (email, type, data = {}) => {
-  try {
-    const transporter = nodemailer.createTransport({
+// ─── Email Transporter (Reusable Singleton) ──────────────────────────────────
+let emailTransporter = null;
+
+const getEmailTransporter = () => {
+  if (!emailTransporter) {
+    emailTransporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
+      port: parseInt(process.env.SMTP_PORT, 10) || 587,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
     });
+  }
+  return emailTransporter;
+};
 
+// ─── Security Email Helper ───────────────────────────────────────────────────
+const sendSecurityEmail = async (email, type, data = {}) => {
+  try {
     let subject = '🛡️ OtakuShelf — Security Alert';
     let title = 'Security Alert';
     let message = '';
-    let btnText = null;
-    let btnUrl = null;
 
     if (type === 'otp') {
       subject = `${data.action} Verification Code`;
@@ -125,11 +132,11 @@ const sendSecurityEmail = async (email, type, data = {}) => {
     } else if (type === 'mfa_enabled') {
       subject = '2FA Successfully Enabled';
       title = '2FA Enabled';
-      message = 'Two-Factor Authentication has been successfully enabled on your account. Your account is now more secure than ever!';
+      message = 'Two-Factor Authentication has been successfully enabled on your account.';
     } else if (type === 'mfa_disabled') {
       subject = '2FA Successfully Disabled';
       title = '2FA Disabled';
-      message = 'Two-Factor Authentication has been successfully disabled on your account. Your account is now less secure. If you did not make this change, please contact support immediately.';
+      message = 'Two-Factor Authentication has been successfully disabled on your account. If you did not make this change, please contact support immediately.';
     } else if (type === 'password_changed') {
       subject = 'Password Changed';
       title = 'Password Changed';
@@ -140,7 +147,7 @@ const sendSecurityEmail = async (email, type, data = {}) => {
       message = 'Your account and all associated data have been permanently removed. We\'re sad to see you go!';
     }
 
-    await transporter.sendMail({
+    await getEmailTransporter().sendMail({
       from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
       to: email,
       subject,
@@ -153,7 +160,6 @@ const sendSecurityEmail = async (email, type, data = {}) => {
           <div style="padding:32px">
             <p>Hey there, Otaku! 👋</p>
             <p>${message}</p>
-            ${btnText ? `<div style="text-align:center;margin:32px 0"><a href="${btnUrl}" style="background:linear-gradient(135deg,#ef4444,#ec4899);color:#fff;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:16px">${btnText}</a></div>` : ''}
             <p style="font-size:13px;opacity:0.6">If you didn't expect this alert, please check your account security immediately!</p>
             <hr style="border-color:rgba(255,255,255,0.1);margin:24px 0">
             <p style="font-size:12px;opacity:0.4;text-align:center">OtakuShelf · Your Anime Universe</p>
@@ -518,16 +524,83 @@ app.post("/auth/login", authLimiter, async (req, res) => {
   }
 });
 
-// Route 5: GET /auth/google — Google OAuth initiate
-app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+// Route 5: GET /auth/google — Google OAuth initiate (Web flow)
+app.get("/auth/google", (req, res, next) => {
+  if (req.query.redirect) {
+    req.session.oauthRedirect = req.query.redirect;
+  }
+  passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+});
 
-// Route 6: GET /auth/google/callback — Google OAuth callback
+// Route 5b: POST /auth/google — Google ID token login (Mobile / React Native flow)
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+app.post("/auth/google", async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ message: "idToken is required" });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = new User({
+        email,
+        authType: "google",
+        photo: picture || null,
+        name: name || null,
+      });
+      await user.save();
+    } else {
+      if (!user.photo && picture) {
+        user.photo = picture;
+        await user.save();
+      }
+      if (!user.name && name) {
+        user.name = name;
+        await user.save();
+      }
+    }
+
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "24h" });
+
+    res.sendSuccess("Login successful!", {
+      user: {
+        _id: user._id,
+        email: user.email,
+        authType: user.authType,
+        photo: user.photo || null,
+        name: user.name || null,
+      },
+      token,
+    });
+  } catch (err) {
+    console.error("Google ID token verification error:", err);
+    res.sendError("Invalid Google token", 401, err.message);
+  }
+});
+
+// Route 6: GET /auth/google/callback — Google OAuth callback (Web flow)
 app.get("/auth/google/callback",
   passport.authenticate("google", { failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed` }),
   (req, res) => {
     try {
       const token = jwt.sign({ id: req.user._id }, JWT_SECRET, { expiresIn: "24h" });
-      res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
+      const redirectUrl = req.session.oauthRedirect;
+      delete req.session.oauthRedirect;
+      if (redirectUrl) {
+        res.redirect(`${redirectUrl}?token=${token}`);
+      } else {
+        res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
+      }
     } catch (err) {
       console.error('Google callback error:', err);
       res.redirect(`${process.env.FRONTEND_URL}/login?error=token_generation_failed`);
@@ -611,39 +684,37 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-    // Send email via Professional SMTP Provider
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
-      to: email,
-      subject: '🔑 OtakuShelf — Reset Your Password',
-      html: `
-        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0d0d1a;color:#fff;border-radius:16px;overflow:hidden">
-          <div style="background:linear-gradient(135deg,#8b5cf6,#ec4899);padding:32px;text-align:center">
-            <h1 style="margin:0;font-size:28px">OtakuShelf</h1>
-            <p style="margin:8px 0 0;opacity:0.85">Password Reset Request</p>
-          </div>
-          <div style="padding:32px">
-            <p>Hey there, Otaku! 👋</p>
-            <p>We received a request to reset your password. Click the button below — this link expires in <strong>15 minutes</strong>.</p>
-            <div style="text-align:center;margin:32px 0">
-              <a href="${resetUrl}" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:16px">Reset Password</a>
+    try {
+      await getEmailTransporter().sendMail({
+        from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
+        to: email,
+        subject: '🔑 OtakuShelf — Reset Your Password',
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0d0d1a;color:#fff;border-radius:16px;overflow:hidden">
+            <div style="background:linear-gradient(135deg,#8b5cf6,#ec4899);padding:32px;text-align:center">
+              <h1 style="margin:0;font-size:28px">OtakuShelf</h1>
+              <p style="margin:8px 0 0;opacity:0.85">Password Reset Request</p>
             </div>
-            <p style="font-size:13px;opacity:0.6">If you didn't request this, you can safely ignore this email. Your password won't be changed.</p>
-            <hr style="border-color:rgba(255,255,255,0.1);margin:24px 0">
-            <p style="font-size:12px;opacity:0.4;text-align:center">OtakuShelf · Your Anime Universe</p>
+            <div style="padding:32px">
+              <p>Hey there, Otaku! 👋</p>
+              <p>We received a request to reset your password. Click the button below — this link expires in <strong>15 minutes</strong>.</p>
+              <div style="text-align:center;margin:32px 0">
+                <a href="${resetUrl}" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:16px">Reset Password</a>
+              </div>
+              <p style="font-size:13px;opacity:0.6">If you didn't request this, you can safely ignore this email. Your password won't be changed.</p>
+              <hr style="border-color:rgba(255,255,255,0.1);margin:24px 0">
+              <p style="font-size:12px;opacity:0.4;text-align:center">OtakuShelf · Your Anime Universe</p>
+            </div>
           </div>
-        </div>
-      `,
-    });
+        `,
+      });
+    } catch (emailErr) {
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save();
+      console.error('Failed to send password reset email:', emailErr);
+      return res.status(500).json({ message: "Failed to send reset email. Please try again." });
+    }
 
     res.json({ message: "If that email exists, a reset link has been sent." });
   } catch (err) {
@@ -1014,7 +1085,7 @@ app.put("/auth/change-password", authenticateToken, async (req, res) => {
 
     // Send security alert
     if (user.settings?.notifications?.securityEmails !== false) {
-      sendSecurityEmail(user.email, 'password_changed');
+      await sendSecurityEmail(user.email, 'password_changed');
     }
 
     res.sendSuccess("Password changed successfully");
@@ -1050,7 +1121,9 @@ app.delete("/auth/delete-account", authenticateToken, async (req, res) => {
     await User.findByIdAndDelete(req.user.id);
 
     // Send alert
-    sendSecurityEmail(user.email, 'account_deleted');
+    if (user.settings?.notifications?.securityEmails !== false) {
+      await sendSecurityEmail(user.email, 'account_deleted');
+    }
 
     res.sendSuccess("Account deleted successfully");
   } catch (err) {
@@ -1236,7 +1309,7 @@ app.post("/api/mfa/verify/:userId", authenticateToken, authorizeUser, async (req
 
       // Send security alert
       if (user.settings?.notifications?.securityEmails !== false) {
-        sendSecurityEmail(user.email, 'mfa_enabled');
+        await sendSecurityEmail(user.email, 'mfa_enabled');
       }
 
       res.sendSuccess("MFA successfully enabled");
@@ -1274,7 +1347,7 @@ app.post("/api/mfa/disable/:userId", authenticateToken, authorizeUser, async (re
 
     // Send security alert
     if (user.settings?.notifications?.securityEmails !== false) {
-      sendSecurityEmail(user.email, 'mfa_disabled');
+      await sendSecurityEmail(user.email, 'mfa_disabled');
     }
 
     res.sendSuccess("MFA disabled successfully");

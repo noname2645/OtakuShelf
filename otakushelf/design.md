@@ -4,14 +4,14 @@
 1. [Page Overview](#1-page-overview)
 2. [Color System](#2-color-system)
 3. [Typography](#3-typography)
-4. [Header](#4-header)
-5. [Bottom Navigation Bar](#5-bottom-navigation-bar)
-6. [Page-Level Structure](#6-page-level-structure)
-7. [Section 1 — Cinematic Entrance](#7-section-1--cinematic-entrance)
-8. [Section 2 — The Wall (Badges)](#8-section-2--the-wall-badges)
-9. [Section 3 — The Story Zone](#9-section-3--the-story-zone)
-10. [Section 4 — Genre Identity](#10-section-4--genre-identity)
-11. [Toast Notifications](#11-toast-notifications)
+4. [Header & BottomNav](#4-header--bottomnav)
+5. [Page-Level Structure](#5-page-level-structure)
+6. [Section 1 — Cinematic Entrance](#6-section-1--cinematic-entrance)
+7. [Section 2 — The Wall (Badges)](#7-section-2--the-wall-badges)
+8. [Section 3 — The Story Zone](#8-section-3--the-story-zone)
+9. [Section 4 — Genre Identity](#9-section-4--genre-identity)
+10. [Toast Notifications](#10-toast-notifications)
+11. [Loading State](#11-loading-state)
 12. [Responsive Breakpoints](#12-responsive-breakpoints)
 13. [Key Interactions & Animations](#13-key-interactions--animations)
 14. [API Endpoints](#14-api-endpoints)
@@ -22,28 +22,33 @@
 ## 1. Page Overview
 **Route:** `/profile` and `/profile/:userId`
 **Component:** `ProfilePage`
-**Purpose:** Full-page user profile with cinematic hero, achievement badges, recently watched grid, favorites gallery, and genre identity breakdown with interactive pie chart.
+**File:** `D:\OtakuShelf\otakushelf\src\Frontend\components\profile.jsx`
 
-**Page background:** `#030712`
+**Purpose:** Full-page user profile with cinematic hero section, achievement badge wall, recently watched/favorites galleries, and interactive genre breakdown with donut chart.
+
+**Page background:** `#030712` (`.profile-page`)
+**Section 2 (The Wall) background:** `#0a0f1a` with dot pattern
+**Sections 3 & 4 background:** `#030712`
 
 **Key Features:**
-- Cinematic hero with full-bleed cover image, avatar, identity, and HUD stats ticker
+- Full-bleed cinematic hero with cover image, avatar, identity, HUD stats ticker
 - Edit profile inline (name, username, bio)
-- Upload avatar and cover image
-- Share profile via Web Share API or clipboard
-- Achievement badge wall (earned + locked, with rarity system, spotlight, filtering, sorting)
-- Recently watched anime masonry grid
-- Favorites gallery masonry grid
-- Interactive genre pie chart (recharts) with proportional pills and legend
+- Upload avatar (2MB max) and cover image (5MB max)
+- Share profile via Web Share API or clipboard copy
+- Achievement badge wall with XP progress bar, rarity system (5 tiers), spotlight for epic/legendary, filter by category, 6 sort modes
+- "Check for New Badges" CTA that evaluates all badge criteria
+- Recently watched anime horizontal scroll with featured card and filmstrip grid
+- Favorites gallery in masonry grid
+- Interactive recharts donut pie chart (19 AniList genres) with proportional pills, scrollable legend, and ticker stats
 
-**Data Flow:**
-- Profile fetched from `GET /api/profile/:userId`
-- Stats: `animeWatched`, `hoursWatched`, `currentlyWatching`, `favorites`, `animePlanned`, `animeDropped`, `totalEpisodes`, `meanScore`
-- Badge definitions from `GET /api/badges/all`
-- Badge evaluation via `POST /api/badges/evaluate/:userId`
-- Avatar upload: `POST /api/profile/:userId/upload-photo`
-- Cover upload: `POST /api/profile/:userId/upload-cover`
-- Profile update: `PUT /api/profile/:userId`
+**Data Sources:**
+- `GET /api/profile/:userId` — profile, stats, badges, recently watched, favorites, genres
+- `POST /api/profile/:userId/upload-photo` — avatar upload (multipart)
+- `POST /api/profile/:userId/upload-cover` — cover upload (multipart)
+- `PUT /api/profile/:userId` — update name, bio, username
+- `GET /api/badges/all` — all 100 badge definitions
+- `POST /api/badges/evaluate/:userId` — trigger badge evaluation
+- Library: `recharts` (`PieChart`, `Pie`, `Cell`, `Tooltip`, `ResponsiveContainer`)
 
 ---
 
@@ -51,25 +56,24 @@
 
 | Token | Hex | Usage |
 |---|---|---|
-| `--bg-app` | `#030712` | Page background, Story Zone, Genre Identity |
-| `--bg-section` | `#0a0f1a` | The Wall background |
-| `--bg-hero-gradient-end` | `#0a0f1a` | Bottom bleed from hero into The Wall |
-| `--text-primary` | `#ffffff` | Names, titles, headings |
+| `--bg-app` | `#030712` | Page, Story Zone, Genre Identity |
+| `--bg-wall` | `#0a0f1a` | The Wall section |
+| `--bg-hero-end` | `#0a0f1a` | Bottom gradient bleed |
+| `--text-primary` | `#ffffff` | Names, titles |
 | `--text-secondary` | `#94a3b8` | Bio, subtitles |
-| `--text-muted` | `#64748b` | Labels, placeholders, edit labels |
-| `--accent-amber` | `#f59e0b` | Avatar border, username, genre eyebrow, XP bar start, label underlines, Edit Profile border-left |
-| `--accent-amber-glow` | `rgba(245,158,11,0.14)` | Avatar hover ring, CTA hover |
-| `--accent-gold` | `#fbbf24` | XP bar end, genre pill hover, save button hover |
-| `--accent-red` | `#ef4444` | XP bar midpoint, danger actions |
+| `--text-muted` | `#64748b` | Labels |
+| `--accent-amber` | `#f59e0b` | Avatar border, username, genre eyebrow, edit btn border-left, label underlines, XP bar start, pie tooltip percentage |
+| `--accent-amber-glow` | `rgba(245,158,11,0.14)` | Avatar hover ring |
+| `--accent-gold` | `#fbbf24` | Save btn hover, active badge tab |
+| `--accent-red` | `#ef4444` | XP bar midpoint |
 | `--accent-purple` | `#c084fc` | XP bar end |
-| `--accent-green` | `#4ade80` | Earned badge dates, connected badge |
-| `--badge-common` | `#94a3b8` | Common rarity label |
-| `--badge-uncommon` | `#4ade80` | Uncommon rarity label |
-| `--badge-rare` | `#60a5fa` | Rare rarity label |
-| `--badge-epic` | `#c084fc` | Epic rarity label |
-| `--badge-legendary` | `#fbbf24` | Legendary rarity label |
-| `--border-subtle` | `rgba(255,255,255,0.08)` | Card borders, hero gradients |
-| `--glass-bg` | `rgba(0,0,0,0.42)` | HUD Ticker, edit form |
+| `--accent-green` | `#4ade80` | Earned badge dates, earned tooltip |
+| `--badge-common` | `#94a3b8` | Common rarity |
+| `--badge-uncommon` | `#4ade80` | Uncommon rarity |
+| `--badge-rare` | `#60a5fa` | Rare rarity |
+| `--badge-epic` | `#c084fc` | Epic rarity |
+| `--badge-legendary` | `#fbbf24` | Legendary rarity |
+| `--chart-colors` | `19-color palette` | Pie chart segments: `#FF6B6B, #4ECDC4, #FFD166, #06D6A0, #118AB2, #EF476F, #073B4C, #7209B7, #3A86FF, #FB5607, #8338EC, #FF006E, #FFBE0B, #3A86FF, #FB5607, #FF595E, #8AC926, #1982C4, #6A4C93` |
 
 ---
 
@@ -77,123 +81,109 @@
 
 | Font | Family | Usage |
 |---|---|---|
-| UI/Headings | `'Outfit', sans-serif` | Buttons, labels, nav items, inputs, badge titles |
+| UI/Nav | `'Outfit', sans-serif` | Labels, buttons, inputs, nav, badge card titles |
 | Body | `'Bricolage Grotesque', sans-serif` | Body text |
-| Hero name | `'Space Grotesk', sans-serif` | `.entrance-name` (clamped 42–80px, weight 900) |
-| Stats numbers | `'Space Grotesk', sans-serif` | `.hud-number` (38px, weight 900), `.ss-number` (26px, weight 800), `.gt-number` (34px, weight 900) |
-| Genre title | `'Space Grotesk', sans-serif` | `.genre-title-large` (clamped 26–46px, weight 800) |
-| Watermark | `'Space Grotesk', sans-serif` | `.genre-watermark` (clamped 72–152px, weight 200, 0.035 opacity) |
-
-**Badge card title:** 13.5px, weight 800
-**Badge card desc:** 11.5px, color `rgba(255,255,255,0.42)`
-**Badge rarity label:** 9.5px, weight 800, uppercase, letter-spacing 1px
-**Spotlight card:** 228px wide, 20px border-radius
-
----
-
-## 4. Header
-**Component:** `<Header showSearch={false} />`
-**File:** `D:\OtakuShelf\otakushelf\src\Frontend\components\header.jsx`
-
-Fixed glassmorphic nav bar. On profile page, search is disabled (`showSearch={false}`).
-
-- **Position:** `fixed`, `top: 0`, `z-index: 90`
-- **Background:** `rgba(3, 7, 18, 0.85)` with `backdrop-filter: blur(12px)`
-- **Border-bottom:** `1px solid rgba(255,255,255,0.06)`
-- **Height:** ~70px
-- **Left:** "OtakuShelf" logo with orange SVG, links to `/`
-- **Center:** Home | Discover | Schedule nav links
-- **Right:** Profile dropdown or Login/Sign Up
+| Hero name | `'Space Grotesk', sans-serif` | `.entrance-name` — `clamp(42px, 5.5vw, 80px)`, weight 900, letter-spacing -1.5px |
+| Stats numbers | `'Space Grotesk', sans-serif` | `.hud-number` (38px), `.ss-number` (26px), `.gt-number` (34px) |
+| Genre title | `'Space Grotesk', sans-serif` | `.genre-title-large` — `clamp(26px, 3.8vw, 46px)`, weight 800 |
+| Watermark | `'Space Grotesk', sans-serif` | `.genre-watermark` — `clamp(72px, 11vw, 152px)`, weight 200, opacity 0.035 |
+| Badge card title | 13.5px, weight 800 |
+| Badge card desc | 11.5px, color `rgba(255,255,255,0.42)` |
+| Badge rarity label | 9.5px, weight 800, uppercase, letter-spacing 1px |
+| Spotlight card | 228px wide, 20px border-radius |
 
 ---
 
-## 5. Bottom Navigation Bar
-**Component:** `<BottomNavBar />`
-**File:** `D:\OtakuShelf\otakushelf\src\Frontend\components\bottom.jsx`
+## 4. Header & BottomNav
 
-Mobile-only fixed bottom bar.
+**Header:** `<Header showSearch={false} />` — fixed top glassmorphic nav, search disabled
+**BottomNav:** `<BottomNavBar />` — fixed bottom mobile-only nav
 
-- **Position:** `fixed`, `bottom: 0`, `z-index: 80`
-- **Background:** `#030712`
-- **Border-top:** `1px solid rgba(255,255,255,0.06)`
-- **Items:** Home, Search, My List, Profile
-- **Active item:** `#ff6b6b`, `scale(1.1)`
-- **Icons:** 24px SVGs
+Both render identically to other pages. No profile-specific customization.
 
 ---
 
-## 6. Page-Level Structure
+## 5. Page-Level Structure
 
 ```
-<div className="profile-page">
-  <PageLoader />                          <!-- conditional -->
+<div class="profile-page">                     <!-- #030712, min-height: 100vh -->
+  <PageLoader />                               <!-- conditional, onFinish sets showLoader false -->
   <BottomNavBar />
   <Header showSearch={false} />
 
-  <!-- Toast (conditional) -->
-  {toast.show && <div className="settings-toast success|error">...</div>}
+  <!-- Toast -->
+  {toast.show && <div class="settings-toast success|error">{toast.message}</div>}
 
-  <!-- SECTION 1: Cinematic Entrance -->
-  <section className="profile-entrance">
-    <input type="file" id="cover-upload" />   <!-- hidden -->
-    <input type="file" id="avatar-upload" />  <!-- hidden -->
-    <img className="entrance-cover-img" />
-    <div className="entrance-gradient-lr" />
-    <div className="entrance-gradient-bottom" />
-    <label className="cover-change-btn" />
-    <div className="entrance-content">
-      <div className="entrance-avatar-zone">
-        <div className="entrance-avatar"><img /></div>
-        <label className="avatar-change-label">CHANGE PHOTO</label>
+  <!-- SECTION 1 — Cinematic Entrance -->
+  <section class="profile-entrance">
+    <input type="file" id="cover-upload" />     <!-- hidden -->
+    <input type="file" id="avatar-upload" />    <!-- hidden -->
+    <img class="entrance-cover-img" />
+    <div class="entrance-gradient-lr" />
+    <div class="entrance-gradient-bottom" />
+    <label class="cover-change-btn">Change Cover</label>
+    <div class="entrance-content">
+      <div class="entrance-avatar-zone">
+        <div class="entrance-avatar"><img /></div>
+        <label class="avatar-change-label">CHANGE PHOTO</label>
       </div>
-      <!-- Identity or Edit Form -->
-      <div className="entrance-identity">...</div>
+      <!-- Identity (view mode) OR Edit Form (edit mode) -->
+      <div class="entrance-identity">...</div>
       <!-- OR -->
-      <div className="entrance-edit-form">...</div>
-      <div className="hud-ticker">...</div>
+      <div class="entrance-edit-form">...</div>
+      <!-- HUD Ticker -->
+      <div class="hud-ticker">...</div>
     </div>
-    <div className="scroll-indicator">chevron</div>
+    <div class="scroll-indicator">▼</div>
   </section>
 
-  <!-- SECTION 2: The Wall (Badges) -->
-  <section className="the-wall">
-    <div className="wall-inner">
-      <div className="wall-eyebrow">ACHIEVEMENTS</div>
-      <div className="xp-wrap">progress bar</div>
-      <button className="check-badges-cta">Check for New Badges</button>
-      <div className="rarity-legend">...</div>
-      <div className="spotlight-row">EPIC/LEGENDARY badges</div>
-      <div className="badge-controls-row">filter tabs + sort</div>
-      <div className="badges-grid-new">EARNED badges</div>
-      <div className="locked-separator">LOCKED badges</div>
-      <div className="badges-grid-new">LOCKED badges</div>
-    </div>
-  </section>
-
-  <!-- SECTION 3: The Story Zone -->
-  <section className="story-zone">
-    <div className="story-left">
-      <span className="story-label">RECENTLY WATCHED</span>
-      <div className="recently-watched-grid masonry-grid">cards</div>
-    </div>
-    <div className="story-divider" />
-    <div className="story-right">
-      <span className="story-label">FAVORITES</span>
-      <div className="masonry-grid">cards</div>
-    </div>
-  </section>
-
-  <!-- SECTION 4: Genre Identity -->
-  <section className="genre-identity">
-    <div className="genre-ambient" />
-    <div className="genre-header-block">watermark + title</div>
-    <div className="genre-pills-row">top 5 genre pills</div>
-    <div className="genre-content">
-      <div className="genre-chart-col">
-        <ResponsiveContainer><PieChart>...</PieChart></ResponsiveContainer>
-        <div className="genre-ticker">stats row</div>
+  <!-- SECTION 2 — The Wall -->
+  <section class="the-wall">
+    <div class="wall-inner">
+      <div class="wall-eyebrow">ACHIEVEMENTS</div>
+      <div class="xp-wrap">XP progress bar</div>
+      <button class="check-badges-cta">⚡ Check for New Badges</button>
+      <div class="rarity-legend">5 rarity pips</div>
+      <div class="spotlight-header">✦ FEATURED</div>
+      <div class="spotlight-row">epic/legendary cards</div>
+      <div class="badge-controls-row">
+        <div class="badge-category-tabs">All | Categories</div>
+        <div class="badge-sort-control">Sort by <select /></div>
       </div>
-      <div className="genre-legend-col">genre bars</div>
+      <div class="badges-grid-new">Earned badges</div>
+      <div class="locked-separator">LOCKED — N REMAINING</div>
+      <div class="badges-grid-new">Locked badges</div>
+    </div>
+  </section>
+
+  <!-- SECTION 3 — The Story Zone -->
+  <section class="story-zone">
+    <div class="story-left">
+      <span class="story-label">RECENTLY WATCHED</span>
+      <div class="recently-watched-grid masonry-grid">cards</div>
+    </div>
+    <div class="story-divider" />
+    <div class="story-right">
+      <span class="story-label">FAVORITES</span>
+      <div class="masonry-grid">cards</div>
+    </div>
+  </section>
+
+  <!-- SECTION 4 — Genre Identity -->
+  <section class="genre-identity">
+    <div class="genre-ambient" style="background-color: <topGenreColor>" />
+    <div class="genre-header-block">
+      <div class="genre-watermark">TOP GENRE</div>
+      <span class="genre-eyebrow">YOUR TASTE</span>
+      <h2 class="genre-title-large">Genre Name</h2>
+    </div>
+    <div class="genre-pills-row">top 5 proportional pills</div>
+    <div class="genre-content">
+      <div class="genre-chart-col">
+        <ResponsiveContainer><PieChart>donut</PieChart></ResponsiveContainer>
+        <div class="genre-ticker">TOTAL | WATCHED | TOP GENRE | COVERAGE</div>
+      </div>
+      <div class="genre-legend-col">genre bars</div>
     </div>
   </section>
 </div>
@@ -201,215 +191,178 @@ Mobile-only fixed bottom bar.
 
 ---
 
-## 7. Section 1 — Cinematic Entrance
+## 6. Section 1 — Cinematic Entrance
 
-Full-viewport-height hero section with cinematic cover image, avatar, user identity, and a HUD stats ticker card.
+Full-viewport-height hero section with cinematic cover image, circular avatar, identity block, and HUD stats ticker.
 
-### 7.1 Container
+### 6.1 Container
 **`.profile-entrance`:**
 - `position: relative`, `min-height: 460px`
 - `display: flex`, `flex-direction: column`, `overflow: hidden`
 
-### 7.2 Cover Image
+### 6.2 Cover Image
 **`.entrance-cover-img`:**
-- `position: absolute`, `inset: 0`, `width: 100%`, `height: 100%`
+- `position: absolute`, `inset: 0`, `100% × 100%`
 - `object-fit: cover`, `object-position: center`
-- Default fallback: `https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=1600&q=80`
+- Fallback: `https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=1600&q=80`
 
-### 7.3 Gradient Overlays
-**`.entrance-gradient-lr`:**
-- `position: absolute`, `inset: 0`
-- `background: linear-gradient(to right, rgba(3,7,18,1) 0%, rgba(3,7,18,0.95) 25%, rgba(3,7,18,0.65) 50%, rgba(3,7,18,0.15) 80%, rgba(3,7,18,0.05) 100%)`
+### 6.3 Gradient Overlays
+**`.entrance-gradient-lr`** (left-to-right darken):
+```
+linear-gradient(to right,
+  rgba(3,7,18,1) 0%,
+  rgba(3,7,18,0.95) 25%,
+  rgba(3,7,18,0.65) 50%,
+  rgba(3,7,18,0.15) 80%,
+  rgba(3,7,18,0.05) 100%)
+```
 
-**`.entrance-gradient-bottom`:**
+**`.entrance-gradient-bottom`** (bottom bleed into The Wall):
+```
+linear-gradient(to top,
+  #0a0f1a 0%,
+  rgba(10,15,26,0.85) 25%,
+  rgba(10,15,26,0.3) 65%,
+  transparent 100%)
+```
 - `position: absolute`, `bottom: 0`, `left: 0`, `right: 0`, `height: 50%`
-- `background: linear-gradient(to top, #0a0f1a 0%, rgba(10,15,26,0.85) 25%, rgba(10,15,26,0.3) 65%, transparent 100%)`
 - `pointer-events: none`
 
-### 7.4 Cover Change Button
+### 6.4 Cover Change Button
 **`.cover-change-btn`:**
 - `position: absolute`, `top: 100px`, `right: 40px`, `z-index: 20`
 - `background: rgba(0,0,0,0.5)`, `backdrop-filter: blur(12px)`
 - `border: 1px solid rgba(255,255,255,0.1)`, `border-radius: 10px`
 - `color: rgba(255,255,255,0.75)`, `font-size: 12px`, `font-weight: 600`
 - Hover: `background: rgba(0,0,0,0.75)`, `color: white`
-- Mobile: `top: 18px`, `right: 18px`
+- Mobile: `top: 18px`, `right: 18px`, `padding: 9px 16px`
 
-### 7.5 Content Block
-**`.entrance-content`:**
-- `position: relative`, `z-index: 10`, `flex: 1`
-- `display: flex`, `align-items: center`, `gap: 40px`
-- `padding: 120px 8% 30px`, `justify-content: flex-start`
-- Mobile (`≤768px`): `flex-direction: column`, `justify-content: center`, `align-items: center`, `text-align: center`, `padding: 90px 5% 48px`
-
-### 7.6 Avatar Zone
+### 6.5 Avatar Zone
 **`.entrance-avatar-zone`:**
-- `display: flex`, `flex-direction: column`, `align-items: center`, `gap: 14px`, `flex-shrink: 0`
+- `display: flex`, `flex-direction: column`, `align-items: center`, `gap: 14px`
 
 **`.entrance-avatar`:**
-- `width: 210px`, `height: 210px`, `border-radius: 50%`, `overflow: hidden`
+- `width: 210px`, `height: 210px`, `border-radius: 50%`
 - `border: 3px solid rgba(245,158,11,0.45)`
 - `box-shadow: 0 0 0 7px rgba(245,158,11,0.07), 0 32px 64px rgba(0,0,0,0.75)`
-- `background: #111`
-- Hover: `border-color: #f59e0b`, `box-shadow: 0 0 0 7px rgba(245,158,11,0.14), 0 32px 64px rgba(0,0,0,0.75)`
-- `img`: `width: 100%`, `height: 100%`, `object-fit: cover`
-- Mobile: `width: 130px`, `height: 130px`
-- Small mobile: `width: 106px`, `height: 106px`
+- Hover: `border-color: #f59e0b`, `box-shadow: 0 0 0 7px rgba(245,158,11,0.14)`
+- Mobile: `130px`, small mobile: `106px`
 
 **`.entrance-avatar-placeholder`:**
-- `width: 100%`, `height: 100%`
 - `background: linear-gradient(135deg, #f59e0b, #d97706)`
 - First letter of name, `font-size: 68px`, `font-weight: 800`
 
 **`.avatar-change-label`:**
-- `font-size: 9px`, `letter-spacing: 3px`, `color: rgba(255,255,255,0.3)`
-- `font-weight: 700`, `text-transform: uppercase`, `cursor: pointer`
+- `font-size: 9px`, `letter-spacing: 3px`, uppercase, `color: rgba(255,255,255,0.3)`
 - Hover: `color: rgba(255,255,255,0.65)`
 
-### 7.7 Identity Block
+### 6.6 Identity Block (View Mode)
 **`.entrance-identity`:**
-- `display: flex`, `flex-direction: column`, `gap: 12px`, `max-width: 560px`
+- `max-width: 560px`, `gap: 12px`
 
 **`.entrance-name`:**
-- `font-size: clamp(42px, 5.5vw, 80px)`, `font-weight: 900`
-- `font-family: 'Space Grotesk'`, `color: white`, `line-height: 1`
-- `letter-spacing: -1.5px`, `margin: 0`
-- Mobile: `letter-spacing: -0.5px`, `font-size: clamp(32px, 7vw, 52px)`
+- `clamp(42px, 5.5vw, 80px)`, `weight: 900`, `font-family: 'Space Grotesk'`
+- `letter-spacing: -1.5px`, `line-height: 1`
 
-**`.entrance-meta`:**
-- `display: flex`, `align-items: center`, `gap: 10px`, `flex-wrap: wrap`
-- Mobile: `justify-content: center`
-
-**`.entrance-username`:** `font-size: 17px`, `color: #f59e0b`, `font-weight: 700`
-**`.entrance-meta-dot`:** `color: rgba(255,255,255,0.2)`, `font-size: 16px`
+**`.entrance-username`:** `color: #f59e0b`, `font-size: 17px`, `font-weight: 700`
 **`.entrance-joindate`:** `font-size: 13px`, `color: rgba(255,255,255,0.3)`
-
 **`.entrance-bio`:**
-- `font-size: 0.98rem`, `line-height: 1.72`, `color: #94a3b8`
-- `font-style: italic`, `max-width: 500px`
+- `font-size: 0.98rem`, `line-height: 1.72`, `color: #94a3b8`, `font-style: italic`
 
-**`.entrance-email`:**
-- `font-size: 12px`, `color: rgba(255,255,255,0.18)`, `display: block`
-
-### 7.8 Action Buttons
+### 6.7 Action Buttons
 **`.entrance-actions`:**
-- `display: flex`, `align-items: center`, `gap: 12px`, `margin-top: 6px`
-- Mobile: `justify-content: center`, `flex-wrap: wrap`
+- `gap: 12px`, `margin-top: 6px`
 
 **`.btn-edit-new`:**
 - `padding: 11px 26px`, `border-radius: 10px`
-- `background: rgba(255,255,255,0.04)`, `color: white`
-- `border: 1px solid rgba(255,255,255,0.12)`, `border-left: 3px solid #f59e0b`
+- `background: rgba(255,255,255,0.04)`, `border: 1px solid rgba(255,255,255,0.12)`, `border-left: 3px solid #f59e0b`
 - `backdrop-filter: blur(10px)`
 - Hover: `background: rgba(245,158,11,0.09)`, `box-shadow: -3px 0 16px rgba(245,158,11,0.15)`
 
 **`.btn-share-new`:**
 - `width: 42px`, `height: 42px`, `border-radius: 50%`
-- `border: 1px solid rgba(255,255,255,0.1)`, `background: rgba(255,255,255,0.04)`
-- `color: rgba(255,255,255,0.38)`, SVG share icon 17×17px
+- `border: 1px solid rgba(255,255,255,0.1)`, `color: rgba(255,255,255,0.38)`
+- SVG share icon 17×17px
 - Hover: `color: white`, `background: rgba(255,255,255,0.09)`
 
-### 7.9 Edit Form (Inline)
-Shown when `isEditing === true`, replaces identity block.
-
+### 6.8 Edit Form (Edit Mode)
 **`.entrance-edit-form`:**
-- `display: flex`, `flex-direction: column`, `gap: 14px`
-- `max-width: 500px`, `width: 100%`
-- `background: rgba(0,0,0,0.55)`, `border: 1px solid rgba(255,255,255,0.08)`
-- `border-radius: 20px`, `padding: 28px`, `backdrop-filter: blur(24px)`
+- `background: rgba(0,0,0,0.55)`, `backdrop-filter: blur(24px)`
+- `border: 1px solid rgba(255,255,255,0.08)`, `border-radius: 20px`
+- `padding: 28px`, `max-width: 500px`
 
 **`.edit-form-group label`:**
-- `font-size: 10px`, `font-weight: 700`, `letter-spacing: 1.5px`
-- `text-transform: uppercase`, `color: #64748b`
+- `font-size: 10px`, `letter-spacing: 1.5px`, uppercase, `color: #64748b`
 
 **`.edit-input` / `.edit-textarea`:**
-- `background: rgba(255,255,255,0.06)`
-- `border: 1px solid rgba(255,255,255,0.1)`, `border-radius: 10px`
-- `padding: 10px 14px`, `color: white`, `font-size: 15px`
+- `background: rgba(255,255,255,0.06)`, `border: 1px solid rgba(255,255,255,0.1)`, `border-radius: 10px`
+- `color: white`, `font-size: 15px`
 - Focus: `border-color: #f59e0b`
 
-**`.btn-save`:**
-- `background: #f59e0b`, `color: black`, `border: none`
-- `padding: 10px 22px`, `border-radius: 10px`, `font-weight: 700`
-- Hover: `background: #fbbf24`
+**`.btn-save`:** `background: #f59e0b`, `color: black`, `font-weight: 700`; hover `#fbbf24`
+**`.btn-cancel`:** `background: transparent`, `color: #64748b`; hover `color: white`
 
-**`.btn-cancel`:**
-- `background: transparent`, `color: #64748b`
-- `border: 1px solid rgba(255,255,255,0.1)`, `border-radius: 10px`
-- Hover: `color: white`, `border-color: rgba(255,255,255,0.2)`
-
-### 7.10 HUD Ticker (Stats Card)
+### 6.9 HUD Ticker (Stats Card)
 **`.hud-ticker`:**
-- `margin-left: auto`, `display: flex`, `flex-direction: column`
+- `margin-left: auto`, `flex-direction: column`
 - `background: rgba(0,0,0,0.42)`, `backdrop-filter: blur(24px)`
 - `border: 1px solid rgba(255,255,255,0.08)`, `border-radius: 24px`
-- `padding: 20px 24px`, `gap: 16px`, `z-index: 15`
-- `width: 100%`, `max-width: 520px`
-- Mobile: `max-width: 100%`, `padding: 18px 14px`
+- `padding: 20px 24px`, `gap: 16px`, `max-width: 520px`
+- Mobile: `max-width: 100%`
 
-**`.hud-primary-row`:**
-- `display: flex`, `align-items: center`, `justify-content: space-around`
-- Items: ANIME WATCHED | HOURS WATCHED | MEAN SCORE
+**Row 1 — Primary Stats:**
+| Stat | Key | Font |
+|---|---|---|
+| ANIME WATCHED | `stats.animeWatched` | 38px Space Grotesk weight 900 |
+| HOURS WATCHED | `stats.hoursWatched` | 38px Space Grotesk weight 900 |
+| MEAN SCORE | `stats.meanScore` | 38px Space Grotesk weight 900 |
 
-**`.hud-number`:**
-- `font-size: 38px`, `font-weight: 900`, `color: white`
-- `font-family: 'Space Grotesk'`
-- Mobile: `font-size: 28px`
+**Row 2 — Secondary Stats:**
+| Stat | Key | Font |
+|---|---|---|
+| WATCHING | `stats.currentlyWatching` | 26px weight 800 |
+| PLANNED | `stats.animePlanned` | 26px weight 800 |
+| DROPPED | `stats.animeDropped` | 26px weight 800 |
+| EPISODES | `stats.totalEpisodes` | 26px weight 800 |
+| FAVORITES | `stats.favorites` | 26px weight 800 |
 
-**`.hud-label`:**
-- `font-size: 8.5px`, `letter-spacing: 2.5px`
-- `color: rgba(255,255,255,0.5)`, `font-weight: 700`, `text-transform: uppercase`
+**`.hud-label`:** `8.5px`, `letter-spacing: 2.5px`, uppercase, `color: rgba(255,255,255,0.5)`
+**`.ss-label`:** `7.5px`, `letter-spacing: 1.5px`, uppercase, `color: rgba(255,255,255,0.38)`
+**`.hud-divider`:** `1px × 36px`, `background: rgba(255,255,255,0.07)`
+**`.hud-row-divider`:** `100% × 1px`, `background: rgba(255,255,255,0.08)`
 
-**`.hud-divider`:** `width: 1px`, `height: 36px`, `background: rgba(255,255,255,0.07)`
-
-**`.hud-row-divider`:** `width: 100%`, `height: 1px`, `background: rgba(255,255,255,0.08)`
-
-**`.hud-secondary-row`:**
-- Items: WATCHING | PLANNED | DROPPED | EPISODES | FAVORITES
-
-**`.ss-number`:**
-- `font-size: 26px`, `font-weight: 800`, `font-family: 'Space Grotesk'`
-
-**`.ss-label`:**
-- `font-size: 7.5px`, `letter-spacing: 1.5px`, `color: rgba(255,255,255,0.38)`
-
-**Mobile (≤900px):** Dividers hidden, stats wrap into 2-column grid
-
-### 7.11 Scroll Indicator
+### 6.10 Scroll Indicator
 **`.scroll-indicator`:**
 - `position: absolute`, `bottom: 40px`, `left: 50%`, `transform: translateX(-50%)`
-- Animated chevron SVG (26×26), `animation: scrollBounce 2.2s ease-in-out infinite`
-- `pointer-events: none`
+- SVG chevron (26×26), `animation: scrollBounce 2.2s ease-in-out infinite`
 
-**`@keyframes scrollBounce`:** `translateY(0) → translateY(7px) → translateY(0)`, opacity oscillates 0.35–0.75
+**`@keyframes scrollBounce`:** `translateY(0) opacity 0.35 → translateY(7px) opacity 0.75 → translateY(0) opacity 0.35`
 
 ---
 
-## 8. Section 2 — The Wall (Badges)
+## 7. Section 2 — The Wall (Badges)
 
-Achievement badge wall with XP progress bar, spotlight for epic/legendary badges, filterable/sortable grid.
-
-### 8.1 Container
+### 7.1 Container
 **`.the-wall`:**
 - `background-color: #0a0f1a`
 - `background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)`
-- `background-size: 22px 22px` (dot pattern)
+- `background-size: 22px 22px` (dot grid pattern)
 - `padding: 72px 0 80px`
 
 **`.wall-inner`:**
 - `max-width: 1300px`, `margin: 0 auto`, `padding: 0 52px`
 - Mobile: `padding: 0 18px`
 
-### 8.2 Section Eyebrow
+### 7.2 Section Eyebrow
 **`.wall-eyebrow`:**
 - `display: flex`, `align-items: center`, `gap: 18px`, `margin-bottom: 40px`
 
 **`.wall-eyebrow-line`:** `flex: 1`, `height: 1px`, `background: rgba(255,255,255,0.06)`
 **`.wall-eyebrow-text`:**
 - `font-size: 10px`, `font-weight: 700`, `letter-spacing: 4px`
-- `color: rgba(255,255,255,0.2)`, `text-transform: uppercase`, `white-space: nowrap`
+- `color: rgba(255,255,255,0.2)`, uppercase
 
-### 8.3 XP Progress Bar
+### 7.3 XP Progress Bar
 **`.xp-wrap`:**
 - `display: flex`, `align-items: center`, `gap: 18px`, `margin-bottom: 18px`
 
@@ -417,38 +370,26 @@ Achievement badge wall with XP progress bar, spotlight for epic/legendary badges
 - `flex: 1`, `height: 13px`, `background: rgba(255,255,255,0.06)`, `border-radius: 100px`
 
 **`.xp-fill`:**
-- `height: 100%`
+- `height: 100%`, `border-radius: 100px`
 - `background: linear-gradient(90deg, #f59e0b 0%, #ef4444 50%, #c084fc 100%)`
-- `border-radius: 100px`
 - `transition: width 0.9s cubic-bezier(0.25, 1, 0.5, 1)`
-- `::after` pseudo: shimmer animation (`xpShimmer 2.8s ease-in-out infinite`)
+- `::after` shimmer: `left: -70% → 130%`, `2.8s ease-in-out infinite`
 
 **`.xp-label`:**
-- `font-size: 12px`, `font-weight: 700`, `color: #334155`, `white-space: nowrap`
-- Shows `{earned} / {total} Badges · {pct}% Complete`
+- `font-size: 12px`, `font-weight: 700`, `color: #334155`
+- Shows: `{earned} / {total} Badges · {pct}% Complete`
 
-### 8.4 Check Badges CTA
+### 7.4 Check Badges CTA
 **`.check-badges-cta`:**
-- `display: block`, `margin: 0 auto 32px`
 - `padding: 13px 44px`, `border-radius: 10px`
 - `border: 1px solid rgba(245,158,11,0.35)`
 - `background: rgba(245,158,11,0.07)`, `color: #f59e0b`
-- `font-size: 14px`, `font-weight: 700`
-- Hover: `background: rgba(245,158,11,0.14)`, `border-color: #f59e0b`, `transform: translateY(-2px)`, `box-shadow: 0 8px 24px rgba(245,158,11,0.12)`
-- Disabled/loading: `opacity: 0.45`, `cursor: not-allowed`
+- Hover: `background: rgba(245,158,11,0.14)`, `border-color: #f59e0b`, `translateY(-2px)`, `box-shadow 0 8px 24px rgba(245,158,11,0.12)`
+- Disabled: `opacity: 0.45`
 
-### 8.5 Rarity Legend
-**`.rarity-legend`:**
-- `display: flex`, `align-items: center`, `gap: 22px`, `flex-wrap: wrap`, `justify-content: center`, `margin-bottom: 40px`
+### 7.5 Rarity System
 
-**`.rarity-pip`:**
-- `display: flex`, `align-items: center`, `gap: 6px`
-- `font-size: 11px`, `font-weight: 700`, `text-transform: uppercase`, `letter-spacing: 0.5px`
-
-**`.rarity-dot`:** `width: 7px`, `height: 7px`, `border-radius: 50%`
-
-**Rarity colors (defined in component):**
-| Rarity | Border | Glow | Label |
+| Rarity | Border | Glow | Label Color |
 |---|---|---|---|
 | common | `rgba(148,163,184,0.35)` | `rgba(148,163,184,0.15)` | `#94a3b8` |
 | uncommon | `rgba(74,222,128,0.45)` | `rgba(74,222,128,0.15)` | `#4ade80` |
@@ -456,151 +397,133 @@ Achievement badge wall with XP progress bar, spotlight for epic/legendary badges
 | epic | `rgba(192,132,252,0.55)` | `rgba(192,132,252,0.2)` | `#c084fc` |
 | legendary | `rgba(251,191,36,0.65)` | `rgba(251,191,36,0.25)` | `#fbbf24` |
 
-### 8.6 Spotlight Row
-Shown only for earned epic/legendary badges.
+**`.rarity-legend`:**
+- `display: flex`, `gap: 22px`, `justify-content: center`, `margin-bottom: 40px`
 
+**`.rarity-pip`:**
+- `font-size: 11px`, `font-weight: 700`, uppercase
+- Color dot: `7px × 7px`, `border-radius: 50%`
+
+### 7.6 Spotlight Row (Epic/Legendary Only)
 **`.spotlight-header`:**
-- `font-size: 10px`, `font-weight: 700`, `letter-spacing: 3px`
-- `color: rgba(255,255,255,0.25)`, `text-align: center`, `margin-bottom: 18px`
+- `font-size: 10px`, `letter-spacing: 3px`, `color: rgba(255,255,255,0.25)`, `text-align: center`
 
 **`.spotlight-row`:**
-- `display: flex`, `gap: 18px`, `overflow-x: auto`
-- `padding: 6px 0 28px`, `scrollbar-width: none`, `margin-bottom: 16px`
+- `display: flex`, `gap: 18px`, `overflow-x: auto`, `padding: 6px 0 28px`
+- Hidden scrollbar
 
 **`.spotlight-card`:**
-- `flex: 0 0 auto`, `width: 228px`
-- `border-radius: 20px`, `padding: 24px 20px 20px`
+- `flex: 0 0 auto`, `width: 228px`, `border-radius: 20px`, `padding: 24px 20px`
 - `background: rgba(15,20,40,0.85)`
-- Dynamic border/glow set via inline style per rarity
-- Hover: `transform: translateY(-7px) scale(1.02)`
+- Dynamic border/glow per rarity (inline style)
+- Hover: `translateY(-7px) scale(1.02)`
 
-**`.spotlight-emoji`:** `font-size: 54px`, `line-height: 1`
+**`.spotlight-emoji`:** `font-size: 54px`
 **`.spotlight-title`:** `font-size: 15px`, `font-weight: 800`
-**`.spotlight-desc`:** `font-size: 11.5px`, `color: rgba(255,255,255,0.42)`
-**`.spotlight-rarity`:** `font-size: 9.5px`, `font-weight: 800`, `letter-spacing: 1.5px`, uppercase
-**`.spotlight-date`:** `font-size: 11px`, `color: #4ade80`, `font-weight: 600`
+**`.spotlight-desc`:** `11.5px`, `color: rgba(255,255,255,0.42)` (line-clamp 2 on mobile)
+**`.spotlight-date`:** `11px`, `color: #4ade80`
 
-### 8.7 Badge Controls (Filter + Sort)
+### 7.7 Badge Controls
 **`.badge-controls-row`:**
-- `display: flex`, `justify-content: space-between`, `align-items: center`
-- `margin-bottom: 22px`, `flex-wrap: wrap`, `gap: 14px`
-- Mobile: `flex-direction: column`, `align-items: stretch`
+- `display: flex`, `justify-content: space-between`, `margin-bottom: 22px`
+- Mobile: `flex-direction: column`
 
 **`.badge-category-tabs`:**
 - `display: flex`, `flex-wrap: wrap`, `gap: 8px`
-- Tabs: All + dynamic categories from badge definitions
+- Tabs: "All" + dynamic categories from badge defs
 
 **`.badge-cat-tab`:**
 - `padding: 7px 16px`, `border-radius: 100px`
-- `border: 1px solid rgba(255,255,255,0.09)`
-- `background: rgba(255,255,255,0.04)`, `color: rgba(255,255,255,0.45)`
-- `font-size: 12px`, `font-weight: 600`
-- Hover: `background: rgba(255,255,255,0.08)`, `color: rgba(255,255,255,0.85)`
-- Active: `background: linear-gradient(135deg, rgba(245,158,11,0.14), rgba(239,68,68,0.12))`, `border-color: rgba(245,158,11,0.6)`, `color: #fbbf24`
+- `border: 1px solid rgba(255,255,255,0.09)`, `color: rgba(255,255,255,0.45)`
+- Active: `linear-gradient(135deg, rgba(245,158,11,0.14), rgba(239,68,68,0.12))`, `border-color: rgba(245,158,11,0.6)`, `color: #fbbf24`
 
-**`.badge-sort-control`:**
-- `display: flex`, `align-items: center`, `gap: 10px`
-- `label`: `font-size: 9.5px`, `letter-spacing: 1.5px`, uppercase, `color: #334155`
-- `select`: `background: rgba(15,25,50,0.9)`, `color: white`, `border: 1px solid rgba(255,255,255,0.1)`, `border-radius: 8px`
-- Sort options: Rarity (Highest/Lowest), Date (Newest/Oldest), Name (A-Z/Z-A)
+**`.badge-sort-control`**: label (`9.5px`, uppercase, `#334155`) + `<select>` (dark, white text, 8px radius)
 
-### 8.8 Badge Grid
+**Sort options:**
+1. Rarity (Highest) — default
+2. Rarity (Lowest)
+3. Date (Newest)
+4. Date (Oldest)
+5. Name (A–Z)
+6. Name (Z–A)
+
+### 7.8 Badge Grids
 **`.badges-grid-new`:**
 - `display: grid`, `grid-template-columns: repeat(auto-fill, minmax(196px, 1fr))`, `gap: 14px`
-- `margin-bottom: 28px`
-- Mobile (`≤768px`): `minmax(160px, 1fr)`
-- Small mobile (`≤480px`): `minmax(140px, 1fr)`
+- Mobile: `minmax(160px, 1fr)`, small mobile: `minmax(140px, 1fr)`
 
 **`.badge-card-new`:**
 - `border-radius: 18px`, `padding: 18px 16px`
 - `display: flex`, `flex-direction: column`, `gap: 10px`
-- `position: relative`, `overflow: hidden`
-- `transition: transform 0.22s, box-shadow 0.22s`
 
-**`.badge-card-new.earned`:**
+**Earned (`.earned`):**
 - `background: rgba(12,18,38,0.85)`
-- Dynamic border/glow per rarity (inline style)
-- Hover: `transform: translateY(-5px) scale(1.02)`
+- Dynamic border/glow per rarity
+- Hover: `translateY(-5px) scale(1.02)`
 
-**`.badge-card-new.locked`:**
+**Locked (`.locked`):**
 - `background: rgba(255,255,255,0.02)`, `border: 1px solid rgba(255,255,255,0.06)`
 - `filter: saturate(0.22)`, `opacity: 0.42`
+- Lock icon overlay (🔒) with `blur(2px)` background
 - Hover: `opacity: 0.58`, `filter: saturate(0.38)`
 
-**`.badge-icon-wrap`:** `position: relative`, `width: 52px`, `height: 52px`
-**`.badge-emoji`:** `font-size: 40px`, `line-height: 1`
-**`.badge-lock-overlay`:**
-- `position: absolute`, `inset: 0`
-- `display: flex`, `align-items: center`, `justify-content: center`
-- `font-size: 18px`, `background: rgba(0,0,0,0.55)`, `backdrop-filter: blur(2px)`
-
+**`.badge-emoji`:** `font-size: 40px`
 **`.badge-card-title`:** `font-size: 13.5px`, `font-weight: 800`
-**`.badge-card-desc`:** `font-size: 11.5px`, `color: rgba(255,255,255,0.42)`, line-clamp 2 on mobile
-**`.badge-rarity-label`:** `font-size: 9.5px`, `font-weight: 800`, uppercase
-**`.badge-earned-date`:** `font-size: 10.5px`, `color: #4ade80`, `font-weight: 600`
+**`.badge-rarity-label`:** `9.5px`, `font-weight: 800`, uppercase
+**`.badge-earned-date`:** `10.5px`, `color: #4ade80`
 
-### 8.9 Locked Separator
+### 7.9 Locked Separator
 **`.locked-separator`:**
 - `display: flex`, `align-items: center`, `gap: 16px`, `margin: 8px 0 22px`
 
 **`.locked-sep-line`:** `flex: 1`, `height: 1px`, `background: rgba(255,255,255,0.05)`
-**`.locked-sep-text`:**
-- `font-size: 9px`, `font-weight: 700`, `letter-spacing: 2.5px`
-- `color: rgba(255,255,255,0.18)`, uppercase
+**`.locked-sep-text`:** `font-size: 9px`, `letter-spacing: 2.5px`, `color: rgba(255,255,255,0.18)`, uppercase
 
-### 8.10 Badge State Calculations
-- `enrichedBadges`: all badge defs merged with earned status + earnedDate
-- `earnedBadgesGrid`: filtered to earned, sorted by current sort
-- `lockedBadgesGrid`: filtered to locked, sorted by current sort
-- `badgePct`: `Math.round((earnedCount / totalDefs) * 100)`
+### 7.10 State Calculations
+- `earnedIds`: `Set(badges.map(b => b.id))`
+- `enrichedBadges`: all badge defs + `earned: boolean` + `earnedDate`
+- `sortedBadges`: filtered by `badgeFilter`, sorted by 6 modes
 - `spotlightBadges`: earned badges with rarity `epic` or `legendary`
+- `badgePct`: `Math.round((earnedCount / totalDefs) * 100)`
 
 ---
 
-## 9. Section 3 — The Story Zone
+## 8. Section 3 — The Story Zone
 
-Two-column layout: Recently Watched (left) + Favorites (right), separated by an amber divider.
-
-### 9.1 Container
+### 8.1 Container
 **`.story-zone`:**
 - `display: flex`, `flex-direction: column`
-- `padding: 72px 6%`, `gap: 0`
-- `background: #030712`
+- `padding: 72px 6%`, `background: #030712`
 - `border-top: 1px solid rgba(255,255,255,0.04)`
 - `border-bottom: 1px solid rgba(255,255,255,0.04)`
-- Mobile: `padding: 42px 5%`
-- Small mobile: `padding: 42px 4%`
 
-### 9.2 Section Labels
+### 8.2 Section Labels
 **`.story-label`:**
-- `display: block`, `font-size: 9.5px`, `font-weight: 700`, `letter-spacing: 4px`
-- `color: rgba(255,255,255,0.28)`, uppercase
-- `border-bottom: 2px solid #f59e0b`, `width: fit-content`
-- `padding-bottom: 10px`, `margin-bottom: 20px`
+- `font-size: 9.5px`, `font-weight: 700`, `letter-spacing: 4px`, uppercase
+- `color: rgba(255,255,255,0.28)`
+- `border-bottom: 2px solid #f59e0b`, `width: fit-content`, `padding-bottom: 10px`
 
-### 9.3 Recently Watched (Left)
+### 8.3 Recently Watched (Left)
 **`.story-left`:**
-- `width: 100%`, `max-width: 1196px`, `margin: 0 auto`
-- `display: flex`, `flex-direction: column`, `padding-bottom: 48px`
-- Mobile: `padding-bottom: 28px`
+- `width: 100%`, `max-width: 1196px`, `margin: 0 auto`, `padding-bottom: 48px`
 
 **`.recently-watched-grid`:**
 - `display: grid`, `grid-template-columns: repeat(auto-fit, minmax(180px, 1fr))`, `gap: 14px`
 - `≤900px`: `minmax(160px, 1fr)`
 - `≤480px`: `minmax(140px, 1fr)`
 
-### 9.4 Masonry Grid (Shared)
+### 8.4 Favorites (Right)
+**`.story-right`:**
+- `width: 100%`, `max-width: 1196px`, `margin: 0 auto`
+
 **`.masonry-grid`:**
 - `display: grid`, `grid-template-columns: repeat(8, 1fr)`, `gap: 12px`
 - Mobile (`≤768px`): `repeat(3, 1fr)`
 - Small mobile (`≤480px`): `repeat(2, 1fr)`, `gap: 10px`
 
 **`.masonry-card`:**
-- `border-radius: 13px`, `overflow: hidden`, `position: relative`
-- Hover: `box-shadow: inset 0 0 0 2px rgba(245,158,11,0.5)`
-
-**`.masonry-card img`:**
-- `width: 100%`, `display: block`, `object-fit: cover`, `aspect-ratio: 2/3`
+- `border-radius: 13px`, `overflow: hidden`, `aspect-ratio: 2/3`
+- Hover: `inset box-shadow: 0 0 0 2px rgba(245,158,11,0.5)`
 
 **`.masonry-overlay`:**
 - `position: absolute`, `bottom: 0`, `left: 0`, `right: 0`
@@ -611,34 +534,25 @@ Two-column layout: Recently Watched (left) + Favorites (right), separated by an 
 - `font-size: 11.5px`, `font-weight: 600`, `color: white`
 - `white-space: nowrap`, `overflow: hidden`, `text-overflow: ellipsis`
 
-### 9.5 Story Divider
+### 8.5 Story Divider
 **`.story-divider`:**
 - `width: 100%`, `max-width: 1196px`, `height: 1px`
 - `background: rgba(245,158,11,0.18)`
 - `margin: 0 auto 48px`
 
-### 9.6 Favorites (Right)
-**`.story-right`:**
-- `width: 100%`, `max-width: 1196px`, `margin: 0 auto`
-- Same `.masonry-grid` as recently watched
-
-### 9.7 Empty States
+### 8.6 Empty States
 **`.story-empty`:**
 - `font-size: 14px`, `color: rgba(255,255,255,0.22)`, `font-style: italic`, `padding: 40px 0`
 
 ---
 
-## 10. Section 4 — Genre Identity
+## 9. Section 4 — Genre Identity
 
-Full-width section with ambient glow, watermark text, proportional genre pills, interactive pie chart, and genre legend.
-
-### 10.1 Container
+### 9.1 Container
 **`.genre-identity`:**
-- `position: relative`, `padding: 80px 6% 90px`, `overflow: hidden`
-- `background: #030712`
-- Mobile: `padding: 60px 5% 70px`
+- `position: relative`, `padding: 80px 6% 90px`, `overflow: hidden`, `background: #030712`
 
-### 10.2 Ambient Glow
+### 9.2 Ambient Glow
 **`.genre-ambient`:**
 - `position: absolute`, `top: -120px`, `left: -100px`
 - `width: 650px`, `height: 550px`, `border-radius: 50%`
@@ -647,144 +561,122 @@ Full-width section with ambient glow, watermark text, proportional genre pills, 
 - `transition: background-color 0.8s`
 - Color set via inline style to top genre color
 
-### 10.3 Editorial Header
-**`.genre-header-block`:**
-- `position: relative`, `margin-bottom: 36px`, `min-height: 80px`
-
+### 9.3 Editorial Header
 **`.genre-watermark`:**
 - `position: absolute`, `top: -18px`, `left: -6px`
-- `font-size: clamp(72px, 11vw, 152px)`, `font-weight: 200`
-- `font-family: 'Space Grotesk'`
-- `color: rgba(255,255,255,0.035)`, `line-height: 1`
-- `white-space: nowrap`, uppercase, `letter-spacing: -4px`
-- Mobile (`≤768px`): `font-size: 48px`
-- Small mobile (`≤480px`): `font-size: 42px`
+- `clamp(72px, 11vw, 152px)`, `font-weight: 200`, `font-family: 'Space Grotesk'`
+- `color: rgba(255,255,255,0.035)`, `letter-spacing: -4px`, uppercase
+- Mobile: `48px`, small mobile: `42px`
 
 **`.genre-eyebrow`:**
-- `display: block`, `font-size: 9.5px`, `font-weight: 700`, `letter-spacing: 5px`
-- `color: #f59e0b`, uppercase, `margin-bottom: 10px`
+- `font-size: 9.5px`, `font-weight: 700`, `letter-spacing: 5px`
+- `color: #f59e0b`, uppercase
 
 **`.genre-title-large`:**
-- `font-size: clamp(26px, 3.8vw, 46px)`, `font-weight: 800`
-- `font-family: 'Space Grotesk'`, `color: white`
-- `line-height: 1.1`, `margin: 0`
-- Mobile: `clamp(28px, 6vw, 38px)`
-- Small mobile: `28px`
+- `clamp(26px, 3.8vw, 46px)`, `font-weight: 800`, `font-family: 'Space Grotesk'`
 
-### 10.4 Genre Pills
+### 9.4 Genre Pills (Top 5)
 **`.genre-pills-row`:**
-- `display: flex`, `gap: 6px`, `margin-bottom: 56px`
-- `flex-wrap: nowrap`, `align-items: stretch`, `overflow: hidden`
-- Mobile: `flex-wrap: wrap`, `gap: 10px`, `margin-bottom: 36px`
-- Small mobile: `gap: 6px`, `margin-bottom: 32px`
+- `display: flex`, `gap: 6px`, `margin-bottom: 56px`, `flex-wrap: nowrap`
+- Mobile: `flex-wrap: wrap`, `gap: 10px`
 
 **`.genre-pill`:**
 - `height: 40px`, `border-radius: 100px`
-- `display: flex`, `align-items: center`, `justify-content: center`
-- `flex-direction: column`, `padding: 0 10px`
-- `overflow: hidden`, `transition: transform 0.2s`, `min-width: 50px`
-- Hover: `transform: translateY(-3px)`
-- Width set via inline `flexBasis: Math.max(genre.value, 6)%`
-- Mobile: `height: 34px`, `min-width: 48px`
-- Small mobile: `height: 30px`, `min-width: 40px`
+- `display: flex`, `align-items: center`, `justify-content: center`, `flex-direction: column`
+- `min-width: 50px`, `padding: 0 10px`
+- `flexBasis`: `Math.max(genre.value, 6)%` (inline)
+- Hover: `translateY(-3px)`
+- Mobile: `height: 34px`, small mobile: `height: 30px`
 
-**`.genre-pill-name`:**
-- `font-size: 11px`, `font-weight: 700`, `color: white`
-- `white-space: nowrap`, `text-shadow: 0 1px 5px rgba(0,0,0,0.6)`
-- Mobile: `font-size: 10px`
-- Small mobile: `font-size: 9px`
+**`.genre-pill-name`:** `font-size: 11px`, `font-weight: 700`, `text-shadow: 0 1px 5px rgba(0,0,0,0.6)`
+**`.genre-pill-pct`:** `font-size: 9px`, `color: rgba(255,255,255,0.65)` (hidden on mobile)
 
-**`.genre-pill-pct`:**
-- `font-size: 9px`, `color: rgba(255,255,255,0.65)`, `font-weight: 600`
-- Hidden on mobile (`display: none`)
-
-### 10.5 Chart + Legend Content
+### 9.5 Chart + Legend Layout
 **`.genre-content`:**
-- `display: grid`, `grid-template-columns: 1fr 1fr`, `gap: 52px`, `align-items: start`
-- `≤1100px`: `grid-template-columns: 1fr`
+- `display: grid`, `grid-template-columns: 1fr 1fr`, `gap: 52px`
+- `≤1100px`: single column
 
-### 10.6 Chart Column
-**`.genre-chart-col`:**
-- `display: flex`, `flex-direction: column`, `gap: 28px`
-- Mobile: `gap: 22px`
-
+### 9.6 Pie Chart
 **`.pie-chart-wrapper`:**
 - `background: rgba(0,0,0,0.1)`, `border-radius: 20px`, `padding: 16px`
 
 **PieChart config:**
 - `<ResponsiveContainer width="100%" height={380}>`
-- `<Pie>`: `cx="50%"`, `cy="50%"`, `outerRadius={175}`, `innerRadius={70}` (donut)
-- `data`: filtered chartData (value > 0)
-- Label: custom renderer, shows percentage if > 3%
-- Center text: `{watchedGenres}` (large) + "Genres" (small)
-- `<Tooltip>`: custom tooltip with genre name, percentage, count
-- Colors: 19-color palette starting `#FF6B6B, #4ECDC4, #FFD166...`
+- `<Pie>`: donut (`innerRadius: 70`, `outerRadius: 175`), `cx: 50%`, `cy: 50%`
+- Filtered data: genres with `value > 0`
+- 19-color palette applied to `Cell` components
+- Custom label renderer: shows percentage if > 3%
+- Center text: `{watchedGenres}` (30px) + "Genres" (13px)
+- `<Tooltip content={<CustomTooltip />}>`
 
-**Custom Tooltip (`.custom-tooltip`):**
+**`.custom-tooltip`:**
 - `background: rgba(10,15,35,0.97)`, `border: 1px solid rgba(255,255,255,0.08)`
 - `border-radius: 12px`, `padding: 12px 16px`, `backdrop-filter: blur(20px)`
-- Genre name (13px, bold, white), percentage (20px, bold, #f59e0b), count (12px, #475569)
+- Genre name: 13px, bold, white
+- Percentage: 20px, bold, `#f59e0b`
+- Count: 12px, `#475569`
 
-### 10.7 Genre Ticker
+### 9.7 Genre Ticker
 **`.genre-ticker`:**
 - `display: flex`, `align-items: center`, `justify-content: center`
 - `padding: 20px 0`, `border-top: 1px solid rgba(255,255,255,0.05)`
-- Mobile: `flex-wrap: wrap`, `gap: 12px`
 
-**`.gt-stat`:**
-- `display: flex`, `flex-direction: column`, `align-items: center`, `gap: 4px`, `padding: 0 24px`
+| Stat | Label |
+|---|---|
+| 19 | TOTAL |
+| `watchedGenres` | WATCHED |
+| `topPercentage%` | TOP GENRE |
+| `coveragePct%` | COVERAGE |
 
-**`.gt-number`:**
-- `font-size: 34px`, `font-weight: 900`, `color: white`
-- `font-family: 'Space Grotesk'`
+**`.gt-number`:** `34px`, `font-weight: 900`, `font-family: 'Space Grotesk'`
+**`.gt-label`:** `8.5px`, `letter-spacing: 2px`, uppercase, `color: #334155`
 
-**`.gt-label`:**
-- `font-size: 8.5px`, `letter-spacing: 2px`, `color: #334155`, `font-weight: 700`, uppercase
-
-**`.gt-divider`:** `width: 1px`, `height: 30px`, `background: rgba(255,255,255,0.06)`
-
-Items: TOTAL (19) | WATCHED | TOP GENRE (%) | COVERAGE (%)
-
-### 10.8 Genre Legend
+### 9.8 Genre Legend
 **`.genre-legend-col`:**
-- `display: flex`, `flex-direction: column`, `gap: 16px`
-- `max-height: 520px`, `overflow-y: auto`, `padding-right: 6px`
+- `max-height: 520px`, `overflow-y: auto`
 - `scrollbar-width: thin`, `scrollbar-color: rgba(255,255,255,0.07) transparent`
-- Mobile: `max-height: none`, `padding-right: 0`
+- Mobile: `max-height: none`
 
 **`.genre-legend-item`:**
 - `display: flex`, `flex-direction: column`, `gap: 5px`
 
 **`.gli-name`:** `font-size: 13px`, `font-weight: 600`, `color: rgba(255,255,255,0.82)`
-**`.gli-bar-wrap`:**
-- `height: 5px`, `background: rgba(255,255,255,0.06)`, `border-radius: 100px`
-
-**`.gli-bar`:**
-- `height: 100%`, `border-radius: 100px`, `min-width: 4px`
-- `transition: width 0.9s`
-- Color set via inline style per genre
-
-**`.gli-meta`:** `font-size: 11px`, `color: #334155`, `font-weight: 600`
-- Shows `{percentage}% · {count} anime`
+**`.gli-bar-wrap`:** `height: 5px`, `background: rgba(255,255,255,0.06)`, `border-radius: 100px`
+**`.gli-bar`:** `height: 100%`, `border-radius: 100px`, `transition: width 0.9s`, `min-width: 4px`, color per genre
+**`.gli-meta`:** `font-size: 11px`, `color: #334155`, format: `{pct}% · {count} anime`
 
 ---
 
-## 11. Toast Notifications
-
-Reuses settings page toast styles.
+## 10. Toast Notifications
 
 **`.settings-toast`:**
 - `position: fixed`, `top: 90px`, `right: 32px`, `z-index: 9999`
 - `padding: 14px 28px`, `border-radius: 14px`
 - `font-size: 15px`, `font-weight: 600`
 - `backdrop-filter: blur(24px)`, `box-shadow: 0 12px 40px rgba(0,0,0,0.4)`
-- `animation: toastSlide 0.35s cubic-bezier(0.22, 1, 0.36, 1)`
+- `animation: toastSlide 0.35s`
 
-**`.settings-toast.success`:**
-- `background: rgba(16,185,129,0.2)`, `border: 1px solid rgba(16,185,129,0.4)`, `color: #6ee7b7`
+**`.settings-toast.success`:** `background: rgba(16,185,129,0.2)`, `color: #6ee7b7`, `border: 1px solid rgba(16,185,129,0.4)`
+**`.settings-toast.error`:** `background: rgba(239,68,68,0.2)`, `color: #fca5a5`, `border: 1px solid rgba(239,68,68,0.4)`
 
-**`.settings-toast.error`:**
-- `background: rgba(239,68,68,0.2)`, `border: 1px solid rgba(239,68,68,0.4)`, `color: #fca5a5`
+Auto-dismiss after 3.5s.
+
+---
+
+## 11. Loading State
+
+**`.profile-loading`:**
+- `position: fixed`, `inset: 0`, `z-index: 9999`
+- `display: flex`, `justify-content: center`, `align-items: center`
+- `background: linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)`
+
+**`.loading-spinner`:** `48px`, `border: 3px solid rgba(245,158,11,0.18)`, `border-top-color: #f59e0b`, `animation: profileSpin 1s linear infinite`
+**`.loading-text`:** "Loading Your Anime Journey", `font-size: 22px`, `font-weight: 700`
+**`.loading-subtext`:** "Preparing your stats, favorites, and anime collection...", `font-size: 14px`, `color: #475569`
+
+**Initial load:** `<PageLoader />` renders first (full-screen cinematic intro), then `onFinish` callback hides it.
+
+When `!profileData` and `!showLoader`, shows centered loading screen with spinner + text.
 
 ---
 
@@ -792,23 +684,10 @@ Reuses settings page toast styles.
 
 | Breakpoint | Changes |
 |---|---|
-| `≤ 1100px` | Genre content → single column; story sections full width |
-| `≤ 900px` | HUD ticker full width; stats wrap to 2-col grid; dividers hidden |
-| `≤ 768px` | Hero → stacked column layout; avatar 130px; name centered; badges grid `minmax(160px)`; story zone padding reduced; recently watched grid `minmax(160px)`; masonry 3-col; genre pills wrap; watermark 48px |
-| `≤ 480px` | Avatar 106px; name 32px; badges grid `minmax(140px)`; masonry 2-col; genre pills smaller; watermark 42px; spotlight desc line-clamp 2 |
-
-**Key mobile overrides (≤768px):**
-- `.entrance-content`: `flex-direction: column`, `text-align: center`, `padding: 90px 5% 48px`
-- `.entrance-avatar`: `130px × 130px`
-- `.entrance-name`: `clamp(32px, 7vw, 52px)`
-- `.cover-change-btn`: `top: 18px`, `right: 18px`
-- `.hud-ticker`: `max-width: 580px`, centered
-- `.badges-grid-new`: `minmax(160px, 1fr)`
-- `.badge-controls-row`: `flex-direction: column`
-- `.story-zone`: `padding: 42px 5%`
-- `.masonry-grid`: `repeat(3, 1fr)`
-- `.genre-pills-row`: `flex-wrap: wrap`, `gap: 10px`
-- `.genre-pill`: `flex: 1 1 auto`, `min-width: 120px`
+| `≤ 1100px` | Genre content → single column; legend `max-height: none` |
+| `≤ 900px` | HUD ticker full width (`max-width: 100%`), stats wrap to 2-column (`flex: 1 1 50%`), dividers hidden |
+| `≤ 768px` | Hero → stacked centered column; avatar 130px; name `clamp(32px, 7vw, 52px)`; HUD 580px max-width; wall padding 0 18px; badges `minmax(160px)`; controls column; story padding 42px 5%; masonry `repeat(3)`; filmstrip `1fr`; genre pills wrap; watermark 48px; title `clamp(28px, 6vw, 38px)` |
+| `≤ 480px` | Avatar 106px; name 32px; badges `minmax(140px)`; masonry `repeat(2)`; genre pills 30px height; watermark 42px; ripple desc line-clamp 2 |
 
 ---
 
@@ -816,23 +695,29 @@ Reuses settings page toast styles.
 
 | Interaction | Behavior |
 |---|---|
-| **Cover hover** | Image scales up slightly |
-| **Avatar hover** | Border color brightens to `#f59e0b`, glow ring intensifies |
-| **Edit Profile click** | Identity block replaced by glassmorphic edit form |
-| **Share click** | Web Share API (mobile) or clipboard copy |
-| **Badge hover** | `translateY(-5px) scale(1.02)` with rarity glow |
+| **Cover hover** | Image scales slightly (via CSS) |
+| **Avatar hover** | Border brightens to `#f59e0b`, glow ring widens |
+| **Edit Profile** | Identity block replaced by glassmorphic edit form |
+| **Save/Cancel** | Triggers `PUT /api/profile/:userId`, shows toast |
+| **Share** | Web Share API (mobile) or clipboard copy |
+| **Badge Card hover (earned)** | `translateY(-5px) scale(1.02)` |
+| **Badge Card hover (locked)** | `opacity: 0.42 → 0.58`, `saturate: 0.22 → 0.38` |
 | **Spotlight card hover** | `translateY(-7px) scale(1.02)` |
 | **Genre pill hover** | `translateY(-3px)` |
-| **Check Badges click** | Triggers `/api/badges/evaluate/:userId`, shows toast |
-| **Badge category tab click** | Filters grid to category |
-| **Badge sort select** | Reorders grid |
-| **Pie chart hover** | Custom tooltip with genre name, percentage, count |
+| **XP bar** | Animated width with shimmer overlay |
+| **Check Badges** | POST to evaluate, shows toast with result |
+| **Badge category tab** | Filters grid by category, active state amber gradient |
+| **Badge sort** | Reorders grid by 6 modes |
+| **Pie chart hover** | Custom tooltip with name, %, count |
+| **Masonry card hover** | Amber inset border appears (2px) |
+| **Scroll indicator** | Bounces continuously (2.2s loop) |
+| **Last updated** | `toastSlide` animation (0.35s) |
 
-**Keyframe animations:**
-- `@keyframes scrollBounce` — scroll indicator vertical bounce (2.2s loop)
-- `@keyframes xpShimmer` — shimmer across XP bar (2.8s loop)
-- `@keyframes profileSpin` — loading spinner rotation (1s linear)
-- `@keyframes toastSlide` — toast slide from right (0.35s)
+**Keyframes:**
+- `scrollBounce` — hero chevron (2.2s)
+- `xpShimmer` — XP bar reflective sweep (2.8s)
+- `profileSpin` — loading spinner (1s)
+- `toastSlide` — notification slide-in (0.35s)
 
 ---
 
@@ -840,59 +725,62 @@ Reuses settings page toast styles.
 
 | Endpoint | Method | Purpose |
 |---|---|---|
-| `/api/profile/:userId` | GET | Fetch full profile data |
-| `/api/profile/:userId` | PUT | Update profile (name, bio, username) |
-| `/api/profile/:userId/upload-photo` | POST | Upload avatar image |
-| `/api/profile/:userId/upload-cover` | POST | Upload cover image |
-| `/api/badges/all` | GET | Fetch all badge definitions |
-| `/api/badges/evaluate/:userId` | POST | Trigger badge evaluation |
-| `/api/list/:userId/backfill-genres` | POST | Backfill genre data (admin) |
+| `/api/profile/:userId` | GET | Fetch profile, stats, badges, recently watched, favorites, genres |
+| `/api/profile/:userId` | PUT | Update name, bio, username |
+| `/api/profile/:userId/upload-photo` | POST | Upload avatar (multipart, max 2MB) |
+| `/api/profile/:userId/upload-cover` | POST | Upload cover (multipart, max 5MB) |
+| `/api/badges/all` | GET | All badge definitions (~100) |
+| `/api/badges/evaluate/:userId` | POST | Trigger badge re-evaluation |
+| `/api/list/:userId/backfill-genres` | POST | Backfill genre data (admin/debug) |
 
 ---
 
 ## 15. Render Order
 
 ```
-1. <PageLoader />               — full-screen cinematic loader (conditional)
-2. <BottomNavBar />             — fixed bottom nav (mobile)
-3. <Header showSearch={false} /> — fixed top nav
-4. Toast                        — conditional, fixed top-right
+1. <PageLoader />                        — full-screen intro (conditional, auto-hides)
+
+2. <BottomNavBar />                      — fixed bottom
+
+3. <Header showSearch={false} />         — fixed top
+
+4. Toast                                 — fixed top-right (conditional)
 
 5. <section class="profile-entrance">
-   a. Hidden file inputs        — cover-upload, avatar-upload
-   b. Cover image               — full-bleed absolute
-   c. Gradient overlays         — left-to-right + bottom bleed
-   d. Cover change button       — absolute top-right
-   e. Entrance content
-      i. Avatar zone            — circular avatar + "CHANGE PHOTO" label
-      ii. Identity block        — name, username, join date, bio, email, actions
-         OR Edit form           — name, username, bio inputs + save/cancel
-      iii. HUD ticker           — primary stats (3) + divider + secondary stats (5)
-   f. Scroll indicator          — bouncing chevron
+   a. Hidden file inputs                 — #cover-upload, #avatar-upload
+   b. Cover image                        — full-bleed, Unsplash fallback
+   c. entrance-gradient-lr               — L→R darken
+   d. entrance-gradient-bottom            — bottom bleed into The Wall
+   e. "Change Cover" button              — absolute top-right
+   f. entrance-content
+      i.   Avatar zone                   — circular avatar + "CHANGE PHOTO"
+      ii.  Identity block OR edit form   — name/username/bio/actions
+      iii. HUD ticker                    — 3 primary stats + divider + 5 secondary stats
+   g. Scroll indicator                   — bouncing chevron
 
 6. <section class="the-wall">
-   a. Section eyebrow           — "ACHIEVEMENTS" with lines
-   b. XP progress bar           — gradient bar + label
-   c. Check Badges CTA          — "⚡ Check for New Badges"
-   d. Rarity legend             — 5 colored pips
-   e. Spotlight row             — horizontal scroll of epic/legendary badges
-   f. Badge controls            — category tabs + sort dropdown
-   g. Earned badge grid         — grid of earned badge cards
-   h. Locked separator          — "LOCKED — N REMAINING"
-   i. Locked badge grid         — grid of locked badge cards
+   a. Eyebrow                           — "ACHIEVEMENTS" with lines
+   b. XP bar                            — gradient fill + shimmer + label
+   c. Check Badges CTA                  — amber pill button
+   d. Rarity legend                     — 5 colored pips
+   e. Spotlight row                     — epic/legendary cards (horizontal scroll)
+   f. Badge controls                    — category tabs + sort dropdown
+   g. Earned badge grid                 — auto-fill grid, rarity-colored borders
+   h. Locked separator                  — "LOCKED — N REMAINING"
+   i. Locked badge grid                 — desaturated, lock overlay
 
 7. <section class="story-zone">
-   a. Story left                — "RECENTLY WATCHED" + masonry grid
-   b. Story divider             — amber horizontal line
-   c. Story right               — "FAVORITES" + masonry grid
+   a. Story left                        — "RECENTLY WATCHED" + auto-fit grid
+   b. Story divider                     — amber line
+   c. Story right                       — "FAVORITES" + 8-column masonry grid
 
 8. <section class="genre-identity">
-   a. Ambient glow              — blurred color blob
-   b. Genre header              — watermark text + eyebrow + title
-   c. Genre pills               — proportional colored bars (top 5)
+   a. Ambient glow                      — blurred color blob
+   b. Editorial header                  — watermark + eyebrow + large title
+   c. Genre pills                       — top 5 proportional colored bars
    d. Genre content
-      i. Chart column           — donut pie chart + genre ticker stats
-      ii. Legend column          — genre bars with names + percentages
+      i.  Chart column                  — donut pie chart (recharts) + ticker
+      ii. Legend column                 — scrollable genre bars with % + count
 ```
 
 ---
