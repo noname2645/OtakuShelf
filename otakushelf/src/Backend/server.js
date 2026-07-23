@@ -695,7 +695,7 @@ app.get("/auth/logout", (req, res) => {
 });
 
 // ─── Forgot Password ───────────────────────────────────────────────────────
-// Route 9: POST /auth/forgot-password — Send password reset email
+// Route 9: POST /auth/forgot-password — Send 6-digit OTP code
 app.post("/auth/forgot-password", authLimiter, async (req, res) => {
   try {
     const { email } = req.body;
@@ -705,38 +705,33 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
     // Always respond OK to prevent email enumeration
     if (!user || user.authType !== 'local') {
-      return res.json({ message: "If that email exists, a reset link has been sent." });
+      return res.json({ message: "If that email exists, a code has been sent." });
     }
 
-    // Generate a secure random token
-    const crypto = await import('crypto');
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-
-    user.passwordResetToken = hashedToken;
-    user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    // Generate a 6-digit OTP
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    user.passwordResetToken = otp;
+    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
-
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
     try {
       await (await getEmailSender()).sendMail({
         from: `"OtakuShelf" <${process.env.EMAIL_FROM || 'noreply@otakushelf.com'}>`,
         to: normalizedEmail,
-        subject: '🔑 OtakuShelf — Reset Your Password',
+        subject: '🔑 OtakuShelf — Your Verification Code',
         html: `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0d0d1a;color:#fff;border-radius:16px;overflow:hidden">
             <div style="background:linear-gradient(135deg,#8b5cf6,#ec4899);padding:32px;text-align:center">
               <h1 style="margin:0;font-size:28px">OtakuShelf</h1>
-              <p style="margin:8px 0 0;opacity:0.85">Password Reset Request</p>
+              <p style="margin:8px 0 0;opacity:0.85">Password Reset Code</p>
             </div>
-            <div style="padding:32px">
+            <div style="padding:32px;text-align:center">
               <p>Hey there, Otaku! 👋</p>
-              <p>We received a request to reset your password. Click the button below — this link expires in <strong>15 minutes</strong>.</p>
-              <div style="text-align:center;margin:32px 0">
-                <a href="${resetUrl}" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:16px">Reset Password</a>
+              <p>Use the code below to reset your password. It expires in <strong>10 minutes</strong>.</p>
+              <div style="background:#1a1a2e;border-radius:12px;padding:24px;margin:24px 0;letter-spacing:8px;font-size:36px;font-weight:700;color:#a78bfa">
+                ${otp}
               </div>
-              <p style="font-size:13px;opacity:0.6">If you didn't request this, you can safely ignore this email. Your password won't be changed.</p>
+              <p style="font-size:13px;opacity:0.6">If you didn't request this, you can safely ignore this email.</p>
               <hr style="border-color:rgba(255,255,255,0.1);margin:24px 0">
               <p style="font-size:12px;opacity:0.4;text-align:center">OtakuShelf · Your Anime Universe</p>
             </div>
@@ -747,42 +742,39 @@ app.post("/auth/forgot-password", authLimiter, async (req, res) => {
       user.passwordResetToken = null;
       user.passwordResetExpires = null;
       await user.save();
-      console.error('Failed to send password reset email:', emailErr);
-      return res.status(500).json({ message: "Failed to send reset email. Please try again." });
+      console.error('Failed to send OTP email:', emailErr);
+      return res.status(500).json({ message: "Failed to send code. Please try again." });
     }
 
-    res.json({ message: "If that email exists, a reset link has been sent." });
+    res.json({ message: "A verification code has been sent to your email." });
   } catch (err) {
     console.error('Forgot password error:', err);
-    res.status(500).json({ message: "Failed to send reset email. Please try again." });
+    res.status(500).json({ message: "Failed to send code. Please try again." });
   }
 });
 
 // ─── Reset Password ─────────────────────────────────────────────────────────
-// Route 10: POST /auth/reset-password — Reset password with token
+// Route 10: POST /auth/reset-password — Reset password with OTP
 app.post("/auth/reset-password", async (req, res) => {
   try {
-    const { token, email, newPassword } = req.body;
+    const { email, otp, newPassword } = req.body;
 
-    if (!token || !email || !newPassword) {
-      return res.status(400).json({ message: "Token, email, and new password are required" });
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "Email, code, and new password are required" });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 characters" });
     }
 
-    const crypto = await import('crypto');
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-
     const user = await User.findOne({
       email: email.toLowerCase().trim(),
-      passwordResetToken: hashedToken,
-      passwordResetExpires: { $gt: new Date() }, // Must not be expired
+      passwordResetToken: otp,
+      passwordResetExpires: { $gt: new Date() },
     });
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid or expired reset token. Please request a new one." });
+      return res.status(400).json({ message: "Invalid or expired verification code. Please request a new one." });
     }
 
     user.password = await bcrypt.hash(newPassword, 12);
