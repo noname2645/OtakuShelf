@@ -2,6 +2,7 @@
 import express from 'express';
 import axios from 'axios';
 import { success, error } from '../utils/responseHandler.js';
+import { get, set } from '../utils/cacheService.js';
 
 const router = express.Router();
 
@@ -356,6 +357,9 @@ router.get("/hero-trailers", async (req, res) => {
 
 // Route 2: GET /api/anilist/hero-trailers/debug — Cache debug info
 router.get("/hero-trailers/debug", (req, res) => {
+  const cached = get('hero:debug');
+  if (cached) return success(res, "Hero cache debug info fetched successfully", cached);
+
   const now = Date.now();
   const debugData = {
     hasData: !!heroCache.data,
@@ -370,6 +374,7 @@ router.get("/hero-trailers/debug", (req, res) => {
       upcoming:   heroCache.data.filter(a => a._era === 'upcoming').length,
     } : null
   };
+  set('hero:debug', debugData, 30000);
   return success(res, "Hero cache debug info fetched successfully", debugData);
 });
 

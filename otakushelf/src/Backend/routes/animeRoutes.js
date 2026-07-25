@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { success, error } from '../utils/responseHandler.js';
+import { get, set } from '../utils/cacheService.js';
 
 const router = express.Router();
 
@@ -258,6 +259,10 @@ router.get('/search', async (req, res) => {
 
   if (!q) return error(res, "Missing search query", 400);
 
+  const cacheKey = `search:${q.toLowerCase().trim()}:${limit}`;
+  const cached = get(cacheKey);
+  if (cached) return success(res, "Search results fetched from cache", cached);
+
   try {
     const query = `
       query ($search: String, $perPage: Int) {
@@ -342,6 +347,7 @@ router.get('/search', async (req, res) => {
         trailer: processTrailer(anime.trailer)
       }));
 
+    set(cacheKey, safeResults, 300000);
     return success(res, "Search results fetched successfully", safeResults);
   } catch (err) {
     console.error("AniList search error:", err.response?.data || err.message);
@@ -352,6 +358,9 @@ router.get('/search', async (req, res) => {
 // Route 3: GET /api/anime/anime/:id — Get single anime details
 router.get('/anime/:id', async (req, res) => {
   const { id } = req.params;
+  const cacheKey = `anime:${id}`;
+  const cached = get(cacheKey);
+  if (cached) return success(res, "Anime details fetched from cache", cached);
 
   try {
     const query = `
@@ -477,6 +486,7 @@ router.get('/anime/:id', async (req, res) => {
       trailer: processTrailer(data.Media.trailer)
     };
 
+    set(cacheKey, processedAnime, 3600000);
     return success(res, "Anime details fetched successfully", processedAnime);
   } catch (err) {
     console.error("AniList single anime error:", err.response?.data || err.message);

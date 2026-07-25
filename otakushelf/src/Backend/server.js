@@ -22,6 +22,7 @@ import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import { OAuth2Client } from 'google-auth-library';
 import { success, error } from './utils/responseHandler.js';
+import { get, set, del, delPattern } from './utils/cacheService.js';
 import { authenticateToken, authorizeUser } from './utils/authMiddleware.js';
 import evaluateBadges from './utils/badgeEngine.js';
 import BADGES from './utils/badgeDefinitions.js';
@@ -229,11 +230,20 @@ import AnimeList from './models/AnimeList.js';
 // ─── Auth Routes ────────────────────────────────────────────────────────────
 
 // Route 1: GET /healthz — Health check
-app.get('/healthz', (req, res) => res.sendSuccess('System is healthy', 'ok'));
+app.get('/healthz', (req, res) => {
+  const cached = get('healthz');
+  if (cached) return res.sendSuccess('System is healthy', cached);
+  set('healthz', 'ok', 10000);
+  res.sendSuccess('System is healthy', 'ok');
+});
 
 // Route 2: GET /api/ping — Connectivity test
 app.get('/api/ping', (req, res) => {
-  res.sendSuccess('Server is awake', { status: 'awake', timestamp: Date.now(), uptime: process.uptime() });
+  const cached = get('ping');
+  if (cached) return res.sendSuccess('Server is awake', cached);
+  const data = { status: 'awake', timestamp: Date.now(), uptime: process.uptime() };
+  set('ping', data, 10000);
+  res.sendSuccess('Server is awake', data);
 });
 
 // Helper: issue tokens for a user
@@ -495,7 +505,12 @@ app.post("/auth/refresh", async (req, res) => {
 
 // Route 7: GET /auth/me — Get current authenticated user
 app.get("/auth/me", authenticateToken, (req, res) => {
-  res.sendSuccess("User authenticated", { user: sanitizeUser(req.fullUser) });
+  const cacheKey = `auth:me:${req.user.id}`;
+  const cached = get(cacheKey);
+  if (cached) return res.sendSuccess("User authenticated", cached);
+  const data = { user: sanitizeUser(req.fullUser) };
+  set(cacheKey, data, 30000);
+  res.sendSuccess("User authenticated", data);
 });
 
 // Route 8: GET /auth/logout — Invalidate refresh token
@@ -737,6 +752,8 @@ app.post("/api/profile/:userId/upload-photo", authenticateToken, authorizeUser, 
       { new: true, select: '-password' }
     );
 
+    del(`profile:${userId}`);
+    del(`auth:me:${userId}`);
     res.sendSuccess("Photo uploaded successfully", {
       photo: photoUrl,
       user: updatedUser
@@ -781,6 +798,7 @@ app.post("/api/profile/:userId/upload-cover", authenticateToken, authorizeUser, 
       { new: true, select: '-password' }
     );
 
+    del(`profile:${userId}`);
     res.sendSuccess("Cover image uploaded successfully", {
       coverImage: coverUrl,
       user: updatedUser
@@ -794,9 +812,12 @@ app.post("/api/profile/:userId/upload-cover", authenticateToken, authorizeUser, 
 
 // Route 13: GET /api/profile/:userId — Get user profile
 app.get("/api/profile/:userId", authenticateToken, authorizeUser, async (req, res) => {
-  try {
-    const { userId } = req.params;
+  const { userId } = req.params;
+  const cacheKey = `profile:${userId}`;
+  const cached = get(cacheKey);
+  if (cached) return res.sendSuccess("Profile fetched successfully", cached);
 
+  try {
     if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
       return res.status(400).json({ message: "Invalid user ID format" });
     }
@@ -891,6 +912,7 @@ app.get("/api/profile/:userId", authenticateToken, authorizeUser, async (req, re
       watchlist: animeList?.planned?.slice(0, 10) || []
     };
 
+    set(cacheKey, profileData, 30000);
     res.sendSuccess("Profile fetched successfully", profileData);
   } catch (err) {
     console.error('Profile fetch error:', err);
@@ -941,6 +963,7 @@ app.put("/api/profile/:userId", authenticateToken, authorizeUser, async (req, re
       { new: true, select: '-password' }
     );
 
+    del(`profile:${userId}`);
     res.sendSuccess("Profile updated successfully", updatedUser);
   } catch (err) {
     console.error('Profile update error:', err);
@@ -950,10 +973,16 @@ app.put("/api/profile/:userId", authenticateToken, authorizeUser, async (req, re
 
 // Route 15: GET /api/settings/:userId — Get user settings
 app.get("/api/settings/:userId", authenticateToken, authorizeUser, async (req, res) => {
+  const cacheKey = `settings:${req.params.userId}`;
+  const cached = get(cacheKey);
+  if (cached) return res.sendSuccess("Settings retrieved", cached);
+
   try {
     const user = await User.findById(req.params.userId).select('settings');
     if (!user) return res.sendError("User not found", 404);
-    res.sendSuccess("Settings retrieved", user.settings || {});
+    const data = user.settings || {};
+    set(cacheKey, data, 60000);
+    res.sendSuccess("Settings retrieved", data);
   } catch (err) {
     console.error('Get settings error:', err);
     res.sendError("Error retrieving settings", 500, err.message);
@@ -988,6 +1017,7 @@ app.put("/api/settings/:userId", authenticateToken, authorizeUser, async (req, r
       { new: true, select: 'settings' }
     );
 
+    del(`settings:${req.params.userId}`);
     res.sendSuccess("Settings updated", updatedUser.settings);
   } catch (err) {
     console.error('Update settings error:', err);
@@ -1313,6 +1343,7 @@ app.post("/api/list/:userId", authenticateToken, authorizeUser, async (req, res)
 
     list[category].push(animeEntry);
     await list.save();
+    del(`list:${userId}`);
     res.sendSuccess("Anime list updated", list);
 
     // 🏅 Fire-and-forget badge evaluation after adding anime
@@ -1609,6 +1640,9 @@ app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, r
         // 🏅 Award the mal_importer badge + re-evaluate all badges after import
         try { await evaluateBadges(userId, true); } catch { /* non-critical */ }
 
+        del(`list:${userId}`);
+        delPattern(`profile:${userId}`);
+
         const finalMsg = `Imported ${imported} anime (W:${categoryCounts.watching} C:${categoryCounts.completed} P:${categoryCounts.planned} D:${categoryCounts.dropped})${skipped ? `, skipped ${skipped} duplicates` : ''}`;
         sendProgress(malAnimeList.length, malAnimeList.length, finalMsg, { completed: true });
 
@@ -1625,9 +1659,12 @@ app.post('/api/list/import/mal', authenticateToken, authorizeUser, async (req, r
 
 // Route 17: GET /api/list/:userId — Get user's anime list
 app.get("/api/list/:userId", authenticateToken, authorizeUser, async (req, res) => {
-  try {
-    const userId = req.params.userId;
+  const userId = req.params.userId;
+  const cacheKey = `list:${userId}`;
+  const cached = get(cacheKey);
+  if (cached) return res.sendSuccess("Anime list fetched successfully", cached);
 
+  try {
     if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
       return res.status(400).json({ message: "Invalid user ID format" });
     }
@@ -1650,6 +1687,7 @@ app.get("/api/list/:userId", authenticateToken, authorizeUser, async (req, res) 
     if (!Array.isArray(list.planned)) list.planned = [];
     if (!Array.isArray(list.dropped)) list.dropped = [];
 
+    set(cacheKey, list, 30000);
     res.sendSuccess("Anime list fetched successfully", list);
   } catch (err) {
     console.error('Fetch list error:', err);
@@ -1757,6 +1795,10 @@ async function getFavoriteAnime(userId, limit = 4) {
 
 // Route 18: GET /api/profile/:userId/badges — Get user badges
 app.get("/api/profile/:userId/badges", authenticateToken, authorizeUser, async (req, res) => {
+  const cacheKey = `badges:${req.params.userId}`;
+  const cached = get(cacheKey);
+  if (cached) return res.sendSuccess("Badges fetched successfully", cached);
+
   try {
     const { userId } = req.params;
     const animeList = await AnimeList.findOne({ userId });
@@ -1782,6 +1824,7 @@ app.get("/api/profile/:userId/badges", authenticateToken, authorizeUser, async (
       });
     }
 
+    set(cacheKey, badges, 60000);
     res.sendSuccess("Badges fetched successfully", badges);
   } catch (err) {
     console.error('Old badges fetch error:', err);
@@ -1801,6 +1844,7 @@ app.post("/api/badges/evaluate/:userId", authenticateToken, authorizeUser, async
     }
 
     const result = await evaluateBadges(userId);
+    del(`badges:${userId}`);
     res.sendSuccess(
       result.newBadges.length > 0
         ? `Awarded ${result.newBadges.length} new badge(s)!`
@@ -1819,10 +1863,14 @@ app.post("/api/badges/evaluate/:userId", authenticateToken, authorizeUser, async
 // Route: GET /api/badges/all — Return all 100 badge definitions (for locked badge UI)
 // No auth required — definitions are public data.
 app.get("/api/badges/all", (req, res) => {
+  const cached = get('badges:all');
+  if (cached) return res.sendSuccess("All badge definitions", cached);
   const definitions = BADGES.map(({ id, title, description, icon, rarity, category }) => ({
     id, title, description, icon, rarity, category,
   }));
-  res.sendSuccess("All badge definitions", { badges: definitions, total: definitions.length });
+  const data = { badges: definitions, total: definitions.length };
+  set('badges:all', data, 3600000);
+  res.sendSuccess("All badge definitions", data);
 });
 
 // Route: POST /api/list/favorite/:userId — Toggle anime favorite status
@@ -1856,6 +1904,7 @@ app.post("/api/list/favorite/:userId", authenticateToken, authorizeUser, async (
     }
     
     await list.save();
+    del(`list:${userId}`);
     res.sendSuccess("Favorite toggled successfully", { isFavorite });
   } catch (err) {
     res.sendError("Failed to toggle favorite", 500, err);
@@ -1906,6 +1955,7 @@ app.put("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async (r
     }
 
     await list.save();
+    del(`list:${userId}`);
     res.sendSuccess("Anime updated successfully", list);
 
     // 🏅 Fire-and-forget badge evaluation after updating anime
@@ -1940,6 +1990,7 @@ app.delete("/api/list/:userId/:animeId", authenticateToken, authorizeUser, async
     }
 
     await list.save();
+    del(`list:${req.params.userId}`);
     res.sendSuccess("Anime removed successfully", list);
   } catch (err) {
     console.error('Remove anime error:', err);
@@ -2042,6 +2093,7 @@ app.post("/api/list/:userId/backfill-genres", authenticateToken, authorizeUser, 
     await animeList.save();
     console.log(`Backfill complete! Updated: ${updated}, Failed: ${failed}`);
 
+    del(`list:${userId}`);
     res.sendSuccess(`Updated genres for ${updated} anime (${failed} failed)`, {
       updated,
       failed
@@ -2116,6 +2168,9 @@ setInterval(cleanupOldUploads, 24 * 60 * 60 * 1000);
 // Health Check Endpoint
 // Route 22: GET /health — WebSocket health check
 app.get('/health', async (req, res) => {
+  const cached = get('health');
+  if (cached) return res.sendSuccess("Health check passed", cached);
+
   const health = {
     uptime: process.uptime(),
     timestamp: Date.now(),
@@ -2131,6 +2186,7 @@ app.get('/health', async (req, res) => {
   try {
     await mongoose.connection.db.admin().ping();
     health.checks.database = 'connected';
+    set('health', health, 10000);
     res.sendSuccess("Health check passed", health);
   } catch (error) {
     health.status = 'ERROR';
