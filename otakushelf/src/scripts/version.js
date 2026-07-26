@@ -20,7 +20,7 @@ const ROOT = resolve(__dirname, '..');
 // ── Paths ──────────────────────────────────────────────────────────
 const VERSION_FILE     = resolve(ROOT, 'VERSION');
 const FRONTEND_PKG     = resolve(ROOT, 'Frontend', 'package.json');
-const BACKEND_PKG      = resolve(ROOT, 'Backend',  'package.json');
+const WORKERS_PKG      = resolve(ROOT, '..', 'workers',  'package.json');
 
 // ── Helpers ────────────────────────────────────────────────────────
 const readVersion = () => readFileSync(VERSION_FILE, 'utf8').trim();
@@ -56,9 +56,9 @@ const next = bump(current, arg);
 
 writeVersion(next);
 bumpPkg(FRONTEND_PKG, next);
-bumpPkg(BACKEND_PKG,  next);
+bumpPkg(WORKERS_PKG,  next);
 
 console.log(`\n  ✅  OtakuShelf bumped: ${current} → ${next}\n`);
 console.log(`     VERSION          updated`);
 console.log(`     Frontend/package.json updated`);
-console.log(`     Backend/package.json  updated\n`);
+console.log(`     Workers/package.json  updated\n`);

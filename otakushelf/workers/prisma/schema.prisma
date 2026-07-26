@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String    @id @default(auto()) @map("_id") @db.ObjectId
+  email                  String    @unique
+  providers              Json      @default("[]")
+  photo                  String?
+  name                   String?
+  emailVerified          Boolean   @default(false)
+  emailVerificationToken String?
+  refreshTokenHash       String?
+  profile                Json      @default("{}")
+  settings               Json      @default("{}")
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
+  securityOtp            String?
+  securityOtpExpires     DateTime?
+  securityAction         String?
+  isMfaEnabled           Boolean   @default(false)
+  mfaSecret              String?
+  tempMfaSecret          String?
+  createdAt              DateTime  @default(now())
+}
+
+model AnimeList {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String @unique @map("userId") @db.ObjectId
+  watching  Json   @default("[]")
+  completed Json   @default("[]")
+  planned   Json   @default("[]")
+  dropped   Json   @default("[]")
+  favorites Json   @default("[]")
+}

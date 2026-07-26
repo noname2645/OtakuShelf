@@ -222,6 +222,7 @@ body.modal-open {
 /* Image Section */
 .modal-image-wrapper {
   flex-shrink: 0;
+  flex-grow: 0;
   align-self: flex-start;
   position: relative;
   width: min(390px, 100%);
@@ -234,6 +235,7 @@ body.modal-open {
   flex-direction: column;
   gap: 18px;
   min-height: 0;
+  height: 100%;
 }
 
 .modal-info .tab-content {
@@ -326,16 +328,6 @@ body.modal-open {
   color: rgba(255, 255, 255, 0.8);
   text-align: right;
   flex-shrink: 0;
-}
-
-/* Info Section */
-.modal-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-height: 0;
-  height: 100%;
 }
 
 /* Info Buttons (floating row under the title) */

@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "otakushelf-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "EMAIL_FROM": "noreply@otakushelf.com",
+    "FRONTEND_URL": "https://otakushelf.pages.dev"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "3491998255c540ac87a6aa91149ca13a",
+      "preview_id": "3491998255c540ac87a6aa91149ca13a"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "USER_CONNECTIONS",
+        "class_name": "UserConnection"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["UserConnection"]
+    }
+  ],
+  "triggers": {
+    "crons": ["0 3 * * *"]
+  }
+}

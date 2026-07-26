@@ -1,0 +1,26 @@
+{
+  "name": "otakushelf-api",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "logs": "wrangler tail"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "@prisma/extension-accelerate": "^1.3.0",
+    "hono": "^4.7.0",
+    "jose": "^6.0.0",
+    "prisma": "^6.19.3",
+    "qrcode": "^1.5.4",
+    "speakeasy": "^2.0.0",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250725.0",
+    "wrangler": "^3.100.0"
+  }
+}

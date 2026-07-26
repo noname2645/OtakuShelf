@@ -133,13 +133,20 @@ export const AuthProvider = ({ children }) => {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("accessToken") || params.get("token");
     const refreshToken = params.get("refreshToken");
+    const errorParam = params.get("error");
+
+    if (errorParam) {
+      window.location.href = '/login?error=google_auth_failed';
+      return false;
+    }
 
     if (!accessToken) return false;
 
     console.log('Processing OAuth token from URL...');
     localStorage.setItem("accessToken", accessToken);
     if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-    window.history.replaceState({}, document.title, window.location.pathname);
+    // Navigate away from /auth/callback immediately (no React route for it)
+    window.location.href = '/';
 
     try {
       const response = await createApiCall(
