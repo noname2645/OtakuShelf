@@ -5,19 +5,57 @@ import { Header } from "../components/header";
 import BottomNavBar from "../components/bottom.jsx";
 import { useAuth } from "../components/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
-import BellIcon from "../images/bell.png";
-import PaletteIcon from "../images/color-palette.png";
-import DatabaseIcon from "../images/database-management.png";
-import ProfileIcon from "../images/profile.png";
-import SecurityIcon from "../images/security.png";
-import ArrowIcon from "../images/arrow.png";
+const ArrowIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+    <path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 const TABS = [
-  { id: "security", label: "Security & Login", icon: SecurityIcon },
-  { id: "preferences", label: "App Preferences", icon: PaletteIcon },
-  { id: "profile", label: "Profile", icon: ProfileIcon },
-  { id: "data", label: "Data & Privacy", icon: DatabaseIcon },
-  { id: "notifications", label: "Notifications", icon: BellIcon },
+  {
+    id: "security", label: "Security & Login",
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L3 7V12C3 17.25 6.75 22.5 12 24C17.25 22.5 21 17.25 21 12V7L12 2Z" fill="currentColor" opacity="0.15"/>
+      <path d="M12 2L3 7V12C3 17.25 6.75 22.5 12 24C17.25 22.5 21 17.25 21 12V7L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  },
+  {
+    id: "preferences", label: "App Preferences",
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.15"/>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M19.4 15C19.2 15.4 19.2 15.8 19.4 16.2L19.5 16.5C19.7 16.9 19.7 17.3 19.5 17.7L18.7 19.4C18.5 19.8 18.1 20 17.7 19.9L17.1 19.7C16.7 19.5 16.2 19.6 15.9 19.9C15.5 20.2 15.4 20.6 15.4 21V22C15.4 22.4 15.1 22.7 14.7 22.8H13.2C12.8 22.8 12.5 22.5 12.4 22.1V21.2C12.3 20.8 12 20.4 11.7 20.2C11.3 19.9 10.9 19.9 10.5 20L9.9 20.2C9.5 20.3 9.1 20.1 9 19.7L8.2 18C8 17.6 8.1 17.1 8.4 16.9L8.7 16.7C9 16.4 9.2 16 9.1 15.6C9 15.2 8.8 14.9 8.5 14.7C8.2 14.5 7.8 14.4 7.4 14.5L6.8 14.6C6.4 14.7 6 14.5 5.8 14.1L5 12.4C4.8 12 5 11.6 5.4 11.4L5.9 11.2C6.3 11 6.5 10.6 6.5 10.2C6.5 9.8 6.3 9.4 6 9.2L5.5 8.9C5.1 8.7 5 8.3 5.1 7.9L6 6.2C6.2 5.8 6.6 5.6 7 5.7L7.6 5.9C8 6 8.4 5.9 8.7 5.6C9 5.3 9.2 4.8 9.1 4.4V3.6C9.1 3.2 9.4 2.8 9.8 2.7H11.3C11.7 2.7 12 3 12.1 3.4V4.3C12.2 4.7 12.5 5.1 12.8 5.3C13.1 5.5 13.6 5.6 14 5.5L14.5 5.3C14.9 5.2 15.3 5.3 15.5 5.7L16.3 7.4C16.5 7.8 16.3 8.2 15.9 8.4L15.4 8.6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  },
+  {
+    id: "profile", label: "Profile",
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="8" r="4" fill="currentColor" opacity="0.15"/>
+      <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M4 21V19C4 16.8 5.8 15 8 15H16C18.2 15 20 16.8 20 19V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M4 21V19C4 16.8 5.8 15 8 15H16C18.2 15 20 16.8 20 19V21" fill="currentColor" opacity="0.1"/>
+    </svg>
+  },
+  {
+    id: "data", label: "Data & Privacy",
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="4" width="16" height="6" rx="2" fill="currentColor" opacity="0.15"/>
+      <rect x="4" y="4" width="16" height="6" rx="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <rect x="4" y="14" width="16" height="6" rx="2" fill="currentColor" opacity="0.15"/>
+      <rect x="4" y="14" width="16" height="6" rx="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M8 7H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M8 17H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  },
+  {
+    id: "notifications", label: "Notifications",
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 8C18 6.4 17.4 4.9 16.2 3.8C15 2.6 13.5 2 12 2C10.5 2 9 2.6 7.8 3.8C6.6 4.9 6 6.4 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" fill="currentColor" opacity="0.15"/>
+      <path d="M18 8C18 6.4 17.4 4.9 16.2 3.8C15 2.6 13.5 2 12 2C10.5 2 9 2.6 7.8 3.8C6.6 4.9 6 6.4 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M13.7 20C13.5 20.3 13.3 20.5 13 20.7C12.7 20.9 12.4 21 12 21C11.6 21 11.3 20.9 11 20.7C10.7 20.5 10.5 20.3 10.3 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  },
 ];
 
 const ACCENT_COLORS = [
@@ -438,12 +476,7 @@ const SettingsPage = ({ isModal = false }) => {
               disabled={saving}
             >
               {saving ? "Changing..." : "Update Password"}
-              <img
-                src={ArrowIcon}
-                alt=""
-                className="btn-arrow"
-                aria-hidden="true"
-              />
+              <ArrowIcon />
             </button>
           </form>
         )}
@@ -501,12 +534,7 @@ const SettingsPage = ({ isModal = false }) => {
                       disabled={saving}
                     >
                       {saving ? "Setting up..." : "Setup Authenticator App"}
-                      <img
-                        src={ArrowIcon}
-                        alt=""
-                        className="btn-arrow"
-                        aria-hidden="true"
-                      />
+                      <ArrowIcon />
                     </button>
                   </div>
                 ) : (
@@ -595,12 +623,7 @@ const SettingsPage = ({ isModal = false }) => {
                           disabled={saving || mfaTokenInput.length !== 6}
                         >
                           Verify & Enable
-                          <img
-                            src={ArrowIcon}
-                            alt=""
-                            className="btn-arrow"
-                            aria-hidden="true"
-                          />
+                          <ArrowIcon />
                         </button>
                         <button
                           className="settings-btn-ghost"
@@ -760,12 +783,7 @@ const SettingsPage = ({ isModal = false }) => {
                     {actionLoading
                       ? "Sending code..."
                       : "Send Verification Code"}
-                    <img
-                      src={ArrowIcon}
-                      alt=""
-                      className="btn-arrow"
-                      aria-hidden="true"
-                    />
+                    <ArrowIcon />
                   </button>
                   <button
                     className="settings-btn-ghost"
@@ -856,12 +874,7 @@ const SettingsPage = ({ isModal = false }) => {
                     {actionLoading
                       ? "Sending code..."
                       : "Send Verification Code"}
-                    <img
-                      src={ArrowIcon}
-                      alt=""
-                      className="btn-arrow"
-                      aria-hidden="true"
-                    />
+                    <ArrowIcon />
                   </button>
                   <button
                     className="settings-btn-ghost"
@@ -1144,12 +1157,7 @@ const SettingsPage = ({ isModal = false }) => {
         </p>
         <button className="settings-btn-primary" onClick={handleExportData}>
           📦 Download My Data
-          <img
-            src={ArrowIcon}
-            alt=""
-            className="btn-arrow"
-            aria-hidden="true"
-          />
+          <ArrowIcon />
         </button>
       </div>
     </div>
@@ -1245,11 +1253,7 @@ const SettingsPage = ({ isModal = false }) => {
                   className={`settings-nav-item ${activeTab === tab.id ? "active" : ""}`}
                   onClick={() => setActiveTab(tab.id)}
                 >
-                  <img
-                    src={tab.icon}
-                    alt={tab.label}
-                    className="nav-icon-img"
-                  />
+                  <span className="nav-icon-img">{tab.icon}</span>
                   <span className="nav-label2">{tab.label}</span>
                   {activeTab === tab.id && <span className="nav-indicator" />}
                 </button>

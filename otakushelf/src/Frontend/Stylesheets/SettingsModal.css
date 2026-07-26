@@ -1,9 +1,10 @@
 .smodal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 110000 !important;
+  z-index: 110000;
   background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,27 +15,49 @@
 .smodal-panel {
   position: relative;
   width: min(95vw, 1100px);
-  max-width: min(95vw, 1100px);
   height: min(88dvh, 900px);
-  max-height: calc(100dvh - 2rem);
-  background: #0d0f1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  background: linear-gradient(160deg, #080a16 0%, #0e1028 100%);
+  border-radius: 24px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
-  animation: smodal-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 115, 0, 0.12);
+  animation: smodal-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   font-family: 'Outfit', sans-serif;
+}
+
+.smodal-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 115, 0, 0.25), transparent 40%, rgba(255, 115, 0, 0.05));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.smodal-panel::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at 30% 20%, rgba(255, 115, 0, 0.03) 0%, transparent 60%);
+  pointer-events: none;
 }
 
 @keyframes smodal-in {
   from {
     opacity: 0;
-    transform: scale(0.96) translateY(20px);
+    transform: scale(0.95) translateY(24px);
   }
-
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -43,44 +66,28 @@
 
 .smodal-close {
   position: absolute;
-  top: 14px;
-  right: 18px;
+  top: 18px;
+  right: 22px;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 50%;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.5);
   width: 36px;
   height: 36px;
-  font-size: 16px;
+  font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, transform 0.2s;
+  transition: all 0.3s ease;
 }
 
 .smodal-close:hover {
-  background: rgba(255, 107, 107, 0.25);
-  border-color: rgba(255, 107, 107, 0.4);
-  transform: rotate(90deg);
-}
-
-/* Ensure the settings modal close inherits unified responsive style */
-.smodal-close {
-  background: rgba(0,0,0,0.6) !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
-  color: #fff !important;
-}
-
-@media (max-width:480px) {
-  .smodal-close {
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 16px !important;
-    top: 12px !important;
-    right: 12px !important;
-  }
+  background: rgba(255, 115, 0, 0.12);
+  border-color: rgba(255, 115, 0, 0.25);
+  color: #ff7300;
+  transform: rotate(90deg) scale(1.05);
 }
 
 .smodal-inner {
@@ -90,13 +97,11 @@
   overflow: hidden;
 }
 
-/* Hide Header and BottomNavBar when rendered inside modal */
 .smodal-inner .header,
 .smodal-inner .bottom-button-bar-wrapper {
   display: none !important;
 }
 
-/* Custom layout overrides inside the modal */
 .smodal-inner .settings-page {
   height: 100%;
   display: flex;
@@ -106,7 +111,7 @@
 }
 
 .smodal-inner .settings-container {
-  padding: 30px 24px 30px;
+  padding: 32px 28px 24px;
   height: 100%;
   box-sizing: border-box;
   display: flex;
@@ -114,43 +119,56 @@
   overflow: hidden;
 }
 
-/* Mobile responsive styles */
 @media (max-width: 768px) {
   .smodal-overlay {
-    align-items: flex-end !important;
-    padding: 0 !important;
+    align-items: flex-end;
+    padding: 0;
+    backdrop-filter: blur(8px);
   }
-  
+
   .smodal-panel {
-    width: 100% !important;
-    height: 92vh !important;
-    max-height: 92vh !important;
-    border-radius: 24px 24px 0 0 !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-bottom: none !important;
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5) !important;
+    width: 100%;
+    height: 92vh;
+    max-height: 92vh;
+    border-radius: 24px 24px 0 0;
+    border: none;
+    border-top: 1px solid rgba(255, 115, 0, 0.15);
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
+    animation: smodal-in-mobile 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .smodal-panel::before {
+    display: none;
   }
 
   .smodal-close {
-    top: 12px !important;
-    right: 12px !important;
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 14px !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
 
-  /* Override general settings page layout when in modal */
   .smodal-inner .settings-page {
-    height: 100% !important;
-    overflow: hidden !important;
+    height: 100%;
+    overflow: hidden;
   }
 
   .smodal-inner .settings-container {
-    padding: 20px 16px 40px !important;
-    height: 100% !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    padding: 20px 16px 40px;
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@keyframes smodal-in-mobile {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

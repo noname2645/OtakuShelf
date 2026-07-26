@@ -76,12 +76,15 @@ export function addProvider(user, type, data = {}) {
 }
 
 export function sanitizeUser(user) {
+  const providers = user.providers?.map(p => ({ type: p.type })) || []
+  const authType = providers.some(p => p.type === 'google') ? 'google' : 'local'
   return {
     _id: user._id,
     email: user.email,
     photo: user.photo || null,
     name: user.name || null,
-    providers: user.providers?.map(p => ({ type: p.type })) || [],
+    providers,
+    authType,
     isMfaEnabled: user.isMfaEnabled || false,
     emailVerified: user.emailVerified || false,
   }

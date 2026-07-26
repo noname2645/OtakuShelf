@@ -64,11 +64,6 @@ const PageLoader = ({ onFinish }) => {
 
             {/* Center logo (Without Kanji) */}
             <div className="loader-center">
-                <div className="loader-brand">
-                    <span className="brand-otaku">OTAKU</span>
-                    <span className="brand-shelf">SHELF</span>
-                </div>
-                <div className="loader-tagline">{tagline}<span className="cursor-blink">|</span></div>
                 {/* Torii gate silhouette */}
                 <svg className="torii-icon" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <rect x="0" y="12" width="120" height="6" rx="3" fill="currentColor" opacity="0.9"/>
@@ -78,6 +73,11 @@ const PageLoader = ({ onFinish }) => {
                     <rect x="10" y="8" width="8" height="20" rx="2" fill="currentColor" opacity="0.6"/>
                     <rect x="102" y="8" width="8" height="20" rx="2" fill="currentColor" opacity="0.6"/>
                 </svg>
+                <div className="loader-brand">
+                    <span className="brand-otaku">OTAKU</span>
+                    <span className="brand-shelf">SHELF</span>
+                </div>
+                <div className="loader-tagline">{tagline}</div>
             </div>
         </div>
     );
