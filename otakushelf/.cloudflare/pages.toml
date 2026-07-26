@@ -1,4 +1,0 @@
-[build]
-root = "src/Frontend"
-command = "npm run build"
-output = "dist"
