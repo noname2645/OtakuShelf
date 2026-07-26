@@ -48,7 +48,8 @@ router.post('/register', async (c) => {
     createdAt: new Date(),
   })
 
-  const verificationLink = `${c.req.header('origin') || env.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${normalizedEmail}`
+  const workerUrl = new URL(c.req.url).origin
+  const verificationLink = `${workerUrl}/auth/verify-email?token=${verificationToken}&email=${normalizedEmail}`
   const html = buildEmailHtml('Welcome to OtakuShelf', `
     <p>Thank you for joining OtakuShelf!</p>
     <p style="margin:20px 0">Please verify your email address to unlock all features:</p>
@@ -261,10 +262,10 @@ router.get('/verify-email', async (c) => {
   if (!token || !email) return error(c, 'Token and email are required', 400)
 
   const user = await users.findByEmailAndVerificationToken(email, token)
-  if (!user) return c.redirect(`${env.FRONTEND_URL}/verify-email?error=invalid`)
+  if (!user) return c.redirect(`${env.FRONTEND_URL}/login?error=invalid_verification`)
 
   await db.updateOne('users', { _id: db.oid(user._id) }, { $set: { emailVerified: true, emailVerificationToken: null } })
-  return c.redirect(`${env.FRONTEND_URL}/verify-email?success=true`)
+  return c.redirect(`${env.FRONTEND_URL}/login?verified=true`)
 })
 
 // ── POST /auth/forgot-password ───────────────────────────────────────────────
