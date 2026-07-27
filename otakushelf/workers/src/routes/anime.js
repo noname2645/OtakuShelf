@@ -18,7 +18,7 @@ async function fetchAniList(query, variables = {}) {
   return (await res.json()).data
 }
 
-const GENRE_FILTERS = ['Hentai', 'Ecchi']
+const GENRE_FILTERS = ['Hentai']
 
 function filterAdult(mediaList) {
   return (mediaList || []).filter(m => !m.genres?.some(g => GENRE_FILTERS.includes(g)))
@@ -27,45 +27,45 @@ function filterAdult(mediaList) {
 // ── GET /api/anime/anime-sections ────────────────────────────────────────────
 router.get('/anime-sections', async (c) => {
   const cache = c.env.CACHE
-  const cacheKey = 'anime-sections'
+  const cacheKey = 'anime-sections-v2'
   const cached = await cache?.get(cacheKey, 'json')
   if (cached) return success(c, 'Cached anime sections', cached)
 
   const queries = {
     topAiring: `
       query { Page(perPage: 10) {
-        media(status: RELEASING, sort: SCORE_DESC, type: ANIME) {
-          id title { romaji english } coverImage { extraLarge large medium } episodes nextAiringEpisode { episode airingAt } format status genres averageScore description
+        media(status: RELEASING, sort: SCORE_DESC, type: ANIME, isAdult: false) {
+          id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes nextAiringEpisode { episode airingAt } format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site }
         }
       }}`,
     trending: `
       query { Page(perPage: 10) {
-        media(sort: TRENDING_DESC, type: ANIME) {
-          id title { romaji english } coverImage { extraLarge large medium } episodes format status genres averageScore description
+        media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
+          id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site }
         }
       }}`,
     topRated: `
       query { Page(perPage: 10) {
-        media(sort: SCORE_DESC, type: ANIME) {
-          id title { romaji english } coverImage { extraLarge large medium } episodes format status genres averageScore description
+        media(sort: SCORE_DESC, type: ANIME, isAdult: false) {
+          id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site }
         }
       }}`,
     upcoming: `
       query { Page(perPage: 10) {
-        media(status: NOT_YET_RELEASED, sort: POPULARITY_DESC, type: ANIME) {
-          id title { romaji english } coverImage { extraLarge large medium } episodes format status genres averageScore description
+        media(status: NOT_YET_RELEASED, sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
+          id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site }
         }
       }}`,
     topMovies: `
       query { Page(perPage: 10) {
-        media(format: MOVIE, sort: POPULARITY_DESC, type: ANIME) {
-          id title { romaji english } coverImage { extraLarge large medium } episodes format status genres averageScore description
+        media(format: MOVIE, sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
+          id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site }
         }
       }}`,
     mostWatched: `
       query { Page(perPage: 10) {
-        media(sort: POPULARITY_DESC, type: ANIME) {
-          id title { romaji english } coverImage { extraLarge large medium } episodes format status genres averageScore description
+        media(sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
+          id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site }
         }
       }}`,
   }
@@ -102,7 +102,7 @@ router.get('/search', async (c) => {
     query ($search: String, $limit: Int) {
       Page(perPage: $limit) {
         media(search: $search, type: ANIME, isAdult: false) {
-          id title { romaji english } coverImage { extraLarge large medium } episodes format status genres averageScore description season seasonYear
+          id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description season seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site }
         }
       }
     }`
@@ -128,7 +128,7 @@ router.get('/anime/:id', async (c) => {
     query ($id: Int) {
       Media(id: $id, type: ANIME) {
         id title { romaji english native } description coverImage { extraLarge large medium } bannerImage
-        episodes duration format status season seasonYear genres averageScore popularity
+        episodes duration format status season seasonYear startDate { year month day } endDate { year month day } genres averageScore popularity
         studios(isMain: true) { nodes { name } }
         characters(sort: RELEVANCE, perPage: 10) { nodes { id name { full } image { medium } } }
         relations { nodes { id title { romaji } type format status coverImage { medium } } }

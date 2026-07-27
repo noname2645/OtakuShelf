@@ -60,7 +60,15 @@ export function createDb(env) {
 
     insertOne: async (collection, data) => {
       const m = model(prisma, collection)
-      const result = await m.create({ data })
+      const clean = {}
+      for (const [k, v] of Object.entries(data)) {
+        if (v && typeof v === 'object' && '$oid' in v) {
+          clean[k] = v.$oid
+        } else {
+          clean[k] = v
+        }
+      }
+      const result = await m.create({ data: clean })
       return { insertedId: result.id }
     },
 

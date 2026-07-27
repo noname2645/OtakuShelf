@@ -257,7 +257,8 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       const media = res.data.data?.Media;
       if (!media) return [];
 
-      return media.relations?.edges || [];
+      const edges = media.relations?.edges || [];
+      return edges.filter(e => !e.node?.isAdult);
     } catch (error) {
       return [];
     }

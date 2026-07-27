@@ -30,6 +30,7 @@ const ANIME_GENRES = [
   "Boys Love",
   "Comedy",
   "Drama",
+  "Ecchi",
   "Fantasy",
   "Girls Love",
   "Gourmet",
@@ -234,10 +235,10 @@ function AdvancedSearch() {
         format: "Unknown",
         status: "Unknown",
         genres: [],
-        startDate: "TBA",
-        endDate: "TBA",
-        season: "Unknown",
-        year: "Unknown",
+        startDate: null,
+        endDate: null,
+        season: null,
+        year: null,
         score: "N/A",
         averageScore: "N/A",
         source: "Unknown",
@@ -261,13 +262,8 @@ function AdvancedSearch() {
     }
 
     // Safely extract dates
-    const startDate = rawAnime.startDate ?
-      `${rawAnime.startDate.year || "?"}-${rawAnime.startDate.month || "?"}-${rawAnime.startDate.day || "?"}` :
-      "TBA";
-
-    const endDate = rawAnime.endDate ?
-      `${rawAnime.endDate.year || "?"}-${rawAnime.endDate.month || "?"}-${rawAnime.endDate.day || "?"}` :
-      "TBA";
+    const startDate = rawAnime.startDate || null;
+    const endDate = rawAnime.endDate || null;
 
     // Clean trailer data
     const trailer = rawAnime.trailer ? {
@@ -332,9 +328,9 @@ function AdvancedSearch() {
       startDate: startDate,
       endDate: endDate,
       season: rawAnime.season || "Unknown",
-      year: rawAnime.seasonYear || "Unknown",
+      year: rawAnime.seasonYear || null,
       score: rawAnime.averageScore ?? rawAnime.meanScore ?? "N/A",
-      seasonYear: rawAnime.seasonYear || "Unknown",
+      seasonYear: rawAnime.seasonYear || null,
       averageScore: rawAnime.averageScore ?? rawAnime.meanScore ?? "N/A",
       source: rawAnime.source || "Unknown",
       trailer: trailer,

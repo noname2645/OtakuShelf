@@ -2,14 +2,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Outfit:wght@100..900&display=swap");
 
-/* Prevent background scroll when modal is open */
 html.modal-open,
 body.modal-open {
   overflow: hidden !important;
-  overflow-y: hidden !important;
 }
 
-/* Modal Overlay - No blur on slow devices */
+/* ── OVERLAY ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -17,36 +15,20 @@ body.modal-open {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 100000 !important;
+  z-index: 100000;
   padding: 16px;
   overflow-y: auto;
-  animation: none;
-  /* Remove animation */
 }
 
-/* Add blur only for high-end devices */
 @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
   .modal-overlay {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     background: rgba(0, 0, 0, 0.7);
-    animation: overlayFadeIn 0.2s ease-out;
   }
 }
 
-.modal-background {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  filter: brightness(0.35);
-  z-index: 0;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-}
-
-/* Modal Content */
+/* ── MODAL CONTENT ── */
 .modal-content {
   display: flex;
   flex-direction: column;
@@ -61,52 +43,53 @@ body.modal-open {
   max-height: calc(100dvh - 2rem);
   padding: clamp(12px, 2vw, 20px);
   position: relative;
-  z-index: 100100 !important;
+  z-index: 100100;
   box-sizing: border-box;
-  animation: none;
-  /* Remove animation */
   overflow: hidden;
   transform: translateZ(0);
-  /* Hardware acceleration */
-  contain: layout style paint;
-  /* Performance optimization */
 }
 
-/* Add simple animation only for high-end devices */
 @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
   .modal-content {
-    background: linear-gradient(
-      145deg,
-      rgba(17, 17, 27, 0.98) 0%,
-      rgba(25, 25, 35, 0.95) 100%
-    );
+    background: linear-gradient(145deg, rgba(17, 17, 27, 0.98) 0%, rgba(25, 25, 35, 0.95) 100%);
     backdrop-filter: blur(20px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    animation: modalSlideUp 0.3s ease-out;
   }
 }
 
-/* Close Button */
+/* ── BANNER BACKGROUND ── */
+.modal-background {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.35);
+  z-index: 0;
+}
+
+/* ── CLOSE BUTTON ── */
 .modal-close {
   position: absolute;
-  right: 10px;
+  top: 12px;
+  right: 12px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: white;
   cursor: pointer;
-  z-index: 100;
+  z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0;
-  transition: none;
-  /* Remove transition */
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  padding: 0;
 }
 
-/* Add hover effect only for desktop */
 @media (min-width: 768px) {
   .modal-close:hover {
     background: rgba(255, 255, 255, 0.2);
@@ -114,66 +97,27 @@ body.modal-open {
   }
 }
 
-.close-icon {
-  font-size: 16px;
-  font-weight: bold;
-}
-
-/* Unified responsive close button (uses the mobile-friendly circular X) */
-.modal-close,
-.smodal-close,
-.modal-close-btn,
-.synopsis-modal-close {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 40px !important;
-  height: 40px !important;
-  border-radius: 999px !important;
-  background: rgba(0,0,0,0.6) !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
-  color: #fff !important;
-  font-size: 18px !important;
-  line-height: 1 !important;
-  padding: 0 !important;
-  cursor: pointer !important;
-}
-
-@media (max-width: 480px) {
-  .modal-close,
-  .smodal-close,
-  .modal-close-btn,
-  .synopsis-modal-close {
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 16px !important;
-    background: rgba(0,0,0,0.5) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-  }
-}
-
-/* Modal Title */
+/* ── TITLE ── */
 .modal-title {
   text-align: center;
   position: relative;
   z-index: 10;
-  min-height: 80px;
+  min-height: 60px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  padding: 4px 50px 8px;
+  flex-shrink: 0;
 }
 
 .modal-title h2 {
-  font-family: "Outfit", sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-weight: 650;
   margin: 0;
-  font-size: clamp(1.15rem, 2.2vw, 2.5rem);
+  font-size: clamp(1.1rem, 2vw, 2.2rem);
   color: #4facfe;
-  /* Solid color instead of gradient for performance */
-  letter-spacing: 2px;
-  line-height: 1.2;
-  max-height: 80px;
+  letter-spacing: 1px;
+  line-height: 1.25;
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -184,7 +128,6 @@ body.modal-open {
   hyphens: auto;
 }
 
-/* Add gradient only for high-end */
 @media (min-width: 1024px) {
   .modal-title h2 {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #ffffff 100%);
@@ -195,67 +138,41 @@ body.modal-open {
 }
 
 .modal-title h2.long-title {
-  font-size: 2.5rem;
-  line-height: 1.1;
+  font-size: clamp(1rem, 1.8vw, 2rem);
 }
 
 .modal-title h2.very-long-title {
-  font-size: 1.6rem;
-  line-height: 1;
+  font-size: clamp(0.9rem, 1.4vw, 1.5rem);
 }
 
-/* Modal Body */
+/* ── BODY ── */
 .modal-body {
   display: flex;
-  gap: 30px;
+  gap: 20px;
   flex: 1;
   position: relative;
   z-index: 10;
   min-height: 0;
-  height: calc(100% - 140px);
-  align-items: flex-start;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  padding-top: 4px;
 }
 
-/* Image Section */
+/* ── IMAGE SECTION ── */
 .modal-image-wrapper {
   flex-shrink: 0;
-  flex-grow: 0;
   align-self: flex-start;
   position: relative;
-  width: min(390px, 100%);
-  height: clamp(280px, 45dvh, 590px);
-}
-
-.modal-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-height: 0;
-  height: 100%;
-}
-
-.modal-info .tab-content {
-  flex: 1;
-  min-height: 0;
+  width: min(320px, 100%);
+  height: clamp(260px, 40dvh, 520px);
+  border-radius: 12px;
   overflow: hidden;
-}
-
-.tab-content > .info-tab-content,
-.tab-content > .related-tab-wrapper,
-.tab-content > .trailer-tab-wrapper {
-  min-height: 0;
-  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .image-container {
   position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   width: 100%;
   height: 100%;
 }
@@ -264,57 +181,39 @@ body.modal-open {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
-/* Remove image overlay for performance */
-.image-overlay {
-  display: none;
-}
-
+/* ── TYPE BADGE (overlaid on image) ── */
 .anime-type-badge {
   position: absolute;
-  bottom: 64px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
   width: 90%;
-  max-width: 360px;
+  max-width: 300px;
   text-align: center;
   pointer-events: none;
-  letter-spacing: 1.5px;
-}
-
-.add-to-list-buttons {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  opacity: 0;
-  z-index: 10;
-  transition: none;
-  /* Remove transition */
 }
 
 .badge-content {
   background: rgba(15, 15, 15, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 6px 12px;
+  display: inline-block;
 }
 
 .badge-row {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
 }
 
 .badge-type {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #4facfe;
   text-transform: uppercase;
@@ -322,102 +221,43 @@ body.modal-open {
 }
 
 .badge-date {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.8);
-  text-align: right;
-  flex-shrink: 0;
 }
 
-/* Info Buttons (floating row under the title) */
-.info-buttons {
+/* ── INFO PANEL ── */
+.modal-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── STATS GRID ── */
+.stats-grid2 {
   display: flex;
   gap: 10px;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  max-width: 640px;
-  margin: 10px auto 4px auto;
-  padding: 8px 16px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  z-index: 120000 !important;
-  background: rgba(0,0,0,0.12) !important;
-  border-radius: 999px !important;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.18) !important;
-  border: 1px solid rgba(255,255,255,0.06) !important;
-  position: relative !important;
-}
-
-.info-btn {
-  position: relative;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  padding: 10px 14px;
-  color: white;
-  cursor: pointer;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 500;
-  overflow: hidden;
-  transition: none;
-}
-
-/* Add hover only for desktop */
-@media (min-width: 768px) {
-  .info-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(79, 172, 254, 0.5);
-  }
-}
-
-.btn-icon {
-  font-size: 1.1rem;
-  opacity: 0.9;
-}
-
-.btn-text {
-  font-size: 0.95rem;
-  letter-spacing: 0.01em;
-}
-
-.btn-glow {
-  display: none;
-  /* Remove glow effect for performance */
-}
-
-.desktop-only {
-  display: inline;
-}
-
-/* Stats Grid */
-.stats-grid2 {
-  flex: 0 0 auto;
-  width: auto;
-  display: flex;
-  gap: 25px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .stat-item {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-width: 140px;
-  background: rgba(0, 0, 0, 0.1);
-  pointer-events: none;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.15);
+  flex: 0 0 auto;
 }
 
 .stat-label2 {
-  font-family: "Outfit", sans-serif;
-  font-size: 0.8rem;
-  color: white;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 500;
@@ -425,126 +265,168 @@ body.modal-open {
 }
 
 .stat-value {
-  font-family: "Outfit", sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #fbbf24;
-  text-align: right;
+  white-space: nowrap;
+}
+
+.desktop-only {
+  display: inline;
+}
+
+/* ── ACTION ROW ── */
+.action-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
   flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.action-row::-webkit-scrollbar {
+  display: none;
 }
 
-.stat-value.score {
-  font-family: "Outfit", sans-serif;
+/* ── TAB BUTTONS ── */
+.info-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.age-rating {
-  font-family: "Outfit", sans-serif;
-  color: #fbbf24;
+.info-buttons::-webkit-scrollbar {
+  display: none;
 }
 
-/* Synopsis Section */
+.info-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 8px 14px;
+  color: white;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.info-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(79, 172, 254, 0.5);
+}
+
+.info-btn.active {
+  background: rgba(79, 172, 254, 0.25);
+  border-color: #4facfe;
+}
+
+/* ── TAB CONTENT ── */
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.info-tab-content,
+.related-tab-wrapper,
+.trailer-tab-wrapper {
+  min-height: 0;
+}
+
+/* ── SYNOPSIS ── */
 .synopsis-section {
   background: rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 16px;
-  flex: 1;
-  overflow: visible;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  margin-top: 20px;
+  padding: 14px;
+  margin-bottom: 12px;
 }
 
 .synopsis-text {
-     font-family: 'Outfit', sans-serif;
-  font-size: 1.1rem;
-  font-weight: 600;
-  line-height: 1.4;
-  color: rgba(87, 255, 136, 0.95);
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: rgba(200, 255, 200, 0.9);
   margin: 0;
-  letter-spacing: 1.5px;
+  letter-spacing: 0.5px;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  flex: 1;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Read More Button */
 .read-more-btn {
   background: #4facfe;
-  /* Solid color for performance */
   border: none;
   border-radius: 16px;
-  padding: 8px 16px;
+  padding: 7px 16px;
   color: rgb(18, 1, 74);
   font-family: 'Outfit', sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 12px;
+  margin-top: 10px;
   align-self: flex-start;
-  transition: none;
-  /* Remove transition */
 }
 
-/* Add hover only for desktop */
-@media (min-width: 768px) {
-  .read-more-btn:hover {
-    background: #00f2fe;
-  }
+.read-more-btn:hover {
+  background: #00f2fe;
 }
 
-/* Info Vertical Section */
+/* ── INFO ROWS ── */
 .anime-info-vertical {
-  margin-top: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
 .info-row {
   display: flex;
   align-items: flex-start;
-  gap: 15px;
-  min-height: auto;
+  gap: 10px;
 }
 
 .info-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: 'Outfit', sans-serif;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: white;
-  min-width: 120px;
-  padding: 6px 9px;
-}
-
-.label-icon {
-  font-size: 1.1rem;
-  opacity: 0.8;
+  min-width: 80px;
+  padding: 4px 8px;
+  flex-shrink: 0;
 }
 
 .info-value {
   flex: 1;
-  font-family: 'Outfit', sans-serif;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
-  padding: 6px 9px;
+  padding: 4px 8px;
   word-wrap: break-word;
 }
 
 .status-value {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-weight: 600;
 }
 
@@ -552,55 +434,98 @@ body.modal-open {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  animation: none;
-  /* Remove pulse animation */
+  flex-shrink: 0;
 }
 
 .studio-value {
   color: rgba(79, 172, 254, 0.9);
-  font-weight: 500;
 }
 
-/* Genre Tags */
+/* ── GENRE TAGS ── */
 .genre-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .genre-pill {
-  padding: 6px 14px;
-  border-radius: 16px;
+  padding: 4px 12px;
+  border-radius: 14px;
   font-family: 'Outfit', sans-serif;
-  letter-spacing: 1.2px;
-  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: rgb(0, 0, 0);
-  background: #666;
-  /* Solid color for performance */
+  color: black;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: none;
-  /* Remove transition */
 }
 
 .no-genre {
   background: #666 !important;
 }
 
-/* Synopsis Modal Styles */
+/* ── LIST OPTIONS ── */
+.modal-content .list-options {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.modal-content .list-option-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 18px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  margin-right: 8px;
+  box-shadow: none;
+}
+
+.modal-content .list-option-btn:last-child {
+  margin-right: 0;
+}
+
+.modal-content .list-option-btn svg {
+  flex-shrink: 0;
+}
+
+.modal-content .watching-btn { background: rgba(34, 197, 94, 0.55); color: #000; }
+.modal-content .watching-btn:hover { background: rgba(34, 197, 94, 0.7); box-shadow: none; }
+
+.modal-content .completed-btn { background: rgba(59, 130, 246, 0.55); color: #000; }
+.modal-content .completed-btn:hover { background: rgba(59, 130, 246, 0.7); box-shadow: none; }
+
+.modal-content .planned-btn { background: rgba(234, 179, 8, 0.55); color: #000; }
+.modal-content .planned-btn:hover { background: rgba(234, 179, 8, 0.7); box-shadow: none; }
+
+.already-in-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  color: #22c55e;
+  font-size: 0.9rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* ── SYNOPSIS MODAL ── */
 .synopsis-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.95);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 110000 !important;
-  animation: none;
-  /* Remove animation */
+  z-index: 110000;
 }
 
 .synopsis-modal-content {
@@ -614,8 +539,6 @@ body.modal-open {
   flex-direction: column;
   position: relative;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  animation: none;
-  /* Remove animation */
 }
 
 .synopsis-modal-close {
@@ -625,16 +548,18 @@ body.modal-open {
   width: 35px;
   height: 35px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: white;
   cursor: pointer;
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: none;
-  font-size: 0;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 0;
+  line-height: 1;
 }
 
 .synopsis-modal-header {
@@ -644,11 +569,10 @@ body.modal-open {
 
 .synopsis-modal-header h3 {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 600;
   color: #4facfe;
   margin: 0;
-  letter-spacing: 0.5px;
 }
 
 .synopsis-modal-body {
@@ -663,298 +587,119 @@ body.modal-open {
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.9);
   margin: 0;
-  letter-spacing: 0.3px;
-  text-align: justify;
 }
 
-/* Animations - Only for high-end devices */
-@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
-  @keyframes overlayFadeIn {
-    from {
-      opacity: 0;
-    }
-
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes modalSlideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+/* ── NO TRAILER ── */
+.no-trailer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1rem;
 }
 
-/* ==================== RESPONSIVE MEDIA QUERIES ==================== */
+/* ══════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════ */
 
-/* Extra Large Screens (1200px - 1400px) */
-@media (max-width: 1400px) {
-  .modal-content {
-    width: 90%;
-    max-width: 1200px;
-    height: auto;
-    max-height: 85vh;
-    padding: 20px;
-    border-radius: 16px;
-  }
-
-  .modal-body {
-    height: auto;
-    min-height: 0;
-    gap: 25px;
-  }
-
+/* ── LARGE DESKTOP (≥ 1200px) ── */
+@media (min-width: 1200px) {
   .modal-image-wrapper {
-    width: 350px;
-    height: 500px;
-  }
-
-  .image-container,
-  .image-container img {
-    width: 350px;
-    height: 500px;
-  }
-
-  .modal-title h2 {
-    font-size: 2.2rem;
-  }
-
-  .stats-grid2 {
-    gap: 5px;
-    margin-bottom: 6px;
-  }
-
-  .stat-item {
-    min-width: 120px;
-    padding: 10px 14px;
+    width: min(360px, 100%);
+    height: clamp(300px, 45dvh, 550px);
   }
 }
 
-/* Large Tablets (992px - 1199px) */
+/* ── MEDIUM DESKTOP / LARGE TABLET (992px - 1199px) ── */
 @media (max-width: 1199px) {
   .modal-content {
     width: 95%;
-    max-width: 900px;
+    max-width: 960px;
     height: auto;
     max-height: 90vh;
-    border-radius: 16px;
   }
 
   .modal-body {
-    flex-direction: row;
-    gap: 20px;
-    height: auto;
+    gap: 16px;
   }
 
   .modal-image-wrapper {
-    width: 300px;
-    height: 450px;
-    flex-shrink: 0;
+    width: 280px;
+    height: 420px;
   }
 
-  .image-container,
-  .image-container img {
-    width: 300px;
-    height: 450px;
-  }
-
-  .modal-info {
-    min-height: 450px;
-  }
-
-  .modal-title h2 {
-    font-size: 2rem;
-  }
-
-  .synopsis-text {
-    font-size: 1rem;
-    line-height: 1.4;
-  }
-
-  .info-btn {
-    padding: 12px 20px;
-  }
-
-  .btn-text {
-    font-size: 0.9rem;
+  .stat-item {
+    min-width: 100px;
+    padding: 6px 10px;
   }
 }
 
-/* Tablets (768px - 991px) */
+/* ── TABLET (768px - 991px) ── */
 @media (max-width: 991px) {
   .modal-content {
-    width: 95%;
     max-width: 750px;
-    height: auto;
-    max-height: 90vh;
-    padding: 15px;
-    border-radius: 16px;
+    padding: 14px;
   }
 
   .modal-body {
     flex-direction: column;
-    gap: 20px;
-    height: auto;
-    overflow: visible;
+    overflow-y: auto;
   }
 
   .modal-image-wrapper {
-    width: 100%;
-    height: 350px;
+    width: 200px;
+    height: 280px;
     margin: 0 auto;
-  }
-
-  .image-container {
-    width: 100%;
-    height: 350px;
-    max-width: 280px;
-    margin: 0 auto;
-  }
-
-  .image-container img {
-    width: 100%;
-    height: 350px;
-    object-fit: cover;
-  }
-
-  .modal-info {
-    min-height: auto;
-    height: auto;
-    gap: 5px;
+    flex-shrink: 0;
   }
 
   .modal-title {
     min-height: 50px;
-    margin-bottom: 10px;
+    padding: 4px 44px 6px;
   }
 
   .modal-title h2 {
-    font-size: 1.8rem;
-    line-height: 1.2;
-  }
-
-  .modal-title h2.long-title {
-    font-size: 1.6rem;
-  }
-
-  .modal-title h2.very-long-title {
-    font-size: 1.4rem;
-  }
-
-  .info-buttons {
-    gap: 10px;
-  }
-
-  .info-btn {
-    flex: 1;
-    min-width: calc(50% - 10px);
-    padding: 12px 15px;
-  }
-
-  .stats-grid2 {
-    overflow-x: auto;
-    padding-bottom: 5px;
-    flex-wrap: nowrap;
+    font-size: clamp(1rem, 2.5vw, 1.6rem);
   }
 
   .stat-item {
-    min-width: 110px;
-    flex-shrink: 0;
-  }
-
-  .synopsis-section {
-    margin-top: 3px;
-    padding: 15px;
-  }
-
-  .synopsis-text {
-    font-size: 0.95rem;
-    line-height: 1.35;
-  }
-
-  .anime-info-vertical {
-    margin-top: 6px;
-  }
-
-  .info-row {
-    flex-direction: column;
-    gap: 5px;
-    margin-bottom: 10px;
+    flex: 0 0 auto;
+    width: 130px;
   }
 
   .info-label {
-    min-width: unset;
-    padding: 4px 8px;
+    min-width: 70px;
+    font-size: 0.82rem;
   }
 
   .info-value {
-    padding: 4px 8px;
+    font-size: 0.82rem;
   }
 
-  .badge-content {
-    width: 90%;
-    left: 5%;
-    margin-bottom: 0;
+  .desktop-only {
+    display: none;
   }
 }
 
-@media (max-width: 480px) {
-  .modal-content {
-    padding: 12px;
-  }
-
-  .modal-title {
-    padding: 6px 40px 6px;
-  }
-
-  .modal-title h2 {
-    font-size: clamp(1rem, 4vw, 1.35rem);
-  }
-
-  .modal-body {
-    padding: 0 2px 64px;
-  }
-
-  .modal-image-wrapper {
-    height: 230px;
-  }
-
-  .image-container {
-    max-width: 170px;
-  }
-}
-
-/* ══════════════════════════════════════════════════════════
-   MOBILE MODAL — Bottom-sheet style (max-width: 767px)
-   ══════════════════════════════════════════════════════════ */
+/* ── MOBILE BOTTOM SHEET (≤ 767px) ── */
 @media (max-width: 767px) {
-  /* Overlay anchors to the bottom */
   .modal-overlay {
-    align-items: flex-end !important;
-    padding: 0 !important;
+    align-items: flex-end;
+    padding: 0;
   }
 
-  /* Bottom sheet container */
   .modal-content {
-    width: 100% !important;
-    height: 92vh !important;
-    max-height: 92vh !important;
-    border-radius: 24px 24px 0 0 !important;
-    padding: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    /* Allow visible overflow so header and tabs aren't clipped on small screens */
-    overflow: visible !important;
+    width: 100%;
+    height: 92vh;
+    max-height: 92vh;
+    border-radius: 24px 24px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
   }
 
-  /* Drag handle */
   .modal-content::before {
     content: '';
     display: block;
@@ -962,492 +707,267 @@ body.modal-open {
     height: 4px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
-    margin: 12px auto 0;
+    margin: 10px auto 0;
     flex-shrink: 0;
   }
 
-  /* Sticky close button */
   .modal-close {
-    position: absolute !important;
-    top: 12px !important;
-    right: 12px !important;
-    width: 32px !important;
-    height: 32px !important;
-    z-index: 200 !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    border: 1px solid rgba(255,255,255,0.15) !important;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
 
-  /* ── Header: Centered title ── */
   .modal-title {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: unset !important;
-    padding: 18px 44px 12px !important; /* Leave space for the close button on both sides */
-    flex-shrink: 0 !important;
-    position: relative !important;
-    z-index: 10 !important;
-    margin-bottom: 0 !important;
-    text-align: center !important;
+    min-height: unset;
+    padding: 14px 44px 8px;
+    flex-shrink: 0;
   }
 
   .modal-title h2 {
-    font-size: clamp(1.1rem, 5vw, 1.45rem) !important;
-    letter-spacing: 0 !important;
-    line-height: 1.25 !important;
-    -webkit-line-clamp: 2 !important;
-    line-clamp: 2 !important;
-    max-height: unset !important;
-    margin: 0 !important;
-    flex: unset !important;
-    text-align: center !important;
-    width: 100% !important;
+    font-size: clamp(1rem, 4.5vw, 1.3rem);
+    letter-spacing: 0;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
-  /* Add safe spacing so tab pills are not clipped by the drag-handle or close button */
-  .modal-content {
-    padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
-    box-sizing: border-box !important;
-  }
-
-  .modal-title {
-    padding-bottom: 10px !important;
-  }
-
-  /* ── Scrollable body ── */
   .modal-body {
-    flex: 1 !important;
-    flex-direction: column !important;
-    gap: 0 !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding: 0 14px 80px !important;
+    flex: 1;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 12px 16px;
+    overflow-y: auto;
+    height: auto;
   }
 
-  /* ── Poster image: centered and enlarged ── */
   .modal-image-wrapper {
-    width: 100% !important;
-    height: 280px !important;
-    flex-shrink: 0 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    margin-bottom: 18px !important;
+    width: 160px;
+    height: 230px;
+    margin: 6px auto 0;
+    flex-shrink: 0;
   }
 
-  .image-container {
-    width: 180px !important;
-    height: 270px !important;
-    max-width: 180px !important;
-    margin: 0 auto !important;
-    border-radius: 12px !important;
-    flex-shrink: 0 !important;
-    overflow: hidden !important;
-  }
-
-  /* Pills directly below the poster image */
-  .pills-below-pic {
-    display: flex !important;
-    gap: 10px !important;
-    justify-content: center !important;
-    align-items: center !important;
-    margin: 6px auto 4px !important;
-    width: auto !important;
-    padding: 0 8px !important;
-    z-index: 50 !important;
-  }
-  /* Slight spacing tweak when tabs appear above pills */
-  .info-buttons + .pills-below-pic {
-    margin-top: 6px !important;
-  }
-  /* When pills are directly followed by the modal info (synopsis), reduce the gap */
-  .pills-below-pic + .modal-info .tab-content .synopsis-section {
-    margin-top: 8px !important;
-  }
-
-  .image-container img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-    object-position: center top !important;
-  }
-
-  /* ── Info panel ── */
-  .modal-info {
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
-    min-height: 0 !important;
-    height: auto !important;
-  }
-
-  /* ── Tabs: Synopsis / Related / Trailer (mobile overrides) ── */
-  .info-buttons {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 8px !important;
-    justify-content: center !important;
-    align-items: center !important;
-    width: auto !important;
-    max-width: calc(100% - 48px) !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding: 8px 10px !important;
-    scrollbar-width: none !important;
-    margin: 8px auto !important;
-    z-index: 120000 !important;
-    background: rgba(0,0,0,0.12) !important;
-    border-radius: 999px !important;
-    border: 1px solid rgba(255,255,255,0.06) !important;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.35) !important;
-    position: relative !important;
-    left: 0 !important;
-  }
-
-  .tab-content {
-    margin-top: 8px !important;
-  }
-
-  .info-buttons::-webkit-scrollbar {
-    display: none !important;
-  }
-
-  .info-btn {
-    flex: 0 0 auto !important;
-    min-width: unset !important;
-    padding: 8px 14px !important;
-    border-radius: 20px !important;
-    font-size: 0.82rem !important;
-    white-space: nowrap !important;
-  }
-
-  .btn-icon {
-    display: none !important;
-  }
-
-  .btn-text {
-    font-size: 0.8rem !important;
-  }
-
-  /* ── Stats: single scrollable row ── */
   .stats-grid2 {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    gap: 8px !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding: 4px 0 6px !important;
-    scrollbar-width: none !important;
-    justify-content: center !important;
-    width: 100% !important;
-    border-radius: 0 !important;
-    margin-top: 12px !important;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    padding: 2px 0;
   }
 
   .stats-grid2::-webkit-scrollbar {
-    display: none !important;
+    display: none;
   }
 
   .stat-item {
-    flex: 0 0 auto !important;
-    min-width: unset !important;
-    padding: 6px 12px !important;
-    border-radius: 20px !important;
-    background: rgba(255,255,255,0.06) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 6px !important;
-    white-space: nowrap !important;
+    flex: 0 0 auto;
+    min-width: unset;
+    padding: 6px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
   }
 
   .stat-label2 {
-    font-size: 0.72rem !important;
-    color: rgba(255,255,255,0.5) !important;
+    font-size: 0.7rem;
   }
 
   .stat-value {
-    font-size: 0.8rem !important;
-  }
-
-  /* ── Synopsis ── */
-  .synopsis-section {
-    padding: 12px !important;
-    margin-top: 18px !important;
-    border-radius: 10px !important;
-  }
-
-  .synopsis-text {
-    font-size: 0.85rem !important;
-    line-height: 1.5 !important;
-    letter-spacing: 0.2px !important;
-  }
-
-  .read-more-btn {
-    padding: 6px 14px !important;
-    font-size: 0.78rem !important;
-    margin-top: 8px !important;
-  }
-
-  /* ── Info rows ── */
-  .anime-info-vertical {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 4px !important;
-    margin-top: 6px !important;
-    flex-wrap: nowrap !important;
-  }
-
-  .info-row {
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 8px !important;
-    margin: 0 !important;
-    flex-wrap: wrap !important;
-  }
-
-  .info-label {
-    min-width: 80px !important;
-    font-size: 0.78rem !important;
-    padding: 3px 6px !important;
-  }
-
-  .info-value {
-    font-size: 0.82rem !important;
-    padding: 3px 6px !important;
-  }
-
-  /* ── Genre pills ── */
-  .genre-tags {
-    gap: 5px !important;
-    flex-wrap: wrap !important;
-  }
-
-  .genre-pill {
-    font-size: 0.68rem !important;
-    padding: 4px 10px !important;
-    letter-spacing: 0.3px !important;
-  }
-
-  /* ── Badge ── */
-  .anime-type-badge {
-    position: absolute !important;
-    bottom: 14px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    z-index: 20 !important;
-    width: auto !important;
-    max-width: 90% !important;
-    pointer-events: none !important;
-    display: block !important;
-  }
-
-  .badge-content {
-    background: rgba(15, 15, 15, 0.92) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 4px !important;
-    padding: 2px 5px !important;
-    display: inline-block !important;
-    width: auto !important;
-    position: relative !important;
-    left: 0 !important;
-  }
-
-  .badge-row {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    gap: 3px !important;
-  }
-
-  .badge-type {
-    font-size: 0.58rem !important;
-    font-weight: 700 !important;
-    color: #4facfe !important;
-  }
-
-  .badge-date {
-    font-size: 0.58rem !important;
-    font-weight: 500 !important;
-    color: rgba(255, 255, 255, 0.95) !important;
-    white-space: nowrap !important;
-  }
-
-  /* ── Synopsis modal (nested) ── */
-  .synopsis-modal-content {
-    width: 96% !important;
-    max-height: 85vh !important;
-    border-radius: 16px !important;
-  }
-
-  .synopsis-modal-header h3 {
-    font-size: 1.1rem !important;
-  }
-
-  .full-synopsis-text {
-    font-size: 0.9rem !important;
-    line-height: 1.55 !important;
-  }
-
-  /* ── Trailer embed ── */
-  .trailer-tab-wrapper,
-  .video-container {
-    width: 100% !important;
-    border-radius: 10px !important;
-    overflow: hidden !important;
-  }
-
-  .desktop-only {
-    display: none !important;
-  }
-}
-
-@media (min-width: 992px) {
-  .modal-content {
-    padding: 20px !important;
-    max-height: 90vh !important;
-    height: min(690px, calc(100dvh - 2rem)) !important;
-  }
-
-  .modal-body {
-    flex-direction: row !important;
-    align-items: flex-start !important;
-    height: calc(100% - 140px) !important;
-    gap: 30px !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-  }
-
-  .modal-image-wrapper {
-    width: min(390px, 100%) !important;
-    height: 590px !important;
-    min-height: 590px !important;
-    max-height: 590px !important;
-    margin: 0 !important;
-    align-self: flex-start !important;
-  }
-
-  .image-container {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: none !important;
-  }
-
-  .modal-info {
-    flex: 1 !important;
-    min-height: 0 !important;
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 18px !important;
-  }
-
-  .modal-info .tab-content {
-    flex: 1 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
+    font-size: 0.75rem;
   }
 
   .info-buttons {
-    justify-content: flex-start !important;
-    flex-wrap: wrap !important;
-    gap: 14px !important;
-    margin: 10px 0 4px 0 !important;
-    max-width: none !important;
-    width: auto !important;
-  }
-
-  .stats-grid2.pills-below-pic {
-    margin-top: 16px !important;
-    width: 100% !important;
-  }
-}
-
-/* ── Very small phones ── */
-@media (max-width: 380px) {
-  .modal-content {
-    height: 96vh !important;
-    max-height: 96vh !important;
-  }
-
-  .modal-title h2 {
-    font-size: 1rem !important;
+    gap: 6px;
+    padding: 5px 10px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
   }
 
   .info-btn {
-    padding: 7px 12px !important;
-    font-size: 0.75rem !important;
-  }
-
-  .modal-image-wrapper {
-    height: 200px !important;
-  }
-
-  .image-container {
-    width: 130px !important;
-    height: 190px !important;
-    max-width: 130px !important;
-  }
-}
-
-/* ── Landscape orientation for phones ── */
-@media (max-height: 600px) and (orientation: landscape) {
-  .modal-content {
-    height: 95vh !important;
-    max-height: 95vh !important;
-    padding: 0 !important;
-  }
-
-  .modal-body {
-    flex-direction: row !important;
-    gap: 12px !important;
-    padding: 8px 12px 20px !important;
-  }
-
-  .modal-image-wrapper {
-    width: 130px !important;
-    height: 190px !important;
-    flex-shrink: 0 !important;
-    margin-bottom: 0 !important;
-  }
-
-  .image-container {
-    width: 130px !important;
-    height: 190px !important;
-    max-width: 130px !important;
-  }
-
-  .modal-title {
-    padding: 8px 12px 6px !important;
-  }
-
-  .modal-title h2 {
-    font-size: 1rem !important;
-    -webkit-line-clamp: 1 !important;
-    line-clamp: 1 !important;
+    padding: 7px 12px;
+    font-size: 0.78rem;
   }
 
   .synopsis-section {
-    max-height: 120px !important;
-    overflow: hidden !important;
+    padding: 10px;
   }
 
   .synopsis-text {
-    -webkit-line-clamp: 4 !important;
-    line-clamp: 4 !important;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    letter-spacing: 0.3px;
+  }
+
+  .info-row {
+    flex-wrap: wrap;
+  }
+
+  .info-label {
+    min-width: 70px;
+    font-size: 0.78rem;
+  }
+
+  .info-value {
+    font-size: 0.8rem;
+  }
+
+  .genre-pill {
+    font-size: 0.68rem;
+    padding: 3px 8px;
+  }
+
+  .modal-content .list-option-btn {
+    padding: 5px 14px;
+    font-size: 0.75rem;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .anime-type-badge {
+    bottom: 8px;
+  }
+
+  .badge-type,
+  .badge-date {
+    font-size: 0.7rem;
+  }
+
+  .synopsis-modal-content {
+    width: 96%;
+    max-height: 85vh;
+    border-radius: 16px;
+  }
+
+  .synopsis-modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .full-synopsis-text {
+    font-size: 0.9rem;
+  }
+
+  .trailer-tab-wrapper,
+  .video-container {
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
   }
 }
 
-/* Dark Mode Support */
+/* ── SMALL PHONES (≤ 480px) ── */
+@media (max-width: 480px) {
+  .modal-content {
+    height: 94vh;
+    max-height: 94vh;
+  }
+
+  .modal-title h2 {
+    font-size: clamp(0.9rem, 4vw, 1.1rem);
+  }
+
+  .modal-image-wrapper {
+    width: 130px;
+    height: 190px;
+  }
+
+  .stat-item {
+    padding: 4px 8px;
+  }
+
+  .info-btn {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+  }
+
+  .synopsis-text {
+    font-size: 0.8rem;
+  }
+
+  .modal-content .list-option-btn {
+    padding: 5px 12px;
+    font-size: 0.7rem;
+  }
+}
+
+/* ── VERY SMALL (≤ 380px) ── */
+@media (max-width: 380px) {
+  .modal-content {
+    height: 96vh;
+    max-height: 96vh;
+  }
+
+  .modal-image-wrapper {
+    width: 110px;
+    height: 160px;
+  }
+
+  .info-btn {
+    font-size: 0.68rem;
+    padding: 5px 8px;
+  }
+}
+
+/* ── LANDSCAPE PHONE ── */
+@media (max-height: 600px) and (orientation: landscape) {
+  .modal-content {
+    height: 95vh;
+    max-height: 95vh;
+    padding: 0;
+  }
+
+  .modal-body {
+    flex-direction: row;
+    gap: 12px;
+    padding: 8px 12px 16px;
+  }
+
+  .modal-image-wrapper {
+    width: 120px;
+    height: 170px;
+    margin: 0;
+  }
+
+  .modal-title {
+    padding: 6px 44px 4px;
+  }
+
+  .modal-title h2 {
+    font-size: clamp(0.8rem, 2vw, 1.1rem);
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .synopsis-section {
+    max-height: 100px;
+    overflow: hidden;
+  }
+
+  .synopsis-text {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+}
+
+/* ── DESKTOP IMAGE STRETCH (≥ 992px) ── */
+@media (min-width: 992px) {
+  .modal-image-wrapper {
+    height: auto;
+    align-self: stretch;
+    flex-shrink: 1;
+  }
+
+  .modal-body {
+    overflow: hidden;
+  }
+
+  .modal-info {
+    overflow-y: auto;
+  }
+}
+
+/* ── DARK MODE ── */
 @media (prefers-color-scheme: dark) {
   .modal-content,
   .synopsis-modal-content {
@@ -1457,5 +977,26 @@ body.modal-open {
   .stat-item,
   .synopsis-section {
     background: rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* ── HIGH-END ANIMATIONS ── */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  @keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal-overlay {
+    animation: overlayFadeIn 0.2s ease-out;
+  }
+
+  .modal-content {
+    animation: modalSlideUp 0.3s ease-out;
   }
 }

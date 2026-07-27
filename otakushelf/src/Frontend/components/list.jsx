@@ -8,6 +8,7 @@ import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
 import Import from "../images/import.png";
 import { useAnimePreferences } from './useAnimePreferences';
+import ErrorPage from './ErrorPage.jsx';
 
 const StarRating = ({ rating, onRatingChange, disabled = false }) => {
   const [hoverRating, setHoverRating] = useState(0);
@@ -1099,13 +1100,12 @@ const EnhancedAnimeList = () => {
                 </div>
               ))
             ) : (
-              <div className="empty-state-cards">
-                <h3>No anime in this category yet</h3>
-                <p>Start adding anime to your {activeTab} list!</p>
-                <p style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
-                  Or import your MyAnimeList using the button above.
-                </p>
-              </div>
+              <ErrorPage
+                type="empty-list"
+                message={`Your ${activeTab} list is empty. Start adding anime or import your MyAnimeList.`}
+                actionLabel="Browse Anime"
+                actionLink="/advance"
+              />
             )}
           </div>
         )}

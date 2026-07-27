@@ -5,28 +5,33 @@ export async function sendMail({ from, to, subject, html }, env) {
     return false
   }
 
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': apiKey,
-    },
-    body: JSON.stringify({
-      sender: { name: 'OtakuShelf', email: from || env.EMAIL_FROM || 'noreply@otakushelf.com' },
-      to: [{ email: to }],
-      subject,
-      htmlContent: html,
-    }),
-    signal: AbortSignal.timeout(15000),
-  })
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': apiKey,
+      },
+      body: JSON.stringify({
+        sender: { name: 'OtakuShelf', email: from || env.EMAIL_FROM || 'noreply@otakushelf.com' },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+      signal: AbortSignal.timeout(15000),
+    })
 
-  if (!res.ok) {
-    const text = await res.text()
-    console.error(`[Email] Brevo error (${res.status}): ${text}`)
+    if (!res.ok) {
+      const text = await res.text()
+      console.error(`[Email] Brevo error (${res.status}): ${text}`)
+      return false
+    }
+
+    return true
+  } catch (err) {
+    console.error(`[Email] Network error: ${err.message}`)
     return false
   }
-
-  return true
 }
 
 export function buildEmailHtml(title, body, options = {}) {

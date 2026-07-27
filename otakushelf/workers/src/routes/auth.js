@@ -210,6 +210,47 @@ router.get('/google/callback', async (c) => {
   }
 })
 
+// ── POST /auth/google/callback (code exchange from frontend) ────────────────
+router.post('/google/callback', async (c) => {
+  const { db, users, env } = setup(c)
+  const { code } = await c.req.json()
+  if (!code) return error(c, 'Authorization code is required', 400)
+
+  const redirectUri = `${env.FRONTEND_URL}/auth/callback`
+  try {
+    const tokenRes = await exchangeGoogleCode(code, env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, redirectUri)
+    const payload = await verifyGoogleIdToken(tokenRes.id_token, env.GOOGLE_CLIENT_ID)
+    const { email, sub, picture, name } = payload
+
+    let user = await users.findByEmail(email)
+    if (user) {
+      addProvider(user, 'google', { id: sub })
+      user.photo = picture || user.photo
+      user.name = name || user.name
+      user.emailVerified = true
+      await db.updateOne('users', { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } })
+    } else {
+      const { insertedId } = await db.insertOne('users', {
+        email,
+        providers: [{ type: 'google', id: sub }],
+        photo: picture,
+        name,
+        emailVerified: true,
+        profile: { badges: [] },
+        settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
+        createdAt: new Date(),
+      })
+      user = { _id: insertedId, email, providers: [{ type: 'google', id: sub }], photo: picture, name, emailVerified: true }
+    }
+
+    const appTokens = await issueTokenPair(user._id, users, env)
+    return success(c, 'Google login successful', { user: sanitizeUser(user), ...appTokens })
+  } catch (err) {
+    console.error('Google code exchange error:', err.message)
+    return error(c, 'Google authentication failed: ' + err.message, 401)
+  }
+})
+
 // ── POST /auth/refresh ───────────────────────────────────────────────────────
 router.post('/refresh', async (c) => {
   const { db, users, env } = setup(c)

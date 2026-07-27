@@ -12,6 +12,9 @@ import Profile from "../Frontend/components/profile.jsx";
 import AIPage from "../Frontend/components/aipage.jsx";
 import ForgotPassword from "../Frontend/components/ForgotPassword.jsx";
 import SettingsPage from "../Frontend/components/settings.jsx";
+import NotFound from "../Frontend/components/NotFound.jsx";
+import ServerError from "../Frontend/components/ServerError.jsx";
+import Offline from "../Frontend/components/Offline.jsx";
 
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -39,6 +42,9 @@ const AppContent = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ForgotPassword />} />
       <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/500" element={<ServerError />} />
+      <Route path="/offline" element={<Offline />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

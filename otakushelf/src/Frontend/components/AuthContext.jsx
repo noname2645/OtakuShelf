@@ -131,6 +131,7 @@ export const AuthProvider = ({ children }) => {
   // Handle OAuth token from URL redirect (Google login)
   const handleTokenFromUrl = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
     const accessToken = params.get("accessToken") || params.get("token");
     const refreshToken = params.get("refreshToken");
     const errorParam = params.get("error");
@@ -140,13 +141,36 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
 
+    // Handle Google OAuth code exchange (redirect flow via FRONTEND_URL)
+    if (code) {
+      console.log('Exchanging Google authorization code...');
+      try {
+        const res = await axios.post(`${API}/auth/google/callback`, { code });
+        if (res.data.data?.user) {
+          const userData = res.data.data.user;
+          userData.photo = fixPhotoUrl(userData.photo);
+          localStorage.setItem("accessToken", res.data.data.accessToken);
+          if (res.data.data.refreshToken) localStorage.setItem("refreshToken", res.data.data.refreshToken);
+          setUser(userData);
+          storeMinimalUser(userData);
+          fetchFreshProfile(userData._id).then(profileData => {
+            if (profileData) setProfile(profileData);
+          });
+        }
+      } catch (error) {
+        console.error('Google code exchange failed:', error.message);
+        window.location.href = '/login?error=google_auth_failed';
+        return true;
+      }
+      window.location.href = '/';
+      return true;
+    }
+
     if (!accessToken) return false;
 
     console.log('Processing OAuth token from URL...');
     localStorage.setItem("accessToken", accessToken);
     if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-    // Navigate away from /auth/callback immediately (no React route for it)
-    window.location.href = '/';
 
     try {
       const response = await createApiCall(
@@ -164,21 +188,16 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         storeMinimalUser(userData);
 
-        // Fetch profile asynchronously
         fetchFreshProfile(userData._id).then(profileData => {
           if (profileData) setProfile(profileData);
         });
-
-        return true;
       }
     } catch (error) {
       console.error('OAuth token validation failed:', error.message);
-      const storedUser = loadFromStorage();
-      if (storedUser) {
-        setUser(storedUser);
-      }
     }
-    return false;
+
+    window.location.href = '/';
+    return true;
   }, [API, fetchFreshProfile, storeMinimalUser, loadFromStorage, fixPhotoUrl]);
 
   // Try to refresh the access token

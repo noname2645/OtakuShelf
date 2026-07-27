@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import emailIcon from "../images/message.png";
 import keyIcon from "../images/key.png";
+import { useGoogleAuth } from "./useGoogleAuth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -19,6 +20,9 @@ const Login = () => {
   const { login } = useAuth();
   const API = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
+  const { signInWithGoogle, gisLoading } = useGoogleAuth({
+    onError: (msg) => setMessage(msg),
+  });
 
   useEffect(() => {
     if (message) {
@@ -36,9 +40,9 @@ const Login = () => {
       const payload = { email, password };
       if (requiresMfa) payload.mfaCode = mfaCode;
 
-      const res = await axios.post(`${API}/auth/login`, payload, { withCredentials: true });
+      const res = await axios.post(`${API}/auth/login`, payload);
       
-      if (res.data.requiresMfa) {
+      if (res.data.data?.requiresMfa) {
         setRequiresMfa(true);
         setMessage("Two-Factor Authentication required. Check your authenticator app.");
         return;
@@ -58,7 +62,16 @@ const Login = () => {
     }
   };
 
-  const handleGoogleLogin = () => { window.location.href = `${API}/auth/google`; };
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithGoogle();
+      if (result !== 'redirect') navigate("/");
+    } catch (err) {
+      if (err.message !== 'Google sign-in timed out') {
+        setMessage(err.response?.data?.message || err.message || 'Google sign-in failed');
+      }
+    }
+  };
 
   const getMessageClass = () => {
     if (!message) return "";
@@ -227,7 +240,7 @@ const Login = () => {
 
         <motion.button
           onClick={handleGoogleLogin} className="login-btn login-btn-modern"
-          disabled={isLoading} type="button"
+          disabled={isLoading || gisLoading} type="button"
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.95, duration: 0.4 }}
           whileHover={{ scale: 1.02, boxShadow: "0 12px 35px rgba(0,0,0,0.25)" }}

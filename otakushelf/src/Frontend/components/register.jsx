@@ -9,6 +9,7 @@ import emailIcon from "../images/message.png";
 import passwordIcon from "../images/key.png";
 import googleIcon from "../images/google.png";
 import { motion, AnimatePresence } from "framer-motion";
+import { useGoogleAuth } from "./useGoogleAuth";
 
 const Register = ({ onRegisterSuccess }) => {
   const [email, setEmail] = useState("");
@@ -18,6 +19,10 @@ const Register = ({ onRegisterSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const API = import.meta.env.VITE_API_BASE_URL;
+  const navigate = useNavigate();
+  const { signInWithGoogle, gisLoading } = useGoogleAuth({
+    onError: (msg) => setMessage(msg),
+  });
 
   useEffect(() => {
     if (message) {
@@ -39,15 +44,13 @@ const Register = ({ onRegisterSuccess }) => {
     return true;
   };
 
-  const navigate = useNavigate();
-
   const handleRegister = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
     if (!validateForm()) { setIsLoading(false); return; }
     try {
-      const res = await axios.post(`${API}/auth/register`, { email, password }, { withCredentials: true });
+      const res = await axios.post(`${API}/auth/register`, { email, password });
       setMessage(res.data.message);
       if (res.data.data?.user) {
         login(res.data.data.user, res.data.data.accessToken, res.data.data.refreshToken);
@@ -62,7 +65,16 @@ const Register = ({ onRegisterSuccess }) => {
     }
   };
 
-  const handleGoogleSignup = () => { window.location.href = `${API}/auth/google`; };
+  const handleGoogleSignup = async () => {
+    try {
+      const result = await signInWithGoogle();
+      if (result !== 'redirect') navigate("/");
+    } catch (err) {
+      if (err.message !== 'Google sign-in timed out') {
+        setMessage(err.response?.data?.message || err.message || 'Google sign-up failed');
+      }
+    }
+  };
 
   const getMessageClass = () => {
     if (!message) return "";
@@ -214,7 +226,7 @@ const Register = ({ onRegisterSuccess }) => {
 
           <motion.button
             onClick={handleGoogleSignup} className="google-btn"
-            disabled={isLoading} type="button"
+            disabled={isLoading || gisLoading} type="button"
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.95, duration: 0.4 }}
             whileHover={{ scale: 1.02, boxShadow: "0 12px 35px rgba(0,0,0,0.25)" }}

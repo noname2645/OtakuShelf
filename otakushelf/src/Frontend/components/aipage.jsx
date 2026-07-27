@@ -9,7 +9,6 @@ import BottomNavBar from "./bottom.jsx";
 import { useAuth } from "./AuthContext.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 
-// 🆕 Imported Logo
 import otakuAI from "../images/otakuai_no_bg.png";
 
 const AIPage = () => {
@@ -39,7 +38,6 @@ const AIPage = () => {
     const API = import.meta.env.VITE_API_BASE_URL;
     const { user } = useAuth();
 
-    // Auto-scroll logic
     const scrollToBottom = (instant = false) => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({
@@ -81,11 +79,14 @@ const AIPage = () => {
                 localStorage.removeItem('ai_conversation');
             }
         } else {
+            const welcomeText = user
+                ? `Hey ${user.name || user.email?.split('@')[0] || 'there'}! I've pulled up your profile and I'm ready to geek out about anime with you. What are you in the mood for today?`
+                : `Yo! I'm OtakuAI, your personal anime companion. Think of me as your ultimate nakama in the anime world!
+
+I'm ready to dive deep into discussions or find your next binge-worthy masterpiece. What's on your mind today?`;
             const welcomeMessage = {
                 role: "ai",
-                text: `Yo! 👋 I'm OtakuAI, your personal anime companion. Think of me as your ultimate nakama in the anime world! 
-                
-I've analyzed your profile and I'm ready to dive deep into discussions or find your next binge-worthy masterpiece. What's on your mind today?`,
+                text: welcomeText,
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 mood: 'friendly',
                 id: Date.now() + Math.random()
@@ -121,7 +122,7 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
             setMessages(prev => [...prev, messageData]);
             return;
         }
-        
+
         setStreaming(true);
         setStreamingText("");
 
@@ -147,7 +148,17 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
 
         const userText = input;
         const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
+
+        const userProfile = user ? {
+            name: user.name || user.email,
+            username: user.profile?.username,
+            bio: user.profile?.bio,
+            favoriteGenres: user.profile?.favoriteGenres,
+            stats: user.profile?.stats,
+            recentlyWatched: user.recentlyWatched,
+            favoriteAnime: user.favoriteAnime,
+        } : null;
+
         const userMsg = {
             role: "user",
             text: userText,
@@ -171,18 +182,19 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
                 },
                 body: JSON.stringify({
                     message: userText,
                     history: history,
                     userId: user?._id || user?.id,
-                    context: conversationContext
+                    context: conversationContext,
+                    userProfile: userProfile
                 }),
             });
 
             const response = await res.json();
-            
+
             if (response.status === 'error') {
                 throw new Error(response.message || "Failed to generate AI response");
             }
@@ -216,7 +228,7 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
                 ...prev,
                 {
                     role: "ai",
-                    text: "Hmm, having a little trouble connecting. Check your internet or try again! 🌸",
+                    text: "Hmm, having a little trouble connecting. Check your internet or try again!",
                     isError: true,
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     id: Date.now() + 1
@@ -264,6 +276,26 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
         }
     };
 
+    const renderMessageContent = (msg) => {
+        if (msg.role === "ai") {
+            return (
+                <div className="ai-md">
+                    <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                            p: props => <p className="md-p" {...props} />,
+                            strong: props => <strong className="md-bold" {...props} />,
+                            code: props => <code className="md-code" {...props} />
+                        }}
+                    >
+                        {msg.text || ""}
+                    </ReactMarkdown>
+                </div>
+            );
+        }
+        return <>{msg.text}</>;
+    };
+
     return (
         <div className="ai-page-root">
             <Header showSearch={false} />
@@ -271,163 +303,157 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
 
             <div className="ai-page-container">
                 <div className="ai-page-wrapper">
-                    <div className="ai-companion-box">
-                        <div className="companion-header">
-                            <div className="companion-info-wrapper">
-                                <div className="companion-avatar">
+                    <div className="ai-chat-shell">
+                        {/* ── Header ── */}
+                        <div className="ai-chat-header">
+                            <div className="ai-header-left">
+                                <div className="ai-header-avatar">
                                     <img src={otakuAI} alt="OtakuAI" />
                                 </div>
-                                <div className="companion-info">
-                                    <h3>OtakuAI</h3>
-                                    <div className="companion-status">
-                                        <span className="status-dot"></span>
-                                        <span>Ready to Binge</span>
+                                <div className="ai-header-info">
+                                    <h1 className="ai-header-name">
+                                        <span>{user ? `Hi, ${user.name || user.email?.split('@')[0] || 'there'}` : 'OtakuAI'}</span>
+                                    </h1>
+                                    <div className="ai-header-status">
+                                        <span className={`ai-status-dot ${user ? 'personalized' : ''}`}></span>
+                                        <span>{user ? 'Personalized AI' : 'Ready to help'}</span>
                                     </div>
                                 </div>
                             </div>
-                            <button className="clear-chat-pill" onClick={handleClearChat}>
-                                Clear History
+                            <button className="ai-clear-btn" onClick={handleClearChat}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                </svg>
+                                <span>Clear</span>
                             </button>
                         </div>
 
-                        <div className="chat-box">
-                            <div
-                                className="messages-box"
-                                ref={chatContainerRef}
-                                onScroll={checkScrollPosition}
-                            >
-                                <AnimatePresence initial={false}>
-                                    {messages.map((msg) => (
-                                        <motion.div
-                                            key={msg.id || Math.random()}
-                                            className={`message-bubble ${msg.role} ${msg.mood || ''}`}
-                                            initial={{ opacity: 0, y: 15, scale: 0.98 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            transition={{ duration: 0.35 }}
-                                        >
-                                            <div className="message-header">
-                                                <div className={`message-avatar ${msg.role}`}>
-                                                    {msg.role === "user" ? (
-                                                        user?.photo ? (
-                                                            <img src={user.photo} alt="User" className="user-avatar-img" />
-                                                        ) : (
-                                                            <div className="user-initials">
-                                                                {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
-                                                            </div>
-                                                        )
+                        {/* ── Messages ── */}
+                        <div
+                            className="ai-messages-area"
+                            ref={chatContainerRef}
+                            onScroll={checkScrollPosition}
+                        >
+                            <AnimatePresence initial={false}>
+                                {messages.map((msg) => (
+                                    <motion.div
+                                        key={msg.id || Math.random()}
+                                        className={`ai-msg ${msg.role} ${msg.mood || ''} ${msg.isError ? 'is-error' : ''}`}
+                                        initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{ duration: 0.35 }}
+                                    >
+                                        <div className="ai-msg-header">
+                                            <div className={`ai-msg-avatar ${msg.role}`}>
+                                                {msg.role === "user" ? (
+                                                    user?.photo ? (
+                                                        <img src={user.photo} alt="" className="user-avatar-img" />
                                                     ) : (
-                                                        <img src={otakuAI} alt="AI" className="ai-avatar-img" />
-                                                    )}
-                                                </div>
-                                                <div className="message-meta">
-                                                    <span className="message-sender">
-                                                        {msg.role === "user" ? (user?.name || "You") : "Otaku AI"}
-                                                    </span>
-                                                    <span className="message-time">{msg.timestamp}</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="message-content">
-                                                {msg.role === "ai" ? (
-                                                    <div className="markdown-content">
-                                                        <ReactMarkdown
-                                                            remarkPlugins={[remarkGfm]}
-                                                            components={{
-                                                                p: props => <p className="md-p" {...props} />,
-                                                                strong: props => <strong className="md-bold" {...props} />,
-                                                                code: props => <code className="md-code" {...props} />
-                                                            }}
-                                                        >
-                                                            {msg.text || ""}
-                                                        </ReactMarkdown>
-                                                    </div>
+                                                        <div className="ai-msg-initials">
+                                                            {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                                                        </div>
+                                                    )
                                                 ) : (
-                                                    msg.text
+                                                    <img src={otakuAI} alt="" className="ai-avatar-img" />
                                                 )}
                                             </div>
+                                            <span className="ai-msg-sender">
+                                                {msg.role === "user" ? (user?.name || "You") : "Otaku AI"}
+                                            </span>
+                                            <span className="ai-msg-time">{msg.timestamp}</span>
+                                        </div>
 
-                                            {msg.anime && msg.anime.length > 0 && (
-                                                <div className="anime-recommendations-box">
-                                                    <div className="anime-cards-grid">
-                                                        {msg.anime.map((a, idx) => a && (
-                                                            <AnimeCard
-                                                                key={a.id || idx}
-                                                                anime={a}
-                                                                index={idx}
-                                                                onClick={handleCardClick}
-                                                                customWidth={isMobile ? '135px' : '185px'}
-                                                                customHeight={isMobile ? '195px' : '265px'}
-                                                            />
-                                                        ))}
-                                                    </div>
+                                        <div className="ai-msg-content">
+                                            {renderMessageContent(msg)}
+                                        </div>
+
+                                        {msg.anime && msg.anime.length > 0 && (
+                                            <div className="ai-recs">
+                                                <div className="ai-recs-label">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                                    </svg>
+                                                    Recommendations
                                                 </div>
-                                            )}
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
+                                                <div className="ai-recs-grid">
+                                                    {msg.anime.map((a, idx) => a && (
+                                                        <AnimeCard
+                                                            key={a.id || idx}
+                                                            anime={a}
+                                                            index={idx}
+                                                            onClick={handleCardClick}
+                                                            customWidth={isMobile ? '135px' : '175px'}
+                                                            customHeight={isMobile ? '195px' : '250px'}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
 
-                                {streaming && (
-                                    <div className="message-bubble ai streaming">
-                                        <div className="message-header">
-                                            <div className="message-avatar ai">
-                                                <img src={otakuAI} alt="AI" className="ai-avatar-img" />
-                                            </div>
-                                            <div className="message-meta">
-                                                <span className="message-sender">Otaku AI</span>
-                                            </div>
+                            {streaming && (
+                                <div className="ai-msg ai streaming">
+                                    <div className="ai-msg-header">
+                                        <div className="ai-msg-avatar ai">
+                                            <img src={otakuAI} alt="" className="ai-avatar-img" />
                                         </div>
-                                        <div className="message-content">
-                                            <div className="markdown-content">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                    {streamingText}
-                                                </ReactMarkdown>
-                                            </div>
+                                        <span className="ai-msg-sender">Otaku AI</span>
+                                    </div>
+                                    <div className="ai-msg-content">
+                                        <div className="ai-md">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                {streamingText}
+                                            </ReactMarkdown>
                                         </div>
                                     </div>
-                                )}
-
-                                {loading && !streaming && (
-                                    <div className="message-bubble ai loading">
-                                        <div className="typing-indicator">
-                                            <span></span><span></span><span></span>
-                                        </div>
-                                    </div>
-                                )}
-                                <div ref={messagesEndRef} />
-                            </div>
-
-                            <div className="chat-footer">
-                                {conversationContext.suggestions && conversationContext.suggestions.length > 0 && !loading && (
-                                    <div className="quick-suggestions">
-                                        {conversationContext.suggestions.map((s, i) => (
-                                            <button key={i} className="suggestion-chip" onClick={() => handlePromptClick(s)}>
-                                                {s}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                                <div className="input-wrapper">
-                                    <input
-                                        type="text"
-                                        value={input}
-                                        onChange={(e) => setInput(e.target.value)}
-                                        onKeyPress={handleKeyPress}
-                                        placeholder="Message OtakuAI..."
-                                        className="message-input"
-                                        disabled={loading}
-                                    />
-                                    <button
-                                        onClick={sendMessage}
-                                        className="send-button"
-                                        disabled={loading || !input.trim()}
-                                        title="Send message"
-                                    >
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                        </svg>
-                                    </button>
                                 </div>
+                            )}
+
+                            {loading && !streaming && (
+                                <div className="ai-msg ai-typing">
+                                    <div className="ai-typing-dots">
+                                        <span></span><span></span><span></span>
+                                    </div>
+                                </div>
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* ── Footer ── */}
+                        <div className="ai-chat-footer">
+                            {conversationContext.suggestions && conversationContext.suggestions.length > 0 && !loading && (
+                                <div className="ai-suggestions">
+                                    {conversationContext.suggestions.map((s, i) => (
+                                        <button key={i} className="ai-chip" onClick={() => handlePromptClick(s)}>
+                                            {s}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            <div className="ai-input-row">
+                                <input
+                                    type="text"
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    placeholder="Message OtakuAI..."
+                                    className="ai-input"
+                                    disabled={loading}
+                                />
+                                <button
+                                    onClick={sendMessage}
+                                    className="ai-send-btn"
+                                    disabled={loading || !input.trim()}
+                                    title="Send message"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -436,11 +462,11 @@ I've analyzed your profile and I'm ready to dive deep into discussions or find y
 
             {showScrollButton && (
                 <button
-                    className="scroll-to-bottom-btn"
+                    className="ai-scroll-btn"
                     onClick={handleScrollToBottom}
                     title="Scroll to latest"
                 >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                 </button>

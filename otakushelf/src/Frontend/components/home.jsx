@@ -14,7 +14,7 @@ import PageLoader from './PageLoader.jsx';
 const API = import.meta.env.VITE_API_BASE_URL;
 
 // Stale-while-revalidate key
-const CACHE_KEY = 'animeSections_normalized_v1'; // normalized data — instant reads
+const CACHE_KEY = 'animeSections_normalized_v2'; // normalized data — instant reads
 const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
 const STALE_TIME = 1000 * 60 * 60; // 1 hour — matches backend TTL
 
@@ -216,7 +216,7 @@ const AnimeHomepage = () => {
             trailer: anime.trailer || null,
             format: anime.format || null,
             season: anime.season || null,
-            year: anime.year || anime.startDate?.year || null,
+            year: anime.year || anime.startDate?.year || anime.seasonYear || null,
             startDate: anime.startDate || anime.aired?.from || null,
             endDate: anime.endDate || anime.aired?.to || null,
         };
