@@ -245,42 +245,52 @@ const AnimeHomepage = () => {
         };
     }, []);
 
-    // Stale-While-Revalidate Data Fetching
+    // Data Fetching with Fallback
     useEffect(() => {
+        let staleCacheRestored = false;
+
         const loadWrapper = async () => {
-            let hasCachedData = false;
+            const cachedRaw = localStorage.getItem(CACHE_KEY);
+            let cachedSections = null;
+            let cacheAge = Infinity;
 
-            const cachedData = localStorage.getItem(CACHE_KEY);
-            if (cachedData) {
+            if (cachedRaw) {
                 try {
-                    const parsed = JSON.parse(cachedData);
-                    const age = Date.now() - (parseInt(localStorage.getItem(CACHE_TIME_KEY)) || 0);
+                    const parsed = JSON.parse(cachedRaw);
+                    cacheAge = Date.now() - (parseInt(localStorage.getItem(CACHE_TIME_KEY)) || 0);
+                    const hasContent = parsed.topAiring?.length > 0 || parsed.trending?.length > 0 ||
+                        parsed.upcoming?.length > 0 || parsed.topMovies?.length > 0 ||
+                        parsed.mostWatched?.length > 0 || parsed.topRated?.length > 0;
 
-                    if (parsed.topAiring && parsed.trending) {
-                        setSections(parsed);
-                        setLoading(false);
-                        hasCachedData = true;
-
-                        if (age < STALE_TIME) {
+                    if (hasContent) {
+                        cachedSections = parsed;
+                        if (cacheAge < STALE_TIME) {
+                            setSections(parsed);
+                            setLoading(false);
                             return;
                         }
                     }
                 } catch (e) {
-                    console.error("Cache parse error:", e);
                     localStorage.removeItem(CACHE_KEY);
                     localStorage.removeItem(CACHE_TIME_KEY);
                 }
             }
 
-            let apiFailed = false;
+            // Show stale cache immediately while fetching fresh data
+            if (cachedSections) {
+                setSections(cachedSections);
+                setLoading(false);
+                staleCacheRestored = true;
+            }
 
+            // Try backend first
+            let backendOk = false;
             try {
                 const response = await axios.get(`${API}/api/anime/anime-sections`, { timeout: 15000 });
                 const data = response.data.data;
+                const hasData = data && Object.values(data).some(arr => arr?.length > 0);
 
-                const sectionsExist = data && Object.values(data).some(arr => arr?.length > 0);
-
-                if (sectionsExist) {
+                if (hasData) {
                     const newSections = {
                         topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
                         mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
@@ -289,55 +299,49 @@ const AnimeHomepage = () => {
                         topRated: (data.topRated || []).map(normalizeGridAnime).filter(Boolean),
                         upcoming: (data.upcoming || []).map(normalizeGridAnime).filter(Boolean)
                     };
-
                     setSections(newSections);
                     localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
                     localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-                    setLoading(false);
-                    return;
+                    backendOk = true;
                 }
-
-                apiFailed = true;
             } catch (err) {
-                console.error("Backend fetch failed:", err);
-                apiFailed = true;
+                console.error("Backend fetch:", err.message);
             }
 
-            // Fallback: call AniList directly from the browser
-            if (apiFailed && !hasCachedData) {
-                try {
-                    const sectionKeys = ['trending', 'topAiring', 'upcoming', 'topMovies', 'mostWatched', 'topRated'];
-                    const results = {};
+            if (backendOk) {
+                if (!staleCacheRestored) setLoading(false);
+                return;
+            }
 
-                    for (const key of sectionKeys) {
-                        try {
-                            results[key] = await fetchAniListSection(key);
-                        } catch (e) {
-                            console.error(`Direct AniList ${key}:`, e);
-                            results[key] = [];
-                        }
+            // Fallback: call AniList directly from browser
+            try {
+                const sectionKeys = ['trending', 'topAiring', 'upcoming', 'topMovies', 'mostWatched', 'topRated'];
+                const results = {};
+                for (const key of sectionKeys) {
+                    try {
+                        results[key] = await fetchAniListSection(key);
+                    } catch (e) {
+                        results[key] = [];
                     }
-
-                    const newSections = {
-                        topAiring: (results.topAiring || []).map(normalizeGridAnime).filter(Boolean),
-                        mostWatched: (results.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                        topMovies: (results.topMovies || []).map(normalizeGridAnime).filter(Boolean),
-                        trending: (results.trending || []).map(normalizeGridAnime).filter(Boolean),
-                        topRated: (results.topRated || []).map(normalizeGridAnime).filter(Boolean),
-                        upcoming: (results.upcoming || []).map(normalizeGridAnime).filter(Boolean)
-                    };
-
-                    setSections(newSections);
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
-                    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-                } catch (e) {
-                    console.error("Direct AniList fallback failed:", e);
-                } finally {
-                    setLoading(false);
                 }
-            } else if (!hasCachedData) {
-                setLoading(false);
+
+                const newSections = {
+                    trending: (results.trending || []).map(normalizeGridAnime).filter(Boolean),
+                    topAiring: (results.topAiring || []).map(normalizeGridAnime).filter(Boolean),
+                    upcoming: (results.upcoming || []).map(normalizeGridAnime).filter(Boolean),
+                    topMovies: (results.topMovies || []).map(normalizeGridAnime).filter(Boolean),
+                    mostWatched: (results.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
+                    topRated: (results.topRated || []).map(normalizeGridAnime).filter(Boolean),
+                };
+
+                setSections(newSections);
+                localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
+                localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+            } catch (e) {
+                console.error("AniList fallback failed:", e);
             }
+
+            if (!staleCacheRestored) setLoading(false);
         };
 
         loadWrapper();
