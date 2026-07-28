@@ -146,4 +146,95 @@ router.get('/anime/:id', async (c) => {
   return success(c, 'Anime details', data.Media)
 })
 
+// ── POST /api/anime/related ──────────────────────────────────────────────────
+router.post('/related', async (c) => {
+  const { id, type } = await c.req.json()
+  if (!id) return error(c, 'Anime ID is required', 400)
+
+  const cacheKey = `related:${id}`
+  const cache = c.env.CACHE
+  const cached = await cache?.get(cacheKey, 'json')
+  if (cached) return success(c, 'Related anime (cached)', cached)
+
+  const query = `
+    query ($id: Int) {
+      Media(id: $id, type: ANIME) {
+        relations {
+          edges {
+            relationType
+            node {
+              id idMal title { romaji english native userPreferred }
+              type coverImage { large medium extraLarge } bannerImage
+              status description episodes averageScore format genres
+              studios { edges { node { name } } }
+              startDate { year month day } endDate { year month day }
+              season seasonYear popularity isAdult trailer { id site }
+            }
+          }
+        }
+      }
+    }`
+
+  const data = await fetchAniList(query, { id: parseInt(id) })
+  const edges = data.Media?.relations?.edges || []
+  const animeEdges = edges.filter(e => !type || e?.node?.type === type)
+
+  await cache?.put(cacheKey, JSON.stringify(animeEdges), { expirationTtl: 3600 })
+
+  return success(c, 'Related anime', animeEdges)
+})
+
+// ── POST /api/anime/advanced-search ──────────────────────────────────────────
+router.post('/advanced-search', async (c) => {
+  const {
+    search, genres, genre_in, format_in, status_in,
+    season, seasonYear, averageScore_greater, page = 1, perPage = 50,
+  } = await c.req.json()
+
+  const cacheParts = [search || '', (genres || genre_in || []).sort().join(','), (format_in || []).sort().join(','), (status_in || []).sort().join(','), season || '', seasonYear || '', averageScore_greater || '', page]
+  const cacheKey = `advsearch:${cacheParts.join('|')}`
+  const cache = c.env.CACHE
+  const cached = await cache?.get(cacheKey, 'json')
+  if (cached) return success(c, 'Advanced search results (cached)', cached)
+
+  const query = `
+    query ($page: Int, $perPage: Int, $search: String, $genre_in: [String], $format_in: [MediaFormat], $status_in: [MediaStatus], $season: Season, $seasonYear: Int, $averageScore_greater: Int) {
+      Page(page: $page, perPage: $perPage) {
+        pageInfo { total currentPage lastPage hasNextPage perPage }
+        media(
+          search: $search type: ANIME isAdult: false
+          genre_in: $genre_in format_in: $format_in status_in: $status_in
+          season: $season seasonYear: $seasonYear averageScore_greater: $averageScore_greater
+          sort: POPULARITY_DESC
+        ) {
+          id idMal title { romaji english native }
+          coverImage { extraLarge large medium } bannerImage
+          startDate { year month day } endDate { year month day }
+          description episodes format status genres averageScore
+          trailer { id site } studios { edges { node { name } } }
+          relations { edges { relationType node { id title { romaji } type } } }
+        }
+      }
+    }`
+
+  const variables = { page: parseInt(page), perPage: parseInt(perPage) }
+  if (search) variables.search = search
+  if (genre_in || genres) variables.genre_in = genre_in || genres
+  if (format_in?.length) variables.format_in = format_in
+  if (status_in?.length) variables.status_in = status_in
+  if (season) variables.season = season
+  if (seasonYear) variables.seasonYear = parseInt(seasonYear)
+  if (averageScore_greater) variables.averageScore_greater = parseInt(averageScore_greater)
+
+  const data = await fetchAniList(query, variables)
+  const result = {
+    items: filterAdult(data.Page.media),
+    pageInfo: data.Page.pageInfo,
+  }
+
+  await cache?.put(cacheKey, JSON.stringify(result), { expirationTtl: 300 })
+
+  return success(c, 'Advanced search results', result)
+})
+
 export default router
