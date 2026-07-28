@@ -12,11 +12,34 @@ import PageLoader from './PageLoader.jsx';
 
 // API base URL
 const API = import.meta.env.VITE_API_BASE_URL;
+const ANILIST_URL = 'https://graphql.anilist.co';
 
 // Stale-while-revalidate key
-const CACHE_KEY = 'animeSections_normalized_v2'; // normalized data — instant reads
+const CACHE_KEY = 'animeSections_normalized_v2';
 const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
-const STALE_TIME = 1000 * 60 * 60; // 1 hour — matches backend TTL
+const STALE_TIME = 1000 * 60 * 60;
+
+const ANILIST_SECTION_QUERIES = {
+  topAiring: `query { Page(perPage: 10) { media(status: RELEASING, sort: SCORE_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes nextAiringEpisode { episode airingAt } format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
+  trending: `query { Page(perPage: 10) { media(sort: TRENDING_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
+  topRated: `query { Page(perPage: 10) { media(sort: SCORE_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
+  upcoming: `query { Page(perPage: 10) { media(status: NOT_YET_RELEASED, sort: POPULARITY_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
+  topMovies: `query { Page(perPage: 10) { media(format: MOVIE, sort: POPULARITY_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
+  mostWatched: `query { Page(perPage: 10) { media(sort: POPULARITY_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
+};
+
+const GENRE_FILTERS = ['Hentai'];
+
+async function fetchAniListSection(key) {
+  const res = await fetch(ANILIST_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ query: ANILIST_SECTION_QUERIES[key] }),
+  });
+  if (!res.ok) throw new Error(`AniList ${key}: ${res.status}`);
+  const json = await res.json();
+  return (json.data?.Page?.media || []).filter(m => !m.genres?.some(g => GENRE_FILTERS.includes(g)));
+}
 
 import AnimeCard from './AnimeCardUI.jsx';
 // Section Component to manage its own "View More" state
@@ -227,7 +250,6 @@ const AnimeHomepage = () => {
         const loadWrapper = async () => {
             let hasCachedData = false;
 
-            // 1. Load pre-normalized data from cache — truly instant, no processing needed
             const cachedData = localStorage.getItem(CACHE_KEY);
             if (cachedData) {
                 try {
@@ -235,15 +257,13 @@ const AnimeHomepage = () => {
                     const age = Date.now() - (parseInt(localStorage.getItem(CACHE_TIME_KEY)) || 0);
 
                     if (parsed.topAiring && parsed.trending) {
-                        // Direct assignment — data is already normalized, zero extra work
                         setSections(parsed);
                         setLoading(false);
                         hasCachedData = true;
 
                         if (age < STALE_TIME) {
-                            return; // Fresh enough, skip network
+                            return;
                         }
-                        // Stale — fall through to background refresh
                     }
                 } catch (e) {
                     console.error("Cache parse error:", e);
@@ -252,30 +272,71 @@ const AnimeHomepage = () => {
                 }
             }
 
-            // 2. Fetch & Normalize Fresh Data (or background update)
+            let apiFailed = false;
+
             try {
                 const response = await axios.get(`${API}/api/anime/anime-sections`, { timeout: 15000 });
                 const data = response.data.data;
 
-                const newSections = {
-                    topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
-                    mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                    topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean),
-                    trending: (data.trending || []).map(normalizeGridAnime).filter(Boolean),
-                    topRated: (data.topRated || []).map(normalizeGridAnime).filter(Boolean),
-                    upcoming: (data.upcoming || []).map(normalizeGridAnime).filter(Boolean)
-                };
+                const sectionsExist = data && Object.values(data).some(arr => arr?.length > 0);
 
-                setSections(newSections);
-                setLoading(false);
+                if (sectionsExist) {
+                    const newSections = {
+                        topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
+                        mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
+                        topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean),
+                        trending: (data.trending || []).map(normalizeGridAnime).filter(Boolean),
+                        topRated: (data.topRated || []).map(normalizeGridAnime).filter(Boolean),
+                        upcoming: (data.upcoming || []).map(normalizeGridAnime).filter(Boolean)
+                    };
 
-                // Store normalized sections — next load reads this directly with no processing
-                localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
-                localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+                    setSections(newSections);
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
+                    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+                    setLoading(false);
+                    return;
+                }
 
+                apiFailed = true;
             } catch (err) {
-                console.error("Network fetch failed:", err);
-                if (!hasCachedData) setLoading(false);
+                console.error("Backend fetch failed:", err);
+                apiFailed = true;
+            }
+
+            // Fallback: call AniList directly from the browser
+            if (apiFailed && !hasCachedData) {
+                try {
+                    const sectionKeys = ['trending', 'topAiring', 'upcoming', 'topMovies', 'mostWatched', 'topRated'];
+                    const results = {};
+
+                    for (const key of sectionKeys) {
+                        try {
+                            results[key] = await fetchAniListSection(key);
+                        } catch (e) {
+                            console.error(`Direct AniList ${key}:`, e);
+                            results[key] = [];
+                        }
+                    }
+
+                    const newSections = {
+                        topAiring: (results.topAiring || []).map(normalizeGridAnime).filter(Boolean),
+                        mostWatched: (results.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
+                        topMovies: (results.topMovies || []).map(normalizeGridAnime).filter(Boolean),
+                        trending: (results.trending || []).map(normalizeGridAnime).filter(Boolean),
+                        topRated: (results.topRated || []).map(normalizeGridAnime).filter(Boolean),
+                        upcoming: (results.upcoming || []).map(normalizeGridAnime).filter(Boolean)
+                    };
+
+                    setSections(newSections);
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
+                    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+                } catch (e) {
+                    console.error("Direct AniList fallback failed:", e);
+                } finally {
+                    setLoading(false);
+                }
+            } else if (!hasCachedData) {
+                setLoading(false);
             }
         };
 

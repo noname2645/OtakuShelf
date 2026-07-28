@@ -8,7 +8,11 @@ const ANILIST_URL = 'https://graphql.anilist.co'
 async function fetchAniList(query, variables = {}) {
   const res = await fetch(ANILIST_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'User-Agent': 'OtakuShelf/3.0 (anime tracker; https://otakushelf.pages.dev)',
+    },
     body: JSON.stringify({ query, variables }),
   })
   if (!res.ok) {
@@ -79,9 +83,13 @@ router.get('/anime-sections', async (c) => {
     } catch (e) {
       console.error(`AniList ${key}: ${e.message}`)
     }
+    await new Promise(r => setTimeout(r, 200))
   }
 
-  await cache?.put(cacheKey, JSON.stringify(sections), { expirationTtl: 86400 })
+  const hasData = Object.values(sections).some(arr => arr?.length > 0)
+  if (hasData) {
+    await cache?.put(cacheKey, JSON.stringify(sections), { expirationTtl: 86400 })
+  }
 
   return success(c, 'Anime sections fetched', sections)
 })
