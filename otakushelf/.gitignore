@@ -25,9 +25,11 @@ node_modules
 
 Backend/package.json
 Backend/package-lock.json
+.env
 .env.local
 .env.development
 .env.production
+.dev.vars
 
 # Security audit and implementation documentation
 IMPLEMENTATION_SUMMARY.md

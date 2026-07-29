@@ -36,6 +36,9 @@ const MEDIA_FIELDS = `
   averageScore
   popularity
   bannerImage
+  startDate { year month day }
+  endDate { year month day }
+  studios { edges { node { name } } }
   trailer { id site }
 `
 
