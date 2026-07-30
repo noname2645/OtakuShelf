@@ -37,14 +37,14 @@ var __publicField = (obj, key, value) => {
   return value;
 };
 
-// .wrangler/tmp/bundle-0Lrlsd/strip-cf-connecting-ip-header.js
+// .wrangler/tmp/bundle-SId5jR/strip-cf-connecting-ip-header.js
 function stripCfConnectingIPHeader(input, init) {
   const request = new Request(input, init);
   request.headers.delete("CF-Connecting-IP");
   return request;
 }
 var init_strip_cf_connecting_ip_header = __esm({
-  ".wrangler/tmp/bundle-0Lrlsd/strip-cf-connecting-ip-header.js"() {
+  ".wrangler/tmp/bundle-SId5jR/strip-cf-connecting-ip-header.js"() {
     __name(stripCfConnectingIPHeader, "stripCfConnectingIPHeader");
     globalThis.fetch = new Proxy(globalThis.fetch, {
       apply(target, thisArg, argArray) {
@@ -13360,6 +13360,13 @@ function createDb(env2) {
       await m.delete({ where: { id: item.id } });
       return 1;
     },
+    updateById: async (collection, id, update) => {
+      const m = model(prisma, collection);
+      if (update.$set) {
+        await m.update({ where: { id }, data: update.$set });
+      }
+      return { modifiedCount: 1 };
+    },
     findOneAndUpdate: async (collection, filter, update, opts = {}) => {
       const m = model(prisma, collection);
       const item = await m.findFirst({ where: t(filter) });
@@ -24259,14 +24266,14 @@ var require_xml2js = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-0Lrlsd/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-SId5jR/middleware-loader.entry.ts
 init_strip_cf_connecting_ip_header();
 init_modules_watch_stub();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// .wrangler/tmp/bundle-0Lrlsd/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-SId5jR/middleware-insertion-facade.js
 init_strip_cf_connecting_ip_header();
 init_modules_watch_stub();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
@@ -28119,24 +28126,20 @@ router5.delete("/:userId/:animeId", authenticateToken, authorizeUser, async (c) 
   if (!list)
     return error3(c, "List not found", 404);
   const categories = ["watching", "completed", "planned", "dropped", "favorites"];
-  let found = false;
   for (const cat of categories) {
-    const idx = list[cat]?.findIndex((a) => a.animeId === animeId);
-    if (idx !== void 0 && idx >= 0) {
-      await db.updateOne(
-        "animerists",
-        { userId: { $oid: userId } },
-        { $pull: { [cat]: { animeId } } }
-      );
-      found = true;
-      break;
+    const arr = list[cat];
+    if (!Array.isArray(arr))
+      continue;
+    const idx = arr.findIndex((a) => a.animeId === animeId);
+    if (idx >= 0) {
+      arr.splice(idx, 1);
+      await db.updateById("animerists", list._id, { $set: { [cat]: arr } });
+      setImmediate(() => badgeEngine_default(userId, c.env).catch(() => {
+      }));
+      return success(c, "Anime removed from list");
     }
   }
-  if (!found)
-    return error3(c, "Anime not found in list", 404);
-  setImmediate(() => badgeEngine_default(userId, c.env).catch(() => {
-  }));
-  return success(c, "Anime removed from list");
+  return error3(c, "Anime not found in list", 404);
 });
 router5.post("/favorite/:userId", authenticateToken, authorizeUser, async (c) => {
   const { db, lists } = setup5(c);
@@ -28346,6 +28349,7 @@ router5.post("/import/mal", authenticateToken, async (c) => {
         for (let i = 0; i < malIds.length; i += BATCH) {
           const batchIds = malIds.slice(i, i + BATCH);
           await sendProgress(env2, userId, 0, malAnimeList.length, `Fetching cover images: batch ${Math.floor(i / BATCH) + 1}...`);
+          await new Promise((r) => setTimeout(r, 150));
           try {
             const res = await fetch("https://graphql.anilist.co", {
               method: "POST",
@@ -29647,7 +29651,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-0Lrlsd/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-SId5jR/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -29684,7 +29688,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-0Lrlsd/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-SId5jR/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

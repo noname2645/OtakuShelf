@@ -120,6 +120,14 @@ export function createDb(env) {
       return 1
     },
 
+    updateById: async (collection, id, update) => {
+      const m = model(prisma, collection)
+      if (update.$set) {
+        await m.update({ where: { id }, data: update.$set })
+      }
+      return { modifiedCount: 1 }
+    },
+
     findOneAndUpdate: async (collection, filter, update, opts = {}) => {
       const m = model(prisma, collection)
       const item = await m.findFirst({ where: t(filter) })

@@ -148,25 +148,19 @@ router.delete('/:userId/:animeId', authenticateToken, authorizeUser, async (c) =
   if (!list) return error(c, 'List not found', 404)
 
   const categories = ['watching', 'completed', 'planned', 'dropped', 'favorites']
-  let found = false
   for (const cat of categories) {
-    const idx = list[cat]?.findIndex(a => a.animeId === animeId)
-    if (idx !== undefined && idx >= 0) {
-      await db.updateOne(
-        'animerists',
-        { userId: { $oid: userId } },
-        { $pull: { [cat]: { animeId } } }
-      )
-      found = true
-      break
+    const arr = list[cat]
+    if (!Array.isArray(arr)) continue
+    const idx = arr.findIndex(a => a.animeId === animeId)
+    if (idx >= 0) {
+      arr.splice(idx, 1)
+      await db.updateById('animerists', list._id, { $set: { [cat]: arr } })
+      setImmediate(() => evaluateBadges(userId, c.env).catch(() => {}))
+      return success(c, 'Anime removed from list')
     }
   }
 
-  if (!found) return error(c, 'Anime not found in list', 404)
-
-  setImmediate(() => evaluateBadges(userId, c.env).catch(() => {}))
-
-  return success(c, 'Anime removed from list')
+  return error(c, 'Anime not found in list', 404)
 })
 
 // ── POST /api/list/favorite/:userId ──────────────────────────────────────────
@@ -385,6 +379,7 @@ router.post('/import/mal', authenticateToken, async (c) => {
         for (let i = 0; i < malIds.length; i += BATCH) {
           const batchIds = malIds.slice(i, i + BATCH)
           await sendProgress(env, userId, 0, malAnimeList.length, `Fetching cover images: batch ${Math.floor(i / BATCH) + 1}...`)
+          await new Promise(r => setTimeout(r, 150))
 
           try {
             const res = await fetch('https://graphql.anilist.co', {
