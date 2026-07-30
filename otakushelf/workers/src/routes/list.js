@@ -295,6 +295,32 @@ function getCategoryFromMalStatus(malStatus) {
   return 'planned'
 }
 
+function safeDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return null
+  const t = dateStr.trim()
+  if (!t) return null
+  const d = new Date(t)
+  return isNaN(d.getTime()) ? null : d
+}
+
+function buildEntry(malAnime, meta, malIdStr, malTitle, totalEpisodes, episodesWatched, userRating, category, processed) {
+  const entry = {
+    title: meta.title || malTitle,
+    animeId: malIdStr || `mal_${Date.now()}_${processed}`,
+    malId: malIdStr,
+    image: meta.image,
+    totalEpisodes, episodes: totalEpisodes, episodesWatched,
+    status: category, genres: meta.genres,
+    userRating: userRating > 0 ? Math.round(userRating / 2) : 0,
+    addedDate: (safeDate(malAnime.my_start_date) || new Date()).toISOString(),
+  }
+  if (category === 'completed') {
+    entry.finishDate = (safeDate(malAnime.my_finish_date) || new Date()).toISOString()
+    entry.episodesWatched = totalEpisodes
+  }
+  return entry
+}
+
 // ── POST /api/list/import/mal ────────────────────────────────────────────────
 router.post('/import/mal', authenticateToken, async (c) => {
   try {
@@ -359,7 +385,6 @@ router.post('/import/mal', authenticateToken, async (c) => {
         for (let i = 0; i < malIds.length; i += BATCH) {
           const batchIds = malIds.slice(i, i + BATCH)
           await sendProgress(env, userId, 0, malAnimeList.length, `Fetching cover images: batch ${Math.floor(i / BATCH) + 1}...`)
-          await new Promise(r => setTimeout(r, 350))
 
           try {
             const res = await fetch('https://graphql.anilist.co', {
@@ -414,9 +439,11 @@ router.post('/import/mal', authenticateToken, async (c) => {
 
         await sendProgress(env, userId, 0, malAnimeList.length, 'Saving anime entries to your list...')
 
-        let processed = 0, imported = 0, skipped = 0
+        let processed = 0, imported = 0, skipped = 0, lastProgress = 0
         const counts = { watching: 0, completed: 0, planned: 0, dropped: 0 }
         const importedIds = new Set()
+        const pending = { watching: [], completed: [], planned: [], dropped: [] }
+        const modifiedCategories = new Set()
 
         for (const malAnime of malAnimeList) {
           processed++
@@ -431,40 +458,52 @@ router.post('/import/mal', authenticateToken, async (c) => {
 
             const malIdStr = malId ? malId.toString() : ''
 
-            // Skip duplicates (MAL XML sometimes has the same series_animedb_id twice)
             if (malIdStr && importedIds.has(malIdStr)) { skipped++; continue }
             if (malIdStr) importedIds.add(malIdStr)
 
-            await sendProgress(env, userId, processed, malAnimeList.length, `Saving: ${malTitle.substring(0, 30)}...`)
+            if (processed - lastProgress >= 100 || processed === malAnimeList.length) {
+              lastProgress = processed
+              await sendProgress(env, userId, processed, malAnimeList.length, `Importing: ${malTitle.substring(0, 30)}...`)
+            }
 
             if (!clearExisting && malIdStr) {
-              const cat = list?.[category] || []
-              if (cat.some(a => a.malId === malIdStr)) { skipped++; continue }
+              const allCategories = ['watching','completed','planned','dropped']
+              const existingEntry = allCategories.reduce((found, cat) => {
+                return found || (list?.[cat]?.find(a => a.malId === malIdStr) && cat)
+              }, null)
+              if (existingEntry) {
+                if (existingEntry === category) {
+                  const existingData = list[category].find(a => a.malId === malIdStr)
+                  if (existingData) {
+                    existingData.episodesWatched = category === 'completed' ? totalEpisodes : episodesWatched
+                    if (userRating > 0) existingData.userRating = Math.round(userRating / 2)
+                    const sd = safeDate(malAnime.my_start_date)
+                    if (sd) existingData.addedDate = sd.toISOString()
+                    if (category === 'completed') {
+                      const fd = safeDate(malAnime.my_finish_date)
+                      if (fd) existingData.finishDate = fd.toISOString()
+                    }
+                  }
+                  modifiedCategories.add(category)
+                } else {
+                  list[existingEntry] = list[existingEntry].filter(a => a.malId !== malIdStr)
+                  let meta = metadataMap.get(malIdStr)
+                  if (!meta) meta = await fetchFallback(malId, malTitle)
+                  const movedEntry = buildEntry(malAnime, meta, malIdStr, malTitle, totalEpisodes, episodesWatched, userRating, category, processed)
+                  pending[category].push(movedEntry)
+                  modifiedCategories.add(existingEntry)
+                }
+                counts[category]++
+                imported++
+                continue
+              }
             }
 
             let meta = metadataMap.get(malIdStr)
             if (!meta) meta = await fetchFallback(malId, malTitle)
 
-            const entry = {
-              title: meta.title || malTitle,
-              animeId: malIdStr || `mal_${Date.now()}_${processed}`,
-              malId: malIdStr,
-              image: meta.image,
-              totalEpisodes, episodes: totalEpisodes, episodesWatched,
-              status: category, genres: meta.genres,
-              userRating: userRating > 0 ? Math.round(userRating / 2) : undefined,
-              addedDate: malAnime.my_start_date ? new Date(malAnime.my_start_date).toISOString() : new Date().toISOString(),
-            }
-
-            if (category === 'completed') {
-              entry.finishDate = malAnime.my_finish_date ? new Date(malAnime.my_finish_date).toISOString() : new Date().toISOString()
-              entry.episodesWatched = totalEpisodes
-            }
-
-            await db.updateOne(
-              'animerists',
-              { userId: { $oid: userId } },
-              { $push: { [category]: entry } }
+            pending[category].push(
+              buildEntry(malAnime, meta, malIdStr, malTitle, totalEpisodes, episodesWatched, userRating, category, processed)
             )
             counts[category]++
             imported++
@@ -472,6 +511,18 @@ router.post('/import/mal', authenticateToken, async (c) => {
             console.error(`MAL entry failed:`, e.message)
           }
         }
+
+        // Batch-write: read fresh, merge in-memory edits + pending, write once per category
+        const finalList = await lists.findByUserId(userId)
+        for (const cat of ['watching', 'completed', 'planned', 'dropped']) {
+          if (modifiedCategories.has(cat)) finalList[cat] = list[cat]
+          if (pending[cat].length > 0) finalList[cat].push(...pending[cat])
+        }
+        await db.updateOne(
+          'animerists',
+          { userId: { $oid: userId } },
+          { $set: { watching: finalList.watching, completed: finalList.completed, planned: finalList.planned, dropped: finalList.dropped } }
+        )
 
         await sendProgress(env, userId, malAnimeList.length, malAnimeList.length,
           `Imported ${imported} anime (W:${counts.watching} C:${counts.completed} P:${counts.planned} D:${counts.dropped})${skipped ? `, skipped ${skipped} duplicates` : ''}`,

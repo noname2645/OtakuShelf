@@ -82,7 +82,11 @@ export function createDb(env) {
       } else if (update.$push) {
         const [field, value] = Object.entries(update.$push)[0]
         const arr = item[field] || []
-        arr.push(value)
+        if (value && typeof value === 'object' && '$each' in value) {
+          arr.push(...value.$each)
+        } else {
+          arr.push(value)
+        }
         await m.update({ where: { id: item.id }, data: { [field]: arr } })
       } else if (update.$pull) {
         const [field, cond] = Object.entries(update.$pull)[0]

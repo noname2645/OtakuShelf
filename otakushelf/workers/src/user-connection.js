@@ -1,7 +1,8 @@
-export class UserConnection {
+import { DurableObject } from 'cloudflare:workers'
+
+export class UserConnection extends DurableObject {
   constructor(state, env) {
-    this.state = state
-    this.env = env
+    super(state, env)
     this.sessions = new Map()
   }
 
@@ -20,7 +21,7 @@ export class UserConnection {
     const pair = new WebSocketPair()
     const [client, server] = Object.values(pair)
 
-    this.state.acceptWebSocket(server)
+    this.ctx.acceptWebSocket(server)
 
     const id = crypto.randomUUID()
     this.sessions.set(id, { ws: server, userId })
