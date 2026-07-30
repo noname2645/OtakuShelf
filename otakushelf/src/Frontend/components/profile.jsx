@@ -101,7 +101,7 @@ const ProfilePage = () => {
   const loadAllBadgeDefs = async () => {
     try {
       const res = await api.get(`${API}/api/badges/all`);
-      setAllBadgeDefs(res.data?.data?.badges || []);
+      setAllBadgeDefs(res.data?.data || []);
     } catch (e) {
       console.error('Failed to load badge definitions:', e);
     }
@@ -988,7 +988,7 @@ const ProfilePage = () => {
                     : (anime?.title || "Unknown Title");
                   const imageSrc = anime.coverImage?.extraLarge || anime.coverImage?.large || anime.image || '/placeholder-anime.jpg';
                   return (
-                    <div key={anime.id || anime.title || idx} className="masonry-card">
+                    <div key={anime.animeId || idx} className="masonry-card">
                       <img src={imageSrc} alt={displayTitle} />
                       <div className="masonry-overlay">
                         <span className="masonry-title">{displayTitle}</span>

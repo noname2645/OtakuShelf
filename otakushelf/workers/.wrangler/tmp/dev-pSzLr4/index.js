@@ -37,14 +37,14 @@ var __publicField = (obj, key, value) => {
   return value;
 };
 
-// .wrangler/tmp/bundle-SId5jR/strip-cf-connecting-ip-header.js
+// .wrangler/tmp/bundle-ojxQWK/strip-cf-connecting-ip-header.js
 function stripCfConnectingIPHeader(input, init) {
   const request = new Request(input, init);
   request.headers.delete("CF-Connecting-IP");
   return request;
 }
 var init_strip_cf_connecting_ip_header = __esm({
-  ".wrangler/tmp/bundle-SId5jR/strip-cf-connecting-ip-header.js"() {
+  ".wrangler/tmp/bundle-ojxQWK/strip-cf-connecting-ip-header.js"() {
     __name(stripCfConnectingIPHeader, "stripCfConnectingIPHeader");
     globalThis.fetch = new Proxy(globalThis.fetch, {
       apply(target, thisArg, argArray) {
@@ -24266,14 +24266,14 @@ var require_xml2js = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-SId5jR/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-ojxQWK/middleware-loader.entry.ts
 init_strip_cf_connecting_ip_header();
 init_modules_watch_stub();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// .wrangler/tmp/bundle-SId5jR/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-ojxQWK/middleware-insertion-facade.js
 init_strip_cf_connecting_ip_header();
 init_modules_watch_stub();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
@@ -28059,6 +28059,7 @@ router5.post("/:userId", authenticateToken, authorizeUser, async (c) => {
     episodes: anime.totalEpisodes || 0,
     episodesWatched: anime.episodesWatched || 0,
     addedDate: (/* @__PURE__ */ new Date()).toISOString(),
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
     userRating: anime.userRating || 0,
     status: category === "completed" ? "completed" : category === "planned" ? "planned" : category === "dropped" ? "dropped" : "watching",
     genres: anime.genres || []
@@ -28085,6 +28086,7 @@ router5.put("/:userId/:animeId", authenticateToken, authorizeUser, async (c) => 
   for (const cat of categories) {
     const idx = list[cat]?.findIndex((a) => a.animeId === animeId);
     if (idx !== void 0 && idx >= 0) {
+      updates.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
       for (const [key, value] of Object.entries(updates)) {
         const setKey = `${cat}.${idx}.${key}`;
         await db.updateOne(
@@ -28114,8 +28116,15 @@ router5.put("/:userId/:animeId", authenticateToken, authorizeUser, async (c) => 
   }
   if (!found)
     return error3(c, "Anime not found in list", 404);
-  setImmediate(() => badgeEngine_default(userId, c.env).catch(() => {
-  }));
+  setImmediate(async () => {
+    try {
+      const result = await badgeEngine_default(userId, c.env);
+      if (result.newBadges?.length > 0) {
+        await broadcastBadges(c.env, userId, result.newBadges);
+      }
+    } catch {
+    }
+  });
   return success(c, "Anime updated");
 });
 router5.delete("/:userId/:animeId", authenticateToken, authorizeUser, async (c) => {
@@ -28134,8 +28143,15 @@ router5.delete("/:userId/:animeId", authenticateToken, authorizeUser, async (c) 
     if (idx >= 0) {
       arr.splice(idx, 1);
       await db.updateById("animerists", list._id, { $set: { [cat]: arr } });
-      setImmediate(() => badgeEngine_default(userId, c.env).catch(() => {
-      }));
+      setImmediate(async () => {
+        try {
+          const result = await badgeEngine_default(userId, c.env);
+          if (result.newBadges?.length > 0) {
+            await broadcastBadges(c.env, userId, result.newBadges);
+          }
+        } catch {
+        }
+      });
       return success(c, "Anime removed from list");
     }
   }
@@ -28244,6 +28260,26 @@ async function sendProgress(env2, userId, current, total, message2, extra = {}) 
   }
 }
 __name(sendProgress, "sendProgress");
+async function broadcastBadges(env2, userId, newBadges) {
+  if (!newBadges || newBadges.length === 0)
+    return;
+  try {
+    const doId = env2.USER_CONNECTIONS.idFromName(userId);
+    const stub = env2.USER_CONNECTIONS.get(doId);
+    await stub.broadcast(userId, {
+      type: "BADGES_EARNED",
+      newBadges: newBadges.map((b) => ({
+        id: b.id,
+        title: b.title,
+        description: b.description,
+        rarity: b.rarity
+      }))
+    });
+  } catch (e) {
+    console.warn(`[Badges] WebSocket broadcast error:`, e.message);
+  }
+}
+__name(broadcastBadges, "broadcastBadges");
 function getCategoryFromMalStatus(malStatus) {
   if (!malStatus)
     return "planned";
@@ -28279,7 +28315,8 @@ function buildEntry(malAnime, meta, malIdStr, malTitle, totalEpisodes, episodesW
     status: category,
     genres: meta.genres,
     userRating: userRating > 0 ? Math.round(userRating / 2) : 0,
-    addedDate: (safeDate(malAnime.my_start_date) || /* @__PURE__ */ new Date()).toISOString()
+    addedDate: (safeDate(malAnime.my_start_date) || /* @__PURE__ */ new Date()).toISOString(),
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
   if (category === "completed") {
     entry.finishDate = (safeDate(malAnime.my_finish_date) || /* @__PURE__ */ new Date()).toISOString();
@@ -28451,6 +28488,7 @@ router5.post("/import/mal", authenticateToken, async (c) => {
                       if (fd)
                         existingData.finishDate = fd.toISOString();
                     }
+                    existingData.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
                   }
                   modifiedCategories.add(category);
                 } else {
@@ -29651,7 +29689,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-SId5jR/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-ojxQWK/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -29688,7 +29726,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-SId5jR/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-ojxQWK/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

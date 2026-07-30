@@ -70,6 +70,7 @@ router.post('/:userId', authenticateToken, authorizeUser, async (c) => {
     episodes: anime.totalEpisodes || 0,
     episodesWatched: anime.episodesWatched || 0,
     addedDate: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     userRating: anime.userRating || 0,
     status: category === 'completed' ? 'completed' : category === 'planned' ? 'planned' : category === 'dropped' ? 'dropped' : 'watching',
     genres: anime.genres || [],
@@ -101,6 +102,7 @@ router.put('/:userId/:animeId', authenticateToken, authorizeUser, async (c) => {
   for (const cat of categories) {
     const idx = list[cat]?.findIndex(a => a.animeId === animeId)
     if (idx !== undefined && idx >= 0) {
+      updates.updatedAt = new Date().toISOString()
       for (const [key, value] of Object.entries(updates)) {
         const setKey = `${cat}.${idx}.${key}`
         await db.updateOne(
@@ -133,7 +135,14 @@ router.put('/:userId/:animeId', authenticateToken, authorizeUser, async (c) => {
 
   if (!found) return error(c, 'Anime not found in list', 404)
 
-  setImmediate(() => evaluateBadges(userId, c.env).catch(() => {}))
+  setImmediate(async () => {
+    try {
+      const result = await evaluateBadges(userId, c.env)
+      if (result.newBadges?.length > 0) {
+        await broadcastBadges(c.env, userId, result.newBadges)
+      }
+    } catch {}
+  })
 
   return success(c, 'Anime updated')
 })
@@ -155,7 +164,14 @@ router.delete('/:userId/:animeId', authenticateToken, authorizeUser, async (c) =
     if (idx >= 0) {
       arr.splice(idx, 1)
       await db.updateById('animerists', list._id, { $set: { [cat]: arr } })
-      setImmediate(() => evaluateBadges(userId, c.env).catch(() => {}))
+  setImmediate(async () => {
+    try {
+      const result = await evaluateBadges(userId, c.env)
+      if (result.newBadges?.length > 0) {
+        await broadcastBadges(c.env, userId, result.newBadges)
+      }
+    } catch {}
+  })
       return success(c, 'Anime removed from list')
     }
   }
@@ -264,11 +280,9 @@ router.post('/:userId/backfill-genres', authenticateToken, authorizeUser, async 
 const importProgressStore = new Map()
 
 async function sendProgress(env, userId, current, total, message, extra = {}) {
-  // Only allow decreasing progress from a stale/second import when we're in
-  // the actual save phase (current > 0) — fetch-phase 0-updates always pass.
   if (current > 0) {
     const prev = importProgressStore.get(userId)
-    if (prev && prev.current > current) return  // stale — ignore
+    if (prev && prev.current > current) return
   }
   importProgressStore.set(userId, { current, total, message, ...extra, ts: Date.now() })
   try {
@@ -277,6 +291,25 @@ async function sendProgress(env, userId, current, total, message, extra = {}) {
     await stub.broadcast(userId, { type: 'progress', current, total, message, ...extra })
   } catch (e) {
     console.warn(`[MAL Import] WebSocket broadcast error:`, e.message)
+  }
+}
+
+async function broadcastBadges(env, userId, newBadges) {
+  if (!newBadges || newBadges.length === 0) return
+  try {
+    const doId = env.USER_CONNECTIONS.idFromName(userId)
+    const stub = env.USER_CONNECTIONS.get(doId)
+    await stub.broadcast(userId, {
+      type: 'BADGES_EARNED',
+      newBadges: newBadges.map(b => ({
+        id: b.id,
+        title: b.title,
+        description: b.description,
+        rarity: b.rarity,
+      })),
+    })
+  } catch (e) {
+    console.warn(`[Badges] WebSocket broadcast error:`, e.message)
   }
 }
 
@@ -307,6 +340,7 @@ function buildEntry(malAnime, meta, malIdStr, malTitle, totalEpisodes, episodesW
     status: category, genres: meta.genres,
     userRating: userRating > 0 ? Math.round(userRating / 2) : 0,
     addedDate: (safeDate(malAnime.my_start_date) || new Date()).toISOString(),
+    updatedAt: new Date().toISOString(),
   }
   if (category === 'completed') {
     entry.finishDate = (safeDate(malAnime.my_finish_date) || new Date()).toISOString()
@@ -478,6 +512,7 @@ router.post('/import/mal', authenticateToken, async (c) => {
                       const fd = safeDate(malAnime.my_finish_date)
                       if (fd) existingData.finishDate = fd.toISOString()
                     }
+                    existingData.updatedAt = new Date().toISOString()
                   }
                   modifiedCategories.add(category)
                 } else {
