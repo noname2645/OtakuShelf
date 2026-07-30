@@ -1604,9 +1604,10 @@
 
 .premium-meta-col {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  text-align: left;
+  gap: 2px;
+  text-align: center;
 }
 
 .meta-icon {
@@ -1661,13 +1662,12 @@
 
 .footer-action-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
   background: none;
   border: none;
   cursor: pointer;
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.6);
   transition: color 0.18s;
   padding: 6px 0;
   flex: 1;
@@ -1679,21 +1679,23 @@
   display: block;
 }
 
-.footer-action-item span {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+.footer-action-item:hover {
   color: #ffffff;
 }
 
-.footer-action-item:hover,
-.footer-action-item.active {
-  color: #ff5900;
+.footer-action-item.active.watching svg {
+  color: #22c55e;
+  stroke: #22c55e;
 }
 
-.footer-action-item:hover span,
-.footer-action-item.active span {
-  color: #ff5900;
+.footer-action-item.active.completed svg {
+  color: #3b82f6;
+  stroke: #3b82f6;
+}
+
+.footer-action-item.active.planned svg {
+  color: #eab308;
+  stroke: #eab308;
 }
 
 .footer-separator {
@@ -1741,12 +1743,8 @@
   }
   
   .footer-action-item svg {
-    width: 10px;
-    height: 10px;
-  }
-  
-  .footer-action-item span {
-    font-size: 4.5px;
+    width: 11px;
+    height: 11px;
   }
 }
 

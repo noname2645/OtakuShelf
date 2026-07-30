@@ -993,8 +993,8 @@
 }
 
 .star-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
 .star-btn:hover:not(:disabled) {
@@ -1347,8 +1347,8 @@
   width: 100%;
   max-width: 1400px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
   margin: 0 auto;
   padding: 1rem;
 }
@@ -1564,14 +1564,14 @@
   flex-direction: column;
   background: #070a13;
   border: 1.5px solid transparent;
-  border-radius: 20px;
+  border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
-  height: 420px;
+  height: 370px;
   width: 100%;
-  max-width: 290px;
+  max-width: 250px;
   margin: 0 auto;
   cursor: pointer;
 }
@@ -1595,9 +1595,9 @@
 }
 
 .premium-badge-favorite {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   background: rgba(7, 10, 19, 0.75);
   border: 1.5px solid rgba(255, 42, 95, 0.3);
   display: flex;
@@ -1624,8 +1624,8 @@
 }
 
 .premium-badge-favorite .heart-svg-icon {
-  width: 20px;
-  height: 20px;
+  width: 17px;
+  height: 17px;
   filter: drop-shadow(0 0 4px rgba(255, 42, 95, 0.3));
 }
 
@@ -1634,8 +1634,8 @@
 }
 
 .premium-badge-status-pill {
-  border-radius: 24px;
-  padding: 8px 18px;
+  border-radius: 20px;
+  padding: 7px 15px;
   background: rgba(7, 10, 19, 0.8);
   border: 1.5px solid var(--status-color);
   cursor: pointer;
@@ -1651,7 +1651,7 @@
   color: var(--status-color);
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: 0.68rem;
+  font-size: 0.6rem;
   letter-spacing: 0.8px;
   text-shadow: 0 0 6px rgba(var(--status-color), 0.4);
 }
@@ -1712,7 +1712,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 290px;
+  height: 250px;
   overflow: hidden;
   z-index: 1;
 }
@@ -1743,8 +1743,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 200px;
-  padding: 12px 14px 14px;
+  height: 170px;
+  padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
   z-index: 5;
@@ -1761,14 +1761,14 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 36px;
-  margin-bottom: 4px;
+  min-height: 30px;
+  margin-bottom: 3px;
 }
 
 .premium-title-main {
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   color: white;
   margin: 0;
   line-height: 1.15;
@@ -1786,12 +1786,12 @@
 .premium-progress-stats-box {
   background: rgba(12, 16, 27, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 8px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -1805,13 +1805,13 @@
 .premium-stat-col-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .premium-ep-increment-btn-circle {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: rgba(239, 68, 68, 0.12);
   border: 1.5px solid rgba(239, 68, 68, 0.35);
@@ -1844,20 +1844,20 @@
 }
 
 .clapboard-svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .plus-overlay-badge {
   position: absolute;
   top: -2px;
   right: -2px;
-  width: 13px;
-  height: 13px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: #ff3b30;
   color: white;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -1878,7 +1878,7 @@
 .premium-stat-label {
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
-  font-size: 0.62rem;
+  font-size: 0.55rem;
   color: #64748b;
   letter-spacing: 0.8px;
 }
@@ -1886,7 +1886,7 @@
 .premium-stat-value {
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: white;
 }
 
@@ -1897,7 +1897,7 @@
 
 .premium-stats-vertical-divider {
   width: 1.5px;
-  height: 28px;
+  height: 24px;
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -1910,7 +1910,7 @@
 
 .premium-progress-glow-track {
   width: 100%;
-  height: 6px;
+  height: 5px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
   overflow: hidden;
@@ -1942,7 +1942,7 @@
 .premium-rating-header-label {
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
-  font-size: 0.62rem;
+  font-size: 0.55rem;
   color: #64748b;
   letter-spacing: 0.8px;
   text-align: left;
@@ -1975,7 +1975,7 @@
 .premium-rating-text-value {
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   color: white;
   margin-left: 5px;
 }
@@ -1988,7 +1988,7 @@
   border-radius: 8px;
   border: 1.5px solid rgba(239, 68, 68, 0.35);
   background: rgba(239, 68, 68, 0.08);
-  padding: 8px 12px;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2009,7 +2009,7 @@
   color: #ff4d4d;
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   letter-spacing: 0.6px;
 }
 
@@ -2021,8 +2021,8 @@
 }
 
 .bookmark-svg {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
 }
 
 .premium-list-actions-menu-dropdown {
@@ -2096,17 +2096,17 @@
 
   .month-group-cards {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
+    gap: 6px !important;
     padding: 0.2rem !important;
     align-items: start !important; /* Prevent rows from stretching cards to unequal heights */
   }
 
   /* Card overall: taller to fit all elements */
   .premium-anime-card {
-    height: 300px !important;
-    max-width: 220px !important;
+    height: 260px !important;
+    max-width: 190px !important;
     width: 100% !important;
-    border-radius: 12px;
+    border-radius: 10px;
     margin: 0 auto !important;
   }
   
@@ -2115,7 +2115,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 170px !important;
+    height: 145px !important;
     overflow: hidden;
     z-index: 1;
   }
@@ -2125,8 +2125,8 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 7px 8px 8px !important;
-    height: 148px !important;
+    padding: 6px 7px 7px !important;
+    height: 130px !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;

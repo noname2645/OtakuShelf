@@ -1,55 +1,11 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import "../Stylesheets/relatedsection.css";
-import { useAnimePreferences } from "./useAnimePreferences";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import AnimeCardUI from "./AnimeCardUI";
 
-/* ── AnimeCard (inlined) ─────────────────────────────────────────── */
-const AnimeCard = ({ anime, onClick, className }) => {
-  const { getPreferredTitle, shouldBlurNSFW } = useAnimePreferences();
-
-  const title = getPreferredTitle(anime?.title);
-  const isAdult = anime?.isAdult || false;
-  const requireBlur = shouldBlurNSFW(isAdult);
-
-  const getImage = () => {
-    if (!anime) return null;
-    if (anime.coverImage)
-      return anime.coverImage.extraLarge || anime.coverImage.large || anime.coverImage.medium || null;
-    if (anime.bannerImage) return anime.bannerImage;
-    if (anime.image_url) return anime.image_url;
-    return null;
-  };
-
-  const img = getImage();
-
-  return (
-    <div className={`anime-card ${className || ''}`} onClick={() => onClick && anime && onClick(anime)}>
-      <div className="card-image">
-        {img ? (
-          <img
-            className={`related-img${requireBlur ? ' blur-nsfw' : ''}`}
-            src={img}
-            style={requireBlur ? { filter: 'blur(16px)', pointerEvents: 'none' } : {}}
-            alt={requireBlur ? 'NSFW Content Hidden' : title}
-            loading="lazy"
-            onError={(e) => { e.target.src = "https://via.placeholder.com/210x295/333/666?text=No+Image"; }}
-          />
-        ) : (
-          <div className="image-placeholder"><span>No Image</span></div>
-        )}
-        <div className="card-title-bottom">
-          <h3>{requireBlur ? '18+ Content' : title}</h3>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/**
- * Scrollable Relation Group Component
- */
+/* ── Scrollable Relation Group Component ──────────────────────────── */
 const RelationGroup = ({ title, animeList, onSelect, type }) => {
   const scrollRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -113,7 +69,7 @@ const RelationGroup = ({ title, animeList, onSelect, type }) => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="anime-item"
               >
-                <AnimeCard
+                <AnimeCardUI
                   anime={anime}
                   onClick={() => onSelect && onSelect(anime)}
                 />
@@ -309,6 +265,8 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       format: node.format,
       genres: node.genres || [],
       trailer: node.trailer,
+      startDate: node.startDate,
+      year: node.startDate?.year,
       relationType: edge.relationType,
       source: "anilist",
       _originalData: node
@@ -335,6 +293,7 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       format: details.type,
       genres: details.genres?.map(g => g.name) || [],
       trailer: details.trailer ? { id: details.trailer.youtube_id, site: "youtube" } : null,
+      year: details.year,
       relationType: relationName.toUpperCase().replace(/ /g, "_"),
       source: "jikan",
       _originalData: details
@@ -403,7 +362,26 @@ const RelatedSection = ({ animeId, animeMalId, onSelect }) => {
       {Array.from({ length: count }, (_, index) => (
         <div key={`skeleton-${index}`} className="anime-item">
           <div className="card-skeleton">
-            <div className="skeleton-image"></div>
+            <div className="skeleton-header">
+              <div className="skeleton-badge"></div>
+              <div className="skeleton-btn"></div>
+            </div>
+            <div className="skeleton-image">
+              <div className="skeleton-fade"></div>
+            </div>
+            <div className="skeleton-body">
+              <div className="skeleton-tag"></div>
+              <div className="skeleton-title"></div>
+              <div className="skeleton-meta">
+                <div className="skeleton-meta-item"></div>
+                <div className="skeleton-meta-item"></div>
+                <div className="skeleton-meta-item"></div>
+              </div>
+            </div>
+            <div className="skeleton-footer">
+              <div className="skeleton-footer-item"></div>
+              <div className="skeleton-footer-item"></div>
+            </div>
           </div>
         </div>
       ))}

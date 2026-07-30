@@ -267,7 +267,16 @@ router.post('/:userId/backfill-genres', authenticateToken, authorizeUser, async 
   return success(c, 'Genres backfilled', { updated })
 })
 
+const importProgressStore = new Map()
+
 async function sendProgress(env, userId, current, total, message, extra = {}) {
+  // Only allow decreasing progress from a stale/second import when we're in
+  // the actual save phase (current > 0) — fetch-phase 0-updates always pass.
+  if (current > 0) {
+    const prev = importProgressStore.get(userId)
+    if (prev && prev.current > current) return  // stale — ignore
+  }
+  importProgressStore.set(userId, { current, total, message, ...extra, ts: Date.now() })
   try {
     const doId = env.USER_CONNECTIONS.idFromName(userId)
     const stub = env.USER_CONNECTIONS.get(doId)
@@ -320,8 +329,9 @@ router.post('/import/mal', authenticateToken, async (c) => {
     // Respond immediately — background processing
     const { db, lists } = setup(c)
     const env = c.env
+    const ctx = c.executionCtx
 
-    setTimeout(async () => {
+    ctx.waitUntil((async () => {
       try {
         let list = await lists.findByUserId(userId)
         if (!list) {
@@ -356,7 +366,7 @@ router.post('/import/mal', authenticateToken, async (c) => {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                query: `query ($idMals: [Int]) { Page(page: 1, perPage: 50) { media(idMal_in: $idMals, type: ANIME) { idMal coverImage { extraLarge large medium } genres } } }`,
+                query: `query ($idMals: [Int]) { Page(page: 1, perPage: 50) { media(idMal_in: $idMals, type: ANIME) { idMal title { english romaji native } coverImage { extraLarge large medium } genres } } }`,
                 variables: { idMals: batchIds },
               }),
               signal: AbortSignal.timeout(12000),
@@ -366,6 +376,7 @@ router.post('/import/mal', authenticateToken, async (c) => {
             for (const media of mediaList) {
               if (media?.idMal) {
                 metadataMap.set(media.idMal.toString(), {
+                  title: media.title?.english || media.title?.romaji || media.title?.native,
                   image: media.coverImage?.extraLarge || media.coverImage?.large || media.coverImage?.medium,
                   genres: media.genres || [],
                 })
@@ -381,8 +392,8 @@ router.post('/import/mal', authenticateToken, async (c) => {
         }
 
         let lastJikan = 0
-        async function fetchFallback(malId, title) {
-          if (!malId) return { image: null, genres: [] }
+        async function fetchFallback(malId, fallbackTitle) {
+          if (!malId) return { image: null, genres: [], title: null }
           const now = Date.now()
           if (now - lastJikan < 1500) await new Promise(r => setTimeout(r, 1500 - (now - lastJikan)))
           lastJikan = Date.now()
@@ -392,52 +403,63 @@ router.post('/import/mal', authenticateToken, async (c) => {
               signal: AbortSignal.timeout(8000),
             })
             const data = await res.json()
-            const img = data?.data?.images?.jpg?.large_image_url || data?.data?.images?.jpg?.image_url
-            const genres = data?.data?.genres?.map(g => g.name) || []
-            if (img) return { image: img, genres }
+            const jikan = data?.data
+            const img = jikan?.images?.jpg?.large_image_url || jikan?.images?.jpg?.image_url
+            const genres = jikan?.genres?.map(g => g.name) || []
+            const jikanTitle = jikan?.title_english || jikan?.title || null
+            if (img) return { image: img, genres, title: jikanTitle }
           } catch {}
-          return { image: `https://placehold.co/300x400/667eea/ffffff?text=${encodeURIComponent(title || 'Anime')}`, genres: [] }
+          return { image: `https://placehold.co/300x400/667eea/ffffff?text=${encodeURIComponent(fallbackTitle || 'Anime')}`, genres: [], title: null }
         }
 
         await sendProgress(env, userId, 0, malAnimeList.length, 'Saving anime entries to your list...')
 
         let processed = 0, imported = 0, skipped = 0
         const counts = { watching: 0, completed: 0, planned: 0, dropped: 0 }
+        const importedIds = new Set()
 
         for (const malAnime of malAnimeList) {
           processed++
           try {
             const malId = malAnime.series_animedb_id || malAnime.series_anime_db_id || malAnime.series_animedbid
-            const title = malAnime.series_title || malAnime.series_title_eng || 'Unknown Title'
+            const malTitle = malAnime.series_title || malAnime.series_title_eng || 'Unknown Title'
             const malStatus = malAnime.my_status || malAnime.my_status_string || malAnime.my_status_code
             const episodesWatched = parseInt(malAnime.my_watched_episodes || 0) || 0
             const totalEpisodes = parseInt(malAnime.series_episodes || 24) || 24
             const userRating = parseInt(malAnime.my_score || 0) || 0
             const category = getCategoryFromMalStatus(malStatus)
 
-            await sendProgress(env, userId, processed, malAnimeList.length, `Saving: ${title.substring(0, 30)}...`)
+            const malIdStr = malId ? malId.toString() : ''
 
-            if (!clearExisting && malId) {
+            // Skip duplicates (MAL XML sometimes has the same series_animedb_id twice)
+            if (malIdStr && importedIds.has(malIdStr)) { skipped++; continue }
+            if (malIdStr) importedIds.add(malIdStr)
+
+            await sendProgress(env, userId, processed, malAnimeList.length, `Saving: ${malTitle.substring(0, 30)}...`)
+
+            if (!clearExisting && malIdStr) {
               const cat = list?.[category] || []
-              if (cat.some(a => a.malId === malId.toString())) { skipped++; continue }
+              if (cat.some(a => a.malId === malIdStr)) { skipped++; continue }
             }
 
-            const malIdStr = malId ? malId.toString() : ''
             let meta = metadataMap.get(malIdStr)
-            if (!meta) meta = await fetchFallback(malId, title)
+            if (!meta) meta = await fetchFallback(malId, malTitle)
 
             const entry = {
-              title,
+              title: meta.title || malTitle,
               animeId: malIdStr || `mal_${Date.now()}_${processed}`,
               malId: malIdStr,
               image: meta.image,
               totalEpisodes, episodes: totalEpisodes, episodesWatched,
               status: category, genres: meta.genres,
               userRating: userRating > 0 ? Math.round(userRating / 2) : undefined,
-              addedDate: new Date().toISOString(),
+              addedDate: malAnime.my_start_date ? new Date(malAnime.my_start_date).toISOString() : new Date().toISOString(),
             }
 
-            if (category === 'completed') { entry.finishDate = new Date().toISOString(); entry.episodesWatched = totalEpisodes }
+            if (category === 'completed') {
+              entry.finishDate = malAnime.my_finish_date ? new Date(malAnime.my_finish_date).toISOString() : new Date().toISOString()
+              entry.episodesWatched = totalEpisodes
+            }
 
             await db.updateOne(
               'animerists',
@@ -464,7 +486,7 @@ router.post('/import/mal', authenticateToken, async (c) => {
         console.error('Background MAL import error:', bgError)
         await sendProgress(env, userId, 0, 0, `Import failed: ${bgError.message}`, { error: true })
       }
-    }, 0)
+    })())
 
     return c.json({
       status: 'accepted',
@@ -475,6 +497,17 @@ router.post('/import/mal', authenticateToken, async (c) => {
     console.error('MAL import error:', err.message)
     return error(c, 'Import failed', 500)
   }
+})
+
+// ── GET /api/list/import/status/:userId ───────────────────────────────────────
+router.get('/import/status/:userId', authenticateToken, authorizeUser, async (c) => {
+  const userId = c.get('userId')
+  const p = importProgressStore.get(userId)
+  if (!p || Date.now() - p.ts > 600000) {
+    importProgressStore.delete(userId)
+    return success(c, 'No active import', null)
+  }
+  return success(c, 'Import status', p)
 })
 
 export default router

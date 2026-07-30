@@ -302,34 +302,17 @@ const PremiumAnimeCard = ({
             </div>
           </div>
 
-          {/* Bookmark IN YOUR LIST Button with dropdown — desktop only */}
+          {/* Remove from list button */}
           <div className="premium-bookmark-action-container">
             <button
-              className="premium-in-list-button-rect desktop-only-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowActionsDropdown(prev => !prev);
-                setShowStatusDropdown(false);
-              }}
-            >
-              <div className="bookmark-svg-wrapper">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="bookmark-svg">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                </svg>
-              </div>
-              <span>IN YOUR LIST</span>
-            </button>
-
-            {/* Mobile-only compact Remove button */}
-            <button
-              className="premium-mobile-remove-btn mobile-only-btn"
+              className="premium-in-list-button-rect"
               onClick={(e) => {
                 e.stopPropagation();
                 handleRemove(anime._id || anime.animeId);
               }}
               title="Remove from list"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="10" height="10">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6l-1 14H6L5 6" />
                 <path d="M10 11v6M14 11v6" />
@@ -497,6 +480,37 @@ const EnhancedAnimeList = () => {
     };
   }, [user]);
 
+  // Polling fallback for import progress (when WebSocket/DO is unavailable)
+  useEffect(() => {
+    if (!importing || !user?._id) return;
+
+    const poll = async () => {
+      try {
+        const res = await api.get(`${API}/api/list/import/status/${user._id}`);
+        const p = res.data?.data;
+        if (!p) return;
+        if (p.current !== undefined && p.total !== undefined) {
+          setImportProgress(`${p.current}/${p.total}`);
+        }
+        if (p.completed) {
+          setImporting(false);
+          setTimeout(() => setImportProgress(''), 2000);
+          showToast(`✅ ${p.message || 'Import completed!'}`);
+          fetchAnimeList();
+        }
+        if (p.error) {
+          setImporting(false);
+          setTimeout(() => setImportProgress(''), 2000);
+          showToast(`❌ ${p.message || 'Import error'}`, 'error');
+        }
+      } catch {}
+    };
+
+    const id = setInterval(poll, 2000);
+    poll();
+    return () => clearInterval(id);
+  }, [importing, user?._id]);
+
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -513,6 +527,7 @@ const EnhancedAnimeList = () => {
   };
 
   const handleImportConfirm = async () => {
+    if (importing) return;
     if (!selectedFile || !user || !user._id) {
       showToast('Please select a file and ensure you are logged in.', 'error');
       return;
@@ -557,7 +572,6 @@ const EnhancedAnimeList = () => {
       showToast(`Failed to import: ${errorMsg}`, 'error');
       setImporting(false);
     } finally {
-      setTimeout(() => setImportProgress(''), 300);
       setSelectedFile(null);
     }
   };

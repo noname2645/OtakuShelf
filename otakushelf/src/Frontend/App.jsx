@@ -9,6 +9,7 @@ import Register from "../Frontend/components/register.jsx";
 import { AuthProvider } from "../Frontend/components/AuthContext.jsx";
 import AdvancedSearch from "../Frontend/components/advancedsearch.jsx";
 import Profile from "../Frontend/components/profile.jsx";
+import ProfileScreen from "../Frontend/components/profilescreen.jsx";
 import AIPage from "../Frontend/components/aipage.jsx";
 import ForgotPassword from "../Frontend/components/ForgotPassword.jsx";
 import SettingsPage from "../Frontend/components/settings.jsx";
@@ -38,6 +39,7 @@ const AppContent = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/advance" element={<AdvancedSearch />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/profile-screen/:userId?" element={<ProfileScreen />} />
       <Route path="/ai" element={<AIPage />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ForgotPassword />} />

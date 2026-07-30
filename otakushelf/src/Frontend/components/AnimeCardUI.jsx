@@ -22,7 +22,7 @@ window.addEventListener('resize', handleGlobalResize, { passive: true });
 const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false, isGrid = false, customWidth, customHeight }) => {
     const [isMobile, setIsMobile] = useState(sharedIsMobile);
     const [isFavorite, setIsFavorite] = useState(false);
-    const [isWatchlisted, setIsWatchlisted] = useState(false);
+    const [userListStatus, setUserListStatus] = useState(null);
 
     useEffect(() => {
         const cb = (mobile) => setIsMobile(mobile);
@@ -31,7 +31,7 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         // Load initial interactive states from localStorage
         if (anime?.id) {
             setIsFavorite(localStorage.getItem(`favorite_${anime.id}`) === 'true');
-            setIsWatchlisted(localStorage.getItem(`watchlist_${anime.id}`) === 'true');
+            setUserListStatus(localStorage.getItem(`list_status_${anime.id}`) || null);
         }
 
         return () => resizeCallbacks.delete(cb);
@@ -75,45 +75,70 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         }
     }, [anime, isFavorite]);
 
-    // Handle Watchlist Toggle
-    const handleWatchlist = useCallback((e) => {
+    // Handle List Status
+    const addToList = useCallback(async (status, e) => {
         e.stopPropagation();
         if (!anime?.id) return;
-        const nextState = !isWatchlisted;
-        setIsWatchlisted(nextState);
-        localStorage.setItem(`watchlist_${anime.id}`, String(nextState));
-    }, [anime?.id, isWatchlisted]);
 
-    // Handle Native Share
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+            alert("Please log in to add anime to your list");
+            return;
+        }
+
+        const nextStatus = userListStatus === status ? null : status;
+        setUserListStatus(nextStatus);
+        localStorage.setItem(`list_status_${anime.id}`, nextStatus || '');
+
+        if (!nextStatus) return;
+
+        try {
+            const user = JSON.parse(userStr);
+            const userId = user?._id || user?.id;
+            if (userId) {
+                await api.post(`/api/list/${userId}`, {
+                    category: status,
+                    anime: {
+                        animeId: anime.id?.toString() || '',
+                        title: typeof anime.title === 'object'
+                            ? (anime.title.english || anime.title.romaji || '')
+                            : (anime.title || ''),
+                        malId: anime.idMal?.toString() || '',
+                        image: anime.coverImage?.extraLarge || anime.coverImage?.large || '',
+                        totalEpisodes: anime.episodes || 0,
+                        genres: Array.isArray(anime.genres) ? anime.genres : [],
+                        userRating: 0,
+                    }
+                });
+            }
+        } catch (err) {
+            console.error("Failed to sync list status", err);
+        }
+    }, [anime, userListStatus]);
+
+    // Handle Trailer Click
+    const handleTrailer = useCallback((e) => {
+        e.stopPropagation();
+        if (onClick) onClick(anime);
+    }, [anime, onClick]);
+
     const handleShare = useCallback((e) => {
         e.stopPropagation();
         const displayTitle = typeof anime?.title === 'object'
             ? (anime.title.english || anime.title.romaji || "Anime")
             : (anime?.title || "Anime");
-        
         const shareUrl = `${window.location.origin}/anime/${anime?.id}`;
-        
         if (navigator.share) {
-            navigator.share({
-                title: displayTitle,
-                text: `Check out ${displayTitle} on OtakuShelf!`,
-                url: shareUrl
-            }).catch(err => console.log('Share canceled'));
+            navigator.share({ title: displayTitle, text: `Check out ${displayTitle} on OtakuShelf!`, url: shareUrl })
+                .catch(err => console.log('Share canceled'));
         } else {
             navigator.clipboard.writeText(shareUrl);
-            alert(`Link copied to clipboard: ${shareUrl}`);
         }
     }, [anime]);
 
-    // Handle Trailer Click
-    const handleTrailer = useCallback((e) => {
-        e.stopPropagation();
-        if (onClick) onClick(anime); // For trailer, we open the details modal where they can watch trailer
-    }, [anime, onClick]);
-
     // Dimensions matching the smaller card layout requirements
-    const defaultHeight = isMobile ? '270px' : '380px';
-    const defaultWidth = isMobile ? '180px' : '250px';
+    const defaultHeight = isMobile ? '230px' : '340px';
+    const defaultWidth = isMobile ? '150px' : '220px';
     
     const height = customHeight || defaultHeight;
     const width = customWidth || defaultWidth;
@@ -274,25 +299,40 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
 
             {/* Actions Bar Footer */}
             <div className="premium-card-footer">
-                <button className={`footer-action-item ${isWatchlisted ? 'active' : ''}`} onClick={handleWatchlist}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        {isWatchlisted ? (
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                        ) : (
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                        )}
-                        {!isWatchlisted && <line x1="5" y1="12" x2="19" y2="12" />}
-                        {isWatchlisted && <polyline points="22 4 12 14.01 9 11.01" />}
+                <button
+                    className={`footer-action-item ${userListStatus === 'watching' ? 'active watching' : ''}`}
+                    onClick={(e) => addToList('watching', e)}
+                    title="Watching"
+                >
+                    <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M15.4137 10.941C16.1954 11.4026 16.1954 12.5974 15.4137 13.059L10.6935 15.8458C9.93371 16.2944 9 15.7105 9 14.7868L9 9.21316C9 8.28947 9.93371 7.70561 10.6935 8.15419L15.4137 10.941Z" stroke="currentColor" strokeWidth="1.5"/>
                     </svg>
-                    <span>{isWatchlisted ? 'ADDED' : 'WATCHLIST'}</span>
+                </button>
+                <button
+                    className={`footer-action-item ${userListStatus === 'completed' ? 'active completed' : ''}`}
+                    onClick={(e) => addToList('completed', e)}
+                    title="Completed"
+                >
+                    <svg viewBox="0 0 1024 1024" width="14" height="14">
+                        <path fill="currentColor" d="M512 64a448 448 0 1 1 0 896 448 448 0 0 1 0-896zm-55.808 536.384-99.52-99.584a38.4 38.4 0 1 0-54.336 54.336l126.72 126.72a38.272 38.272 0 0 0 54.336 0l262.4-262.464a38.4 38.4 0 1 0-54.272-54.336L456.192 600.384z"/>
+                    </svg>
+                </button>
+                <button
+                    className={`footer-action-item ${userListStatus === 'planned' ? 'active planned' : ''}`}
+                    onClick={(e) => addToList('planned', e)}
+                    title="Plan to Watch"
+                >
+                    <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                        <path d="M5 6.2C5 5.07989 5 4.51984 5.21799 4.09202C5.40973 3.71569 5.71569 3.40973 6.09202 3.21799C6.51984 3 7.07989 3 8.2 3H15.8C16.9201 3 17.4802 3 17.908 3.21799C18.2843 3.40973 18.5903 3.71569 18.782 4.09202C19 4.51984 19 5.07989 19 6.2V21L12 16L5 21V6.2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+                    </svg>
                 </button>
                 <div className="footer-separator" />
-                <button className="footer-action-item" onClick={handleShare}>
+                <button className="footer-action-item" onClick={handleShare} title="Share">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                     </svg>
-                    <span>SHARE</span>
                 </button>
             </div>
         </Card>

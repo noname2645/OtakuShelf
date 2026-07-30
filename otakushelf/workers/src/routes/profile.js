@@ -5,6 +5,14 @@ import { createUserDb } from '../db/user.js'
 import { createAnimeListDb } from '../db/animeList.js'
 import { sanitizeUser } from '../services/auth.js'
 import { success, error } from '../utils/response.js'
+import BADGES from '../utils/badgeDefinitions.js'
+
+const ALL_GENRES = [
+  'Action', 'Adventure', 'Avant Garde', 'Award Winning',
+  'Boys Love', 'Comedy', 'Drama', 'Fantasy', 'Girls Love',
+  'Gourmet', 'Horror', 'Mystery', 'Romance', 'Sci-Fi',
+  'Slice of Life', 'Sports', 'Supernatural', 'Suspense', 'Thriller',
+]
 
 const router = new Hono()
 
@@ -79,6 +87,16 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
   const dropped = list?.dropped || []
   const allAnime = [...watching, ...completed, ...planned, ...dropped]
 
+  // Touch lastActiveAt (non-blocking — never crash on this)
+  try {
+    const now = new Date().toISOString()
+    await users.update(userId, { 'profile.lastActiveAt': now })
+    if (!user.profile) user.profile = {}
+    user.profile.lastActiveAt = now
+  } catch (e) {
+    console.warn('[Profile] Failed to update lastActiveAt:', e?.message)
+  }
+
   const stats = {
     animeWatched: completed.length,
     hoursWatched: parseFloat((allAnime.reduce((s, a) => s + (a.episodesWatched || 0), 0) * 24 / 60).toFixed(2)),
@@ -93,25 +111,84 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
     })(),
   }
 
-  const genreMap = {}
-  allAnime.forEach(a => { if (Array.isArray(a.genres)) a.genres.forEach(g => { genreMap[g] = (genreMap[g] || 0) + 1 }) })
-  const topGenres = Object.entries(genreMap).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, count]) => ({ name, count }))
+  // Genre counts & percentages (all 19 genres for pie chart)
+  const genreCounts = {}
+  allAnime.forEach(a => { if (Array.isArray(a.genres)) a.genres.forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1 }) })
+  const totalGenreAssignments = Object.values(genreCounts).reduce((s, v) => s + v, 0) || 1
 
-  const recentlyWatched = [...watching, ...completed].sort((a, b) => new Date(b.updatedAt || b.addedDate) - new Date(a.updatedAt || a.addedDate)).slice(0, 6).map(a => ({
-    title: a.title, animeId: a.animeId, image: a.image, episodesWatched: a.episodesWatched, status: a.status,
+  const topGenres = Object.entries(genreCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, count]) => ({ name, count, percentage: parseFloat(((count / totalGenreAssignments) * 100).toFixed(1)) }))
+
+  const favoriteGenres = ALL_GENRES.map(name => {
+    const count = genreCounts[name] || 0
+    return { name, count, percentage: parseFloat(((count / totalGenreAssignments) * 100).toFixed(1)) }
+  })
+
+  const recentlyWatched = [...watching, ...completed]
+    .sort((a, b) => new Date(b.updatedAt || b.addedDate) - new Date(a.updatedAt || a.addedDate))
+    .slice(0, 6)
+    .map(a => ({
+      title: a.title, animeId: a.animeId, image: a.image, coverImage: a.coverImage,
+      episodesWatched: a.episodesWatched, status: a.status, genres: a.genres,
+    }))
+
+  const favorites = (list?.favorites || []).slice(0, 10).map(f => ({
+    title: f.title, animeId: f.animeId, image: f.image, coverImage: f.coverImage,
+    userRating: f.userRating, genres: f.genres,
   }))
 
-  const favorites = (list?.favorites || []).slice(0, 6).map(f => ({
-    title: f.title, animeId: f.animeId, image: f.image, userRating: f.userRating, genres: f.genres,
-  }))
+  const badges = user.profile?.badges || []
+  const totalBadgeDefs = (BADGES && BADGES.length) || 0
 
   return success(c, 'Profile fetched', {
     user: sanitizeUser(user),
+    profile: {
+      username: user.profile?.username || null,
+      bio: user.profile?.bio || null,
+      coverImage: user.profile?.coverImage || null,
+      joinDate: user.profile?.joinDate || user.createdAt,
+      lastActiveAt: user.profile?.lastActiveAt || null,
+      badges,
+      favoriteGenres,
+    },
     stats,
     topGenres,
     recentlyWatched,
     favorites,
+    badgeInfo: {
+      earnedBadgeCount: badges.length,
+      totalBadgeDefs,
+    },
   })
+})
+
+// ── GET /api/profile/:userId/watchLog ─────────────────────────────────────────
+router.get('/:userId/watchLog', authenticateToken, authorizeUser, async (c) => {
+  const { lists } = setup(c)
+  const userId = c.get('userId')
+
+  const list = await lists.findByUserId(userId)
+  const entries = [...(list?.watching || []), ...(list?.completed || [])]
+
+  const dailyCounts = {}
+  const oneYearAgo = new Date()
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+
+  entries.forEach(a => {
+    const d = new Date(a.updatedAt || a.addedDate || Date.now())
+    if (d >= oneYearAgo) {
+      const key = d.toISOString().split('T')[0]
+      dailyCounts[key] = (dailyCounts[key] || 0) + 1
+    }
+  })
+
+  const watchLog = Object.entries(dailyCounts)
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  return success(c, 'Watch log', watchLog)
 })
 
 // ── PUT /api/profile/:userId ─────────────────────────────────────────────────

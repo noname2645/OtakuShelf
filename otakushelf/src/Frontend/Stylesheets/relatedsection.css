@@ -1,79 +1,18 @@
-/* ── Anime Card ─────────────────────────────────────────────────── */
+/* ── Anime Item Wrapper ────────────────────────────────────────────── */
 
-.anime-card {
+.anime-item {
+  width: 220px;
+  height: 340px;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
   position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border-radius: 15px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  text-align: center;
-  background: rgba(30, 30, 40, 0.6);
-  cursor: pointer;
 }
 
-.anime-card:hover {
-  border-color: #4facfe;
-}
-
-.card-image {
-  width: 100%;
-  height: 100%;
-}
-
-.card-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s ease;
-  border-radius: 12px;
-}
-
-.anime-card:hover img {
-  transform: scale(1.05);
-}
-
-.image-placeholder {
-  width: 100%;
-  height: 100%;
-  background: #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  font-size: 14px;
-}
-
-.card-title-bottom {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 15px 10px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent);
-  color: #fff;
-  z-index: 1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(0px);
-}
-
-.card-title-bottom h3 {
-  font-family: 'Outfit', sans-serif;
-  letter-spacing: 1px;
-  font-size: 0.95rem;
-  text-align: center;
-  line-height: 1.3;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #ff9a00;
-  text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+@media (max-width: 768px) {
+  .anime-item {
+    width: 150px;
+    height: 230px;
+  }
 }
 
 /* ── Related Section ─────────────────────────────────────────────── */
@@ -171,28 +110,116 @@
   right: 2px;
 }
 
-.anime-item {
-  width: 160px;
-  height: 230px;
-  flex: 0 0 auto;
-  scroll-snap-align: start;
-  position: relative;
-}
-
 /* Skeleton Styles */
 .card-skeleton {
-  width: 160px;
-  height: 230px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  height: 100%;
+  background: rgba(12, 16, 28, 0.85);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  z-index: 2;
+}
+
+.skeleton-badge {
+  width: 50px;
+  height: 22px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite linear;
+  border-radius: 8px;
+}
+
+.skeleton-btn {
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite linear;
+  border-radius: 50%;
 }
 
 .skeleton-image {
+  flex: 1;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite linear;
+  position: relative;
+}
+
+.skeleton-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to top, rgba(12,16,28,0.9), transparent);
+}
+
+.skeleton-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(12, 16, 28, 0.85);
+}
+
+.skeleton-tag {
+  width: 40px;
+  height: 18px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+.skeleton-title {
   width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, 0.08) 50%, transparent 75%);
+  height: 16px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+.skeleton-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.skeleton-meta-item {
+  flex: 1;
+  height: 24px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+.skeleton-footer {
+  display: flex;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(12, 16, 28, 0.85);
+}
+
+.skeleton-footer-item {
+  flex: 1;
+  height: 32px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 2s infinite linear;
 }
