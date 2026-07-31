@@ -37,14 +37,14 @@ var __publicField = (obj, key, value) => {
   return value;
 };
 
-// .wrangler/tmp/bundle-gMzmeX/strip-cf-connecting-ip-header.js
+// .wrangler/tmp/bundle-pfFtAZ/strip-cf-connecting-ip-header.js
 function stripCfConnectingIPHeader(input, init) {
   const request = new Request(input, init);
   request.headers.delete("CF-Connecting-IP");
   return request;
 }
 var init_strip_cf_connecting_ip_header = __esm({
-  ".wrangler/tmp/bundle-gMzmeX/strip-cf-connecting-ip-header.js"() {
+  ".wrangler/tmp/bundle-pfFtAZ/strip-cf-connecting-ip-header.js"() {
     __name(stripCfConnectingIPHeader, "stripCfConnectingIPHeader");
     globalThis.fetch = new Proxy(globalThis.fetch, {
       apply(target, thisArg, argArray) {
@@ -24266,14 +24266,14 @@ var require_xml2js = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-gMzmeX/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-pfFtAZ/middleware-loader.entry.ts
 init_strip_cf_connecting_ip_header();
 init_modules_watch_stub();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// .wrangler/tmp/bundle-gMzmeX/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-pfFtAZ/middleware-insertion-facade.js
 init_strip_cf_connecting_ip_header();
 init_modules_watch_stub();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
@@ -27282,30 +27282,35 @@ router.post("/google", async (c) => {
   const { idToken } = await c.req.json();
   if (!idToken)
     return error3(c, "ID token is required", 400);
-  const payload = await verifyGoogleIdToken(idToken, env2.GOOGLE_CLIENT_ID);
-  const { email, sub, picture, name } = payload;
-  let user = await users.findByEmail(email);
-  if (user) {
-    addProvider(user, "google", { id: sub });
-    user.photo = picture || user.photo;
-    user.name = name || user.name;
-    user.emailVerified = true;
-    await db.updateOne("users", { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } });
-  } else {
-    const { insertedId } = await db.insertOne("users", {
-      email,
-      providers: [{ type: "google", id: sub }],
-      photo: picture,
-      name,
-      emailVerified: true,
-      profile: { badges: [] },
-      settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
-      createdAt: /* @__PURE__ */ new Date()
-    });
-    user = { _id: insertedId, email, providers: [{ type: "google", id: sub }], photo: picture, name, emailVerified: true };
+  try {
+    const payload = await verifyGoogleIdToken(idToken, env2.GOOGLE_CLIENT_ID);
+    const { email, sub, picture, name } = payload;
+    let user = await users.findByEmail(email);
+    if (user) {
+      addProvider(user, "google", { id: sub });
+      user.photo = picture || user.photo;
+      user.name = name || user.name;
+      user.emailVerified = true;
+      await db.updateOne("users", { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } });
+    } else {
+      const { insertedId } = await db.insertOne("users", {
+        email,
+        providers: [{ type: "google", id: sub }],
+        photo: picture,
+        name,
+        emailVerified: true,
+        profile: { badges: [] },
+        settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
+        createdAt: /* @__PURE__ */ new Date()
+      });
+      user = { _id: insertedId, email, providers: [{ type: "google", id: sub }], photo: picture, name, emailVerified: true };
+    }
+    const tokens = await issueTokenPair(user._id, users, env2);
+    return success(c, "Google login successful", { user: sanitizeUser(user), ...tokens });
+  } catch (err) {
+    console.error("Google token auth error:", err.message);
+    return error3(c, "Google authentication failed: " + err.message, 401);
   }
-  const tokens = await issueTokenPair(user._id, users, env2);
-  return success(c, "Google login successful", { user: sanitizeUser(user), ...tokens });
 });
 router.get("/google", (c) => {
   const workerUrl = new URL(c.req.url).origin;
@@ -29689,7 +29694,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-gMzmeX/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-pfFtAZ/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -29726,7 +29731,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-gMzmeX/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-pfFtAZ/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

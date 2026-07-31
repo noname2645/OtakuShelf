@@ -44,7 +44,10 @@
 }
 
 .curtain-left  { left: 0; }
-.curtain-right { right: 0; }
+.curtain-right {
+    right: 0;
+    background: linear-gradient(200deg, #0a0010 0%, #140020 40%, #0d001a 100%);
+}
 
 /* Subtle silk-woven texture inside the curtain */
 .curtain-texture {

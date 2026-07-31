@@ -137,7 +137,9 @@ export const AuthProvider = ({ children }) => {
     const errorParam = params.get("error");
 
     if (errorParam) {
-      window.location.href = '/login?error=google_auth_failed';
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login?error=google_auth_failed';
+      }
       return false;
     }
 

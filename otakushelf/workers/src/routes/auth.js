@@ -132,32 +132,37 @@ router.post('/google', async (c) => {
   const { idToken } = await c.req.json()
   if (!idToken) return error(c, 'ID token is required', 400)
 
-  const payload = await verifyGoogleIdToken(idToken, env.GOOGLE_CLIENT_ID)
-  const { email, sub, picture, name } = payload
+  try {
+    const payload = await verifyGoogleIdToken(idToken, env.GOOGLE_CLIENT_ID)
+    const { email, sub, picture, name } = payload
 
-  let user = await users.findByEmail(email)
-  if (user) {
-    addProvider(user, 'google', { id: sub })
-    user.photo = picture || user.photo
-    user.name = name || user.name
-    user.emailVerified = true
-    await db.updateOne('users', { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } })
-  } else {
-    const { insertedId } = await db.insertOne('users', {
-      email,
-      providers: [{ type: 'google', id: sub }],
-      photo: picture,
-      name,
-      emailVerified: true,
-      profile: { badges: [] },
-      settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
-      createdAt: new Date(),
-    })
-    user = { _id: insertedId, email, providers: [{ type: 'google', id: sub }], photo: picture, name, emailVerified: true }
+    let user = await users.findByEmail(email)
+    if (user) {
+      addProvider(user, 'google', { id: sub })
+      user.photo = picture || user.photo
+      user.name = name || user.name
+      user.emailVerified = true
+      await db.updateOne('users', { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } })
+    } else {
+      const { insertedId } = await db.insertOne('users', {
+        email,
+        providers: [{ type: 'google', id: sub }],
+        photo: picture,
+        name,
+        emailVerified: true,
+        profile: { badges: [] },
+        settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
+        createdAt: new Date(),
+      })
+      user = { _id: insertedId, email, providers: [{ type: 'google', id: sub }], photo: picture, name, emailVerified: true }
+    }
+
+    const tokens = await issueTokenPair(user._id, users, env)
+    return success(c, 'Google login successful', { user: sanitizeUser(user), ...tokens })
+  } catch (err) {
+    console.error('Google token auth error:', err.message)
+    return error(c, 'Google authentication failed: ' + err.message, 401)
   }
-
-  const tokens = await issueTokenPair(user._id, users, env)
-  return success(c, 'Google login successful', { user: sanitizeUser(user), ...tokens })
 })
 
 // ── GET /auth/google (redirect) ──────────────────────────────────────────────

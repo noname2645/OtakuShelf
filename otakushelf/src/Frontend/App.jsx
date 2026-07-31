@@ -16,6 +16,7 @@ import SettingsPage from "../Frontend/components/settings.jsx";
 import NotFound from "../Frontend/components/NotFound.jsx";
 import ServerError from "../Frontend/components/ServerError.jsx";
 import Offline from "../Frontend/components/Offline.jsx";
+import OAuthCallback from "../Frontend/components/OAuthCallback.jsx";
 
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -43,6 +44,7 @@ const AppContent = () => {
       <Route path="/ai" element={<AIPage />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ForgotPassword />} />
+      <Route path="/auth/callback" element={<OAuthCallback />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/500" element={<ServerError />} />
       <Route path="/offline" element={<Offline />} />

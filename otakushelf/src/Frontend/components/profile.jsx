@@ -9,6 +9,8 @@ import { useAuth } from "../components/AuthContext";
 import { Link } from "react-router-dom";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import PageLoader from "./PageLoader.jsx";
+import AnimeCardUI from "./AnimeCardUI.jsx";
+import Modal from "./modal.jsx";
 
 const ProfilePage = () => {
   const { user, updateProfile, checkAuthStatus, updateUserState } = useAuth();
