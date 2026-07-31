@@ -5,7 +5,7 @@ import { createUserDb } from '../db/user.js'
 import {
   hashPassword, comparePassword, generateOtp, generateVerificationToken,
   hasLocalProvider, hasGoogleProvider, addProvider, sanitizeUser,
-  issueTokens, generateAccessToken, hashRefreshToken, verifyAccessToken,
+  issueTokens, generateAccessToken, generateRefreshToken, hashRefreshToken, verifyAccessToken,
 } from '../services/auth.js'
 import { sendMail, buildEmailHtml } from '../services/email.js'
 import { success, error } from '../utils/response.js'
@@ -35,12 +35,15 @@ router.post('/register', async (c) => {
 
   const hashedPw = await hashPassword(password)
   const verificationToken = generateVerificationToken()
+  const refreshToken = generateRefreshToken()
+  const refreshTokenHash = await hashRefreshToken(refreshToken)
 
   const { insertedId } = await db.insertOne('users', {
     email: normalizedEmail,
     providers: [{ type: 'local', hashedPassword: hashedPw }],
     emailVerified: false,
     emailVerificationToken: verificationToken,
+    refreshTokenHash,
     profile: { badges: [] },
     settings: {
       notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false },
@@ -56,10 +59,11 @@ router.post('/register', async (c) => {
     <a href="${verificationLink}" style="display:inline-block;background:#FFD700;color:#000;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Verify Email</a>
     <p style="color:#888;font-size:13px;margin-top:20px">Or copy this link:<br><span style="color:#aaa;word-break:break-all">${verificationLink}</span></p>
   `, { icon: '🎉' })
-  await sendMail({ to: normalizedEmail, subject: '🎉 OtakuShelf -- Verify Your Email', html }, env)
+  // Fire-and-forget: don't block registration on email delivery
+  sendMail({ to: normalizedEmail, subject: '🎉 OtakuShelf -- Verify Your Email', html }, env).catch(() => { })
 
-  const tokens = await issueTokenPair(insertedId, users, env)
-  return success(c, 'Registration successful', { user: sanitizeUser({ _id: insertedId, email: normalizedEmail }), ...tokens }, 201)
+  const accessToken = await generateAccessToken(insertedId, env)
+  return success(c, 'Registration successful', { user: sanitizeUser({ _id: insertedId, email: normalizedEmail }), accessToken, refreshToken }, 201)
 })
 
 // ── POST /auth/login ─────────────────────────────────────────────────────────
@@ -97,14 +101,62 @@ router.post('/login', async (c) => {
   return success(c, 'Login successful', { user: sanitizeUser(user), ...tokens })
 })
 
-async function verifyGoogleIdToken(idToken, clientId) {
-  const { createRemoteJWKSet, jwtVerify } = await import('jose')
-  const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'))
-  const { payload } = await jwtVerify(idToken, JWKS, {
-    issuer: ['https://accounts.google.com', 'accounts.google.com'],
-    audience: clientId,
-  })
-  return payload
+let jwksCache = { jwks: null, ts: 0 }
+const JWKS_TTL = 6 * 60 * 60 * 1000
+const JWKS_CACHE_KEY = 'google:jwks'
+
+async function fetchGoogleJWKS() {
+  const res = await fetch('https://www.googleapis.com/oauth2/v3/certs')
+  return res.json()
+}
+
+async function getGoogleJWKS(env) {
+  // 1. In-memory cache (fast path within the same isolate)
+  if (jwksCache.jwks && Date.now() - jwksCache.ts < JWKS_TTL) return jwksCache.jwks
+
+  // 2. Shared KV cache (persists across isolates)
+  if (env.CACHE) {
+    try {
+      const cached = await env.CACHE.get(JWKS_CACHE_KEY, { type: 'json' })
+      if (cached && Array.isArray(cached.keys) && cached.keys.length) {
+        jwksCache = { jwks: cached, ts: Date.now() }
+        return cached
+      }
+    } catch { /* fall through to network fetch */ }
+  }
+
+  // 3. Fetch from Google and cache it
+  const jwks = await fetchGoogleJWKS()
+  jwksCache = { jwks, ts: Date.now() }
+  if (env.CACHE && Array.isArray(jwks.keys) && jwks.keys.length) {
+    try { await env.CACHE.put(JWKS_CACHE_KEY, JSON.stringify(jwks), { expirationTtl: 86400 }) } catch { /* ignore */ }
+  }
+  return jwks
+}
+
+async function verifyGoogleIdToken(idToken, clientId, env) {
+  const { createLocalJWKSet, jwtVerify } = await import('jose')
+
+  const verifyWith = async (jwks) => {
+    const JWKS = createLocalJWKSet(jwks)
+    const { payload } = await jwtVerify(idToken, JWKS, {
+      issuer: ['https://accounts.google.com', 'accounts.google.com'],
+      audience: clientId,
+    })
+    return payload
+  }
+
+  try {
+    const jwks = await getGoogleJWKS(env)
+    return await verifyWith(jwks)
+  } catch {
+    // Key may have rotated — refresh the cache and retry once before giving up
+    jwksCache = { jwks: null, ts: 0 }
+    if (env.CACHE) { try { await env.CACHE.delete(JWKS_CACHE_KEY) } catch { /* ignore */ } }
+    const fresh = await fetchGoogleJWKS()
+    jwksCache = { jwks: fresh, ts: Date.now() }
+    return await verifyWith(fresh)
+  }
 }
 
 async function exchangeGoogleCode(code, clientId, clientSecret, redirectUri) {
@@ -126,6 +178,41 @@ async function exchangeGoogleCode(code, clientId, clientSecret, redirectUri) {
   return res.json()
 }
 
+// Find-or-create a Google user, issuing a token pair with a single DB write
+// (refresh token hash is stored in the same insert/update instead of a second write)
+async function upsertGoogleUser(db, users, env, { email, sub, picture, name }) {
+  const refreshToken = generateRefreshToken()
+  const refreshTokenHash = await hashRefreshToken(refreshToken)
+
+  const existing = await users.findByEmail(email)
+  if (existing) {
+    addProvider(existing, 'google', { id: sub })
+    existing.photo = picture || existing.photo
+    existing.name = name || existing.name
+    existing.emailVerified = true
+    await db.updateOne('users', { _id: db.oid(existing._id) }, {
+      $set: { providers: existing.providers, photo: existing.photo, name: existing.name, emailVerified: true, refreshTokenHash },
+    })
+    const accessToken = await generateAccessToken(existing._id, env)
+    return { user: existing, accessToken, refreshToken }
+  }
+
+  const { insertedId } = await db.insertOne('users', {
+    email,
+    providers: [{ type: 'google', id: sub }],
+    photo: picture,
+    name,
+    emailVerified: true,
+    refreshTokenHash,
+    profile: { badges: [] },
+    settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
+    createdAt: new Date(),
+  })
+  const user = { _id: insertedId, email, providers: [{ type: 'google', id: sub }], photo: picture, name, emailVerified: true }
+  const accessToken = await generateAccessToken(insertedId, env)
+  return { user, accessToken, refreshToken }
+}
+
 // ── POST /auth/google (ID token) ─────────────────────────────────────────────
 router.post('/google', async (c) => {
   const { db, users, env } = setup(c)
@@ -133,32 +220,10 @@ router.post('/google', async (c) => {
   if (!idToken) return error(c, 'ID token is required', 400)
 
   try {
-    const payload = await verifyGoogleIdToken(idToken, env.GOOGLE_CLIENT_ID)
+    const payload = await verifyGoogleIdToken(idToken, env.GOOGLE_CLIENT_ID, env)
     const { email, sub, picture, name } = payload
-
-    let user = await users.findByEmail(email)
-    if (user) {
-      addProvider(user, 'google', { id: sub })
-      user.photo = picture || user.photo
-      user.name = name || user.name
-      user.emailVerified = true
-      await db.updateOne('users', { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } })
-    } else {
-      const { insertedId } = await db.insertOne('users', {
-        email,
-        providers: [{ type: 'google', id: sub }],
-        photo: picture,
-        name,
-        emailVerified: true,
-        profile: { badges: [] },
-        settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
-        createdAt: new Date(),
-      })
-      user = { _id: insertedId, email, providers: [{ type: 'google', id: sub }], photo: picture, name, emailVerified: true }
-    }
-
-    const tokens = await issueTokenPair(user._id, users, env)
-    return success(c, 'Google login successful', { user: sanitizeUser(user), ...tokens })
+    const { user, accessToken, refreshToken } = await upsertGoogleUser(db, users, env, { email, sub, picture, name })
+    return success(c, 'Google login successful', { user: sanitizeUser(user), accessToken, refreshToken })
   } catch (err) {
     console.error('Google token auth error:', err.message)
     return error(c, 'Google authentication failed: ' + err.message, 401)
@@ -183,32 +248,10 @@ router.get('/google/callback', async (c) => {
   const redirectUri = `${workerUrl}/auth/google/callback`
   try {
     const tokens = await exchangeGoogleCode(code, env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, redirectUri)
-    const payload = await verifyGoogleIdToken(tokens.id_token, env.GOOGLE_CLIENT_ID)
+    const payload = await verifyGoogleIdToken(tokens.id_token, env.GOOGLE_CLIENT_ID, env)
     const { email, sub, picture, name } = payload
-
-    let user = await users.findByEmail(email)
-    if (user) {
-      addProvider(user, 'google', { id: sub })
-      user.photo = picture || user.photo
-      user.name = name || user.name
-      user.emailVerified = true
-      await db.updateOne('users', { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } })
-    } else {
-      const { insertedId } = await db.insertOne('users', {
-        email,
-        providers: [{ type: 'google', id: sub }],
-        photo: picture,
-        name,
-        emailVerified: true,
-        profile: { badges: [] },
-        settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
-        createdAt: new Date(),
-      })
-      user = { _id: insertedId, email, providers: [{ type: 'google', id: sub }], photo: picture, name, emailVerified: true }
-    }
-
-    const appTokens = await issueTokenPair(user._id, users, env)
-    return c.redirect(`${env.FRONTEND_URL}/auth/callback?accessToken=${appTokens.accessToken}&refreshToken=${appTokens.refreshToken}`)
+    const { user, accessToken, refreshToken } = await upsertGoogleUser(db, users, env, { email, sub, picture, name })
+    return c.redirect(`${env.FRONTEND_URL}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`)
   } catch (err) {
     console.error('Google callback error:', err.message)
     return c.redirect(`${env.FRONTEND_URL}/auth/callback?error=google_auth_failed`)
@@ -224,32 +267,10 @@ router.post('/google/callback', async (c) => {
   const redirectUri = `${env.FRONTEND_URL}/auth/callback`
   try {
     const tokenRes = await exchangeGoogleCode(code, env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, redirectUri)
-    const payload = await verifyGoogleIdToken(tokenRes.id_token, env.GOOGLE_CLIENT_ID)
+    const payload = await verifyGoogleIdToken(tokenRes.id_token, env.GOOGLE_CLIENT_ID, env)
     const { email, sub, picture, name } = payload
-
-    let user = await users.findByEmail(email)
-    if (user) {
-      addProvider(user, 'google', { id: sub })
-      user.photo = picture || user.photo
-      user.name = name || user.name
-      user.emailVerified = true
-      await db.updateOne('users', { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } })
-    } else {
-      const { insertedId } = await db.insertOne('users', {
-        email,
-        providers: [{ type: 'google', id: sub }],
-        photo: picture,
-        name,
-        emailVerified: true,
-        profile: { badges: [] },
-        settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
-        createdAt: new Date(),
-      })
-      user = { _id: insertedId, email, providers: [{ type: 'google', id: sub }], photo: picture, name, emailVerified: true }
-    }
-
-    const appTokens = await issueTokenPair(user._id, users, env)
-    return success(c, 'Google login successful', { user: sanitizeUser(user), ...appTokens })
+    const { user, accessToken, refreshToken } = await upsertGoogleUser(db, users, env, { email, sub, picture, name })
+    return success(c, 'Google login successful', { user: sanitizeUser(user), accessToken, refreshToken })
   } catch (err) {
     console.error('Google code exchange error:', err.message)
     return error(c, 'Google authentication failed: ' + err.message, 401)
@@ -334,13 +355,8 @@ router.post('/forgot-password', async (c) => {
     <p>Use the code below to reset your password. It expires in 10 minutes.</p>
   `, { isOtp: true, otpCode: otp })
 
-  const sent = await sendMail({ to: normalizedEmail, subject: '🔑 OtakuShelf -- Your Verification Code', html }, env)
-  if (!sent) {
-    await db.updateOne('users', { _id: db.oid(user._id) }, {
-      $set: { passwordResetToken: null, passwordResetExpires: null },
-    })
-    return error(c, 'Failed to send verification email', 500)
-  }
+  // Fire-and-forget: return immediately instead of blocking on email delivery
+  sendMail({ to: normalizedEmail, subject: '🔑 OtakuShelf -- Your Verification Code', html }, env).catch(() => { })
 
   return success(c, 'Verification code sent')
 })
@@ -377,7 +393,7 @@ router.post('/link-google', authenticateToken, async (c) => {
   const { idToken } = await c.req.json()
   const userId = c.get('userId')
 
-  const payload = await verifyGoogleIdToken(idToken, env.GOOGLE_CLIENT_ID)
+  const payload = await verifyGoogleIdToken(idToken, env.GOOGLE_CLIENT_ID, env)
   const { sub, email, picture, name } = payload
 
   let user = await users.findById(userId)

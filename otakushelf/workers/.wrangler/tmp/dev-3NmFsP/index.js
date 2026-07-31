@@ -37,14 +37,14 @@ var __publicField = (obj, key, value) => {
   return value;
 };
 
-// .wrangler/tmp/bundle-pfFtAZ/strip-cf-connecting-ip-header.js
+// .wrangler/tmp/bundle-F7MBKe/strip-cf-connecting-ip-header.js
 function stripCfConnectingIPHeader(input, init) {
   const request = new Request(input, init);
   request.headers.delete("CF-Connecting-IP");
   return request;
 }
 var init_strip_cf_connecting_ip_header = __esm({
-  ".wrangler/tmp/bundle-pfFtAZ/strip-cf-connecting-ip-header.js"() {
+  ".wrangler/tmp/bundle-F7MBKe/strip-cf-connecting-ip-header.js"() {
     __name(stripCfConnectingIPHeader, "stripCfConnectingIPHeader");
     globalThis.fetch = new Proxy(globalThis.fetch, {
       apply(target, thisArg, argArray) {
@@ -24266,14 +24266,14 @@ var require_xml2js = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-pfFtAZ/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-F7MBKe/middleware-loader.entry.ts
 init_strip_cf_connecting_ip_header();
 init_modules_watch_stub();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// .wrangler/tmp/bundle-pfFtAZ/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-F7MBKe/middleware-insertion-facade.js
 init_strip_cf_connecting_ip_header();
 init_modules_watch_stub();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
@@ -27193,11 +27193,14 @@ router.post("/register", async (c) => {
     return error3(c, "Password must be at least 6 characters", 400);
   const hashedPw = await hashPassword(password);
   const verificationToken = generateVerificationToken();
+  const refreshToken = generateRefreshToken();
+  const refreshTokenHash = await hashRefreshToken(refreshToken);
   const { insertedId } = await db.insertOne("users", {
     email: normalizedEmail,
     providers: [{ type: "local", hashedPassword: hashedPw }],
     emailVerified: false,
     emailVerificationToken: verificationToken,
+    refreshTokenHash,
     profile: { badges: [] },
     settings: {
       notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false }
@@ -27212,9 +27215,10 @@ router.post("/register", async (c) => {
     <a href="${verificationLink}" style="display:inline-block;background:#FFD700;color:#000;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Verify Email</a>
     <p style="color:#888;font-size:13px;margin-top:20px">Or copy this link:<br><span style="color:#aaa;word-break:break-all">${verificationLink}</span></p>
   `, { icon: "\u{1F389}" });
-  await sendMail2({ to: normalizedEmail, subject: "\u{1F389} OtakuShelf -- Verify Your Email", html }, env2);
-  const tokens = await issueTokenPair(insertedId, users, env2);
-  return success(c, "Registration successful", { user: sanitizeUser({ _id: insertedId, email: normalizedEmail }), ...tokens }, 201);
+  sendMail2({ to: normalizedEmail, subject: "\u{1F389} OtakuShelf -- Verify Your Email", html }, env2).catch(() => {
+  });
+  const accessToken = await generateAccessToken(insertedId, env2);
+  return success(c, "Registration successful", { user: sanitizeUser({ _id: insertedId, email: normalizedEmail }), accessToken, refreshToken }, 201);
 });
 router.post("/login", async (c) => {
   const { users, env: env2 } = setup(c);
@@ -27248,14 +27252,63 @@ router.post("/login", async (c) => {
   const tokens = await issueTokenPair(user._id, users, env2);
   return success(c, "Login successful", { user: sanitizeUser(user), ...tokens });
 });
-async function verifyGoogleIdToken(idToken, clientId) {
-  const { createRemoteJWKSet: createRemoteJWKSet2, jwtVerify: jwtVerify2 } = await Promise.resolve().then(() => (init_webapi(), webapi_exports));
-  const JWKS = createRemoteJWKSet2(new URL("https://www.googleapis.com/oauth2/v3/certs"));
-  const { payload } = await jwtVerify2(idToken, JWKS, {
-    issuer: ["https://accounts.google.com", "accounts.google.com"],
-    audience: clientId
-  });
-  return payload;
+var jwksCache2 = { jwks: null, ts: 0 };
+var JWKS_TTL = 6 * 60 * 60 * 1e3;
+var JWKS_CACHE_KEY = "google:jwks";
+async function fetchGoogleJWKS() {
+  const res = await fetch("https://www.googleapis.com/oauth2/v3/certs");
+  return res.json();
+}
+__name(fetchGoogleJWKS, "fetchGoogleJWKS");
+async function getGoogleJWKS(env2) {
+  if (jwksCache2.jwks && Date.now() - jwksCache2.ts < JWKS_TTL)
+    return jwksCache2.jwks;
+  if (env2.CACHE) {
+    try {
+      const cached2 = await env2.CACHE.get(JWKS_CACHE_KEY, { type: "json" });
+      if (cached2 && Array.isArray(cached2.keys) && cached2.keys.length) {
+        jwksCache2 = { jwks: cached2, ts: Date.now() };
+        return cached2;
+      }
+    } catch {
+    }
+  }
+  const jwks = await fetchGoogleJWKS();
+  jwksCache2 = { jwks, ts: Date.now() };
+  if (env2.CACHE && Array.isArray(jwks.keys) && jwks.keys.length) {
+    try {
+      await env2.CACHE.put(JWKS_CACHE_KEY, JSON.stringify(jwks), { expirationTtl: 86400 });
+    } catch {
+    }
+  }
+  return jwks;
+}
+__name(getGoogleJWKS, "getGoogleJWKS");
+async function verifyGoogleIdToken(idToken, clientId, env2) {
+  const { createLocalJWKSet: createLocalJWKSet2, jwtVerify: jwtVerify2 } = await Promise.resolve().then(() => (init_webapi(), webapi_exports));
+  const verifyWith = /* @__PURE__ */ __name(async (jwks) => {
+    const JWKS = createLocalJWKSet2(jwks);
+    const { payload } = await jwtVerify2(idToken, JWKS, {
+      issuer: ["https://accounts.google.com", "accounts.google.com"],
+      audience: clientId
+    });
+    return payload;
+  }, "verifyWith");
+  try {
+    const jwks = await getGoogleJWKS(env2);
+    return await verifyWith(jwks);
+  } catch {
+    jwksCache2 = { jwks: null, ts: 0 };
+    if (env2.CACHE) {
+      try {
+        await env2.CACHE.delete(JWKS_CACHE_KEY);
+      } catch {
+      }
+    }
+    const fresh = await fetchGoogleJWKS();
+    jwksCache2 = { jwks: fresh, ts: Date.now() };
+    return await verifyWith(fresh);
+  }
 }
 __name(verifyGoogleIdToken, "verifyGoogleIdToken");
 async function exchangeGoogleCode(code, clientId, clientSecret, redirectUri) {
@@ -27277,36 +27330,47 @@ async function exchangeGoogleCode(code, clientId, clientSecret, redirectUri) {
   return res.json();
 }
 __name(exchangeGoogleCode, "exchangeGoogleCode");
+async function upsertGoogleUser(db, users, env2, { email, sub, picture, name }) {
+  const refreshToken = generateRefreshToken();
+  const refreshTokenHash = await hashRefreshToken(refreshToken);
+  const existing = await users.findByEmail(email);
+  if (existing) {
+    addProvider(existing, "google", { id: sub });
+    existing.photo = picture || existing.photo;
+    existing.name = name || existing.name;
+    existing.emailVerified = true;
+    await db.updateOne("users", { _id: db.oid(existing._id) }, {
+      $set: { providers: existing.providers, photo: existing.photo, name: existing.name, emailVerified: true, refreshTokenHash }
+    });
+    const accessToken2 = await generateAccessToken(existing._id, env2);
+    return { user: existing, accessToken: accessToken2, refreshToken };
+  }
+  const { insertedId } = await db.insertOne("users", {
+    email,
+    providers: [{ type: "google", id: sub }],
+    photo: picture,
+    name,
+    emailVerified: true,
+    refreshTokenHash,
+    profile: { badges: [] },
+    settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
+    createdAt: /* @__PURE__ */ new Date()
+  });
+  const user = { _id: insertedId, email, providers: [{ type: "google", id: sub }], photo: picture, name, emailVerified: true };
+  const accessToken = await generateAccessToken(insertedId, env2);
+  return { user, accessToken, refreshToken };
+}
+__name(upsertGoogleUser, "upsertGoogleUser");
 router.post("/google", async (c) => {
   const { db, users, env: env2 } = setup(c);
   const { idToken } = await c.req.json();
   if (!idToken)
     return error3(c, "ID token is required", 400);
   try {
-    const payload = await verifyGoogleIdToken(idToken, env2.GOOGLE_CLIENT_ID);
+    const payload = await verifyGoogleIdToken(idToken, env2.GOOGLE_CLIENT_ID, env2);
     const { email, sub, picture, name } = payload;
-    let user = await users.findByEmail(email);
-    if (user) {
-      addProvider(user, "google", { id: sub });
-      user.photo = picture || user.photo;
-      user.name = name || user.name;
-      user.emailVerified = true;
-      await db.updateOne("users", { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } });
-    } else {
-      const { insertedId } = await db.insertOne("users", {
-        email,
-        providers: [{ type: "google", id: sub }],
-        photo: picture,
-        name,
-        emailVerified: true,
-        profile: { badges: [] },
-        settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
-        createdAt: /* @__PURE__ */ new Date()
-      });
-      user = { _id: insertedId, email, providers: [{ type: "google", id: sub }], photo: picture, name, emailVerified: true };
-    }
-    const tokens = await issueTokenPair(user._id, users, env2);
-    return success(c, "Google login successful", { user: sanitizeUser(user), ...tokens });
+    const { user, accessToken, refreshToken } = await upsertGoogleUser(db, users, env2, { email, sub, picture, name });
+    return success(c, "Google login successful", { user: sanitizeUser(user), accessToken, refreshToken });
   } catch (err) {
     console.error("Google token auth error:", err.message);
     return error3(c, "Google authentication failed: " + err.message, 401);
@@ -27327,30 +27391,10 @@ router.get("/google/callback", async (c) => {
   const redirectUri = `${workerUrl}/auth/google/callback`;
   try {
     const tokens = await exchangeGoogleCode(code, env2.GOOGLE_CLIENT_ID, env2.GOOGLE_CLIENT_SECRET, redirectUri);
-    const payload = await verifyGoogleIdToken(tokens.id_token, env2.GOOGLE_CLIENT_ID);
+    const payload = await verifyGoogleIdToken(tokens.id_token, env2.GOOGLE_CLIENT_ID, env2);
     const { email, sub, picture, name } = payload;
-    let user = await users.findByEmail(email);
-    if (user) {
-      addProvider(user, "google", { id: sub });
-      user.photo = picture || user.photo;
-      user.name = name || user.name;
-      user.emailVerified = true;
-      await db.updateOne("users", { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } });
-    } else {
-      const { insertedId } = await db.insertOne("users", {
-        email,
-        providers: [{ type: "google", id: sub }],
-        photo: picture,
-        name,
-        emailVerified: true,
-        profile: { badges: [] },
-        settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
-        createdAt: /* @__PURE__ */ new Date()
-      });
-      user = { _id: insertedId, email, providers: [{ type: "google", id: sub }], photo: picture, name, emailVerified: true };
-    }
-    const appTokens = await issueTokenPair(user._id, users, env2);
-    return c.redirect(`${env2.FRONTEND_URL}/auth/callback?accessToken=${appTokens.accessToken}&refreshToken=${appTokens.refreshToken}`);
+    const { user, accessToken, refreshToken } = await upsertGoogleUser(db, users, env2, { email, sub, picture, name });
+    return c.redirect(`${env2.FRONTEND_URL}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`);
   } catch (err) {
     console.error("Google callback error:", err.message);
     return c.redirect(`${env2.FRONTEND_URL}/auth/callback?error=google_auth_failed`);
@@ -27364,30 +27408,10 @@ router.post("/google/callback", async (c) => {
   const redirectUri = `${env2.FRONTEND_URL}/auth/callback`;
   try {
     const tokenRes = await exchangeGoogleCode(code, env2.GOOGLE_CLIENT_ID, env2.GOOGLE_CLIENT_SECRET, redirectUri);
-    const payload = await verifyGoogleIdToken(tokenRes.id_token, env2.GOOGLE_CLIENT_ID);
+    const payload = await verifyGoogleIdToken(tokenRes.id_token, env2.GOOGLE_CLIENT_ID, env2);
     const { email, sub, picture, name } = payload;
-    let user = await users.findByEmail(email);
-    if (user) {
-      addProvider(user, "google", { id: sub });
-      user.photo = picture || user.photo;
-      user.name = name || user.name;
-      user.emailVerified = true;
-      await db.updateOne("users", { _id: db.oid(user._id) }, { $set: { providers: user.providers, photo: user.photo, name: user.name, emailVerified: true } });
-    } else {
-      const { insertedId } = await db.insertOne("users", {
-        email,
-        providers: [{ type: "google", id: sub }],
-        photo: picture,
-        name,
-        emailVerified: true,
-        profile: { badges: [] },
-        settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
-        createdAt: /* @__PURE__ */ new Date()
-      });
-      user = { _id: insertedId, email, providers: [{ type: "google", id: sub }], photo: picture, name, emailVerified: true };
-    }
-    const appTokens = await issueTokenPair(user._id, users, env2);
-    return success(c, "Google login successful", { user: sanitizeUser(user), ...appTokens });
+    const { user, accessToken, refreshToken } = await upsertGoogleUser(db, users, env2, { email, sub, picture, name });
+    return success(c, "Google login successful", { user: sanitizeUser(user), accessToken, refreshToken });
   } catch (err) {
     console.error("Google code exchange error:", err.message);
     return error3(c, "Google authentication failed: " + err.message, 401);
@@ -27459,13 +27483,8 @@ router.post("/forgot-password", async (c) => {
     <p>We received a request to reset your password.</p>
     <p>Use the code below to reset your password. It expires in 10 minutes.</p>
   `, { isOtp: true, otpCode: otp });
-  const sent = await sendMail2({ to: normalizedEmail, subject: "\u{1F511} OtakuShelf -- Your Verification Code", html }, env2);
-  if (!sent) {
-    await db.updateOne("users", { _id: db.oid(user._id) }, {
-      $set: { passwordResetToken: null, passwordResetExpires: null }
-    });
-    return error3(c, "Failed to send verification email", 500);
-  }
+  sendMail2({ to: normalizedEmail, subject: "\u{1F511} OtakuShelf -- Your Verification Code", html }, env2).catch(() => {
+  });
   return success(c, "Verification code sent");
 });
 router.post("/reset-password", async (c) => {
@@ -27494,7 +27513,7 @@ router.post("/link-google", authenticateToken, async (c) => {
   const { db, users, env: env2 } = setup(c);
   const { idToken } = await c.req.json();
   const userId = c.get("userId");
-  const payload = await verifyGoogleIdToken(idToken, env2.GOOGLE_CLIENT_ID);
+  const payload = await verifyGoogleIdToken(idToken, env2.GOOGLE_CLIENT_ID, env2);
   const { sub, email, picture, name } = payload;
   let user = await users.findById(userId);
   if (!user)
@@ -29694,7 +29713,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-pfFtAZ/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-F7MBKe/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -29731,7 +29750,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-pfFtAZ/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-F7MBKe/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
