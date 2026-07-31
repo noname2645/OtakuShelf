@@ -130,12 +130,12 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
     .sort((a, b) => new Date(b.updatedAt || b.addedDate) - new Date(a.updatedAt || a.addedDate))
     .slice(0, 6)
     .map(a => ({
-      title: a.title, animeId: a.animeId, image: a.image, coverImage: a.coverImage,
+      title: a.title, animeId: a.animeId, malId: a.malId, image: a.image, coverImage: a.coverImage,
       episodesWatched: a.episodesWatched, status: a.status, genres: a.genres,
     }))
 
   const favorites = (list?.favorites || []).slice(0, 10).map(f => ({
-    title: f.title, animeId: f.animeId, image: f.image, coverImage: f.coverImage,
+    title: f.title, animeId: f.animeId, malId: f.malId, image: f.image, coverImage: f.coverImage,
     userRating: f.userRating, genres: f.genres,
   }))
 

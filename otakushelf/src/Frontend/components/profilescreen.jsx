@@ -224,6 +224,7 @@ const ProfileScreen = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const openAnimeModal = useCallback((anime) => {
+    if (!anime) return;
     setSelectedAnime(anime);
     setIsModalOpen(true);
   }, []);

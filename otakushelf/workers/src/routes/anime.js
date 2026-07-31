@@ -133,9 +133,9 @@ router.get('/anime/:id', async (c) => {
   if (cached) return success(c, 'Anime details (cached)', cached)
 
   const query = `
-    query ($id: Int) {
-      Media(id: $id, type: ANIME) {
-        id title { romaji english native } description coverImage { extraLarge large medium } bannerImage
+    query ($id: Int, $idMal: Int) {
+      Media(id: $id, idMal: $idMal, type: ANIME) {
+        id idMal title { romaji english native } description coverImage { extraLarge large medium } bannerImage
         episodes duration format status season seasonYear startDate { year month day } endDate { year month day } genres averageScore popularity
         studios(isMain: true) { nodes { name } }
         characters(sort: RELEVANCE, perPage: 10) { nodes { id name { full } image { medium } } }
@@ -147,11 +147,27 @@ router.get('/anime/:id', async (c) => {
       }
     }`
 
-  const data = await fetchAniList(query, { id: parseInt(id) })
+  const idNum = parseInt(id)
+  const isMal = c.req.query('mal') === '1'
+  const lookup = async (key) => {
+    try {
+      const d = await fetchAniList(query, { [key]: idNum })
+      return d?.Media || null
+    } catch (e) {
+      return null
+    }
+  }
+  let media = await lookup(isMal ? 'idMal' : 'id')
+  if (!media) {
+    media = await lookup(isMal ? 'id' : 'idMal')
+  }
+  if (!media) {
+    return error(c, 'Anime not found', 404)
+  }
 
-  await cache?.put(cacheKey, JSON.stringify(data.Media), { expirationTtl: 3600 })
+  await cache?.put(cacheKey, JSON.stringify(media), { expirationTtl: 3600 })
 
-  return success(c, 'Anime details', data.Media)
+  return success(c, 'Anime details', media)
 })
 
 // ── POST /api/anime/related ──────────────────────────────────────────────────

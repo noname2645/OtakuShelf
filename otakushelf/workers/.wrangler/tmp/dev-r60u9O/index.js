@@ -37,14 +37,14 @@ var __publicField = (obj, key, value) => {
   return value;
 };
 
-// .wrangler/tmp/bundle-F7MBKe/strip-cf-connecting-ip-header.js
+// .wrangler/tmp/bundle-z2tMoI/strip-cf-connecting-ip-header.js
 function stripCfConnectingIPHeader(input, init) {
   const request = new Request(input, init);
   request.headers.delete("CF-Connecting-IP");
   return request;
 }
 var init_strip_cf_connecting_ip_header = __esm({
-  ".wrangler/tmp/bundle-F7MBKe/strip-cf-connecting-ip-header.js"() {
+  ".wrangler/tmp/bundle-z2tMoI/strip-cf-connecting-ip-header.js"() {
     __name(stripCfConnectingIPHeader, "stripCfConnectingIPHeader");
     globalThis.fetch = new Proxy(globalThis.fetch, {
       apply(target, thisArg, argArray) {
@@ -24266,14 +24266,14 @@ var require_xml2js = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-F7MBKe/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-z2tMoI/middleware-loader.entry.ts
 init_strip_cf_connecting_ip_header();
 init_modules_watch_stub();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// .wrangler/tmp/bundle-F7MBKe/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-z2tMoI/middleware-insertion-facade.js
 init_strip_cf_connecting_ip_header();
 init_modules_watch_stub();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
@@ -27773,6 +27773,7 @@ router2.get("/:userId", authenticateToken, authorizeUser, async (c) => {
   const recentlyWatched = [...watching, ...completed].sort((a, b) => new Date(b.updatedAt || b.addedDate) - new Date(a.updatedAt || a.addedDate)).slice(0, 6).map((a) => ({
     title: a.title,
     animeId: a.animeId,
+    malId: a.malId,
     image: a.image,
     coverImage: a.coverImage,
     episodesWatched: a.episodesWatched,
@@ -27782,6 +27783,7 @@ router2.get("/:userId", authenticateToken, authorizeUser, async (c) => {
   const favorites = (list?.favorites || []).slice(0, 10).map((f) => ({
     title: f.title,
     animeId: f.animeId,
+    malId: f.malId,
     image: f.image,
     coverImage: f.coverImage,
     userRating: f.userRating,
@@ -28713,9 +28715,9 @@ router6.get("/anime/:id", async (c) => {
   if (cached2)
     return success(c, "Anime details (cached)", cached2);
   const query = `
-    query ($id: Int) {
-      Media(id: $id, type: ANIME) {
-        id title { romaji english native } description coverImage { extraLarge large medium } bannerImage
+    query ($id: Int, $idMal: Int) {
+      Media(id: $id, idMal: $idMal, type: ANIME) {
+        id idMal title { romaji english native } description coverImage { extraLarge large medium } bannerImage
         episodes duration format status season seasonYear startDate { year month day } endDate { year month day } genres averageScore popularity
         studios(isMain: true) { nodes { name } }
         characters(sort: RELEVANCE, perPage: 10) { nodes { id name { full } image { medium } } }
@@ -28726,9 +28728,25 @@ router6.get("/anime/:id", async (c) => {
         }
       }
     }`;
-  const data = await fetchAniList(query, { id: parseInt(id) });
-  await cache2?.put(cacheKey, JSON.stringify(data.Media), { expirationTtl: 3600 });
-  return success(c, "Anime details", data.Media);
+  const idNum = parseInt(id);
+  const isMal = c.req.query("mal") === "1";
+  const lookup = /* @__PURE__ */ __name(async (key) => {
+    try {
+      const d = await fetchAniList(query, { [key]: idNum });
+      return d?.Media || null;
+    } catch (e) {
+      return null;
+    }
+  }, "lookup");
+  let media = await lookup(isMal ? "idMal" : "id");
+  if (!media) {
+    media = await lookup(isMal ? "id" : "idMal");
+  }
+  if (!media) {
+    return error3(c, "Anime not found", 404);
+  }
+  await cache2?.put(cacheKey, JSON.stringify(media), { expirationTtl: 3600 });
+  return success(c, "Anime details", media);
 });
 router6.post("/related", async (c) => {
   const { id, type } = await c.req.json();
@@ -29713,7 +29731,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-F7MBKe/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-z2tMoI/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -29750,7 +29768,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-F7MBKe/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-z2tMoI/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

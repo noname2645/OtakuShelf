@@ -143,54 +143,56 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             };
         }
 
+        // Merge enriched details over the sparse prop, so every field is filled
+        const src = (enriched?.id || enriched?.title) ? { ...anime, ...enriched } : anime;
+
         // Fast title extraction
         let title = "Untitled";
-        if (typeof anime.title === 'string') {
-            title = anime.title;
-        } else if (anime.title) {
-            title = anime.title.english || anime.title.romaji || anime.title.native || "Untitled";
+        if (typeof src.title === 'string') {
+            title = src.title;
+        } else if (src.title) {
+            title = src.title.english || src.title.romaji || src.title.native || "Untitled";
         }
 
         // Fast image extraction
         let image = "/placeholder-anime.jpg";
-        if (anime.coverImage) {
-            image = anime.coverImage.extraLarge || anime.coverImage.large || anime.coverImage.medium || image;
+        if (src.coverImage) {
+            image = src.coverImage.extraLarge || src.coverImage.large || src.coverImage.medium || image;
         }
         if (!image || image === "/placeholder-anime.jpg") {
-            image = anime.bannerImage || image;
+            image = src.bannerImage || image;
         }
 
         // Fast genre extraction
         let genres = [];
-        if (Array.isArray(anime.genres)) {
-            genres = anime.genres.slice(0, 5); // Limit to 5 genres
+        if (Array.isArray(src.genres)) {
+            genres = src.genres.slice(0, 5); // Limit to 5 genres
         }
 
         // Fast score calculation
         let score = null;
-        if (anime.averageScore) {
-            score = (anime.averageScore / 10).toFixed(1);
-        } else if (anime.score && anime.score !== "N/A") {
-            score = (anime.score / 10).toFixed(1);
+        if (src.averageScore) {
+            score = (src.averageScore / 10).toFixed(1);
+        } else if (src.score && src.score !== "N/A") {
+            score = (src.score / 10).toFixed(1);
         }
 
-        // Fast studio extraction — prefer enriched data
+        // Fast studio extraction
         let studio = "N/A";
-        const studioSrc = enriched?.studios || anime.studios;
-        if (studioSrc) {
-            if (Array.isArray(studioSrc)) {
-                if (studioSrc.length > 0) {
-                    if (typeof studioSrc[0] === 'string') {
-                        studio = studioSrc.slice(0, 2).join(", ");
+        if (src.studios) {
+            if (Array.isArray(src.studios)) {
+                if (src.studios.length > 0) {
+                    if (typeof src.studios[0] === 'string') {
+                        studio = src.studios.slice(0, 2).join(", ");
                     } else {
-                        studio = studioSrc.slice(0, 2).map(s => s.name).filter(Boolean).join(", ");
+                        studio = src.studios.slice(0, 2).map(s => s.name).filter(Boolean).join(", ");
                     }
                 }
-            } else if (studioSrc.edges) {
-                const edges = studioSrc.edges.slice(0, 2);
+            } else if (src.studios.edges) {
+                const edges = src.studios.edges.slice(0, 2);
                 studio = edges.map(edge => edge?.node?.name).filter(Boolean).join(", ") || "N/A";
-            } else if (studioSrc.nodes) {
-                const nodes = studioSrc.nodes.slice(0, 2);
+            } else if (src.studios.nodes) {
+                const nodes = src.studios.nodes.slice(0, 2);
                 studio = nodes.map(node => node?.name).filter(Boolean).join(", ") || "N/A";
             }
         }
@@ -200,20 +202,20 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             "TV": "TV", "TV_SHORT": "Short", "MOVIE": "Movie",
             "SPECIAL": "Special", "OVA": "OVA", "ONA": "ONA", "MUSIC": "Music"
         };
-        const format = anime.format ? (formatMap[anime.format] || anime.format) : (anime.type || "Unknown");
+        const format = src.format ? (formatMap[src.format] || src.format) : (src.type || "Unknown");
 
         return {
             title,
             image,
-            trailerVideoId: (enriched?.trailer || anime.trailer)?.site === "youtube" && (enriched?.trailer || anime.trailer)?.id ? (enriched?.trailer || anime.trailer).id : null,
+            trailerVideoId: src.trailer?.site === "youtube" && src.trailer?.id ? src.trailer.id : null,
             genres,
             score,
-            episodes: anime.episodes || anime.episodeCount || "?",
+            episodes: src.episodes || src.episodeCount || "?",
             studio,
-            status: anime.status || "Unknown",
+            status: src.status || "Unknown",
             format,
-            rating: anime.isAdult ? "R 17+ (violence & profanity)" : (Array.isArray(anime.genres) && anime.genres.includes("Ecchi") ? "R+ Mild Nudity" : "PG-13"),
-            synopsis: anime.description?.replace(/<[^>]*>/g, '') || "No description available."
+            rating: src.isAdult ? "R 17+ (violence & profanity)" : (Array.isArray(src.genres) && src.genres.includes("Ecchi") ? "R+ Mild Nudity" : "PG-13"),
+            synopsis: src.description?.replace(/<[^>]*>/g, '') || "No description available."
         };
     }, [anime, enriched]);
 
@@ -294,19 +296,25 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         }
     };
 
-    // Fetch enriched anime details (studios, dates) when modal opens
+    // Fetch enriched anime details (description, studios, dates, etc.) when modal opens
     useEffect(() => {
-        if (!isOpen || !anime?.id || typeof anime.id !== 'number') return;
+        if (!isOpen || !anime) return;
+        setEnriched(null);
+        const rawId = anime.id ?? anime.animeId;
+        const idNum = typeof rawId === 'number' ? rawId : parseInt(String(rawId), 10);
+        if (!idNum) return;
+        const isMalImport = anime.malId && anime.animeId && String(anime.malId) === String(anime.animeId);
         let cancelled = false;
         const fetchDetails = async () => {
             try {
-                const res = await api.get(`${API}/api/anime/anime/${anime.id}`);
+                const res = await api.get(`${API}/api/anime/anime/${idNum}${isMalImport ? '?mal=1' : ''}`);
                 if (!cancelled && res.data?.data) setEnriched(res.data.data);
             } catch (e) {}
         };
-        if (!anime.startDate || !anime.studios?.length || !anime.trailer) fetchDetails();
+        const isSparse = !anime.description || !anime.startDate || !anime.studios?.length || !anime.trailer || !anime.averageScore || !anime.status || !anime.format;
+        if (isSparse) fetchDetails();
         return () => { cancelled = true; };
-    }, [isOpen, anime?.id]);
+    }, [isOpen, anime?.id, anime?.animeId, anime?.malId]);
 
     // Single optimized useEffect
     useEffect(() => {
@@ -353,12 +361,12 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
 
     // Reset effect for anime changes
     useEffect(() => {
-        if (anime?.id) {
+        if (anime?.id || anime?.animeId) {
             setSynopsisModalOpen(false);
             setActiveTab("info");
             setTrailerVideoId(animeData?.trailerVideoId || null);
         }
-    }, [anime?.id, animeData?.trailerVideoId]);
+    }, [anime?.id, anime?.animeId, animeData?.trailerVideoId]);
 
     // EARLY RETURN — AnimatePresence handles exit, so we still return null when closed
     if (!isOpen || !anime) return null;
@@ -379,7 +387,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                     title: animeData.title,
                     malId: anime.idMal?.toString() || anime.malId || '',
                     image: animeData.image,
-                    totalEpisodes: anime.episodes || anime.episodeCount || 0,
+                    totalEpisodes: anime.episodes || anime.episodeCount || (typeof animeData.episodes === 'number' ? animeData.episodes : 0),
                     genres: Array.isArray(anime.genres) ? anime.genres : [],
                     userRating: 0,
                 }
