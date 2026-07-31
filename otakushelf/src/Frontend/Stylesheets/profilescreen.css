@@ -326,6 +326,7 @@
 .ps-asym-card.hero {
   grid-row: 1 / 3;
   aspect-ratio: auto;
+  cursor: pointer;
 }
 .ps-asym-card img {
   width: 100%;

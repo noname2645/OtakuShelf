@@ -611,7 +611,7 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 16px;
-  height: 440px;
+  height: 700px;
 }
 
 /* Featured card */
@@ -623,7 +623,7 @@
   background: #1a1f36;
   border: 1px solid rgba(255,255,255,0.07);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
-  cursor: default;
+  cursor: pointer;
 }
 .rw-featured:hover {
   transform: translateY(-4px);
@@ -709,6 +709,7 @@
   display: block;
 }
 .rw-grid-placeholder {
+  width: 100%;
   background: rgba(255,255,255,0.03);
   border: 1px dashed rgba(255,255,255,0.06);
 }
@@ -774,6 +775,9 @@
   display: block;
 }
 .fav-placeholder {
+  width: 100%;
+  height: 340px;
+  border-radius: 14px;
   background: rgba(255,255,255,0.03);
   border: 1px dashed rgba(255,255,255,0.06);
 }
@@ -1015,6 +1019,7 @@
   .rw-featured { height: 320px; }
   .rw-grid { grid-template-rows: auto; grid-template-columns: repeat(4, 1fr); }
   .rw-grid-card { aspect-ratio: 2/3; }
+  .rw-grid-placeholder { height: 230px; }
   .fav-grid { grid-template-columns: repeat(5, 1fr); }
   .phc-stat { padding: 4px 8px; }
   .phc-stat-num { font-size: 22px; }
@@ -1030,6 +1035,7 @@
   .ach-section, .rw-section, .fav-section, .heatmap-section { padding: 40px 4%; }
   .genre-identity { padding: 60px 4% 70px; }
   .fav-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .fav-placeholder { height: 230px; }
   .genre-pills-row { flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
   .genre-pill { min-width: 48px; padding: 0 8px; height: 34px; }
   .genre-pill-pct { display: none; }

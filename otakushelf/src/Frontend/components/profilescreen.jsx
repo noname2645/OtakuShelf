@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import "../Stylesheets/profilescreen.css";
 import api from "../api.js";
 import { useAuth } from "./AuthContext";
 import { useParams } from "react-router-dom";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import BottomNavBar from "./bottom.jsx";
+import AnimeCardUI from "./AnimeCardUI.jsx";
+import Modal from "./modal.jsx";
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -74,6 +76,26 @@ const normalizeTitle = (anime) => {
 
 const extractImage = (anime) => {
   return anime?.coverImage?.extraLarge || anime?.coverImage?.large || anime?.image || "/placeholder-anime.jpg";
+};
+
+const toAnimeShape = (entry) => {
+  if (!entry) return entry;
+  const img = entry.coverImage?.extraLarge || entry.coverImage?.large || entry.image || '';
+  const t = entry.title;
+  const title = typeof t === 'object' ? (t.english || t.romaji || t.native || '') : (t || '');
+  return {
+    ...entry,
+    id: entry.animeId || entry.id,
+    animeId: entry.animeId || entry.id,
+    title,
+    image: img,
+    coverImage: entry.coverImage && typeof entry.coverImage === 'object'
+      ? entry.coverImage
+      : (img ? { extraLarge: img, large: img, medium: img } : undefined),
+    genres: Array.isArray(entry.genres) ? entry.genres : [],
+    episodes: entry.totalEpisodes || entry.episodes || undefined,
+    status: entry.status,
+  };
 };
 
 const CustomTooltip = ({ active, payload }) => {
@@ -197,6 +219,19 @@ const ProfileScreen = () => {
   const [allBadgeDefs, setAllBadgeDefs] = useState([]);
   const [watchLog, setWatchLog] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [selectedAnime, setSelectedAnime] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openAnimeModal = useCallback((anime) => {
+    setSelectedAnime(anime);
+    setIsModalOpen(true);
+  }, []);
+
+  const closeAnimeModal = useCallback(() => {
+    setSelectedAnime(null);
+    setIsModalOpen(false);
+  }, []);
 
   const chartData = useMemo(() => prepareChartData(genres), [genres]);
 
@@ -456,12 +491,28 @@ const ProfileScreen = () => {
         {recentlyWatched.length > 0 ? (
           <div className="ps-asym-grid">
             {recentlyWatched.slice(0, 5).map((anime, idx) => (
-              <div key={anime.animeId || idx} className={`ps-asym-card ${idx === 0 ? 'hero' : ''}`}>
-                <img src={extractImage(anime)} alt={normalizeTitle(anime)} />
-                <div className="ps-asym-overlay">
-                  <span className="ps-asym-title">{normalizeTitle(anime)}</span>
+              idx === 0 ? (
+                <div
+                  key={anime.animeId || idx}
+                  className="ps-asym-card hero"
+                  onClick={() => openAnimeModal(toAnimeShape(anime))}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <img src={extractImage(anime)} alt={normalizeTitle(anime)} />
+                  <div className="ps-asym-overlay">
+                    <span className="ps-asym-title">{normalizeTitle(anime)}</span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <AnimeCardUI
+                  key={anime.animeId || idx}
+                  anime={toAnimeShape(anime)}
+                  index={idx}
+                  isGrid
+                  onClick={openAnimeModal}
+                />
+              )
             ))}
           </div>
         ) : (
@@ -476,18 +527,15 @@ const ProfileScreen = () => {
         </div>
         {favorites.length > 0 ? (
           <div className="ps-fav-grid">
-            {favorites.slice(0, 10).map((anime, idx) => {
-              const img = anime.coverImage?.extraLarge || anime.coverImage?.large || anime.image;
-              return (
-                <div key={anime.animeId || idx} className="ps-fav-card" style={img ? {} : { background: 'var(--card-bg)' }}>
-                  {img && <img src={img} alt={normalizeTitle(anime)} />}
-                  <div className="ps-fav-overlay">
-                    <span className="ps-fav-title">{normalizeTitle(anime)}</span>
-                    {anime.userRating && <span className="ps-fav-rating">★ {anime.userRating}</span>}
-                  </div>
-                </div>
-              );
-            })}
+            {favorites.slice(0, 10).map((anime, idx) => (
+              <AnimeCardUI
+                key={anime.animeId || idx}
+                anime={{ ...toAnimeShape(anime), averageScore: anime.userRating ? anime.userRating * 20 : 0 }}
+                index={idx}
+                isGrid
+                onClick={openAnimeModal}
+              />
+            ))}
           </div>
         ) : (
           <p className="ps-empty">No favourites yet.</p>
@@ -566,6 +614,15 @@ const ProfileScreen = () => {
         </div>
         <ActivityHeatmap watchLog={watchLog} />
       </section>
+
+      {selectedAnime && (
+        <Modal
+          isOpen={isModalOpen}
+          onClose={closeAnimeModal}
+          anime={selectedAnime}
+          onOpenAnime={setSelectedAnime}
+        />
+      )}
     </div>
   );
 };

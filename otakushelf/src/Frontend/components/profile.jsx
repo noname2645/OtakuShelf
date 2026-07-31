@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import "../Stylesheets/profile.css";
 import "../Stylesheets/settings.css";
 import "../Stylesheets/home.css";
@@ -40,6 +40,20 @@ const ProfilePage = () => {
   const [badgeFilter, setBadgeFilter]     = useState('All');
   const [badgeSort, setBadgeSort]         = useState('rarity-desc');
   const [checkingBadges, setCheckingBadges] = useState(false);
+
+  // Anime detail modal state
+  const [selectedAnime, setSelectedAnime] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openAnimeModal = useCallback((anime) => {
+    setSelectedAnime(anime);
+    setIsModalOpen(true);
+  }, []);
+
+  const closeAnimeModal = useCallback(() => {
+    setSelectedAnime(null);
+    setIsModalOpen(false);
+  }, []);
 
   // Toast helper
   const showToast = (message, type = "success") => {
@@ -478,9 +492,8 @@ const ProfilePage = () => {
   const top5Genres     = genresWithData.slice(0, 5);
   const coveragePct    = totalGenres > 0 ? ((watchedGenres / totalGenres) * 100).toFixed(1) : "0";
 
-  // Recently watched display
-  const featuredAnime = recentlyWatched[0] || null;
-  const gridAnime     = recentlyWatched.slice(1, 5);
+  // Recently watched display — normalized shapes defined above
+
 
   const getTitle = (anime) => {
     if (!anime) return "";
@@ -491,6 +504,29 @@ const ProfilePage = () => {
     if (!anime) return '';
     return anime.coverImage?.extraLarge || anime.coverImage?.large || anime.image || '';
   };
+
+  // Normalize list entries (animeId/image keys) into the shared anime shape used by AnimeCardUI + Modal
+  const toAnimeShape = (entry) => {
+    if (!entry) return entry;
+    const img = entry.coverImage?.extraLarge || entry.coverImage?.large || entry.image || '';
+    return {
+      ...entry,
+      id: entry.animeId || entry.id,
+      animeId: entry.animeId || entry.id,
+      title: getTitle(entry),
+      image: img,
+      coverImage: entry.coverImage && typeof entry.coverImage === 'object'
+        ? entry.coverImage
+        : (img ? { extraLarge: img, large: img, medium: img } : undefined),
+      genres: Array.isArray(entry.genres) ? entry.genres : [],
+      episodes: entry.totalEpisodes || entry.episodes || undefined,
+      status: entry.status,
+    };
+  };
+
+  // Featured + grid derived from normalized shapes
+  const featuredAnime = toAnimeShape(recentlyWatched[0] || null);
+  const gridAnime = recentlyWatched.slice(1, 5).map(toAnimeShape);
 
   // ── Main Render ────────────────────────────────────────────────
   return (
@@ -752,7 +788,7 @@ const ProfilePage = () => {
               <div className="rw-layout">
                 {/* Featured — large left */}
                 {featuredAnime && (
-                  <div className="rw-featured">
+                  <div className="rw-featured" onClick={() => openAnimeModal(featuredAnime)} role="button" tabIndex={0}>
                     <img src={getImage(featuredAnime)} alt={getTitle(featuredAnime)} className="rw-featured-img" />
                     <div className="rw-featured-overlay">
                       <span className="rw-featured-badge">LATEST</span>
@@ -764,14 +800,14 @@ const ProfilePage = () => {
                 {/* 2×2 grid — right */}
                 <div className="rw-grid">
                   {gridAnime.map((anime, idx) => (
-                    <div key={anime.animeId || idx} className="rw-grid-card">
-                      <img src={getImage(anime)} alt={getTitle(anime)} className="rw-grid-img" />
-                      <div className="rw-grid-overlay">
-                        <span className="rw-grid-title">{getTitle(anime)}</span>
-                      </div>
-                    </div>
+                    <AnimeCardUI
+                      key={anime.animeId || anime.id || idx}
+                      anime={anime}
+                      index={idx + 1}
+                      isGrid
+                      onClick={openAnimeModal}
+                    />
                   ))}
-                  {/* Placeholder slots */}
                   {gridAnime.length < 4 && Array.from({ length: 4 - gridAnime.length }).map((_, i) => (
                     <div key={`ph-${i}`} className="rw-grid-card rw-grid-placeholder" />
                   ))}
@@ -799,13 +835,14 @@ const ProfilePage = () => {
 
             {favoriteAnime.length > 0 ? (
               <div className="fav-grid">
-                {favoriteAnime.slice(0, 10).map((anime) => (
-                  <div key={anime.id || anime.title} className="fav-card">
-                    <img src={anime.image} alt={anime.title} className="fav-img" />
-                    <div className="fav-overlay">
-                      <span className="fav-title">{anime.title}</span>
-                    </div>
-                  </div>
+                {favoriteAnime.slice(0, 10).map((anime, idx) => (
+                  <AnimeCardUI
+                    key={anime.animeId || anime.id || idx}
+                    anime={{ ...toAnimeShape(anime), averageScore: anime.userRating ? anime.userRating * 20 : 0 }}
+                    index={idx}
+                    isGrid
+                    onClick={openAnimeModal}
+                  />
                 ))}
                 {/* Placeholder slots */}
                 {favoriteAnime.length < 10 && Array.from({ length: 10 - Math.min(favoriteAnime.length, 10) }).map((_, i) => (
@@ -960,6 +997,14 @@ const ProfilePage = () => {
           </div>
         </section>
 
+        {selectedAnime && (
+          <Modal
+            isOpen={isModalOpen}
+            onClose={closeAnimeModal}
+            anime={selectedAnime}
+            onOpenAnime={setSelectedAnime}
+          />
+        )}
       </div>
     </>
   );
