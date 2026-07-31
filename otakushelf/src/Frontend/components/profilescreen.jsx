@@ -98,6 +98,28 @@ const toAnimeShape = (entry) => {
   };
 };
 
+// Fetch AniList community score for a batch of entries (cached endpoint used by the Modal)
+const enrichWithScores = async (entries, setter) => {
+  if (!Array.isArray(entries) || entries.length === 0) return;
+  const results = await Promise.all(
+    entries.map(async (entry) => {
+      const rawId = entry.animeId || entry.id;
+      const idNum = parseInt(String(rawId), 10);
+      if (!idNum) return { ...entry };
+      const isMalImport = entry.malId && entry.animeId && String(entry.malId) === String(entry.animeId);
+      try {
+        const res = await api.get(`${API}/api/anime/anime/${idNum}${isMalImport ? '?mal=1' : ''}`);
+        const media = res.data?.data;
+        if (media?.averageScore) {
+          return { ...entry, averageScore: media.averageScore };
+        }
+      } catch (e) {}
+      return { ...entry };
+    })
+  );
+  setter(results);
+};
+
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     const d = payload[0].payload;
@@ -315,6 +337,9 @@ const ProfileScreen = () => {
       setGenres(d.profile?.favoriteGenres || []);
       setAllBadgeDefs(badgeDefs);
       setWatchLog(wlRes.data?.data || []);
+
+      enrichWithScores(d.recentlyWatched || [], setRecentlyWatched);
+      enrichWithScores((d.favorites || []).slice(0, 10), setFavorites);
     } catch (err) {
       console.error("Error loading profile screen:", err);
     } finally {
@@ -531,7 +556,7 @@ const ProfileScreen = () => {
             {favorites.slice(0, 10).map((anime, idx) => (
               <AnimeCardUI
                 key={anime.animeId || idx}
-                anime={{ ...toAnimeShape(anime), averageScore: anime.userRating ? anime.userRating * 20 : 0 }}
+                anime={toAnimeShape(anime)}
                 index={idx}
                 isGrid
                 onClick={openAnimeModal}

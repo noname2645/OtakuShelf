@@ -244,6 +244,9 @@ const ProfilePage = () => {
         setBadges(profileData.badges || []);
         setGenres(profileData.favoriteGenres || []);
 
+        enrichWithScores(data.recentlyWatched || [], setRecentlyWatched);
+        enrichWithScores((data.favorites || []).slice(0, 10), setFavoriteAnime);
+
         setEditForm({
           name: userData.name || "",
           bio: profileData.bio || "",
@@ -413,6 +416,28 @@ const ProfilePage = () => {
   const totalActivityDays = useMemo(() => {
     return heatmapData.flat().filter(d => d.count > 0).length;
   }, [heatmapData]);
+
+  // Fetch AniList community score for a batch of entries (cached endpoint used by the Modal)
+  const enrichWithScores = async (entries, setter) => {
+    if (!Array.isArray(entries) || entries.length === 0) return;
+    const results = await Promise.all(
+      entries.map(async (entry) => {
+        const rawId = entry.animeId || entry.id;
+        const idNum = parseInt(String(rawId), 10);
+        if (!idNum) return { ...entry };
+        const isMalImport = entry.malId && entry.animeId && String(entry.malId) === String(entry.animeId);
+        try {
+          const res = await api.get(`${API}/api/anime/anime/${idNum}${isMalImport ? '?mal=1' : ''}`);
+          const media = res.data?.data;
+          if (media?.averageScore) {
+            return { ...entry, averageScore: media.averageScore };
+          }
+        } catch (e) {}
+        return { ...entry };
+      })
+    );
+    setter(results);
+  };
 
   if (!profileData) {
     return (
@@ -839,7 +864,7 @@ const ProfilePage = () => {
                 {favoriteAnime.slice(0, 10).map((anime, idx) => (
                   <AnimeCardUI
                     key={anime.animeId || anime.id || idx}
-                    anime={{ ...toAnimeShape(anime), averageScore: anime.userRating ? anime.userRating * 20 : 0 }}
+                    anime={toAnimeShape(anime)}
                     index={idx}
                     isGrid
                     onClick={openAnimeModal}

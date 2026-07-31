@@ -127,7 +127,13 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
   })
 
   const recentlyWatched = [...watching, ...completed]
-    .sort((a, b) => new Date(b.updatedAt || b.addedDate) - new Date(a.updatedAt || a.addedDate))
+    .map(a => ({
+      ...a,
+      _sortDate: a.status === 'completed'
+        ? new Date(a.finishDate || a.addedDate || a.updatedAt || 0)
+        : new Date(a.addedDate || a.updatedAt || 0),
+    }))
+    .sort((a, b) => b._sortDate - a._sortDate)
     .slice(0, 6)
     .map(a => ({
       title: a.title, animeId: a.animeId, malId: a.malId, image: a.image, coverImage: a.coverImage,

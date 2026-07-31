@@ -339,11 +339,11 @@ function buildEntry(malAnime, meta, malIdStr, malTitle, totalEpisodes, episodesW
     totalEpisodes, episodes: totalEpisodes, episodesWatched,
     status: category, genres: meta.genres,
     userRating: userRating > 0 ? Math.round(userRating / 2) : 0,
-    addedDate: (safeDate(malAnime.my_start_date) || new Date()).toISOString(),
-    updatedAt: new Date().toISOString(),
+    addedDate: (safeDate(malAnime.my_start_date) || safeDate(malAnime.my_finish_date) || new Date()).toISOString(),
   }
   if (category === 'completed') {
-    entry.finishDate = (safeDate(malAnime.my_finish_date) || new Date()).toISOString()
+    const fd = safeDate(malAnime.my_finish_date)
+    if (fd) entry.finishDate = fd.toISOString()
     entry.episodesWatched = totalEpisodes
   }
   return entry
@@ -512,7 +512,6 @@ router.post('/import/mal', authenticateToken, async (c) => {
                       const fd = safeDate(malAnime.my_finish_date)
                       if (fd) existingData.finishDate = fd.toISOString()
                     }
-                    existingData.updatedAt = new Date().toISOString()
                   }
                   modifiedCategories.add(category)
                 } else {

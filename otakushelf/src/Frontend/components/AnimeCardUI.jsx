@@ -174,11 +174,11 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
 
     const imageSrc = (shouldUseLowRes ? (anime.coverImage?.medium || anime.coverImage?.large) : (anime.coverImage?.extraLarge || anime.coverImage?.large)) || anime.bannerImage || '/placeholder-anime.jpg';
 
-    // Parse Score (avoid default garbage 8.5, fallback to N/A)
+    // Parse Score (only render the badge when a real score exists)
     const hasScore = (anime.averageScore && anime.averageScore > 0) || (anime.score && anime.score > 0);
     const score = hasScore
         ? (anime.averageScore ? (anime.averageScore / 10).toFixed(1) : (anime.score / 10).toFixed(1))
-        : "N/A";
+        : "";
 
     // Parse Year
     const releaseYear = anime.year || (anime.startDate && anime.startDate.year) || "2024";
@@ -208,10 +208,12 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         >
             {/* Top Rating and Bookmark overlay */}
             <div className="premium-card-header">
-                <div className="premium-rating-badge">
-                    <span className="premium-rating-star">★</span>
-                    <span className="premium-rating-number">{score}</span>
-                </div>
+                {hasScore && (
+                    <div className="premium-rating-badge">
+                        <span className="premium-rating-star">★</span>
+                        <span className="premium-rating-number">{score}</span>
+                    </div>
+                )}
                 
                 <button 
                     className={`premium-bookmark-btn ${isFavorite ? 'active' : ''}`}
