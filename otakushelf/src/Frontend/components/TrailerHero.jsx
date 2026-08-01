@@ -522,10 +522,10 @@ const TrailerHero = ({ onOpenModal }) => {
 
     const getStatusColor = (status) => {
         switch (status?.toLowerCase()) {
-            case 'releasing': return '#4CAF50';
-            case 'not_yet_released': return '#FF9800';
-            case 'finished': return '#2196F3';
-            default: return '#757575';
+            case 'releasing': return '#2E7D32';
+            case 'not_yet_released': return '#BF360C';
+            case 'finished': return '#1565C0';
+            default: return '#616161';
         }
     };
 
@@ -675,6 +675,7 @@ const TrailerHero = ({ onOpenModal }) => {
                     <div className="slider-btns">
                         <button
                             className="left-arrow"
+                            aria-label="Previous anime"
                             onClick={() => setCurrentAnime(prev => prev === 0 ? announcements.length - 1 : prev - 1)}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -683,6 +684,7 @@ const TrailerHero = ({ onOpenModal }) => {
                         </button>
                         <button
                             className="right-arrow"
+                            aria-label="Next anime"
                             onClick={() => setCurrentAnime(prev => (prev + 1) % announcements.length)}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">

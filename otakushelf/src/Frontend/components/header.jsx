@@ -45,7 +45,7 @@ const ProfileDropdown = ({ onOpenSettings }) => {
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         className="profile-button"
-        aria-label="Open profile menu"
+        aria-label={`Open profile menu — Welcome ${user.name || user.email}`}
       >
         {/* Avatar with status dot */}
         <div className="pill-avatar-wrap">

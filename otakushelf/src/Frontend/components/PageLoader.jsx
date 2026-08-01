@@ -31,18 +31,18 @@ const PageLoader = ({ onFinish }) => {
     }, [onFinish]);
 
     // Symmetric phase timeline (Runs exactly once on mount):
-    // 0ms:    enter (panels slide in, takes 700ms)
-    // 1400ms: reveal (panels split apart, takes 700ms)
-    // 2100ms: exit (fade out loader overlay, takes 300ms)
-    // 2400ms: finished (loader hidden, trigger onFinish)
+    // 0ms:    enter (panels slide in, takes 500ms)
+    // 500ms:  reveal (panels split apart, takes 500ms)
+    // 1000ms: exit (fade out loader overlay, takes 250ms)
+    // 1250ms: finished (loader hidden, trigger onFinish)
     useEffect(() => {
-        const t1 = setTimeout(() => setPhase('reveal'), 1400);
+        const t1 = setTimeout(() => setPhase('reveal'), 500);
         const t2 = setTimeout(() => {
             setPhase('exit');
-        }, 2100);
+        }, 1000);
         const t3 = setTimeout(() => {
             onFinishRef.current?.();
-        }, 2400);
+        }, 1250);
         return () => {
             clearTimeout(t1);
             clearTimeout(t2);

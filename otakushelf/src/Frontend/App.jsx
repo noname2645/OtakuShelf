@@ -1,22 +1,24 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
 
 import Home from "../Frontend/components/home.jsx";
-import List from "../Frontend/components/list.jsx";
-import Login from "../Frontend/components/login.jsx";
-import Register from "../Frontend/components/register.jsx";
 import { AuthProvider } from "../Frontend/components/AuthContext.jsx";
-import AdvancedSearch from "../Frontend/components/advancedsearch.jsx";
-import Profile from "../Frontend/components/profile.jsx";
-import ProfileScreen from "../Frontend/components/profilescreen.jsx";
-import AIPage from "../Frontend/components/aipage.jsx";
-import ForgotPassword from "../Frontend/components/ForgotPassword.jsx";
-import SettingsPage from "../Frontend/components/settings.jsx";
-import NotFound from "../Frontend/components/NotFound.jsx";
-import ServerError from "../Frontend/components/ServerError.jsx";
-import Offline from "../Frontend/components/Offline.jsx";
-import OAuthCallback from "../Frontend/components/OAuthCallback.jsx";
+import BadgeNotification from "../Frontend/components/BadgeNotification.jsx";
+
+const List = lazy(() => import("../Frontend/components/list.jsx"));
+const Login = lazy(() => import("../Frontend/components/login.jsx"));
+const Register = lazy(() => import("../Frontend/components/register.jsx"));
+const AdvancedSearch = lazy(() => import("../Frontend/components/advancedsearch.jsx"));
+const Profile = lazy(() => import("../Frontend/components/profile.jsx"));
+const ProfileScreen = lazy(() => import("../Frontend/components/profilescreen.jsx"));
+const AIPage = lazy(() => import("../Frontend/components/aipage.jsx"));
+const ForgotPassword = lazy(() => import("../Frontend/components/ForgotPassword.jsx"));
+const SettingsPage = lazy(() => import("../Frontend/components/settings.jsx"));
+const NotFound = lazy(() => import("../Frontend/components/NotFound.jsx"));
+const ServerError = lazy(() => import("../Frontend/components/ServerError.jsx"));
+const Offline = lazy(() => import("../Frontend/components/Offline.jsx"));
+const OAuthCallback = lazy(() => import("../Frontend/components/OAuthCallback.jsx"));
 
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -28,6 +30,20 @@ const wakePing = () => {
 wakePing();
 
 
+const RouteFallback = () => (
+  <div style={{
+    position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: '#030712'
+  }}>
+    <div style={{
+      width: 36, height: 36, borderRadius: '50%',
+      border: '3px solid rgba(139,92,246,0.2)',
+      borderTopColor: '#8b5cf6',
+      animation: 'spin 0.8s linear infinite'
+    }} />
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
+);
 
 /* ─── Inner app with router hooks ────────────────────────────────────────── */
 const AppContent = () => {
@@ -53,15 +69,15 @@ const AppContent = () => {
   );
 };
 
-import BadgeNotification from "../Frontend/components/BadgeNotification.jsx";
-
 /* ─── Root App ───────────────────────────────────────────────────────────── */
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <BadgeNotification />
-        <AppContent />
+        <Suspense fallback={<RouteFallback />}>
+          <AppContent />
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

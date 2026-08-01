@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-
 /* Main Section - Fullscreen */
 .trailer-hero-section {
     position: fixed;
@@ -888,13 +886,6 @@
     .slider-btns button:hover,
     .mute-button:hover {
         transform: none;
-    }
-
-    /* Remove all animations */
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
     }
 }
 

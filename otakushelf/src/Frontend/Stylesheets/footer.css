@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Prompt:wght@700;800&display=swap');
-
 /* ============================================================
    OTAKUSHELF FOOTER — Matching site design language
    - Deep black background (#030712)
@@ -63,7 +61,7 @@
 .footer-tagline {
   font-size: 0.875rem;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.6);
   margin: 0;
   line-height: 1.65;
   letter-spacing: 0.02em;
@@ -99,7 +97,7 @@
 .footer-col a {
   font-size: 0.9rem;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.65);
   text-decoration: none;
   transition: color 0.2s ease, transform 0.2s ease;
   display: inline-block;
@@ -114,7 +112,7 @@
 .footer-link-muted {
   font-size: 0.9rem;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.5);
   cursor: default;
 }
 
@@ -133,13 +131,13 @@
 
 .footer-copy {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.6);
   letter-spacing: 0.02em;
 }
 
 .footer-made-with {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.6);
   display: flex;
   align-items: center;
   gap: 5px;

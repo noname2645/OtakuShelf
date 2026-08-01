@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, startTransition } from "react";
 import axios from "axios";
 import styles from "../Stylesheets/advancedsearch.module.css";
 import Modal from "./modal.jsx";
@@ -530,8 +530,10 @@ function AdvancedSearch() {
 
   // Modal handlers
   const showAnimeDetails = useCallback((anime) => {
-    setSelectedAnimeForModal(anime);
-    setIsModalVisible(true);
+    startTransition(() => {
+      setSelectedAnimeForModal(anime);
+      setIsModalVisible(true);
+    });
   }, []);
 
   const hideAnimeDetails = useCallback(() => {

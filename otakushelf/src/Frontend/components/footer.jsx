@@ -38,7 +38,7 @@ const Footer = () => (
       {/* Nav columns */}
       <nav className="footer-nav" aria-label="Footer navigation">
         <div className="footer-col">
-          <h4 className="footer-col-title">Explore</h4>
+          <h2 className="footer-col-title">Explore</h2>
           <ul>
             <li><Link to="/home">Home</Link></li>
             <li><Link to="/advance">Search</Link></li>
@@ -48,7 +48,7 @@ const Footer = () => (
         </div>
 
         <div className="footer-col">
-          <h4 className="footer-col-title">Account</h4>
+          <h2 className="footer-col-title">Account</h2>
           <ul>
             <li><Link to="/profile">Profile</Link></li>
             <li><Link to="/settings">Settings</Link></li>
@@ -58,7 +58,7 @@ const Footer = () => (
         </div>
 
         <div className="footer-col">
-          <h4 className="footer-col-title">Legal</h4>
+          <h2 className="footer-col-title">Legal</h2>
           <ul>
             <li><span className="footer-link-muted">Privacy Policy</span></li>
             <li><span className="footer-link-muted">Terms of Service</span></li>

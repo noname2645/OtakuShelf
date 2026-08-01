@@ -23,6 +23,15 @@ export default defineConfig({
     esbuildOptions: {
       drop: isProduction ? ['console', 'debugger'] : [],
     },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'motion': ['framer-motion'],
+          'http': ['axios'],
+        },
+      },
+    },
   },
   server: {
     host: true,

@@ -87,15 +87,17 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
   const dropped = list?.dropped || []
   const allAnime = [...watching, ...completed, ...planned, ...dropped]
 
-  // Touch lastActiveAt (non-blocking — never crash on this)
-  try {
-    const now = new Date().toISOString()
-    await users.update(userId, { 'profile.lastActiveAt': now })
-    if (!user.profile) user.profile = {}
-    user.profile.lastActiveAt = now
-  } catch (e) {
-    console.warn('[Profile] Failed to update lastActiveAt:', e?.message)
+  // Touch lastActiveAt (non-blocking — defer the write so it never delays the response)
+  const now = new Date().toISOString()
+  const touchLastActiveAt = () => users.update(userId, { 'profile.lastActiveAt': now })
+    .catch(e => console.warn('[Profile] Failed to update lastActiveAt:', e?.message))
+  if (c.executionCtx) {
+    c.executionCtx.waitUntil(touchLastActiveAt())
+  } else {
+    touchLastActiveAt()
   }
+  if (!user.profile) user.profile = {}
+  user.profile.lastActiveAt = now
 
   const stats = {
     animeWatched: completed.length,
@@ -147,6 +149,8 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
 
   const badges = user.profile?.badges || []
   const totalBadgeDefs = (BADGES && BADGES.length) || 0
+
+  c.header('Cache-Control', 'private, max-age=60')
 
   return success(c, 'Profile fetched', {
     user: sanitizeUser(user),

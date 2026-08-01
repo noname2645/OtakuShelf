@@ -8,9 +8,9 @@ import BottomNavBar from "../components/bottom.jsx";
 import { useAuth } from "../components/AuthContext";
 import { Link } from "react-router-dom";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
-import PageLoader from "./PageLoader.jsx";
 import AnimeCardUI from "./AnimeCardUI.jsx";
 import Modal from "./modal.jsx";
+import PageLoader from "./PageLoader.jsx";
 
 const ProfilePage = () => {
   const { user, updateProfile, checkAuthStatus, updateUserState } = useAuth();
@@ -18,6 +18,7 @@ const ProfilePage = () => {
   // Profile data
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Show the cinematic loader on every profile visit (incl. SPA nav from bottom nav)
   const [showLoader, setShowLoader] = useState(true);
   const [stats, setStats] = useState(null);
   const [recentlyWatched, setRecentlyWatched] = useState([]);
@@ -446,15 +447,13 @@ const ProfilePage = () => {
         <BottomNavBar />
         <div className="profile-page" style={{ minHeight: "100vh", background: "linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)" }}>
           <Header showSearch={false} />
-          {!showLoader && (
-            <div className="profile-loading" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center", background: "linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)" }}>
-              <div className="loading-content">
-                <div className="loading-spinner"></div>
-                <h2 className="loading-text">Loading Your Anime Journey</h2>
-                <p className="loading-subtext">Preparing your stats, favorites, and anime collection...</p>
-              </div>
+          <div className="profile-loading" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center", background: "linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)" }}>
+            <div className="loading-content">
+              <div className="loading-spinner"></div>
+              <h2 className="loading-text">Loading Your Anime Journey</h2>
+              <p className="loading-subtext">Preparing your stats, favorites, and anime collection...</p>
             </div>
-          )}
+          </div>
         </div>
       </>
     );
@@ -586,6 +585,8 @@ const ProfilePage = () => {
                   src={profileData.coverImage || 'https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=1600&q=80'}
                   alt="Cover"
                   className="phc-cover-img"
+                  fetchpriority="high"
+                  decoding="async"
                 />
                 <div className="phc-cover-gradient" />
                 <label htmlFor="cover-upload" className="phc-cover-btn">Change Cover</label>

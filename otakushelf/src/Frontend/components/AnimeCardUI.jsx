@@ -153,12 +153,10 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         margin: '0'
     };
 
-    // Detect low-spec or reduced-motion to disable heavy animations
-    const prefersReduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const rootLowSpec = typeof document !== 'undefined' && document.documentElement.classList.contains('low-spec');
-    const deviceLowMemory = typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory < 1.5;
-    const lowCpu = typeof navigator !== 'undefined' && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2;
-    const shouldReduceMotion = prefersReduced || rootLowSpec || deviceLowMemory || lowCpu;
+    // Low-spec detection was unreliable (fingerprint-spoofing reports fake low values),
+    // so cards always use full motion and full-resolution images.
+    const shouldReduceMotion = false;
+    const shouldUseLowRes = false;
 
     const displayTitle = typeof anime?.title === 'object' 
         ? (anime.title.english || anime.title.romaji || anime.title.native || "Unknown Title")
@@ -168,9 +166,6 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
     const romajiSpaced = typeof romajiTitle === 'string'
         ? romajiTitle.toUpperCase().split("").join(" ")
         : "";
-
-    // Prefer lower-res images on low-spec devices to save memory and bandwidth
-    const shouldUseLowRes = shouldReduceMotion;
 
     const imageSrc = (shouldUseLowRes ? (anime.coverImage?.medium || anime.coverImage?.large) : (anime.coverImage?.extraLarge || anime.coverImage?.large)) || anime.bannerImage || '/placeholder-anime.jpg';
 

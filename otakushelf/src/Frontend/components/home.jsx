@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, startTransition } from 'react';
 import "../Stylesheets/home.css";
 import axios from "axios";
 import Modal from "../components/modal.jsx";
@@ -191,8 +191,13 @@ const AnimeHomepage = () => {
     const navigate = useNavigate();
     // State
     const [loading, setLoading] = useState(true);
-    // Show cinematic loader on every page load/refresh
-    const [showLoader, setShowLoader] = useState(true);
+    // Show cinematic loader only on full page load/refresh, not SPA navigation
+    const [showLoader, setShowLoader] = useState(() => {
+      const nav = window.performance?.getEntriesByType?.('navigation')?.[0];
+      const isReload = nav && nav.type === 'reload';
+      const isSpaNav = window.history.state?.idx !== undefined && !isReload;
+      return !isSpaNav;
+    });
     const [sections, setSections] = useState({
         topAiring: [],
         mostWatched: [],
@@ -415,8 +420,12 @@ const AnimeHomepage = () => {
 
     // Modal Handlers
     const openModal = useCallback((anime) => {
-        setSelectedAnime(anime);
-        setIsModalOpen(true);
+        // startTransition keeps the main thread responsive (better INP) while the
+        // heavy modal mounts in a non-blocking concurrent update.
+        startTransition(() => {
+            setSelectedAnime(anime);
+            setIsModalOpen(true);
+        });
     }, []);
 
     const closeModal = useCallback(() => {

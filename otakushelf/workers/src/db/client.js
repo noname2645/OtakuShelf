@@ -36,6 +36,35 @@ function doc(result) {
   return Object.defineProperty({ ...result, _id: result.id }, 'id', { enumerable: false })
 }
 
+function cloneJson(v) {
+  if (v && typeof v === 'object') return structuredClone(v)
+  return {}
+}
+
+function expandDotted(item, set) {
+  const root = {}
+  const dotted = []
+  for (const [key, value] of Object.entries(set)) {
+    if (key.includes('.')) dotted.push([key, value])
+    else root[key] = value
+  }
+  for (const [key, value] of dotted) {
+    const parts = key.split('.')
+    let base = root[parts[0]]
+    if (base === undefined) {
+      base = cloneJson(item?.[parts[0]])
+      root[parts[0]] = base
+    }
+    let ref = base
+    for (let i = 1; i < parts.length - 1; i++) {
+      if (!ref[parts[i]] || typeof ref[parts[i]] !== 'object') ref[parts[i]] = {}
+      ref = ref[parts[i]]
+    }
+    ref[parts[parts.length - 1]] = value
+  }
+  return root
+}
+
 function model(prisma, name) {
   const m = MODELS[name]
   if (!m) throw new Error(`Unknown collection: ${name}`)
@@ -78,7 +107,7 @@ export function createDb(env) {
       if (!item) return { modifiedCount: 0 }
 
       if (update.$set) {
-        await m.update({ where: { id: item.id }, data: update.$set })
+        await m.update({ where: { id: item.id }, data: expandDotted(item, update.$set) })
       } else if (update.$push) {
         const [field, value] = Object.entries(update.$push)[0]
         const arr = item[field] || []
@@ -122,8 +151,9 @@ export function createDb(env) {
 
     updateById: async (collection, id, update) => {
       const m = model(prisma, collection)
+      const item = await m.findFirst({ where: { id } })
       if (update.$set) {
-        await m.update({ where: { id }, data: update.$set })
+        await m.update({ where: { id }, data: expandDotted(item, update.$set) })
       }
       return { modifiedCount: 1 }
     },
@@ -133,8 +163,9 @@ export function createDb(env) {
       const item = await m.findFirst({ where: t(filter) })
       if (!item) return null
       const data = update.$set || update
+      const expanded = data === update.$set ? expandDotted(item, update.$set) : data
       const result = opts.returnNewDocument !== false
-        ? await m.update({ where: { id: item.id }, data })
+        ? await m.update({ where: { id: item.id }, data: expanded })
         : item
       return doc(result)
     },

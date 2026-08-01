@@ -3,8 +3,6 @@
    Anime welcome gate preloader (Symmetric timeline)
    ================================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap');
-
 /* ── Root container ─────────────────────────────────────────────── */
 .page-loader {
     position: fixed;
@@ -23,7 +21,7 @@
 
 /* Exit phase: fade the whole loader out */
 .page-loader.phase-exit {
-    animation: loader-fadeout 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: loader-fadeout 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes loader-fadeout {
@@ -71,23 +69,23 @@
     pointer-events: none;
 }
 
-/* Enter: panels slide in from the sides (Duration: 0.7s) */
+/* Enter: panels slide in from the sides (Duration: 0.5s) */
 .page-loader.phase-enter .curtain-left {
-    animation: curtain-enter-left 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: curtain-enter-left 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .page-loader.phase-enter .curtain-right {
-    animation: curtain-enter-right 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: curtain-enter-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes curtain-enter-left  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 @keyframes curtain-enter-right { from { transform: translateX(100%);  } to { transform: translateX(0); } }
 
-/* Reveal: panels fly apart (Duration: 0.7s, delay-free for symmetry) */
+/* Reveal: panels fly apart (Duration: 0.5s, delay-free for symmetry) */
 .page-loader.phase-reveal .curtain-left {
-    animation: curtain-split-left 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: curtain-split-left 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .page-loader.phase-reveal .curtain-right {
-    animation: curtain-split-right 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: curtain-split-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes curtain-split-left  { to { transform: translateX(-105%); } }
@@ -103,7 +101,7 @@
     align-items: center;
     gap: 0.5rem;
     text-align: center;
-    animation: center-appear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+    animation: center-appear 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
 }
 
 @keyframes center-appear {
@@ -111,9 +109,9 @@
     to   { opacity: 1; transform: scale(1)   translateY(0); }
 }
 
-/* Center content fades out in sync with curtain split (Duration: 0.6s) */
+/* Center content fades out in sync with curtain split (Duration: 0.45s) */
 .page-loader.phase-reveal .loader-center {
-    animation: center-exit 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: center-exit 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes center-exit {
@@ -178,14 +176,6 @@
     50%       { transform: translateY(-6px); }
 }
 
-
-/* ── Reduce motion accessibility ─────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-    .torii-icon             { animation: none !important; }
-    .curtain                { animation: none !important; }
-    /* Just fade in quickly */
-    .page-loader.phase-exit { animation: loader-fadeout 0.2s linear forwards; }
-}
 
 /* ── Mobile tweaks ───────────────────────────────────────────────── */
 @media (max-width: 480px) {

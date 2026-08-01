@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
-
 body {
   font-family: 'Bricolage Grotesque', sans-serif;
 }
@@ -1236,32 +1234,6 @@ body {
 
   .animeCard:active {
     transform: scale(0.98);
-  }
-}
-
-/* Reduce motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
-
-  .animeCard,
-  .animeCard img,
-  .dropdownToggle,
-  .resetBtn {
-    transition: none !important;
-    animation: none !important;
-    transform: none !important;
-  }
-
-  .animeCard {
-    opacity: 1 !important;
-    transform: none !important;
-  }
-
-  .animeCard:hover {
-    transform: none;
-  }
-
-  .loader {
-    animation: none;
   }
 }
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, startTransition } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import AnimeCard from "./AnimeCardUI.jsx";
@@ -250,8 +250,10 @@ I'm ready to dive deep into discussions or find your next binge-worthy masterpie
 
     const handleCardClick = (anime) => {
         if (!anime) return;
-        setSelectedAnime(anime);
-        setIsModalOpen(true);
+        startTransition(() => {
+            setSelectedAnime(anime);
+            setIsModalOpen(true);
+        });
     };
 
     const handleCloseModal = () => {

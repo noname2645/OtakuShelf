@@ -1,8 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Mulish:ital,wght@0,200..1000;1,200..1000&family=Nata+Sans:wght@100..900&family=Playwrite+AU+QLD:wght@100..400&family=Roboto:ital,wght@0,100..900;1,100..900&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Lobster+Two:ital,wght@0,400;0,700;1,400;1,700&family=Outfit:wght@100..900&family=SN+Pro:ital,wght@0,200..900;1,200..900&display=swap');
-
-
 * {
   margin: 0;
   padding: 0;
@@ -447,6 +442,9 @@
 .anime-carousel-section {
   margin-bottom: 2rem;
   position: relative;
+  /* Skip layout/paint for off-screen sections to free the main thread (helps INP) */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 520px;
 }
 
 .anime-carousel-section:last-child {
@@ -986,15 +984,6 @@
   }
 }
 
-/* Add to reduce-motion accessibility */
-@media (prefers-reduced-motion: reduce) {
-  .anime-card2 {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
-
 /* Tablet (768px and below) */
 @media (max-width: 768px) {
   .anime-grid {
@@ -1232,33 +1221,6 @@
   .anime-card2 img {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
-  }
-}
-
-/* Reduce motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
-
-  .anime-card2,
-  .anime-card2 img,
-  .nav-label svg,
-  .spinner {
-    transition: none !important;
-    animation: none !important;
-    transform: none !important;
-  }
-
-  .anime-card2.loaded {
-    opacity: 1;
-    transform: none;
-  }
-
-  .anime-card2:hover {
-    transform: none;
-  }
-
-  .loading-skeleton .skeleton-hero,
-  .loading-skeleton .skeleton-card {
-    animation: none;
   }
 }
 

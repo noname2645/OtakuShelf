@@ -1,6 +1,7 @@
-import React from 'react';
-import SettingsPage from './settings.jsx';
+import React, { lazy, Suspense } from 'react';
 import '../Stylesheets/SettingsModal.css';
+
+const SettingsPage = lazy(() => import('./settings.jsx'));
 
 const SettingsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -10,7 +11,9 @@ const SettingsModal = ({ isOpen, onClose }) => {
       <div className="smodal-panel">
         <button className="smodal-close" onClick={onClose} aria-label="Close settings">✕</button>
         <div className="smodal-inner">
-          <SettingsPage isModal />
+          <Suspense fallback={<div className="smodal-loading">Loading settings...</div>}>
+            <SettingsPage isModal />
+          </Suspense>
         </div>
       </div>
     </div>
