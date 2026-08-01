@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api.js';
+import { useListStatus } from './ListStatusContext.jsx';
 
 // Import CSS matching the new premium card design rules
 import "../Stylesheets/home.css"; 
@@ -22,16 +23,16 @@ window.addEventListener('resize', handleGlobalResize, { passive: true });
 const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false, isGrid = false, customWidth, customHeight }) => {
     const [isMobile, setIsMobile] = useState(sharedIsMobile);
     const [isFavorite, setIsFavorite] = useState(false);
-    const [userListStatus, setUserListStatus] = useState(null);
+    const { getStatus, setStatus } = useListStatus();
+    const userListStatus = getStatus(anime);
 
     useEffect(() => {
         const cb = (mobile) => setIsMobile(mobile);
         resizeCallbacks.add(cb);
         
-        // Load initial interactive states from localStorage
+        // Load initial favorite state from localStorage
         if (anime?.id) {
             setIsFavorite(localStorage.getItem(`favorite_${anime.id}`) === 'true');
-            setUserListStatus(localStorage.getItem(`list_status_${anime.id}`) || null);
         }
 
         return () => resizeCallbacks.delete(cb);
@@ -87,8 +88,7 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         }
 
         const nextStatus = userListStatus === status ? null : status;
-        setUserListStatus(nextStatus);
-        localStorage.setItem(`list_status_${anime.id}`, nextStatus || '');
+        setStatus(anime, nextStatus);
 
         if (!nextStatus) return;
 
@@ -114,7 +114,7 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
         } catch (err) {
             console.error("Failed to sync list status", err);
         }
-    }, [anime, userListStatus]);
+    }, [anime, userListStatus, setStatus]);
 
     // Handle Trailer Click
     const handleTrailer = useCallback((e) => {

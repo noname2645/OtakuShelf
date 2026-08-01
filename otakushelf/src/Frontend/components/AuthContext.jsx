@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }) => {
   const clearStorage = useCallback(() => {
     const keysToRemove = [];
     Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('user') || key === 'accessToken' || key === 'refreshToken') {
+      if (key.startsWith('user') || key === 'accessToken' || key === 'refreshToken' || key === 'list_status_map') {
         keysToRemove.push(key);
       }
     });
@@ -340,15 +340,12 @@ export const AuthProvider = ({ children }) => {
 
   // Logout — clean server session + local state
   const logout = useCallback(async () => {
-    try {
-      await api.get('/auth/logout');
-    } catch (error) {
-      // Continue even if server logout fails
+    // Fire the server logout without blocking local logout (fast + reliable UX)
+    api.get('/auth/logout').catch(() => {
       console.log('Server logout failed (continuing local logout)');
-    } finally {
-      clearStorage();
-      window.location.href = '/';
-    }
+    });
+    clearStorage();
+    window.location.href = '/';
   }, [API, clearStorage]);
 
   // Update profile — secure with auth token

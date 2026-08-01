@@ -9,7 +9,10 @@
     "version:show": "node ../scripts/version.js",
     "version:patch": "node ../scripts/version.js patch",
     "version:minor": "node ../scripts/version.js minor",
-    "version:major": "node ../scripts/version.js major"
+    "version:major": "node ../scripts/version.js major",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:install": "playwright install chromium"
   },
   "keywords": [],
   "author": "",
@@ -29,5 +32,8 @@
     "remark-gfm": "^4.0.1",
     "tailwindcss": "^4.1.13",
     "vite": "^7.1.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
   }
 }

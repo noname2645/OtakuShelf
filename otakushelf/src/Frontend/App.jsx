@@ -4,6 +4,7 @@ import './App.css';
 
 import Home from "../Frontend/components/home.jsx";
 import { AuthProvider } from "../Frontend/components/AuthContext.jsx";
+import { ListStatusProvider } from "../Frontend/components/ListStatusContext.jsx";
 import BadgeNotification from "../Frontend/components/BadgeNotification.jsx";
 
 const List = lazy(() => import("../Frontend/components/list.jsx"));
@@ -73,12 +74,14 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <BadgeNotification />
-        <Suspense fallback={<RouteFallback />}>
-          <AppContent />
-        </Suspense>
-      </BrowserRouter>
+      <ListStatusProvider>
+        <BrowserRouter>
+          <BadgeNotification />
+          <Suspense fallback={<RouteFallback />}>
+            <AppContent />
+          </Suspense>
+        </BrowserRouter>
+      </ListStatusProvider>
     </AuthProvider>
   );
 }

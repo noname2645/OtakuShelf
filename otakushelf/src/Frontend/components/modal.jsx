@@ -5,6 +5,7 @@ import RelatedTab from "./relatedsection.jsx";
 import Trailer from "./trailer";
 import { Eye, CheckCircle, Clock, Check } from 'lucide-react';
 import { useAuth } from "../components/AuthContext.jsx";
+import { useListStatus } from "../components/ListStatusContext.jsx";
 import api from "../api.js";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -19,11 +20,12 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
     const [trailerVideoId, setTrailerVideoId] = useState(null);
     const titleRef = useRef(null);
     const [isAddingToList, setIsAddingToList] = useState(false);
-    const [isInList, setIsInList] = useState(false);
-    const [userListStatus, setUserListStatus] = useState(null);
     const { user } = useAuth();
+    const { getStatus, setStatus } = useListStatus();
     const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
     const [enriched, setEnriched] = useState(null);
+    const userListStatus = getStatus(anime);
+    const isInList = !!userListStatus;
 
     // HELPER FUNCTIONS - No hooks for simple functions
     const formatAniListDate = (dateObj) => {
@@ -260,42 +262,6 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
         return gradientColors[genre] || "linear-gradient(135deg, #666, #888)";
     };
 
-    // Check if anime is in user's list
-    const checkIfInList = async () => {
-        if (!user || !anime) return;
-
-        try {
-            const response = await api.get(`${API}/api/list/${user._id || user.id}`);
-            const userList = response.data.data; // Standardized response
-            const categories = ['watching', 'completed', 'planned', 'dropped'];
-            let foundStatus = null;
-
-            const animeTitle = typeof anime.title === 'string'
-                ? anime.title
-                : anime.title?.english || anime.title?.romaji || anime.title?.native || "Untitled";
-
-            for (const category of categories) {
-                const animeInCategory = userList[category] || [];
-                for (const item of animeInCategory) {
-                    if (item.title === animeTitle ||
-                        item.animeId === anime.id?.toString() ||
-                        item.malId === anime.idMal?.toString()) {
-                        foundStatus = category;
-                        break;
-                    }
-                }
-                if (foundStatus) break;
-            }
-
-            setIsInList(foundStatus !== null);
-            setUserListStatus(foundStatus);
-        } catch (error) {
-            console.error("Error checking if anime is in list:", error);
-            setIsInList(false);
-            setUserListStatus(null);
-        }
-    };
-
     // Fetch enriched anime details (description, studios, dates, etc.) when modal opens
     useEffect(() => {
         if (!isOpen || !anime) return;
@@ -341,13 +307,10 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
             }, 50);
         }
 
-        // Check if in list (debounced)
+        // Check if in list (via global store — no fetch needed)
+
         if (user) {
-            const timeoutId = setTimeout(() => {
-                checkIfInList();
-            }, 200);
             return () => {
-                clearTimeout(timeoutId);
                 document.body.classList.remove('modal-open');
                 document.documentElement.classList.remove('modal-open');
             };
@@ -393,11 +356,7 @@ const Modal = ({ isOpen, onClose, anime, onOpenAnime }) => {
                 }
             });
 
-            setIsInList(true);
-            setUserListStatus(status);
-
-            // Re-check after adding
-            setTimeout(() => checkIfInList(), 100);
+            setStatus(anime, status);
         } catch (error) {
             console.error("Error adding to list:", error);
             alert("Failed to add to list");
