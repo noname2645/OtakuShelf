@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 
-SRC = os.path.join(os.path.dirname(__file__), "images", "Common Badges")
+SRC = os.path.join(os.path.dirname(__file__), "images", "CommonBadges")
 BACKUP = SRC + "_backup"
 
 def opaque_bbox(img, threshold=8):

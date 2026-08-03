@@ -45,7 +45,7 @@ def batch_process(in_folder, out_folder, threshold=60, feather=True):
 
 # Usage
 batch_process(
-    r"D:\OtakuShelf\otakushelf\src\Frontend\images\Common Badges",
-    r"D:\OtakuShelf\otakushelf\src\Frontend\images\Common Badges",
+    r"D:\OtakuShelf\otakushelf\src\Frontend\images\CommonBadges",
+    r"D:\OtakuShelf\otakushelf\src\Frontend\images\CommonBadges",
     threshold=60, feather=True
 )
