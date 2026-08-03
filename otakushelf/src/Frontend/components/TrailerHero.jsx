@@ -590,16 +590,6 @@ const TrailerHero = ({ onOpenModal }) => {
                     </div>
                 )}
 
-                {/* Mute/Unmute Button */}
-                {currentAnimeHasTrailer && isPlayerReady && !playerError && (
-                    <button
-                        onClick={toggleMute}
-                        className="mute-button"
-                    >
-                        {isMuted ? '🔇' : '🔊'}
-                    </button>
-                )}
-
                 {/* No Trailer Indicator */}
                 {!currentAnimeHasTrailer && (
                     <div
@@ -668,6 +658,21 @@ const TrailerHero = ({ onOpenModal }) => {
                         </svg>
                         More Details
                     </button>
+
+                    {/* Mute/Unmute Button */}
+                    {currentAnimeHasTrailer && isPlayerReady && !playerError && (
+                        <button
+                            onClick={toggleMute}
+                            className="mute-button"
+                            aria-label={isMuted ? "Unmute" : "Mute"}
+                        >
+                            <img
+                                src={isMuted ? "/sound-off-svgrepo-com.svg" : "/sound-volume-1-svgrepo-com.svg"}
+                                alt={isMuted ? "Unmute" : "Mute"}
+                                className="mute-button-icon"
+                            />
+                        </button>
+                    )}
                 </motion.div>
 
                 {/* Navigation Arrows */}

@@ -295,6 +295,23 @@
 }
 .ps-badge-cell.earned {
   background: rgba(255,255,255,0.06);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  filter: drop-shadow(0 0 6px var(--glow-color));
+}
+@keyframes ps-badge-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--glow-color)); }
+  50%      { filter: drop-shadow(0 0 12px var(--glow-color)); }
+}
+.ps-badge-cell.earned:hover,
+.ps-badge-cell.earned:active {
+  will-change: filter;
+  animation: ps-badge-pulse 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-badge-cell.earned:hover,
+  .ps-badge-cell.earned:active {
+    animation: none;
+  }
 }
 .ps-badge-cell.locked {
   opacity: 0.35;
@@ -308,6 +325,7 @@
   right: -1px;
 }
 .ps-cell-icon { line-height: 1; }
+.ps-cell-img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
 /* ─── SECTION 5: Recently Watched (asymmetric grid) ─── */
 .ps-asym-grid {

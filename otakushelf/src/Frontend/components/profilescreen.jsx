@@ -7,6 +7,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import BottomNavBar from "./bottom.jsx";
 import AnimeCardUI from "./AnimeCardUI.jsx";
 import Modal from "./modal.jsx";
+import { getBadgeImage } from "../badgeImages.js";
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -461,7 +462,7 @@ const ProfileScreen = () => {
                 <div
                   key={badge.id}
                   className="ps-recent-badge"
-                  style={{ borderColor: rc.border, boxShadow: `0 0 20px ${rc.glow}` }}
+                  style={{ borderColor: rc.border }}
                 >
                   <span className="ps-recent-icon">{badge.icon}</span>
                   <div className="ps-recent-info">
@@ -498,10 +499,16 @@ const ProfileScreen = () => {
               <div
                 key={badge.id}
                 className={`ps-badge-cell ${earned ? 'earned' : 'locked'}`}
-                style={earned ? { borderColor: rc.border, boxShadow: `0 0 12px ${rc.glow}` } : {}}
+                style={earned ? { borderColor: rc.border, '--glow-color': rc.glow } : {}}
                 title={badge.title}
               >
-                <span className="ps-cell-icon">{badge.icon}</span>
+                <span className="ps-cell-icon">
+                  {earned ? (
+                    getBadgeImage(badge.id) ? (
+                      <img src={getBadgeImage(badge.id)} alt={badge.title} className="ps-cell-img" />
+                    ) : badge.icon
+                  ) : badge.icon}
+                </span>
                 {!earned && <div className="ps-cell-lock">🔒</div>}
               </div>
             );

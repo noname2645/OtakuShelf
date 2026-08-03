@@ -143,29 +143,35 @@
 
 /* Mute/Unmute Button */
 .mute-button {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background-color: rgba(0, 0, 0, 0.7);
     color: white;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
     z-index: 9;
-    font-size: 20px;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    margin-left: 0.75rem;
+    min-width: 44px;
+    min-height: 44px;
 }
 
 .mute-button:hover {
     background-color: rgba(0, 0, 0, 0.9);
     transform: scale(1.1);
+}
+
+.mute-button-icon {
+    width: 24px;
+    height: 24px;
+    filter: invert(1);
+    pointer-events: none;
 }
 
 /* Gradient Overlay */
@@ -606,11 +612,10 @@
     }
 
     .mute-button {
-        bottom: clamp(15px, 4vw, 20px);
-        left: clamp(15px, 4vw, 20px);
         width: clamp(40px, 10vw, 45px);
         height: clamp(40px, 10vw, 45px);
-        font-size: clamp(16px, 4vw, 18px);
+        min-width: clamp(40px, 10vw, 45px);
+        min-height: clamp(40px, 10vw, 45px);
     }
 
     .no-trailer-indicator {
@@ -702,11 +707,10 @@
     }
 
     .mute-button {
-        bottom: 16%;
-        left: 10px;
         width: 40px;
         height: 40px;
-        font-size: 16px;
+        min-width: 40px;
+        min-height: 40px;
     }
 
     .no-trailer-indicator {
@@ -816,11 +820,10 @@
     }
 
     .mute-button {
-        bottom: 5px;
-        left: 5px;
         width: 35px;
         height: 35px;
-        font-size: 14px;
+        min-width: 35px;
+        min-height: 35px;
     }
 
     /* Fullscreen YouTube for landscape */
@@ -1147,11 +1150,10 @@
     }
 
     .mute-button {
-        bottom: 22px;
-        left: 22px;
         width: 48px;
         height: 48px;
-        font-size: 18px;
+        min-width: 48px;
+        min-height: 48px;
     }
 
     .youtube-container {

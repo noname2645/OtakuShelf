@@ -1444,6 +1444,14 @@
   z-index: 1;
 }
 
+.ios-toast-badge-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
 .ios-toast-content {
   flex: 1;
   min-width: 0;

@@ -90,14 +90,11 @@ One badge per AniList genre — watch at least 1 anime in the genre.
 | ---- | ----- | ------ | ----------- |
 | ⚡ | Action Hero | Common | Watch at least 1 Action anime |
 | 🗺️ | Adventure Seeker | Common | Watch at least 1 Adventure anime |
-| 🎨 | Avant Garde | Uncommon | Watch at least 1 Avant Garde anime |
-| 🏅 | Award Hunter | Uncommon | Watch at least 1 Award Winning anime |
 | 💙 | Boys Love Fan | Common | Watch at least 1 Boys Love anime |
 | 😂 | Comedy Lover | Common | Watch at least 1 Comedy anime |
 | 😢 | Drama Expert | Common | Watch at least 1 Drama anime |
 | 🧙 | Fantasy Fanatic | Common | Watch at least 1 Fantasy anime |
 | 💗 | Girls Love Fan | Common | Watch at least 1 Girls Love anime |
-| 🍜 | Gourmet Explorer | Uncommon | Watch at least 1 Gourmet anime |
 | 👻 | Horror Survivor | Common | Watch at least 1 Horror anime |
 | 🔍 | Mystery Detective | Common | Watch at least 1 Mystery anime |
 | 💕 | Romantic Heart | Common | Watch at least 1 Romance anime |
@@ -107,6 +104,9 @@ One badge per AniList genre — watch at least 1 anime in the genre.
 | 👁️ | Supernatural Believer | Common | Watch at least 1 Supernatural anime |
 | 😰 | Suspense Seeker | Common | Watch at least 1 Suspense anime |
 | 🎭 | Thriller Fan | Common | Watch at least 1 Thriller anime |
+| 🎨 | Avant Garde | Uncommon | Watch at least 1 Avant Garde anime |
+| 🏅 | Award Hunter | Uncommon | Watch at least 1 Award Winning anime |
+| 🍜 | Gourmet Explorer | Uncommon | Watch at least 1 Gourmet anime |
 
 ## Genre Master (5)
 
@@ -125,10 +125,10 @@ One badge per AniList genre — watch at least 1 anime in the genre.
 | 📝 | Budding Critic | Common | Rate 10 anime |
 | 🖊️ | Active Critic | Uncommon | Rate 25 anime |
 | 📖 | Star Collector | Uncommon | Rate 50 anime |
-| 🧐 | Master Critic | Rare | Rate 100 anime |
-| 💎 | Perfectionist | Rare | Give a perfect 5/5 rating to 10 or more anime |
 | 📐 | High Standards | Uncommon | Maintain an average rating above 4.0 across 20+ rated anime |
 | 🔪 | Harsh Critic | Uncommon | Give 1/5 to 5 or more anime — you have standards |
+| 🧐 | Master Critic | Rare | Rate 100 anime |
+| 💎 | Perfectionist | Rare | Give a perfect 5/5 rating to 10 or more anime |
 
 ## Planned List (5)
 
@@ -154,12 +154,12 @@ One badge per AniList genre — watch at least 1 anime in the genre.
 | Icon | Badge | Rarity | Requirement |
 | ---- | ----- | ------ | ----------- |
 | 🌈 | Genre Curious | Common | Watch anime in 5 different genres |
-| 🌍 | Genre Explorer | Uncommon | Watch anime in 10 different genres |
-| 🌌 | Genre Pioneer | Rare | Watch anime in 15 different genres |
-| 🎯 | Genre Conqueror | Epic | Watch anime in all 19 official genres |
-| 📥 | The Importer | Uncommon | Import your MyAnimeList list into OtakuShelf |
 | 🪪 | Identity Set | Common | Set your bio, username, and cover image |
+| 🌍 | Genre Explorer | Uncommon | Watch anime in 10 different genres |
+| 📥 | The Importer | Uncommon | Import your MyAnimeList list into OtakuShelf |
+| 🌌 | Genre Pioneer | Rare | Watch anime in 15 different genres |
 | 🌟 | Connoisseur | Rare | Maintain a mean score of 4.0+ across 20+ rated anime |
+| 🎯 | Genre Conqueror | Epic | Watch anime in all 19 official genres |
 
 ## Account (7)
 
@@ -167,11 +167,11 @@ One badge per AniList genre — watch at least 1 anime in the genre.
 | ---- | ----- | ------ | ----------- |
 | 🌱 | Seedling | Common | Account is 30+ days old |
 | 🌿 | Growing | Common | Account is 90+ days old |
+| 🔗 | Google Connected | Common | Signed in with Google OAuth |
 | 🌳 | Rooted | Uncommon | Account is 180+ days old |
+| 🛡️ | Security Conscious | Uncommon | Enabled Two-Factor Authentication (2FA) |
 | ⚔️ | Veteran | Rare | Account is 1+ year old |
 | 🏯 | Elder | Epic | Account is 2+ years old |
-| 🔗 | Google Connected | Common | Signed in with Google OAuth |
-| 🛡️ | Security Conscious | Uncommon | Enabled Two-Factor Authentication (2FA) |
 
 ## Collector (5)
 

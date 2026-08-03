@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
+import { getBadgeImage } from '../badgeImages.js';
 
 const TYPE_MAP = {
   BADGES_EARNED: 'badge',
@@ -132,18 +133,23 @@ const IPhoneSVG = () => (
   </svg>
 );
 
-function ToastIcon({ type, rarity }) {
+function ToastIcon({ type, rarity, badgeId }) {
   const color = getAccentColor(type, rarity);
   const uid = useRef(Date.now()).current;
 
   switch (type) {
-    case 'badge':
+    case 'badge': {
+      const img = getBadgeImage(badgeId);
+      if (img) {
+        return <img src={img} alt="badge" className="ios-toast-badge-img" style={{ '--accent': color }} />;
+      }
       return (
         <svg viewBox="0 0 48 48" width="22" height="22" fill="none" style={{ color }}>
           <circle cx="24" cy="24" r="21" fill={`${color}15`} stroke={color} strokeWidth="1.2" />
           <path d="M24 10 L27.5 19 L37 19 L30 25 L33 34 L24 28 L15 34 L18 25 L11 19 L20.5 19 Z" fill={color} opacity="0.85" />
         </svg>
       );
+    }
     case 'achievement':
       return (
         <svg viewBox="0 0 48 48" width="22" height="22" fill="none" style={{ color }}>
@@ -207,7 +213,7 @@ const IOSToast = React.memo(({ toast, isExiting, onDismiss }) => {
       }}
     >
       <div className="ios-toast-icon">
-        <ToastIcon type={toast.type} rarity={toast.rarity} />
+        <ToastIcon type={toast.type} rarity={toast.rarity} badgeId={toast.id} />
       </div>
       <div className="ios-toast-content">
         <div className="ios-toast-title">{toast.title}</div>

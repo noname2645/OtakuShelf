@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import AnimeCardUI from "./AnimeCardUI.jsx";
 import Modal from "./modal.jsx";
-import PageLoader from "./PageLoader.jsx";
+import { getBadgeImage } from "../badgeImages.js";
 
 const ProfilePage = () => {
   const { user, updateProfile, checkAuthStatus, updateUserState } = useAuth();
@@ -18,8 +18,6 @@ const ProfilePage = () => {
   // Profile data
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
-  // Show the cinematic loader on every profile visit (incl. SPA nav from bottom nav)
-  const [showLoader, setShowLoader] = useState(true);
   const [stats, setStats] = useState(null);
   const [recentlyWatched, setRecentlyWatched] = useState([]);
   const [favoriteAnime, setFavoriteAnime] = useState([]);
@@ -40,6 +38,7 @@ const ProfilePage = () => {
   const [allBadgeDefs, setAllBadgeDefs]   = useState([]);
   const [badgeFilter, setBadgeFilter]     = useState('All');
   const [badgeSort, setBadgeSort]         = useState('rarity-desc');
+  const [badgeView, setBadgeView]         = useState('labels');
   const [checkingBadges, setCheckingBadges] = useState(false);
 
   // Anime detail modal state
@@ -441,22 +440,7 @@ const ProfilePage = () => {
   };
 
   if (!profileData) {
-    return (
-      <>
-        {showLoader && <PageLoader onFinish={() => setShowLoader(false)} />}
-        <BottomNavBar />
-        <div className="profile-page" style={{ minHeight: "100vh", background: "linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)" }}>
-          <Header showSearch={false} />
-          <div className="profile-loading" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center", background: "linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%)" }}>
-            <div className="loading-content">
-              <div className="loading-spinner"></div>
-              <h2 className="loading-text">Loading Your Anime Journey</h2>
-              <p className="loading-subtext">Preparing your stats, favorites, and anime collection...</p>
-            </div>
-          </div>
-        </div>
-      </>
-    );
+    return null;
   }
 
   // --- Badge calculations ---
@@ -556,7 +540,6 @@ const ProfilePage = () => {
   // ── Main Render ────────────────────────────────────────────────
   return (
     <>
-      {showLoader && <PageLoader onFinish={() => setShowLoader(false)} />}
       <BottomNavBar />
 
       {/* Toast */}
@@ -729,10 +712,14 @@ const ProfilePage = () => {
                       <div
                         key={badge.id}
                         className="ach-recent-pill"
-                        style={{ borderColor: rc.border, boxShadow: `0 0 14px ${rc.glow}` }}
+                        style={{ borderColor: rc.border }}
                         title={badge.description}
                       >
-                        <span className="ach-recent-icon">{badge.icon}</span>
+                        <span className="ach-recent-icon">
+                          {getBadgeImage(badge.id) ? (
+                            <img src={getBadgeImage(badge.id)} alt={badge.title} className="ach-recent-img" />
+                          ) : badge.icon}
+                        </span>
                         <span className="ach-recent-name">{badge.title}</span>
                       </div>
                     );
@@ -768,27 +755,65 @@ const ProfilePage = () => {
                       <option value="alpha-desc">Z–A</option>
                     </select>
                   </div>
+                  <button
+                    className={`badge-view-toggle ${badgeView === 'icons' ? 'active' : ''}`}
+                    onClick={() => setBadgeView(badgeView === 'labels' ? 'icons' : 'labels')}
+                    title={badgeView === 'labels' ? 'Switch to badges only' : 'Switch to labels'}
+                  >
+                    {badgeView === 'labels' ? '◈' : '☷'}
+                  </button>
                 </div>
               </div>
 
-              {/* Pill-style badge toggles */}
-              <div className="ach-pills-grid">
-                {sortedBadges.map((badge) => {
-                  const rc = RARITY_COLORS[badge.rarity] || RARITY_COLORS.common;
-                  return (
-                    <div
-                      key={badge.id}
-                      className={`ach-pill-toggle ${badge.earned ? 'earned' : 'locked'}`}
-                      style={badge.earned ? { borderColor: rc.border, boxShadow: `0 0 10px ${rc.glow}` } : {}}
-                      title={badge.description}
-                    >
-                      <span className="apt-icon">{badge.earned ? badge.icon : '🔒'}</span>
-                      <span className="apt-name">{badge.title}</span>
-                      {badge.earned && <span className="apt-rarity" style={{ color: rc.label }}>●</span>}
-                    </div>
-                  );
-                })}
-              </div>
+              {badgeView === 'labels' ? (
+                <div className="ach-pills-grid">
+                  {sortedBadges.map((badge) => {
+                    const rc = RARITY_COLORS[badge.rarity] || RARITY_COLORS.common;
+                    return (
+                      <div
+                        key={badge.id}
+                        className={`ach-pill-toggle ${badge.earned ? 'earned' : 'locked'}`}
+                        style={badge.earned ? { borderColor: rc.border } : {}}
+                        title={badge.description}
+                      >
+                        <span className="apt-icon">
+                          {badge.earned ? (
+                            getBadgeImage(badge.id) ? (
+                              <img src={getBadgeImage(badge.id)} alt={badge.title} className="apt-img" />
+                            ) : badge.icon
+                          ) : '🔒'}
+                        </span>
+                        <span className="apt-name">{badge.title}</span>
+                        {badge.earned && <span className="apt-rarity" style={{ color: rc.label }}>●</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ach-icons-grid">
+                  {sortedBadges.map((badge) => {
+                    const rc = RARITY_COLORS[badge.rarity] || RARITY_COLORS.common;
+                    return (
+                      <div
+                        key={badge.id}
+                        className={`ach-icon-cell ${badge.earned ? 'earned' : 'locked'}`}
+                        style={badge.earned ? {} : {}}
+                        title={`${badge.title} — ${badge.description}`}
+                      >
+                        {badge.earned ? (
+                          getBadgeImage(badge.id) ? (
+                            <img src={getBadgeImage(badge.id)} alt={badge.title} className="ach-icon-img" />
+                          ) : (
+                            <span className="apt-icon">{badge.icon}</span>
+                          )
+                        ) : (
+                          <span className="apt-icon">🔒</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {sortedBadges.length === 0 && (
                 <div className="badges-empty">
