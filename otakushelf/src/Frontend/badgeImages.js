@@ -1,38 +1,43 @@
-import badge1 from './images/CommonBadges/first_step.webp';
-import badge2 from './images/CommonBadges/first_complete.webp';
-import badge3 from './images/CommonBadges/first_drop.webp';
-import badge4 from './images/CommonBadges/first_rating.webp';
-import badge5 from './images/CommonBadges/total_5.webp';
-import badge6 from './images/CommonBadges/total_10.webp';
-import badge7 from './images/CommonBadges/total_25.webp';
-import badge8 from './images/CommonBadges/complete_5.webp';
-import badge8b from './images/CommonBadges/complete_10.webp';
-import badge9 from './images/CommonBadges/episodes_50.webp';
-import badge10 from './images/CommonBadges/episodes_100.webp';
-import badge11 from './images/CommonBadges/episodes_500.webp';
-import badge12 from './images/CommonBadges/hours_24.webp';
-import badge13 from './images/CommonBadges/hours_100.webp';
-import badge14 from './images/CommonBadges/genre_action.webp';
-import badge15 from './images/CommonBadges/genre_adventure.webp';
-import badge16 from './images/CommonBadges/genre_boys_love.webp';
-import badge17 from './images/CommonBadges/genre_comedy.webp';
-import badge18 from './images/CommonBadges/genre_drama.webp';
-import badge19 from './images/CommonBadges/genre_fantasy.webp';
-import badge20 from './images/CommonBadges/genre_girls_love.webp';
-import badge21 from './images/CommonBadges/genre_horror.webp';
-import badge22 from './images/CommonBadges/genre_mystery.webp';
-import badge23 from './images/CommonBadges/genre_romance.webp';
-import badge24 from './images/CommonBadges/genre_sci_fi.webp';
-import badge25 from './images/CommonBadges/genre_slice_of_life.webp';
-import badge26 from './images/CommonBadges/genre_sports.webp';
-import badge27 from './images/CommonBadges/genre_supernatural.webp';
-import badge28 from './images/CommonBadges/genre_suspense.webp';
-import badge29 from './images/CommonBadges/genre_thriller.webp';
-import badge30 from './images/CommonBadges/rated_10.webp';
-import badge31 from './images/CommonBadges/planned_10.webp';
-import badge32 from './images/CommonBadges/dropped_5.webp';
-import badge33 from './images/CommonBadges/genre_diversity_5.webp';
-import badge34 from './images/CommonBadges/profile_complete.webp';
+import actionHero from './images/CommonBadges/Action Hero.webp';
+import adventureSeeker from './images/CommonBadges/Adventure Seeker.webp';
+import boysLoveFan from './images/CommonBadges/Boys Love Fan.webp';
+import buddingCritic from './images/CommonBadges/Budding Critic.webp';
+import buildingUp from './images/CommonBadges/Building Up.webp';
+import comedyLover from './images/CommonBadges/Comedy Lover.webp';
+import criticAwakened from './images/CommonBadges/Critic Awakened_result_result.webp';
+import dayGone from './images/CommonBadges/Day Gone.webp';
+import dedicatedViewer from './images/CommonBadges/Dedicated Viewer.webp';
+import droppedOne from './images/CommonBadges/Dropped One_result_result.webp';
+import emotional from './images/CommonBadges/Emotional.webp';
+import episodeEnthusiast from './images/CommonBadges/Episode Enthusiast.webp';
+import episodeStarter from './images/CommonBadges/Episode Starter.webp';
+import fantasyFanatic from './images/CommonBadges/Fantasy Fanatic.webp';
+import finisher from './images/CommonBadges/Finisher.webp';
+import firstFinish from './images/CommonBadges/First Finish_result_result.webp';
+import firstStep from './images/CommonBadges/First Step_result_result.webp';
+import genreCurious from './images/CommonBadges/Genre Curious.webp';
+import girlsLoveFan from './images/CommonBadges/Girls Love Fan.webp';
+import googleConnected from './images/CommonBadges/Google Connected.webp';
+import growing from './images/CommonBadges/Growing.webp';
+import horrorSurvivor from './images/CommonBadges/Horror Survivor.webp';
+import identitySet from './images/CommonBadges/Identity Set.webp';
+import justStarting from './images/CommonBadges/Just Starting.webp';
+import marathonRunner from './images/CommonBadges/Marathon Runner.webp';
+import mysteryDetective from './images/CommonBadges/Mystery Detective.webp';
+import pickyViewer from './images/CommonBadges/Picky Viewer.webp';
+import romanticHeart from './images/CommonBadges/Romantic Heart.webp';
+import sciFiExplorer from './images/CommonBadges/Sci-Fi Explorer.webp';
+import seedling from './images/CommonBadges/Seedling.webp';
+import serialFinisher from './images/CommonBadges/Serial Finisher.webp';
+import sliceOfLife from './images/CommonBadges/Slice of Life.webp';
+import smallCollection from './images/CommonBadges/Small Collection.webp';
+import sportsFanatic from './images/CommonBadges/Sports Fanatic.webp';
+import supernaturalBeliever from './images/CommonBadges/Supernatural Believer.webp';
+import suspenseSeeker from './images/CommonBadges/Suspense Seeker.webp';
+import theCompleteOtaku from './images/CommonBadges/The Complete Otaku_result_result.webp';
+import thePlanner from './images/CommonBadges/The Planner.webp';
+import thrillerFan from './images/CommonBadges/Thriller Fan.webp';
+import timeInvestor from './images/CommonBadges/Time Investor.webp';
 import uncommon1 from './images/Uncommonbadges/well_rounded.webp';
 import uncommon2 from './images/Uncommonbadges/total_50.webp';
 import uncommon3 from './images/Uncommonbadges/total_100.webp';
@@ -58,34 +63,33 @@ import uncommon22 from './images/Uncommonbadges/mal_importer.webp';
 import uncommon23 from './images/Uncommonbadges/veteran_180d.webp';
 import uncommon24 from './images/Uncommonbadges/mfa_enabled_badge.webp';
 import uncommon25 from './images/Uncommonbadges/collector_medium.webp';
-import rare1 from './images/Rarebadges/total_250.webp';
-import rare2 from './images/Rarebadges/total_500.webp';
-import rare3 from './images/Rarebadges/complete_100.webp';
-import rare4 from './images/Rarebadges/episodes_5000.webp';
-import rare5 from './images/Rarebadges/hours_720.webp';
-import rare6 from './images/Rarebadges/hours_2190.webp';
-import rare7 from './images/Rarebadges/genre_master_action.webp';
-import rare8 from './images/Rarebadges/genre_master_romance.webp';
-import rare9 from './images/Rarebadges/genre_master_fantasy.webp';
-import rare10 from './images/Rarebadges/genre_master_comedy.webp';
-import rare11 from './images/Rarebadges/genre_master_mystery.webp';
-import rare12 from './images/Rarebadges/rated_100.webp';
-import rare13 from './images/Rarebadges/perfectionist.webp';
-import rare14 from './images/Rarebadges/planned_100.webp';
-import rare15 from './images/Rarebadges/dropped_50.webp';
-import rare16 from './images/Rarebadges/genre_diversity_15.webp';
-import rare17 from './images/Rarebadges/mean_score_high.webp';
-import rare18 from './images/Rarebadges/veteran_1y.webp';
-import rare19 from './images/Rarebadges/collector_large.webp';
-import rare20 from './images/Rarebadges/prolific.webp';
-import epic1 from './images/Epicbadges/total_1000.webp';
-import epic2 from './images/Epicbadges/complete_250.webp';
-import epic3 from './images/Epicbadges/episodes_10000.webp';
-import epic4 from './images/Epicbadges/episodes_25000.webp';
-import epic5 from './images/Epicbadges/hours_4380.webp';
-import epic6 from './images/Epicbadges/planned_250.webp';
-import epic7 from './images/Epicbadges/genre_diversity_all.webp';
-import epic8 from './images/Epicbadges/veteran_2y.webp';
+import grandArchivist from './images/Rarebadges/grand_archivist.webp';
+import genrePioneer from './images/Rarebadges/genre_pioneer.webp';
+import eliteOtaku from './images/Rarebadges/elite_otaku.webp';
+import connoisseur from './images/Rarebadges/connoisseur.webp';
+import largeCollection from './images/Rarebadges/large_collection.webp';
+import theJudge from './images/Rarebadges/the_judge.webp';
+import actionMaster from './images/Rarebadges/action_master.webp';
+import monthGone from './images/Rarebadges/month_gone.webp';
+import prolificWatcher from './images/Rarebadges/prolific_watcher.webp';
+import fantasyMaster from './images/Rarebadges/fantasy_master.webp';
+import quarterYear from './images/Rarebadges/quarter_year.webp';
+import grandCompletionist from './images/Rarebadges/grand_completionist.webp';
+import veteran from './images/Rarebadges/veteran.webp';
+import perfectionist from './images/Rarebadges/perfectionist.webp';
+import comedyMaster from './images/Rarebadges/comedy_master.webp';
+import romanceMaster from './images/Rarebadges/romance_master.webp';
+import mysteryMaster from './images/Rarebadges/mystery_master.webp';
+import episodeWarrior from './images/Rarebadges/episode_warrior.webp';
+import masterCritic from './images/Rarebadges/master_critic.webp';
+import mythical from './images/Epicbadges/mythical.webp';
+import animeScholar from './images/Epicbadges/anime_scholar.webp';
+import episodeOcean from './images/Epicbadges/episode_ocean.webp';
+import episodeVolcano from './images/Epicbadges/episode_volcano.webp';
+import halfYearDevoted from './images/Epicbadges/half_year_devoted.webp';
+import dreamLibrary from './images/Epicbadges/dream_library.webp';
+import genreConqueror from './images/Epicbadges/genre_conqueror.webp';
+import elder from './images/Epicbadges/elder.webp';
 import legendary1 from './images/Legendarybadges/total_2000.webp';
 import legendary2 from './images/Legendarybadges/total_5000.webp';
 import legendary3 from './images/Legendarybadges/complete_500.webp';
@@ -93,44 +97,50 @@ import legendary4 from './images/Legendarybadges/complete_1000.webp';
 import legendary5 from './images/Legendarybadges/episodes_50000.webp';
 import legendary6 from './images/Legendarybadges/episodes_100000.webp';
 import legendary7 from './images/Legendarybadges/hours_8760.webp';
+import legendaryBadge from './images/Legendarybadges/total_500.webp';
 
 export const BADGE_IMAGES = {
 
-  first_step: badge1,
-  first_complete: badge2,
-  first_drop: badge3,
-  first_rating: badge4,
-  total_5: badge5,
-  total_10: badge6,
-  total_25: badge7,
-  complete_5: badge8,
-  complete_10: badge8b,
-  episodes_50: badge9,
-  episodes_100: badge10,
-  episodes_500: badge11,
-  hours_24: badge12,
-  hours_100: badge13,
-  genre_action: badge14,
-  genre_adventure: badge15,
-  genre_boys_love: badge16,
-  genre_comedy: badge17,
-  genre_drama: badge18,
-  genre_fantasy: badge19,
-  genre_girls_love: badge20,
-  genre_horror: badge21,
-  genre_mystery: badge22,
-  genre_romance: badge23,
-  genre_sci_fi: badge24,
-  genre_slice_of_life: badge25,
-  genre_sports: badge26,
-  genre_supernatural: badge27,
-  genre_suspense: badge28,
-  genre_thriller: badge29,
-  rated_10: badge30,
-  planned_10: badge31,
-  dropped_5: badge32,
-  genre_diversity_5: badge33,
-  profile_complete: badge34,
+  first_step: firstStep,
+  first_complete: firstFinish,
+  first_drop: droppedOne,
+  first_rating: criticAwakened,
+  all_categories_5: theCompleteOtaku,
+  total_5: justStarting,
+  total_10: buildingUp,
+  total_25: dedicatedViewer,
+  complete_5: finisher,
+  complete_10: serialFinisher,
+  episodes_50: episodeStarter,
+  episodes_100: episodeEnthusiast,
+  episodes_500: marathonRunner,
+  hours_24: dayGone,
+  hours_100: timeInvestor,
+  genre_action: actionHero,
+  genre_adventure: adventureSeeker,
+  genre_boys_love: boysLoveFan,
+  genre_comedy: comedyLover,
+  genre_drama: emotional,
+  genre_fantasy: fantasyFanatic,
+  genre_girls_love: girlsLoveFan,
+  genre_horror: horrorSurvivor,
+  genre_mystery: mysteryDetective,
+  genre_romance: romanticHeart,
+  genre_sci_fi: sciFiExplorer,
+  genre_slice_of_life: sliceOfLife,
+  genre_sports: sportsFanatic,
+  genre_supernatural: supernaturalBeliever,
+  genre_suspense: suspenseSeeker,
+  genre_thriller: thrillerFan,
+  rated_10: buddingCritic,
+  planned_10: thePlanner,
+  dropped_5: pickyViewer,
+  genre_diversity_5: genreCurious,
+  profile_complete: identitySet,
+  veteran_30d: growing,
+  veteran_90d: seedling,
+  google_auth: googleConnected,
+  collector_small: smallCollection,
 
   well_rounded: uncommon1,
   total_50: uncommon2,
@@ -146,45 +156,45 @@ export const BADGE_IMAGES = {
   genre_gourmet: uncommon12,
   rated_25: uncommon13,
   rated_50: uncommon14,
-  high_standards: uncommon15,
-  harsh_critic: uncommon16,
-  planned_25: uncommon17,
-  planned_50: uncommon18,
-  dropped_10: uncommon19,
-  dropped_25: uncommon20,
-  genre_diversity_10: uncommon21,
-  mal_importer: uncommon22,
-  veteran_180d: uncommon23,
-  mfa_enabled_badge: uncommon24,
-  collector_medium: uncommon25,
-  total_250: rare1,
-  total_500: rare2,
-  complete_100: rare3,
-  episodes_5000: rare4,
-  hours_720: rare5,
-  hours_2190: rare6,
-  genre_master_action: rare7,
-  genre_master_romance: rare8,
-  genre_master_fantasy: rare9,
-  genre_master_comedy: rare10,
-  genre_master_mystery: rare11,
-  rated_100: rare12,
-  perfectionist: rare13,
-  planned_100: rare14,
-  dropped_50: rare15,
-  genre_diversity_15: rare16,
-  mean_score_high: rare17,
-  veteran_1y: rare18,
-  collector_large: rare19,
-  prolific: rare20,
-  total_1000: epic1,
-  complete_250: epic2,
-  episodes_10000: epic3,
-  episodes_25000: epic4,
-  hours_4380: epic5,
-  planned_250: epic6,
-  genre_diversity_all: epic7,
-  veteran_2y: epic8,
+  high_standards: uncommon21,
+  harsh_critic: uncommon22,
+  planned_25: uncommon23,
+  planned_50: uncommon15,
+  dropped_10: uncommon16,
+  dropped_25: uncommon17,
+  genre_diversity_10: uncommon24,
+  mal_importer: uncommon25,
+  veteran_180d: uncommon18,
+  mfa_enabled_badge: uncommon19,
+  collector_medium: uncommon20,
+  total_250: eliteOtaku,
+  total_500: legendaryBadge,
+  complete_100: grandCompletionist,
+  episodes_5000: episodeWarrior,
+  hours_720: monthGone,
+  hours_2190: quarterYear,
+  genre_master_action: actionMaster,
+  genre_master_romance: romanceMaster,
+  genre_master_fantasy: fantasyMaster,
+  genre_master_comedy: comedyMaster,
+  genre_master_mystery: mysteryMaster,
+  rated_100: masterCritic,
+  perfectionist: perfectionist,
+  planned_100: grandArchivist,
+  dropped_50: theJudge,
+  genre_diversity_15: genrePioneer,
+  mean_score_high: connoisseur,
+  veteran_1y: veteran,
+  collector_large: largeCollection,
+  prolific: prolificWatcher,
+  total_1000: mythical,
+  complete_250: animeScholar,
+  episodes_10000: episodeOcean,
+  episodes_25000: episodeVolcano,
+  hours_4380: halfYearDevoted,
+  planned_250: dreamLibrary,
+  genre_diversity_all: genreConqueror,
+  veteran_2y: elder,
   total_2000: legendary1,
   total_5000: legendary2,
   complete_500: legendary3,

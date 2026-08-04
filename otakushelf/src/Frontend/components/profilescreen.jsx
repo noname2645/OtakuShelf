@@ -8,6 +8,7 @@ import BottomNavBar from "./bottom.jsx";
 import AnimeCardUI from "./AnimeCardUI.jsx";
 import Modal from "./modal.jsx";
 import { getBadgeImage } from "../badgeImages.js";
+import lockedBadgeImg from "../images/lockedbadge_result.webp";
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -507,7 +508,9 @@ const ProfileScreen = () => {
                     getBadgeImage(badge.id) ? (
                       <img src={getBadgeImage(badge.id)} alt={badge.title} className="ps-cell-img" />
                     ) : badge.icon
-                  ) : badge.icon}
+                  ) : (
+                    <img src={lockedBadgeImg} alt="Locked badge" className="ps-cell-img ps-cell-locked" />
+                  )}
                 </span>
                 {!earned && <div className="ps-cell-lock">🔒</div>}
               </div>

@@ -150,7 +150,7 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
   const badges = user.profile?.badges || []
   const totalBadgeDefs = (BADGES && BADGES.length) || 0
 
-  c.header('Cache-Control', 'private, max-age=60')
+  c.header('Cache-Control', 'no-store')
 
   return success(c, 'Profile fetched', {
     user: sanitizeUser(user),

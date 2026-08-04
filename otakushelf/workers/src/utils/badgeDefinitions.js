@@ -68,7 +68,7 @@ const BADGES = [
   {
     id: 'total_5',
     title: 'Just Starting',
-    description: '5+ anime across all lists',
+    description: 'Welcome to the anime world.',
     icon: '🐣',
     rarity: 'common',
     category: 'Anime Count',
@@ -77,7 +77,7 @@ const BADGES = [
   {
     id: 'total_10',
     title: 'Building Up',
-    description: '10+ anime across all lists',
+    description: 'Your completed shelf is growing.',
     icon: '📚',
     rarity: 'common',
     category: 'Anime Count',
@@ -86,7 +86,7 @@ const BADGES = [
   {
     id: 'total_25',
     title: 'Dedicated Viewer',
-    description: '25+ anime across all lists',
+    description: 'The episodes keep rolling.',
     icon: '🎬',
     rarity: 'common',
     category: 'Anime Count',
@@ -124,7 +124,7 @@ const BADGES = [
     title: 'Legendary',
     description: '500+ anime across all lists',
     icon: '🌌',
-    rarity: 'rare',
+    rarity: 'legendary',
     category: 'Anime Count',
     check: (s) => s.totalAnime >= 500,
   },
@@ -162,7 +162,7 @@ const BADGES = [
   {
     id: 'complete_5',
     title: 'Finisher',
-    description: 'Complete 5 anime',
+    description: 'Every completed anime counts.',
     icon: '🏅',
     rarity: 'common',
     category: 'Completionist',
@@ -171,7 +171,7 @@ const BADGES = [
   {
     id: 'complete_10',
     title: 'Serial Finisher',
-    description: 'Complete 10 anime',
+    description: 'One ending after another.',
     icon: '🏆',
     rarity: 'common',
     category: 'Completionist',
@@ -238,7 +238,7 @@ const BADGES = [
   {
     id: 'episodes_50',
     title: 'Episode Starter',
-    description: 'Watch 50+ total episodes',
+    description: 'Every great binge has a beginning.',
     icon: '👀',
     rarity: 'common',
     category: 'Episode Milestones',
@@ -247,7 +247,7 @@ const BADGES = [
   {
     id: 'episodes_100',
     title: 'Episode Enthusiast',
-    description: 'Watch 100+ total episodes',
+    description: 'The binge is getting serious.',
     icon: '📺',
     rarity: 'common',
     category: 'Episode Milestones',
@@ -256,7 +256,7 @@ const BADGES = [
   {
     id: 'episodes_500',
     title: 'Marathon Runner',
-    description: 'Watch 500+ total episodes',
+    description: 'The binge has begun.',
     icon: '🏃',
     rarity: 'common',
     category: 'Episode Milestones',
@@ -333,7 +333,7 @@ const BADGES = [
   {
     id: 'hours_24',
     title: 'Day Gone',
-    description: 'Watch 24+ hours worth of anime',
+    description: 'One whole day vanished into anime.',
     icon: '⏰',
     rarity: 'common',
     category: 'Hours Watched',
@@ -342,7 +342,7 @@ const BADGES = [
   {
     id: 'hours_100',
     title: 'Time Investor',
-    description: 'Watch 100+ hours of anime',
+    description: 'Time well spent... probably.',
     icon: '📅',
     rarity: 'common',
     category: 'Hours Watched',
@@ -409,7 +409,7 @@ const BADGES = [
   {
     id: 'genre_action',
     title: 'Action Hero',
-    description: 'Watch at least 1 Action anime',
+    description: 'Where every fight begins.',
     icon: '⚡',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -418,7 +418,7 @@ const BADGES = [
   {
     id: 'genre_adventure',
     title: 'Adventure Seeker',
-    description: 'Watch at least 1 Adventure anime',
+    description: 'The journey starts with one step.',
     icon: '🗺️',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -445,7 +445,7 @@ const BADGES = [
   {
     id: 'genre_boys_love',
     title: 'Boys Love Fan',
-    description: 'Watch at least 1 Boys Love anime',
+    description: 'BL stories have your heart.',
     icon: '💙',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -454,7 +454,7 @@ const BADGES = [
   {
     id: 'genre_comedy',
     title: 'Comedy Lover',
-    description: 'Watch at least 1 Comedy anime',
+    description: 'Laughter is the best ending.',
     icon: '😂',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -462,8 +462,8 @@ const BADGES = [
   },
   {
     id: 'genre_drama',
-    title: 'Drama Expert',
-    description: 'Watch at least 1 Drama anime',
+    title: 'Emotional',
+    description: 'Tears were definitely involved.',
     icon: '😢',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -472,7 +472,7 @@ const BADGES = [
   {
     id: 'genre_fantasy',
     title: 'Fantasy Fanatic',
-    description: 'Watch at least 1 Fantasy anime',
+    description: 'Magic feels like home.',
     icon: '🧙',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -481,7 +481,7 @@ const BADGES = [
   {
     id: 'genre_girls_love',
     title: 'Girls Love Fan',
-    description: 'Watch at least 1 Girls Love anime',
+    description: 'Yuri has your attention.',
     icon: '💗',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -499,7 +499,7 @@ const BADGES = [
   {
     id: 'genre_horror',
     title: 'Horror Survivor',
-    description: 'Watch at least 1 Horror anime',
+    description: 'You stared into the darkness.',
     icon: '👻',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -508,7 +508,7 @@ const BADGES = [
   {
     id: 'genre_mystery',
     title: 'Mystery Detective',
-    description: 'Watch at least 1 Mystery anime',
+    description: 'Every clue matters.',
     icon: '🔍',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -517,7 +517,7 @@ const BADGES = [
   {
     id: 'genre_romance',
     title: 'Romantic Heart',
-    description: 'Watch at least 1 Romance anime',
+    description: 'Love stories never get old.',
     icon: '💕',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -526,7 +526,7 @@ const BADGES = [
   {
     id: 'genre_sci_fi',
     title: 'Sci-Fi Explorer',
-    description: 'Watch at least 1 Sci-Fi anime',
+    description: 'Beyond the stars awaits.',
     icon: '🚀',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -535,7 +535,7 @@ const BADGES = [
   {
     id: 'genre_slice_of_life',
     title: 'Slice of Life',
-    description: 'Watch at least 1 Slice of Life anime',
+    description: 'Finding beauty in everyday moments.',
     icon: '☕',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -544,7 +544,7 @@ const BADGES = [
   {
     id: 'genre_sports',
     title: 'Sports Fanatic',
-    description: 'Watch at least 1 Sports anime',
+    description: 'Victory comes through passion.',
     icon: '⚽',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -553,7 +553,7 @@ const BADGES = [
   {
     id: 'genre_supernatural',
     title: 'Supernatural Believer',
-    description: 'Watch at least 1 Supernatural anime',
+    description: 'The impossible feels possible.',
     icon: '👁️',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -562,7 +562,7 @@ const BADGES = [
   {
     id: 'genre_suspense',
     title: 'Suspense Seeker',
-    description: 'Watch at least 1 Suspense anime',
+    description: 'Always waiting for the next twist.',
     icon: '😰',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -571,7 +571,7 @@ const BADGES = [
   {
     id: 'genre_thriller',
     title: 'Thriller Fan',
-    description: 'Watch at least 1 Thriller anime',
+    description: 'Every second keeps you guessing.',
     icon: '🎭',
     rarity: 'common',
     category: 'Genre Explorer',
@@ -633,7 +633,7 @@ const BADGES = [
   {
     id: 'rated_10',
     title: 'Budding Critic',
-    description: 'Rate 10 anime',
+    description: 'Your opinions are taking shape.',
     icon: '📝',
     rarity: 'common',
     category: 'Rating',
@@ -700,7 +700,7 @@ const BADGES = [
   {
     id: 'planned_10',
     title: 'The Planner',
-    description: 'Add 10+ anime to your planned list',
+    description: 'The backlog only grows.',
     icon: '📋',
     rarity: 'common',
     category: 'Planned List',
@@ -749,7 +749,7 @@ const BADGES = [
   {
     id: 'dropped_5',
     title: 'Picky Viewer',
-    description: 'Drop 5 anime — quality matters to you',
+    description: 'Not every anime makes the cut.',
     icon: '🚫',
     rarity: 'common',
     category: 'Dropped List',
@@ -789,7 +789,7 @@ const BADGES = [
   {
     id: 'genre_diversity_5',
     title: 'Genre Curious',
-    description: 'Watch anime in 5 different genres',
+    description: 'Curiosity opens every door.',
     icon: '🌈',
     rarity: 'common',
     category: 'Diversity',
@@ -834,7 +834,7 @@ const BADGES = [
   {
     id: 'profile_complete',
     title: 'Identity Set',
-    description: 'Set your bio, username, and cover image',
+    description: 'Now everyone knows it\'s you.',
     icon: '🪪',
     rarity: 'common',
     category: 'Diversity',
@@ -856,7 +856,7 @@ const BADGES = [
   {
     id: 'veteran_30d',
     title: 'Seedling',
-    description: 'Account is 30+ days old',
+    description: 'Every legend starts somewhere.',
     icon: '🌱',
     rarity: 'common',
     category: 'Account',
@@ -865,7 +865,7 @@ const BADGES = [
   {
     id: 'veteran_90d',
     title: 'Growing',
-    description: 'Account is 90+ days old',
+    description: 'Still rooted, still growing.',
     icon: '🌿',
     rarity: 'common',
     category: 'Account',
@@ -901,7 +901,7 @@ const BADGES = [
   {
     id: 'google_auth',
     title: 'Google Connected',
-    description: 'Signed in with Google OAuth',
+    description: 'One click, endless anime.',
     icon: '🔗',
     rarity: 'common',
     category: 'Account',
@@ -923,7 +923,7 @@ const BADGES = [
   {
     id: 'collector_small',
     title: 'Small Collection',
-    description: 'Have 20+ anime across all your lists',
+    description: 'A respectable anime shelf.',
     icon: '🗂️',
     rarity: 'common',
     category: 'Collector',
@@ -961,7 +961,7 @@ const BADGES = [
     title: 'The Complete Otaku',
     description: 'Have 5+ anime in every single list category simultaneously',
     icon: '🏆',
-    rarity: 'epic',
+    rarity: 'rare',
     category: 'Collector',
     check: (s) => s.watching >= 5 && s.completed >= 5 && s.planned >= 5 && s.dropped >= 5,
   },

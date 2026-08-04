@@ -11,6 +11,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import AnimeCardUI from "./AnimeCardUI.jsx";
 import Modal from "./modal.jsx";
 import { getBadgeImage } from "../badgeImages.js";
+import lockedBadgeImg from "../images/lockedbadge_result.webp";
 
 const ProfilePage = () => {
   const { user, updateProfile, checkAuthStatus, updateUserState } = useAuth();
@@ -781,7 +782,9 @@ const ProfilePage = () => {
                             getBadgeImage(badge.id) ? (
                               <img src={getBadgeImage(badge.id)} alt={badge.title} className="apt-img" />
                             ) : badge.icon
-                          ) : '🔒'}
+                          ) : (
+                            <img src={lockedBadgeImg} alt="Locked badge" className="apt-img apt-img-locked" />
+                          )}
                         </span>
                         <span className="apt-name">{badge.title}</span>
                         {badge.earned && <span className="apt-rarity" style={{ color: rc.label }}>●</span>}
@@ -807,7 +810,7 @@ const ProfilePage = () => {
                             <span className="apt-icon">{badge.icon}</span>
                           )
                         ) : (
-                          <span className="apt-icon">🔒</span>
+                          <img src={lockedBadgeImg} alt="Locked badge" className="ach-icon-img ach-icon-locked" />
                         )}
                       </div>
                     );
