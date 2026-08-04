@@ -81,6 +81,7 @@ export function sanitizeUser(user) {
   return {
     _id: user._id,
     email: user.email,
+    username: user.username || user.profile?.username || null,
     photo: user.photo || null,
     name: user.name || null,
     providers,

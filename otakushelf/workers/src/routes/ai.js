@@ -163,7 +163,7 @@ async function getUserContext(userId, users, lists) {
         email: user.email,
         bio: profile.bio || '',
         favoriteGenres: topGenres,
-        username: profile.username || '',
+        username: user.username || profile.username || '',
         joinDate: user.createdAt || '',
       },
       stats,

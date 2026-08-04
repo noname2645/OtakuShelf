@@ -21,10 +21,10 @@ function setup(c) {
   return { db, users: createUserDb(db), lists: createAnimeListDb(db), env: c.env }
 }
 
-const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-const ALLOWED_COVER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const PHOTO_MAX_SIZE = 2 * 1024 * 1024
-const COVER_MAX_SIZE = 2 * 1024 * 1024
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm']
+const ALLOWED_COVER_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm']
+const PHOTO_MAX_SIZE = 15 * 1024 * 1024
+const COVER_MAX_SIZE = 15 * 1024 * 1024
 
 function bufferToDataUrl(buffer, mimeType) {
   const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)))
@@ -40,8 +40,8 @@ router.post('/:userId/upload-photo', authenticateToken, authorizeUser, async (c)
   const photo = body['photo']
   if (!photo || !photo.size) return error(c, 'No photo uploaded', 400)
 
-  if (!ALLOWED_PHOTO_TYPES.includes(photo.type)) return error(c, 'Photo must be JPEG, PNG, WebP, or GIF', 400)
-  if (photo.size > PHOTO_MAX_SIZE) return error(c, 'Photo must be under 2MB', 400)
+  if (!ALLOWED_PHOTO_TYPES.includes(photo.type)) return error(c, 'Photo must be JPEG, PNG, WebP, GIF, or short MP4/WebM video', 400)
+  if (photo.size > PHOTO_MAX_SIZE) return error(c, 'Photo must be under 15MB', 400)
 
   const buf = await photo.arrayBuffer()
   const dataUrl = bufferToDataUrl(buf, photo.type)
@@ -60,8 +60,8 @@ router.post('/:userId/upload-cover', authenticateToken, authorizeUser, async (c)
   const cover = body['cover']
   if (!cover || !cover.size) return error(c, 'No cover image uploaded', 400)
 
-  if (!ALLOWED_COVER_TYPES.includes(cover.type)) return error(c, 'Cover must be JPEG, PNG, or WebP', 400)
-  if (cover.size > COVER_MAX_SIZE) return error(c, 'Cover must be under 2MB', 400)
+  if (!ALLOWED_COVER_TYPES.includes(cover.type)) return error(c, 'Cover must be JPEG, PNG, WebP, GIF, or short MP4/WebM video', 400)
+  if (cover.size > COVER_MAX_SIZE) return error(c, 'Cover must be under 15MB', 400)
 
   const buf = await cover.arrayBuffer()
   const dataUrl = bufferToDataUrl(buf, cover.type)
@@ -155,7 +155,7 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
   return success(c, 'Profile fetched', {
     user: sanitizeUser(user),
     profile: {
-      username: user.profile?.username || null,
+      username: user.username || user.profile?.username || null,
       bio: user.profile?.bio || null,
       coverImage: user.profile?.coverImage || null,
       joinDate: user.profile?.joinDate || user.createdAt,
@@ -202,6 +202,15 @@ router.get('/:userId/watchLog', authenticateToken, authorizeUser, async (c) => {
 })
 
 // ── PUT /api/profile/:userId ─────────────────────────────────────────────────
+const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/
+
+function normalizeUsername(raw) {
+  if (typeof raw !== 'string') return null
+  let u = raw.trim().replace(/^@/, '')
+  if (!u) return null
+  return u.toLowerCase()
+}
+
 router.put('/:userId', authenticateToken, authorizeUser, async (c) => {
   const { users, db } = setup(c)
   const userId = c.get('userId')
@@ -212,19 +221,107 @@ router.put('/:userId', authenticateToken, authorizeUser, async (c) => {
   if (name !== undefined) update.name = name
   if (photo !== undefined) update.photo = photo
   if (profile) {
-    if (profile.username !== undefined) update['profile.username'] = profile.username
+    if (profile.username !== undefined) {
+      const normalized = normalizeUsername(profile.username)
+      if (normalized) {
+        if (!USERNAME_REGEX.test(normalized)) {
+          return error(c, 'Username must be 3-20 characters and use only letters, numbers, or underscores', 400)
+        }
+        const existing = await users.findByUsernameExcludingId(normalized, userId)
+        if (existing) return error(c, 'Username already taken', 409)
+        update.username = normalized
+        update['profile.username'] = normalized
+      }
+    }
     if (profile.bio !== undefined) update['profile.bio'] = profile.bio
     if (profile.preferences !== undefined) update['profile.preferences'] = profile.preferences
-  }
-
-  if (profile?.username) {
-    const existing = await users.findByUsernameExcludingId(profile.username, userId)
-    if (existing) return error(c, 'Username already taken', 409)
   }
 
   await users.update(userId, update)
   const updated = await users.findById(userId)
   return success(c, 'Profile updated', sanitizeUser(updated))
+})
+
+// ── GET /api/profile/check-username/:username ────────────────────────────────
+router.get('/check-username/:username', authenticateToken, async (c) => {
+  const { users } = setup(c)
+  const userId = c.get('userId')
+  const username = normalizeUsername(c.req.param('username'))
+  if (!username) return error(c, 'Invalid username', 400)
+
+  if (!USERNAME_REGEX.test(username)) {
+    return success(c, 'Username available', {
+      username,
+      valid: false,
+      available: false,
+      reason: 'Username must be 3-20 characters and use only letters, numbers, or underscores',
+    })
+  }
+
+  const existing = await users.findByUsernameExcludingId(username, userId)
+  return success(c, 'Username check', {
+    username,
+    valid: true,
+    available: !existing,
+  })
+})
+
+// ── GET /api/profile/suggest-usernames/:base ────────────────────────────────
+router.get('/suggest-usernames/:base', authenticateToken, async (c) => {
+  const { users } = setup(c)
+  const userId = c.get('userId')
+  const base = normalizeUsername(c.req.param('base'))
+  if (!base) return error(c, 'Invalid username base', 400)
+
+  const cleanBase = base.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20)
+  if (!cleanBase) return error(c, 'Invalid username base', 400)
+
+  const suggestions = []
+  const tried = new Set()
+  const attempt = (name) => {
+    if (suggestions.length >= 8 || tried.has(name)) return
+    tried.add(name)
+    suggestions.push(name)
+  }
+
+  const firstSuffixes = ['', '_1', '_2', '_3', '_4', '_5', '_6', '_7', '_8', '_9', '_10']
+  const adjectives = ['otaku', 'anime', 'weeb', 'fan', 'sama', 'kun', 'chan', 'senpai', 'lover', 'master', 'prime', 'ultra', 'epic', 'cool', 'pro']
+
+  // 1) Raw base, then numbered suffixes
+  firstSuffixes.forEach((s, i) => {
+    const candidate = `${cleanBase}${s}`.slice(0, 20)
+    if (s === '' && i === 0 && !USERNAME_REGEX.test(candidate)) return
+    attempt(candidate)
+  })
+
+  // 2) Common otaku-flavored suffixes
+  if (suggestions.length < 8) {
+    adjectives.forEach(a => {
+      const candidate = `${cleanBase}_${a}`.slice(0, 20)
+      attempt(candidate)
+    })
+  }
+
+  // 3) Fall back to purely random 4-digit suffixes until we have 8
+  if (suggestions.length < 8) {
+    let guard = 0
+    while (suggestions.length < 8 && guard < 40) {
+      guard++
+      const num = Math.floor(1000 + Math.random() * 9000)
+      attempt(`${cleanBase.slice(0, 16)}${num}`)
+    }
+  }
+
+  // 4) De-duplicate against taken usernames
+  const taken = new Set()
+  for (const name of suggestions) {
+    const existing = await users.findByUsernameExcludingId(name, userId)
+    if (existing) taken.add(name)
+  }
+  const available = suggestions.filter(name => !taken.has(name))
+  if (available.length === 0) available.push(`${cleanBase.slice(0, 12)}${Date.now() % 100000}`)
+
+  return success(c, 'Username suggestions', { suggestions: available.slice(0, 8) })
 })
 
 export default router

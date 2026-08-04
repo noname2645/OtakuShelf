@@ -17,10 +17,23 @@ function t(filter) {
   if (!filter || typeof filter !== 'object' || Array.isArray(filter)) return filter
   const r = {}
   for (const [k, v] of Object.entries(filter)) {
-    if (k === '_id') { r.id = v; continue }
+    if (k === '_id') {
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        const mapped = {}
+        for (const [op, val] of Object.entries(v)) {
+          if (op === '$ne') mapped.not = val
+          else mapped[op.replace('$', '')] = val
+        }
+        r.id = Object.keys(mapped).length ? mapped : v
+      } else {
+        r.id = v
+      }
+      continue
+    }
     if (v && typeof v === 'object') {
       if ('$oid' in v) { r[k] = v.$oid; continue }
       if ('$gt' in v) { r[k] = {}; for (const [op, val] of Object.entries(v)) r[k][op.replace('$', '')] = val; continue }
+      if ('$ne' in v) { r[k] = { not: v.$ne }; continue }
       const sub = t(v)
       r[k] = Object.keys(sub).length > 0 || !Array.isArray(v) && Object.keys(v).length > 0 ? sub : v
     } else {

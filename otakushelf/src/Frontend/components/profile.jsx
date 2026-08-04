@@ -36,6 +36,12 @@ const ProfilePage = () => {
     bio: "",
     username: "",
   });
+  const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState({ checking: false, state: "idle", message: "" });
+  const [usernameSuggestions, setUsernameSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [allBadgeDefs, setAllBadgeDefs]   = useState([]);
   const [badgeFilter, setBadgeFilter]     = useState('All');
   const [badgeSort, setBadgeSort]         = useState('rarity-desc');
@@ -272,12 +278,36 @@ const ProfilePage = () => {
     }
   };
 
+  const isVideoUrl = (url) => !!(url && typeof url === 'string' && url.startsWith('data:video'));
+
+  const validateMediaFile = async (file) => {
+    if (!file) return { ok: false, msg: "No file selected" };
+    if (file.size > 15 * 1024 * 1024) return { ok: false, msg: "File too large. Max 15MB." };
+    if (file.type.startsWith("image/")) return { ok: true };
+    if (file.type.startsWith("video/")) {
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const vid = document.createElement("video");
+        vid.preload = "metadata";
+        vid.onloadedmetadata = () => {
+          URL.revokeObjectURL(url);
+          if (vid.duration > 5) resolve({ ok: false, msg: "Video must be 5 seconds or shorter." });
+          else resolve({ ok: true });
+        };
+        vid.onerror = () => { URL.revokeObjectURL(url); resolve({ ok: false, msg: "Could not read video file." }); };
+        vid.src = url;
+      });
+    }
+    return { ok: false, msg: "Please select an image, GIF, or short video." };
+  };
+
   const handleCoverUpload = async (e) => {
     const file = e.target.files[0];
     if (!file || !user?._id) return;
     try {
-      if (!file.type.startsWith("image/")) { showToast("Invalid image type.", "error"); return; }
-      if (file.size > 5 * 1024 * 1024) { showToast("Image too large. Max 5MB.", "error"); return; }
+      const check = await validateMediaFile(file);
+      if (!check.ok) { showToast(check.msg, "error"); e.target.value = ""; return; }
+      setUploadingCover(true);
       const formData = new FormData();
       formData.append("cover", file);
       const response = await api.post(`${API}/api/profile/${user._id}/upload-cover`, formData, { headers: { "Content-Type": "multipart/form-data" } });
@@ -286,10 +316,13 @@ const ProfilePage = () => {
         let coverUrl = data.coverImage;
         if (coverUrl && coverUrl.startsWith("/uploads/")) coverUrl = `${API.replace("/api", "")}${coverUrl}`;
         setProfileData((prev) => ({ ...prev, coverImage: coverUrl }));
-        showToast("Cover image updated!");
+        showToast("Cover updated!");
       }
     } catch (error) {
-      showToast("Failed to upload cover image.", "error");
+      showToast("Failed to upload cover.", "error");
+    } finally {
+      setUploadingCover(false);
+      e.target.value = "";
     }
   };
 
@@ -297,15 +330,28 @@ const ProfilePage = () => {
 
   const handleSaveProfile = async () => {
     try {
-      const updateData = { name: editForm.name, profile: { bio: editForm.bio, username: editForm.username } };
+      const username = (editForm.username || "").trim().replace(/^@/, "");
+      if (username && usernameStatus.state === "taken") {
+        showToast("Username is already taken.", "error");
+        return;
+      }
+      if (username && usernameStatus.state === "invalid") {
+        showToast(usernameStatus.message, "error");
+        return;
+      }
+      setSaving(true);
+      const updateData = { name: editForm.name, profile: { bio: editForm.bio, username } };
       await api.put(`${API}/api/profile/${user._id}`, updateData);
       if (updateProfile) await updateProfile(updateData);
-      setProfileData((prev) => ({ ...prev, name: editForm.name, bio: editForm.bio, username: editForm.username }));
+      setProfileData((prev) => ({ ...prev, name: editForm.name, bio: editForm.bio, username: username || prev.username }));
       setIsEditing(false);
       showToast("Profile updated successfully!");
       await loadProfileData();
     } catch (error) {
-      showToast("Failed to update profile.", "error");
+      const msg = error.response?.data?.message || "Failed to update profile.";
+      showToast(msg, "error");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -317,19 +363,78 @@ const ProfilePage = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditForm((prev) => ({ ...prev, [name]: value }));
+    if (name === "username") {
+      setUsernameSuggestions([]);
+      setShowSuggestions(false);
+      checkUsernameDebounced(value);
+    }
+  };
+
+  const checkUsernameDebounced = useMemo(() => {
+    let timer;
+    return (value) => {
+      clearTimeout(timer);
+      const username = (value || "").trim();
+      if (!username) {
+        setUsernameStatus({ checking: false, state: "idle", message: "" });
+        return;
+      }
+      setUsernameStatus((prev) => ({ ...prev, checking: true }));
+      timer = setTimeout(async () => {
+        try {
+          const res = await api.get(`${API}/api/profile/check-username/${encodeURIComponent(username)}`);
+          const data = res.data.data || {};
+          if (data.valid) {
+            setUsernameStatus({
+              checking: false,
+              state: data.available ? "available" : "taken",
+              message: data.available ? "Username is available" : "Username is already taken",
+            });
+          } else {
+            setUsernameStatus({ checking: false, state: "invalid", message: data.reason || "Invalid username" });
+          }
+        } catch {
+          setUsernameStatus({ checking: false, state: "idle", message: "" });
+        }
+      }, 400);
+    };
+  }, [API]);
+
+  const handleSuggestUsernames = async () => {
+    const base = (editForm.username || "").trim().replace(/^@/, "");
+    if (!base) { showToast("Type a base username to get suggestions.", "error"); return; }
+    setShowSuggestions(false);
+    setUsernameStatus((prev) => ({ ...prev, checking: true }));
+    try {
+      const res = await api.get(`${API}/api/profile/suggest-usernames/${encodeURIComponent(base)}`);
+      const suggestions = (res.data.data?.suggestions || []).slice(0, 8);
+      setUsernameSuggestions(suggestions);
+      setShowSuggestions(true);
+      if (!suggestions.length) showToast("Could not generate suggestions.", "error");
+    } catch {
+      showToast("Failed to load suggestions.", "error");
+    } finally {
+      setUsernameStatus((prev) => ({ ...prev, checking: false }));
+    }
+  };
+
+  const pickSuggestion = (name) => {
+    setEditForm((prev) => ({ ...prev, username: name }));
+    setShowSuggestions(false);
+    checkUsernameDebounced(name);
   };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     const userId = user?._id || localStorage.getItem("user_id") || JSON.parse(localStorage.getItem("user"))?.id;
     if (!userId) { showToast("Please log in to upload images", "error"); return; }
-    if (!file) { showToast("Please select an image file", "error"); return; }
+    if (!file) { showToast("Please select an image or short video", "error"); return; }
     try {
-      if (!file.type.startsWith("image/")) { showToast("Please select a valid image file.", "error"); return; }
-      if (file.size > 2 * 1024 * 1024) { showToast("Image size must be less than 2MB.", "error"); return; }
+      const check = await validateMediaFile(file);
+      if (!check.ok) { showToast(check.msg, "error"); e.target.value = ""; return; }
       const formData = new FormData();
       formData.append("photo", file);
-      setLoading(true);
+      setUploadingPhoto(true);
       const response = await api.post(`${API}/api/profile/${userId}/upload-photo`, formData, { headers: { "Content-Type": "multipart/form-data" } });
       const result = response.data.data;
       let photoUrl = result.photo;
@@ -341,7 +446,8 @@ const ProfilePage = () => {
       showToast("Failed to upload image.", "error");
       await loadProfileData();
     } finally {
-      setLoading(false);
+      setUploadingPhoto(false);
+      e.target.value = "";
     }
   };
 
@@ -539,6 +645,18 @@ const ProfilePage = () => {
   const gridAnime = recentlyWatched.slice(1, 5).map(toAnimeShape);
 
   // ── Main Render ────────────────────────────────────────────────
+  if (loading && !profileData) {
+    return (
+      <div className="profile-loading">
+        <div className="loading-content">
+          <div className="loading-spinner" />
+          <p className="loading-text">Loading your shelf...</p>
+          <p className="loading-subtext">Fetching your anime profile</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <BottomNavBar />
@@ -551,8 +669,8 @@ const ProfilePage = () => {
       )}
 
       {/* Hidden file inputs */}
-      <input type="file" accept="image/*" id="cover-upload"  style={{ display: 'none' }} onChange={handleCoverUpload} />
-      <input type="file" accept="image/*" id="avatar-upload" style={{ display: 'none' }} onChange={handleImageUpload} />
+      <input type="file" accept="image/*,video/mp4,video/webm" id="cover-upload"  style={{ display: 'none' }} onChange={handleCoverUpload} />
+      <input type="file" accept="image/*,video/mp4,video/webm" id="avatar-upload" style={{ display: 'none' }} onChange={handleImageUpload} />
 
       <div className="profile-page">
         <Header showSearch={false} />
@@ -565,15 +683,32 @@ const ProfilePage = () => {
             <div className="phc-card">
               {/* Cover image — right side */}
               <div className="phc-cover-zone">
-                <img
-                  src={profileData.coverImage || 'https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=1600&q=80'}
-                  alt="Cover"
-                  className="phc-cover-img"
-                  fetchpriority="high"
-                  decoding="async"
-                />
+                {profileData.coverImage ? (
+                  isVideoUrl(profileData.coverImage) ? (
+                    <video
+                      src={profileData.coverImage}
+                      className="phc-cover-img"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                    />
+                  ) : (
+                    <img
+                      src={profileData.coverImage}
+                      alt="Cover"
+                      className="phc-cover-img"
+                      fetchpriority="high"
+                      decoding="async"
+                    />
+                  )
+                ) : (
+                  <div className="phc-cover-empty">No cover photo yet</div>
+                )}
                 <div className="phc-cover-gradient" />
-                <label htmlFor="cover-upload" className="phc-cover-btn">Change Cover</label>
+                <label htmlFor="cover-upload" className="phc-cover-btn">
+                  {uploadingCover ? (<><span className="btn-spinner" />Uploading...</>) : "Change Cover"}
+                </label>
               </div>
 
               {/* Main content layer */}
@@ -584,11 +719,15 @@ const ProfilePage = () => {
                   <div className="phc-avatar-zone">
                     <div className="phc-avatar">
                       {profileData.avatar
-                        ? <img src={profileData.avatar} alt="Avatar" />
+                        ? isVideoUrl(profileData.avatar)
+                          ? <video src={profileData.avatar} autoPlay muted loop playsInline />
+                          : <img src={profileData.avatar} alt="Avatar" />
                         : <div className="phc-avatar-placeholder">{profileData.name.charAt(0)}</div>
                       }
                     </div>
-                    <label htmlFor="avatar-upload" className="phc-avatar-change">CHANGE PHOTO</label>
+                    <label htmlFor="avatar-upload" className="phc-avatar-change">
+                      {uploadingPhoto ? (<><span className="btn-spinner" />Uploading...</>) : "CHANGE PHOTO"}
+                    </label>
                   </div>
 
                   {/* Identity or Edit Form */}
@@ -600,15 +739,48 @@ const ProfilePage = () => {
                       </div>
                       <div className="edit-form-group">
                         <label>Username</label>
-                        <input type="text" name="username" value={editForm.username} onChange={handleInputChange} className="edit-input" />
+                        <div className="username-input-wrap">
+                          <input
+                            type="text"
+                            name="username"
+                            value={editForm.username}
+                            onChange={handleInputChange}
+                            className="edit-input"
+                            placeholder="your_username"
+                          />
+                          <button type="button" className="btn-suggest" onClick={handleSuggestUsernames} disabled={usernameStatus.checking}>
+                            {usernameStatus.checking ? (<><span className="btn-spinner btn-spinner-sm" />Loading...</>) : "Suggest"}
+                          </button>
+                        </div>
+                        {usernameStatus.checking && <p className="username-hint checking">Checking availability…</p>}
+                        {!usernameStatus.checking && usernameStatus.state === "available" && (
+                          <p className="username-hint available">Username is available</p>
+                        )}
+                        {!usernameStatus.checking && usernameStatus.state === "taken" && (
+                          <p className="username-hint taken">Username is already taken</p>
+                        )}
+                        {!usernameStatus.checking && usernameStatus.state === "invalid" && (
+                          <p className="username-hint taken">{usernameStatus.message}</p>
+                        )}
+                        {showSuggestions && usernameSuggestions.length > 0 && (
+                          <div className="username-suggestions">
+                            {usernameSuggestions.map((name) => (
+                              <button key={name} type="button" className="username-suggestion-chip" onClick={() => pickSuggestion(name)}>
+                                @{name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="edit-form-group">
                         <label>Bio</label>
                         <textarea name="bio" value={editForm.bio} onChange={handleInputChange} className="edit-textarea" rows="3" />
                       </div>
                       <div className="edit-actions">
-                        <button className="btn-save" onClick={handleSaveProfile}>Save Changes</button>
-                        <button className="btn-cancel" onClick={handleCancelEdit}>Cancel</button>
+                        <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
+                          {saving ? (<><span className="btn-spinner" />Saving...</>) : "Save Changes"}
+                        </button>
+                        <button className="btn-cancel" onClick={handleCancelEdit} disabled={saving}>Cancel</button>
                       </div>
                     </div>
                   ) : (

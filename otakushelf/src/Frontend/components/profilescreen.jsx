@@ -383,19 +383,36 @@ const ProfileScreen = () => {
       {/* ─── SECTION 1: HERO BLOCK ─── */}
       <section className="ps-section ps-hero">
         <div className="ps-hero-bg">
-          <img
-            src={profileData.coverImage || 'https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=1600&q=80'}
-            alt=""
-            className="ps-hero-cover"
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
+          {profileData.coverImage ? (
+            profileData.coverImage.startsWith('data:video') ? (
+              <video
+                src={profileData.coverImage}
+                className="ps-hero-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <img
+                src={profileData.coverImage}
+                alt=""
+                className="ps-hero-cover"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            )
+          ) : (
+            <div className="ps-hero-cover ps-hero-empty">No cover photo yet</div>
+          )}
           <div className="ps-hero-gradient" />
         </div>
 
         <div className="ps-hero-content">
           <div className="ps-avatar">
             {profileData.avatar
-              ? <img src={profileData.avatar} alt="" />
+              ? profileData.avatar.startsWith('data:video')
+                ? <video src={profileData.avatar} autoPlay muted loop playsInline />
+                : <img src={profileData.avatar} alt="" />
               : <div className="ps-avatar-placeholder">{profileData.name.charAt(0)}</div>
             }
           </div>

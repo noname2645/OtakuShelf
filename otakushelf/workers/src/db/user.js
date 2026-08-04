@@ -24,8 +24,11 @@ export function createUserDb(db) {
         passwordResetExpires: { $gt: new Date() },
       }),
 
+    findByUsername: (username) =>
+      db.findOne(COLLECTION, { username: username.toLowerCase().trim() }),
+
     findByUsernameExcludingId: (username, excludeId) =>
-      db.findOne(COLLECTION, { 'profile.username': username, _id: { $ne: excludeId } }),
+      db.findOne(COLLECTION, { username: username.toLowerCase().trim(), _id: { $ne: excludeId } }),
 
     create: (data) =>
       db.insertOne(COLLECTION, data),

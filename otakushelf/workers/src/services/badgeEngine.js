@@ -54,7 +54,7 @@ function computeStats(list, user) {
     : 0
 
   const hasBio = !!(user.profile?.bio && user.profile.bio.trim().length > 0)
-  const hasUsername = !!(user.profile?.username && user.profile.username.trim().length > 0)
+  const hasUsername = !!(user.username || user.profile?.username) && (user.username || user.profile?.username || '').trim().length > 0
   const hasCoverImage = !!(user.profile?.coverImage && user.profile.coverImage.trim().length > 0)
 
   const existingBadgeIds = new Set((user.profile?.badges || []).map(b => b.id).filter(Boolean))
