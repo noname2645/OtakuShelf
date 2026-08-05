@@ -24,7 +24,7 @@ router.get('/setup/:userId', authenticateToken, authorizeUser, async (c) => {
   const qrcode = await import('qrcode')
 
   const secret = speakeasy.default.generateSecret({
-    name: `OtakuShelf (${user.email})`,
+    name: `AnimeRegistry (${user.email})`,
   })
 
   await db.updateOne('users', { _id: db.oid(userId) }, {

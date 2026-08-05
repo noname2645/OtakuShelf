@@ -16,7 +16,7 @@ test.describe('Authentication flows', () => {
     );
 
     await page.goto('/login');
-    await page.locator('.login-form-input[type="email"]').fill('test@otakushelf.dev');
+    await page.locator('.login-form-input[type="email"]').fill('test@animeregistry.dev');
     await page.locator('.login-form-input[type="password"]').fill('Password1!');
     await page.locator('.login-btn-primary').click();
 
@@ -35,7 +35,7 @@ test.describe('Authentication flows', () => {
     );
 
     await page.goto('/login');
-    await page.locator('.login-form-input[type="email"]').fill('nope@otakushelf.dev');
+    await page.locator('.login-form-input[type="email"]').fill('nope@animeregistry.dev');
     await page.locator('.login-form-input[type="password"]').fill('WrongPass1!');
     await page.locator('.login-btn-primary').click();
 
@@ -59,7 +59,7 @@ test.describe('Authentication flows', () => {
     await page.goto('/register');
 
     // 7 chars passes the native minLength={6} but fails the app's 8-char rule
-    await page.locator('#email').fill('new@otakushelf.dev');
+    await page.locator('#email').fill('new@animeregistry.dev');
     await page.locator('#password').fill('short1!');
     await page.locator('#confirmPassword').fill('short1!');
     await page.locator('.btn-primary').click();
@@ -82,7 +82,7 @@ test.describe('Authentication flows', () => {
     );
 
     await page.goto('/register');
-    await page.locator('#email').fill('new@otakushelf.dev');
+    await page.locator('#email').fill('new@animeregistry.dev');
     await page.locator('#password').fill('Password1!');
     await page.locator('#confirmPassword').fill('Password1!');
     await page.locator('.btn-primary').click();

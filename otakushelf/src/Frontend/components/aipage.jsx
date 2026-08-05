@@ -8,10 +8,13 @@ import { Header } from './header.jsx';
 import BottomNavBar from "./bottom.jsx";
 import { useAuth } from "./AuthContext.jsx";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePageLoader } from "./PageLoaderContext.jsx";
 
 import otakuAI from "../images/otakuai_no_bg.png";
 
 const AIPage = () => {
+    const { finishLoading } = usePageLoader();
+    useEffect(() => { finishLoading(); }, [finishLoading]);
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);

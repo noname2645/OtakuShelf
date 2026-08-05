@@ -129,7 +129,7 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
             : (anime?.title || "Anime");
         const shareUrl = `${window.location.origin}/anime/${anime?.id}`;
         if (navigator.share) {
-            navigator.share({ title: displayTitle, text: `Check out ${displayTitle} on OtakuShelf!`, url: shareUrl })
+            navigator.share({ title: displayTitle, text: `Check out ${displayTitle} on AnimeRegistry!`, url: shareUrl })
                 .catch(err => console.log('Share canceled'));
         } else {
             navigator.clipboard.writeText(shareUrl);

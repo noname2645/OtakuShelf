@@ -393,14 +393,18 @@
     text-decoration: none;
 }
 
-.logo-svg {
-    height: 45px;
-    width: auto;
+.logo-img {
     display: block;
     transition: transform 0.3s ease, filter 0.3s ease;
 }
 
-.logo-link:hover .logo-svg {
+.logo-img-name {
+    height: 38px;
+    width: auto;
+    object-fit: contain;
+}
+
+.logo-link:hover .logo-img {
     filter: drop-shadow(0 0 8px rgba(255, 217, 0, 0.5));
 }
 
@@ -432,8 +436,8 @@
     .logo { justify-content: flex-start !important; }
     .auth-buttons { justify-content: flex-end !important; }
 
-    .logo-svg {
-        height: 24px !important;
+    .logo-img-name {
+        height: 22px !important;
     }
 
     .InputContainer {
@@ -538,16 +542,16 @@
     .logo { justify-content: flex-start !important; }
     .profile-container { justify-content: flex-end !important; }
 
-    .logo-svg {
-        height: 22px !important;
+    .logo-img-name {
+        height: 18px !important;
     }
 
     /* Disabled on mobile */
 
     /* Adjust logo height on very small screens */
     @media (max-width: 400px) {
-        .logo-svg {
-            height: 20px !important;
+        .logo-img-name {
+            height: 16px !important;
         }
     }
 
@@ -600,8 +604,8 @@
         padding: 0 0.5rem !important;
     }
 
-    .logo-svg {
-        height: 20px !important;
+    .logo-img-name {
+        height: 16px !important;
     }
 }
 

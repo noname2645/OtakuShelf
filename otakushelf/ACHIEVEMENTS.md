@@ -156,7 +156,7 @@ One badge per AniList genre — watch at least 1 anime in the genre.
 | 🌈 | Genre Curious | Common | Watch anime in 5 different genres |
 | 🪪 | Identity Set | Common | Set your bio, username, and cover image |
 | 🌍 | Genre Explorer | Uncommon | Watch anime in 10 different genres |
-| 📥 | The Importer | Uncommon | Import your MyAnimeList list into OtakuShelf |
+| 📥 | The Importer | Uncommon | Import your MyAnimeList list into AnimeRegistry |
 | 🌌 | Genre Pioneer | Rare | Watch anime in 15 different genres |
 | 🌟 | Connoisseur | Rare | Maintain a mean score of 4.0+ across 20+ rated anime |
 | 🎯 | Genre Conqueror | Epic | Watch anime in all 19 official genres |

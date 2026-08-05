@@ -6,12 +6,15 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import emailIcon from "../images/message.png";
+import { usePageLoader } from "./PageLoaderContext.jsx";
 import passwordIcon from "../images/key.png";
 import googleIcon from "../images/google.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGoogleAuth } from "./useGoogleAuth";
 
 const Register = ({ onRegisterSuccess }) => {
+  const { finishLoading } = usePageLoader();
+  useEffect(() => { finishLoading(); }, [finishLoading]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -156,7 +159,7 @@ const Register = ({ onRegisterSuccess }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.38, duration: 0.4 }}
           >
-            <h1 className="auth-title">Join OtakuShelf</h1>
+            <h1 className="auth-title">Join AnimeRegistry</h1>
           </motion.div>
 
           {/* Staggered form */}

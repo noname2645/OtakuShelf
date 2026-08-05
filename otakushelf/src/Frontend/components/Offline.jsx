@@ -1,16 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Header } from './header.jsx';
 import BottomNavBar from "./bottom.jsx";
 import Footer from './footer.jsx';
 import ErrorPage from './ErrorPage.jsx';
+import { usePageLoader } from './PageLoaderContext.jsx';
 
-const Offline = () => (
-  <>
-    <Header />
-    <ErrorPage type="offline" />
-    <Footer />
-    <BottomNavBar />
-  </>
-);
+const Offline = () => {
+  const { finishLoading } = usePageLoader();
+  useEffect(() => { finishLoading(); }, [finishLoading]);
+  return (
+    <>
+      <Header />
+      <ErrorPage type="offline" />
+      <Footer />
+      <BottomNavBar />
+    </>
+  );
+};
 
 export default Offline;

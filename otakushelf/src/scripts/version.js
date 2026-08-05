@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OtakuShelf — Version bump script
+ * AnimeRegistry — Version bump script
  *
  * Usage (run from  src/):
  *   node scripts/version.js           → shows current version
@@ -58,7 +58,7 @@ writeVersion(next);
 bumpPkg(FRONTEND_PKG, next);
 bumpPkg(WORKERS_PKG,  next);
 
-console.log(`\n  ✅  OtakuShelf bumped: ${current} → ${next}\n`);
+console.log(`\n  ✅  AnimeRegistry bumped: ${current} → ${next}\n`);
 console.log(`     VERSION          updated`);
 console.log(`     Frontend/package.json updated`);
 console.log(`     Workers/package.json  updated\n`);

@@ -52,7 +52,7 @@ export const SECTIONS = {
 export const TEST_USER = {
   _id: 'user-123',
   id: 'user-123',
-  email: 'test@otakushelf.dev',
+  email: 'test@animeregistry.dev',
   name: 'Tester',
   photo: null,
   authType: 'local',

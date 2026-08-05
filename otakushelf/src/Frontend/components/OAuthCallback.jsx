@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { usePageLoader } from './PageLoaderContext.jsx';
 
-const OAuthCallback = () => (
+const OAuthCallback = () => {
+  const { finishLoading } = usePageLoader();
+  useEffect(() => { finishLoading(); }, [finishLoading]);
+  return (
   <div
     style={{
       minHeight: '100vh',
@@ -27,6 +31,7 @@ const OAuthCallback = () => (
     <style>{`@keyframes ots-spin { to { transform: rotate(360deg); } }`}</style>
     <p style={{ margin: 0, fontSize: '1rem', opacity: 0.85 }}>Completing sign-in...</p>
   </div>
-);
+  );
+};
 
 export default OAuthCallback;

@@ -13,24 +13,7 @@ const Footer = () => (
       {/* Brand */}
       <div className="footer-brand">
         <Link to="/home" className="footer-logo-link">
-          <svg className="footer-logo-svg" viewBox="0 0 220 44" xmlns="http://www.w3.org/2000/svg" aria-label="OtakuShelf">
-            <text
-              x="0" y="34"
-              fontFamily="'Outfit', sans-serif"
-              fontWeight="800"
-              fontSize="38"
-              fill="#ffffff"
-              letterSpacing="-0.5"
-            >Otaku</text>
-            <text
-              x="116" y="34"
-              fontFamily="'Outfit', sans-serif"
-              fontWeight="800"
-              fontSize="38"
-              fill="#FFD700"
-              letterSpacing="-0.5"
-            >Shelf</text>
-          </svg>
+          <img src="/animeregistryname.png" alt="AnimeRegistry" className="footer-logo-img footer-logo-img-name" />
         </Link>
         <p className="footer-tagline">Your ultimate anime companion.<br />Track, discover, obsess.</p>
       </div>
@@ -70,7 +53,7 @@ const Footer = () => (
 
     {/* ── Bottom bar ── */}
     <div className="footer-bottom">
-      <span className="footer-copy">© {YEAR} OtakuShelf. All rights reserved.</span>
+      <span className="footer-copy">© {YEAR} AnimeRegistry. All rights reserved.</span>
       <span className="footer-made-with">
         Made with <span className="footer-heart" aria-label="love">♥</span> for anime fans
       </span>

@@ -1,12 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "otakushelf-api",
+  "name": "animeregistry-api",
   "main": "src/index.js",
   "compatibility_date": "2026-07-25",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "EMAIL_FROM": "rohitkarmokar732@gmail.com",
-    "FRONTEND_URL": "https://otakushelf.pages.dev"
+    "FRONTEND_URL": "https://animeregistry.pages.dev"
   },
   "kv_namespaces": [
     {

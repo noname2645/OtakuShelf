@@ -3,8 +3,11 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import "../Stylesheets/login.css";
+import { usePageLoader } from "./PageLoaderContext.jsx";
 
 const ForgotPassword = () => {
+    const { finishLoading } = usePageLoader();
+    useEffect(() => { finishLoading(); }, [finishLoading]);
     const navigate = useNavigate();
     const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 

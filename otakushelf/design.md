@@ -1,4 +1,4 @@
-# OtakuShelf — Profile Page Design Document
+# AnimeRegistry — Profile Page Design Document
 
 ## Table of Contents
 1. [Page Overview](#1-page-overview)

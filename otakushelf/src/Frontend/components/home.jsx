@@ -8,7 +8,7 @@ import BottomNavBar from './bottom.jsx';
 import Footer from './footer.jsx';
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
-import PageLoader from './PageLoader.jsx';
+import { usePageLoader } from './PageLoaderContext.jsx';
 
 // API base URL
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -189,15 +189,14 @@ AnimeSection.displayName = 'AnimeSection';
 
 const AnimeHomepage = () => {
     const navigate = useNavigate();
+    const { finishLoading } = usePageLoader();
+    useEffect(() => {
+        window.__homeMounts = (window.__homeMounts || 0) + 1;
+        console.log('HOME_MOUNT', window.__homeMounts);
+        return () => console.log('HOME_UNMOUNT', window.__homeMounts);
+    }, []);
     // State
     const [loading, setLoading] = useState(true);
-    // Show cinematic loader only on full page load/refresh, not SPA navigation
-    const [showLoader, setShowLoader] = useState(() => {
-      const nav = window.performance?.getEntriesByType?.('navigation')?.[0];
-      const isReload = nav && nav.type === 'reload';
-      const isSpaNav = window.history.state?.idx !== undefined && !isReload;
-      return !isSpaNav;
-    });
     const [sections, setSections] = useState({
         topAiring: [],
         mostWatched: [],
@@ -251,106 +250,124 @@ const AnimeHomepage = () => {
     }, []);
 
     // Data Fetching with Fallback
+    const loadRef = useRef(false);
     useEffect(() => {
-        let staleCacheRestored = false;
+      if (loadRef.current) return;
+      loadRef.current = true;
 
-        const loadWrapper = async () => {
-            const cachedRaw = localStorage.getItem(CACHE_KEY);
-            let cachedSections = null;
-            let cacheAge = Infinity;
+      let staleCacheRestored = false;
+      const controller = new AbortController();
 
-            if (cachedRaw) {
-                try {
-                    const parsed = JSON.parse(cachedRaw);
-                    cacheAge = Date.now() - (parseInt(localStorage.getItem(CACHE_TIME_KEY)) || 0);
-                    const hasContent = parsed.topAiring?.length > 0 || parsed.trending?.length > 0 ||
-                        parsed.upcoming?.length > 0 || parsed.topMovies?.length > 0 ||
-                        parsed.mostWatched?.length > 0 || parsed.topRated?.length > 0;
+      const loadWrapper = async () => {
+          const cachedRaw = localStorage.getItem(CACHE_KEY);
+          let cachedSections = null;
+          let cacheAge = Infinity;
 
-                    if (hasContent) {
-                        cachedSections = parsed;
-                        if (cacheAge < STALE_TIME) {
-                            setSections(parsed);
-                            setLoading(false);
-                            return;
-                        }
-                    }
-                } catch (e) {
-                    localStorage.removeItem(CACHE_KEY);
-                    localStorage.removeItem(CACHE_TIME_KEY);
-                }
-            }
+          if (cachedRaw) {
+              try {
+                  const parsed = JSON.parse(cachedRaw);
+                  cacheAge = Date.now() - (parseInt(localStorage.getItem(CACHE_TIME_KEY)) || 0);
+                  const hasContent = parsed.topAiring?.length > 0 || parsed.trending?.length > 0 ||
+                      parsed.upcoming?.length > 0 || parsed.topMovies?.length > 0 ||
+                      parsed.mostWatched?.length > 0 || parsed.topRated?.length > 0;
 
-            // Show stale cache immediately while fetching fresh data
-            if (cachedSections) {
-                setSections(cachedSections);
-                setLoading(false);
-                staleCacheRestored = true;
-            }
+                  if (hasContent) {
+                      cachedSections = parsed;
+                      if (cacheAge < STALE_TIME) {
+                          setSections(parsed);
+                          setLoading(false);
+                          return;
+                      }
+                  }
+              } catch (e) {
+                  localStorage.removeItem(CACHE_KEY);
+                  localStorage.removeItem(CACHE_TIME_KEY);
+              }
+          }
 
-            // Try backend first
-            let backendOk = false;
-            try {
-                const response = await axios.get(`${API}/api/anime/anime-sections`, { timeout: 15000 });
-                const data = response.data.data;
-                const hasData = data && Object.values(data).some(arr => arr?.length > 0);
+          if (cachedSections) {
+              setSections(cachedSections);
+              setLoading(false);
+              staleCacheRestored = true;
+          }
 
-                if (hasData) {
-                    const newSections = {
-                        topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
-                        mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                        topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean),
-                        trending: (data.trending || []).map(normalizeGridAnime).filter(Boolean),
-                        topRated: (data.topRated || []).map(normalizeGridAnime).filter(Boolean),
-                        upcoming: (data.upcoming || []).map(normalizeGridAnime).filter(Boolean)
-                    };
-                    setSections(newSections);
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
-                    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-                    backendOk = true;
-                }
-            } catch (err) {
-                console.error("Backend fetch:", err.message);
-            }
+          let backendOk = false;
+          try {
+              const response = await axios.get(`${API}/api/anime/anime-sections`, { timeout: 15000, signal: controller.signal });
+              const data = response.data.data;
+              const hasData = data && Object.values(data).some(arr => arr?.length > 0);
 
-            if (backendOk) {
-                if (!staleCacheRestored) setLoading(false);
-                return;
-            }
+              if (hasData) {
+                  const newSections = {
+                      topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
+                      mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
+                      topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean),
+                      trending: (data.trending || []).map(normalizeGridAnime).filter(Boolean),
+                      topRated: (data.topRated || []).map(normalizeGridAnime).filter(Boolean),
+                      upcoming: (data.upcoming || []).map(normalizeGridAnime).filter(Boolean)
+                  };
+                  setSections(newSections);
+                  localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
+                  localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+                  backendOk = true;
+              }
+          } catch (err) {
+              if (err.name !== 'CanceledError') console.error("Backend fetch:", err.message);
+          }
 
-            // Fallback: call AniList directly from browser
-            try {
-                const sectionKeys = ['trending', 'topAiring', 'upcoming', 'topMovies', 'mostWatched', 'topRated'];
-                const results = {};
-                for (const key of sectionKeys) {
-                    try {
-                        results[key] = await fetchAniListSection(key);
-                    } catch (e) {
-                        results[key] = [];
-                    }
-                }
+          if (backendOk) {
+              if (!staleCacheRestored) setLoading(false);
+              return;
+          }
 
-                const newSections = {
-                    trending: (results.trending || []).map(normalizeGridAnime).filter(Boolean),
-                    topAiring: (results.topAiring || []).map(normalizeGridAnime).filter(Boolean),
-                    upcoming: (results.upcoming || []).map(normalizeGridAnime).filter(Boolean),
-                    topMovies: (results.topMovies || []).map(normalizeGridAnime).filter(Boolean),
-                    mostWatched: (results.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                    topRated: (results.topRated || []).map(normalizeGridAnime).filter(Boolean),
-                };
+          try {
+              const sectionKeys = ['trending', 'topAiring', 'upcoming', 'topMovies', 'mostWatched', 'topRated'];
+              const results = {};
+              for (const key of sectionKeys) {
+                  try {
+                      results[key] = await fetchAniListSection(key);
+                  } catch (e) {
+                      results[key] = [];
+                  }
+              }
 
-                setSections(newSections);
-                localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
-                localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-            } catch (e) {
-                console.error("AniList fallback failed:", e);
-            }
+              const newSections = {
+                  trending: (results.trending || []).map(normalizeGridAnime).filter(Boolean),
+                  topAiring: (results.topAiring || []).map(normalizeGridAnime).filter(Boolean),
+                  upcoming: (results.upcoming || []).map(normalizeGridAnime).filter(Boolean),
+                  topMovies: (results.topMovies || []).map(normalizeGridAnime).filter(Boolean),
+                  mostWatched: (results.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
+                  topRated: (results.topRated || []).map(normalizeGridAnime).filter(Boolean),
+              };
 
-            if (!staleCacheRestored) setLoading(false);
-        };
+              setSections(newSections);
+              localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
+              localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+          } catch (e) {
+              console.error("AniList fallback failed:", e);
+          }
 
-        loadWrapper();
+          if (!staleCacheRestored) setLoading(false);
+      };
+
+      loadWrapper();
+
+      return () => {
+          controller.abort();
+          loadRef.current = false;
+      };
     }, [normalizeGridAnime]);
+
+    // Tell the global loader the page is ready
+    useEffect(() => {
+        if (!loading) {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    finishLoading();
+                });
+            });
+        }
+    }, [loading, finishLoading]);
 
     // Check Mobile — use same singleton listener as AnimeCardUI (no extra window listener)
     useEffect(() => {
@@ -375,7 +392,8 @@ const AnimeHomepage = () => {
         };
     }, []);
 
-    // Search Logic
+    // Search Logic — queries AniList directly from the browser (worker egress
+    // IP is blocked by AniList, so proxying through the worker returns 500).
     useEffect(() => {
         if (!searchQuery.trim()) {
             setIsSearching(false);
@@ -391,12 +409,26 @@ const AnimeHomepage = () => {
 
         const searchTimer = setTimeout(async () => {
             try {
-                const res = await axios.get(`${API}/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=20`, {
-                    signal: controllerRef.current.signal
+                const res = await axios.post('https://graphql.anilist.co', {
+                    query: `query ($search: String, $limit: Int) {
+                        Page(perPage: $limit) {
+                            media(search: $search, type: ANIME, isAdult: false) {
+                                id title { romaji english } coverImage { extraLarge large medium }
+                                bannerImage episodes format status genres averageScore
+                                description season seasonYear startDate { year month day }
+                                endDate { year month day } studios { edges { node { name } } }
+                                trailer { id site }
+                            }
+                        }
+                    }`,
+                    variables: { search: searchQuery.trim(), limit: 20 },
+                }, {
+                    signal: controllerRef.current.signal,
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 });
-                if (res.data && res.data.data) {
-                    setSearchResults(res.data.data.map(normalizeGridAnime).filter(Boolean));
-                }
+                if (res.data?.errors) throw new Error(res.data.errors[0]?.message || 'GraphQL error');
+                const media = res.data?.data?.Page?.media || [];
+                setSearchResults(media.map(normalizeGridAnime).filter(Boolean));
             } catch (err) {
                 if (!axios.isCancel(err)) console.error("Search error", err);
             } finally {
@@ -441,9 +473,6 @@ const AnimeHomepage = () => {
 
     return (
         <>
-            {/* Cinematic page loader — renders as overlay so data fetches concurrently */}
-            {showLoader && <PageLoader onFinish={() => setShowLoader(false)} />}
-
             <BottomNavBar />
             <div className="homepage">
                 <div className="main-content">

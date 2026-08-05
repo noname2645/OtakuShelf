@@ -1,4 +1,4 @@
-# Testing OtakuShelf — list-status feature
+# Testing Anime Registry — list-status feature
 
 Everything was tested with **Playwright (E2E)** plus manual checks. This doc tells you how to run the tests, what each one proves, and how to verify the feature by hand.
 
@@ -108,7 +108,7 @@ Legend: ✅ automated (Playwright) · 👆 manual (browser)
 
 | # | What to test | How | Pass = |
 |---|---|---|---|
-| 24 | MAL fix live | 👆 https://otakushelf.pages.dev → log in | MAL-imported anime show colored icons |
+| 24 | MAL fix live | 👆 https://animeregistry.pages.dev → log in | MAL-imported anime show colored icons |
 | 25 | Status persistence live | 👆 add status, refresh, log out/in | Still remembered |
 
 ---

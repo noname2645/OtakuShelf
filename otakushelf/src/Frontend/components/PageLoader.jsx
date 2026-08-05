@@ -20,8 +20,17 @@ const useTypewriter = (text, speed = 25, startDelay = 200) => {
 
 const TAGLINE = 'Your anime universe, curated.';
 
-const PageLoader = ({ onFinish }) => {
+const PageLoader = ({
+    isLoading = true,
+    onFinish,
+    minDisplay = 800,
+    maxDisplay = 8000,
+}) => {
     const [phase, setPhase] = useState('enter'); // enter → reveal → exit
+    useEffect(() => {
+        console.log('PL_MOUNT');
+        return () => console.log('PL_UNMOUNT');
+    }, []);
     const tagline = useTypewriter(TAGLINE, 25, 200);
 
     // Keep onFinish callback reference updated without restarting the timeline
@@ -30,25 +39,46 @@ const PageLoader = ({ onFinish }) => {
         onFinishRef.current = onFinish;
     }, [onFinish]);
 
-    // Symmetric phase timeline (Runs exactly once on mount):
+    const mountedAtRef = useRef(Date.now());
+    const finishedRef = useRef(false);
+
+    const finish = () => {
+        if (finishedRef.current) return;
+        finishedRef.current = true;
+        onFinishRef.current?.();
+    };
+
+    // Functional timeline driven by the page's loading state:
     // 0ms:    enter (panels slide in, takes 500ms)
     // 500ms:  reveal (panels split apart, takes 500ms)
-    // 1000ms: exit (fade out loader overlay, takes 250ms)
-    // 1250ms: finished (loader hidden, trigger onFinish)
+    // When content is ready (isLoading = false) AND the minimum display
+    // time has elapsed: exit (fade out, takes 250ms) then onFinish.
+    // A maxDisplay safety net guarantees the page is never blocked.
     useEffect(() => {
-        const t1 = setTimeout(() => setPhase('reveal'), 500);
-        const t2 = setTimeout(() => {
+        const revealT = setTimeout(() => setPhase('reveal'), 500);
+
+        const doExit = () => {
+            if (finishedRef.current) return;
             setPhase('exit');
-        }, 1000);
-        const t3 = setTimeout(() => {
-            onFinishRef.current?.();
-        }, 1250);
-        return () => {
-            clearTimeout(t1);
-            clearTimeout(t2);
-            clearTimeout(t3);
+            setTimeout(finish, 250);
         };
-    }, []);
+
+        let readyT = null;
+        let maxT = null;
+
+        if (!isLoading) {
+            const remaining = Math.max(0, minDisplay - (Date.now() - mountedAtRef.current));
+            readyT = setTimeout(doExit, remaining);
+        }
+
+        maxT = setTimeout(doExit, maxDisplay);
+
+        return () => {
+            clearTimeout(revealT);
+            clearTimeout(readyT);
+            clearTimeout(maxT);
+        };
+    }, [isLoading, minDisplay, maxDisplay]);
 
     return (
         <div className={`page-loader phase-${phase}`} aria-hidden="true">
@@ -64,19 +94,8 @@ const PageLoader = ({ onFinish }) => {
 
             {/* Center logo (Without Kanji) */}
             <div className="loader-center">
-                {/* Torii gate silhouette */}
-                <svg className="torii-icon" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="0" y="12" width="120" height="6" rx="3" fill="currentColor" opacity="0.9"/>
-                    <rect x="8" y="20" width="104" height="4" rx="2" fill="currentColor" opacity="0.7"/>
-                    <rect x="18" y="24" width="6" height="56" rx="3" fill="currentColor"/>
-                    <rect x="96" y="24" width="6" height="56" rx="3" fill="currentColor"/>
-                    <rect x="10" y="8" width="8" height="20" rx="2" fill="currentColor" opacity="0.6"/>
-                    <rect x="102" y="8" width="8" height="20" rx="2" fill="currentColor" opacity="0.6"/>
-                </svg>
-                <div className="loader-brand">
-                    <span className="brand-otaku">OTAKU</span>
-                    <span className="brand-shelf">SHELF</span>
-                </div>
+                <img src="/animeregistrylogo.png" alt="" className="loader-logo-icon" />
+                <img src="/animeregistryname.png" alt="AnimeRegistry" className="loader-logo-name" />
                 <div className="loader-tagline">{tagline}</div>
             </div>
         </div>

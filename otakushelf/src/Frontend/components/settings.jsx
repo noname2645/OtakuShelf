@@ -5,6 +5,7 @@ import { Header } from "../components/header";
 import BottomNavBar from "../components/bottom.jsx";
 import { useAuth } from "../components/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
+import { usePageLoader } from "./PageLoaderContext.jsx";
 const ArrowIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
     <path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -70,12 +71,22 @@ const ACCENT_COLORS = [
 ];
 
 const SettingsPage = ({ isModal = false }) => {
-  const { user, logout, refreshProfile } = useAuth();
+  const { user, logout, refreshProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const API = import.meta.env.VITE_API_BASE_URL;
 
   const [activeTab, setActiveTab] = useState("security");
   const [loading, setLoading] = useState(true);
+  const { finishLoading } = usePageLoader();
+  useEffect(() => {
+    if (!isModal && !authLoading && !loading) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          finishLoading();
+        });
+      });
+    }
+  }, [isModal, authLoading, loading, finishLoading]);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({
     show: false,
@@ -355,7 +366,7 @@ const SettingsPage = ({ isModal = false }) => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `otakushelf_export_${Date.now()}.json`);
+      link.setAttribute("download", `animeregistry_export_${Date.now()}.json`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1171,7 +1182,7 @@ const SettingsPage = ({ isModal = false }) => {
           <h3>Email Notifications</h3>
         </div>
         <p className="settings-card-desc">
-          Control which emails you receive from OtakuShelf.
+          Control which emails you receive from AnimeRegistry.
         </p>
         {renderToggle(
           "notifications",

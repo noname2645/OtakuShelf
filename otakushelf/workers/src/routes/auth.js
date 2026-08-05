@@ -53,14 +53,14 @@ router.post('/register', async (c) => {
 
   const workerUrl = new URL(c.req.url).origin
   const verificationLink = `${workerUrl}/auth/verify-email?token=${verificationToken}&email=${normalizedEmail}`
-  const html = buildEmailHtml('Welcome to OtakuShelf', `
-    <p>Thank you for joining OtakuShelf!</p>
+  const html = buildEmailHtml('Welcome to AnimeRegistry', `
+    <p>Thank you for joining AnimeRegistry!</p>
     <p style="margin:20px 0">Please verify your email address to unlock all features:</p>
     <a href="${verificationLink}" style="display:inline-block;background:#FFD700;color:#000;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Verify Email</a>
     <p style="color:#888;font-size:13px;margin-top:20px">Or copy this link:<br><span style="color:#aaa;word-break:break-all">${verificationLink}</span></p>
   `, { icon: '🎉' })
   // Fire-and-forget: don't block registration on email delivery
-  sendMail({ to: normalizedEmail, subject: '🎉 OtakuShelf -- Verify Your Email', html }, env).catch(() => { })
+  sendMail({ to: normalizedEmail, subject: '🎉 AnimeRegistry -- Verify Your Email', html }, env).catch(() => { })
 
   const accessToken = await generateAccessToken(insertedId, env)
   return success(c, 'Registration successful', { user: sanitizeUser({ _id: insertedId, email: normalizedEmail }), accessToken, refreshToken }, 201)
@@ -356,7 +356,7 @@ router.post('/forgot-password', async (c) => {
   `, { isOtp: true, otpCode: otp })
 
   // Fire-and-forget: return immediately instead of blocking on email delivery
-  sendMail({ to: normalizedEmail, subject: '🔑 OtakuShelf -- Your Verification Code', html }, env).catch(() => { })
+  sendMail({ to: normalizedEmail, subject: '🔑 AnimeRegistry -- Your Verification Code', html }, env).catch(() => { })
 
   return success(c, 'Verification code sent')
 })
@@ -487,7 +487,7 @@ router.delete('/delete-account', authenticateToken, async (c) => {
 
   if (user.settings?.notifications?.securityEmails !== false) {
     const html = buildEmailHtml('Account Deleted', `
-      <p>Your OtakuShelf account has been permanently deleted.</p>
+      <p>Your AnimeRegistry account has been permanently deleted.</p>
       <p>All your data has been removed from our systems.</p>
       <p>We're sorry to see you go!</p>
     `)

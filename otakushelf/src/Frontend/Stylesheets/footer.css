@@ -1,5 +1,5 @@
 /* ============================================================
-   OTAKUSHELF FOOTER — Matching site design language
+   ANIMEREGISTRY FOOTER — Matching site design language
    - Deep black background (#030712)
    - Amber/orange accent (#ff9a00, #e2aa01)
    - Outfit + Prompt typography
@@ -46,15 +46,24 @@
   gap: 16px;
 }
 
-.footer-logo-svg {
-  height: 36px;
-  width: auto;
+.footer-logo-img {
   display: block;
   opacity: 0.92;
   transition: opacity 0.2s ease;
 }
 
-.footer-logo-link:hover .footer-logo-svg {
+.footer-logo-img-icon {
+  height: 36px;
+  width: auto;
+}
+
+.footer-logo-img-name {
+  height: 24px;
+  width: auto;
+  object-fit: contain;
+}
+
+.footer-logo-link:hover .footer-logo-img {
   opacity: 1;
 }
 

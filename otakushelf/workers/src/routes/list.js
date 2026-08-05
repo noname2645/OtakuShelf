@@ -453,7 +453,7 @@ router.post('/import/mal', authenticateToken, async (c) => {
           lastJikan = Date.now()
           try {
             const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}`, {
-              headers: { 'User-Agent': 'OtakuShelf/3.0' },
+              headers: { 'User-Agent': 'AnimeRegistry/3.0' },
               signal: AbortSignal.timeout(8000),
             })
             const data = await res.json()

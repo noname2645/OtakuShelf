@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import "../Stylesheets/profilescreen.css";
 import api from "../api.js";
 import { useAuth } from "./AuthContext";
@@ -9,6 +9,7 @@ import AnimeCardUI from "./AnimeCardUI.jsx";
 import Modal from "./modal.jsx";
 import { getBadgeImage } from "../badgeImages.js";
 import lockedBadgeImg from "../images/lockedbadge_result.webp";
+import { usePageLoader } from "./PageLoaderContext.jsx";
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -230,7 +231,7 @@ const ActivityHeatmap = ({ watchLog }) => {
 };
 
 const ProfileScreen = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { userId: paramUserId } = useParams();
   const targetUserId = paramUserId || user?._id;
 
@@ -243,6 +244,23 @@ const ProfileScreen = () => {
   const [allBadgeDefs, setAllBadgeDefs] = useState([]);
   const [watchLog, setWatchLog] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { finishLoading } = usePageLoader();
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
+  useEffect(() => {
+    // If a public profile is requested (paramUserId), no auth dependency.
+    // Otherwise wait for auth to resolve before unloading the loader.
+    const waitingForAuth = !paramUserId && authLoading;
+    if (!waitingForAuth && !loading) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          finishLoading();
+        });
+      });
+    }
+  }, [paramUserId, authLoading, loading, finishLoading]);
 
   const [selectedAnime, setSelectedAnime] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -319,6 +337,8 @@ const ProfileScreen = () => {
         api.get(`${API}/api/profile/${targetUserId}/watchLog`),
       ]);
 
+      if (!mountedRef.current) return;
+
       const d = profileRes.data.data;
       const badgeDefs = badgeRes.data?.data || [];
 
@@ -343,9 +363,12 @@ const ProfileScreen = () => {
       enrichWithScores(d.recentlyWatched || [], setRecentlyWatched);
       enrichWithScores((d.favorites || []).slice(0, 10), setFavorites);
     } catch (err) {
+      if (!mountedRef.current) return;
       console.error("Error loading profile screen:", err);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 

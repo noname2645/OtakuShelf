@@ -13,7 +13,7 @@ export async function sendMail({ from, to, subject, html }, env) {
         'api-key': apiKey,
       },
       body: JSON.stringify({
-        sender: { name: 'OtakuShelf', email: from || env.EMAIL_FROM || 'noreply@otakushelf.com' },
+        sender: { name: 'AnimeRegistry', email: from || env.EMAIL_FROM || 'noreply@animeregistry.com' },
         to: [{ email: to }],
         subject,
         htmlContent: html,
@@ -52,7 +52,7 @@ export function buildEmailHtml(title, body, options = {}) {
     <tr><td align="center">
       <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#12141a;border-radius:16px;overflow:hidden">
         <tr><td style="padding:40px 35px 20px;text-align:center">
-          <h1 style="color:#fff;font-size:24px;margin:0 0 5px;font-weight:600">OtakuShelf</h1>
+          <h1 style="color:#fff;font-size:24px;margin:0 0 5px;font-weight:600">AnimeRegistry</h1>
           <p style="color:#666;font-size:13px;margin:0 0 25px">Your Anime Universe</p>
           <div style="background:linear-gradient(135deg,#FFD700,#FFA500);border-radius:8px;padding:12px 25px;display:inline-block;margin-bottom:25px">
             <span style="font-size:18px">${icon}</span>
@@ -64,7 +64,7 @@ export function buildEmailHtml(title, body, options = {}) {
           ${otpSection}
         </td></tr>
         <tr><td style="padding:20px 35px;text-align:center;border-top:1px solid #1e2128">
-          <p style="color:#555;font-size:12px;margin:0">OtakuShelf &mdash; Your Anime Universe</p>
+          <p style="color:#555;font-size:12px;margin:0">AnimeRegistry &mdash; Your Anime Universe</p>
         </td></tr>
       </table>
     </td></tr>

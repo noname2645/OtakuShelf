@@ -7,6 +7,7 @@ import BottomNavBar from "../components/bottom.jsx";
 import "../Stylesheets/home.css";
 import AnimeCardUI from "./AnimeCardUI.jsx";
 import Search from "../images/search.png";
+import { usePageLoader } from "./PageLoaderContext.jsx";
 
 // Create a clean axios instance for AniList without auth headers
 const anilistClient = axios.create({
@@ -164,9 +165,9 @@ const ANIME_SEARCH_QUERY = `
 `;
 
 function AdvancedSearch() {
+  const { finishLoading } = usePageLoader();
   const [searchText, setSearchText] = useState("");
   const [isSearchPopupOpen, setIsSearchPopupOpen] = useState(false);
-
   // Simplified filter state
   const [filterOptions, setFilterOptions] = useState({
     type: [],
@@ -185,6 +186,16 @@ function AdvancedSearch() {
   const [hasMorePages, setHasMorePages] = useState(true);
 
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+
+  useEffect(() => {
+    if (!isSearching && hasFetchedOnce) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          finishLoading();
+        });
+      });
+    }
+  }, [isSearching, hasFetchedOnce, finishLoading]);
 
   // Modal state
   const [isModalVisible, setIsModalVisible] = useState(false);

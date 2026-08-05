@@ -9,6 +9,7 @@ import BottomNavBar from "../components/bottom.jsx";
 import Import from "../images/import.png";
 import { useAnimePreferences } from './useAnimePreferences';
 import ErrorPage from './ErrorPage.jsx';
+import { usePageLoader } from './PageLoaderContext.jsx';
 
 const StarRating = ({ rating, onRatingChange, disabled = false }) => {
   const [hoverRating, setHoverRating] = useState(0);
@@ -361,6 +362,16 @@ const EnhancedAnimeList = () => {
     dropped: [],
   });
   const [loading, setLoading] = useState(true);
+  const { finishLoading } = usePageLoader();
+  useEffect(() => {
+    if (!loading) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          finishLoading();
+        });
+      });
+    }
+  }, [loading, finishLoading]);
   const [error, setError] = useState(null);
   const [importing, setImporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);

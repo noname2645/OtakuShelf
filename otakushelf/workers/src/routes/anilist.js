@@ -13,7 +13,7 @@ async function fetchAniList(query, variables = {}) {
       'Accept': 'application/json',
       'Origin': 'https://anilist.co',
       'Referer': 'https://anilist.co',
-      'User-Agent': 'OtakuShelf/3.0',
+      'User-Agent': 'AnimeRegistry/3.0',
     },
     body: JSON.stringify({ query, variables }),
   })

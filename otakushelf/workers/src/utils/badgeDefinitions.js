@@ -1,5 +1,5 @@
 /**
- * OtakuShelf — 100 Badge Definitions
+ * AnimeRegistry — 100 Badge Definitions
  *
  * Each badge:
  *  id          — unique string key, used for deduplication
@@ -825,7 +825,7 @@ const BADGES = [
   {
     id: 'mal_importer',
     title: 'The Importer',
-    description: 'Import your MyAnimeList list into OtakuShelf',
+    description: 'Import your MyAnimeList list into AnimeRegistry',
     icon: '📥',
     rarity: 'uncommon',
     category: 'Diversity',

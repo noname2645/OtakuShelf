@@ -6,11 +6,14 @@ import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePageLoader } from "./PageLoaderContext.jsx";
 import emailIcon from "../images/message.png";
 import keyIcon from "../images/key.png";
 import { useGoogleAuth } from "./useGoogleAuth";
 
 const Login = () => {
+  const { finishLoading } = usePageLoader();
+  useEffect(() => { finishLoading(); }, [finishLoading]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [requiresMfa, setRequiresMfa] = useState(false);
@@ -159,7 +162,7 @@ const Login = () => {
           transition={{ delay: 0.38, duration: 0.4 }}
         >
           <h1 className="login-auth-title">{requiresMfa ? "Two-Factor Auth" : "Welcome Back"}</h1>
-          <p className="login-auth-subtitle">{requiresMfa ? "Enter the 6-digit code from your app" : "Sign in to your OtakuShelf account"}</p>
+          <p className="login-auth-subtitle">{requiresMfa ? "Enter the 6-digit code from your app" : "Sign in to your AnimeRegistry account"}</p>
         </motion.div>
 
         {/* Staggered form */}
@@ -260,7 +263,7 @@ const Login = () => {
           transition={{ delay: 1.05, duration: 0.4 }}
         >
           <p className="login-footer-text">
-            New to OtakuShelf?{" "}
+            New to AnimeRegistry?{" "}
             <Link to="/register" className="login-auth-link">
               <span className="login-link-text">Join Now</span>
               <span className="login-link-arrow">→</span>

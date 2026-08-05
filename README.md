@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎌 OtakuShelf
+# 🎌 Anime Registry
 
 **A full-stack anime tracking platform with an AI companion, MAL import, and real-time trailer discovery.**
 
@@ -30,7 +30,7 @@
 
 Most anime trackers are either too basic or locked behind closed ecosystems. I wanted to build something genuinely useful — where you can track what you're watching, import your existing MAL history, and get intelligent recommendations through an actual AI conversation rather than a static algorithm.
 
-OtakuShelf was also a deliberate attempt to learn full-stack development end-to-end: designing a production-grade REST API, handling OAuth flows, consuming third-party GraphQL APIs, and shipping a polished, responsive React frontend — all as a solo project.
+Anime Registry was also a deliberate attempt to learn full-stack development end-to-end: designing a production-grade REST API, handling OAuth flows, consuming third-party GraphQL APIs, and shipping a polished, responsive React frontend — all as a solo project.
 
 ---
 
@@ -195,7 +195,7 @@ Express.js API Server ───────────── Node.js hosting (e
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/otakushelf.git
+git clone https://github.com/your-username/animeregistry.git
 cd otakushelf
 
 # 2. Install backend dependencies
@@ -215,7 +215,7 @@ Create `src/Backend/.env.development`:
 NODE_ENV=development
 PORT=5000
 
-MONGO_URI=mongodb://localhost:27017/otakushelf
+MONGO_URI=mongodb://localhost:27017/animeregistry
 
 JWT_SECRET=your_jwt_secret_min_32_chars
 SESSION_SECRET=your_session_secret_min_32_chars
@@ -292,6 +292,6 @@ MIT — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**[⬆ Back to Top](#-otakushelf)**
+**[⬆ Back to Top](#-anime-registry)**
 
 </div>

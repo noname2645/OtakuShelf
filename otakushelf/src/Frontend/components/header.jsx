@@ -212,24 +212,7 @@ export const Header = ({ showSearch = true, onSearchChange, customAction, hideSe
       <header className={`header ${isScrolled ? "scrolled" : ""} ${isSearchFocused ? "search-focused" : ""}`}>
         <div className="logo">
           <Link to="/" className="logo-link">
-            <svg className="logo-svg" viewBox="0 0 220 44" xmlns="http://www.w3.org/2000/svg" aria-label="OtakuShelf">
-              <text
-                x="0" y="34"
-                fontFamily="'Outfit', sans-serif"
-                fontWeight="800"
-                fontSize="38"
-                fill="#ffffff"
-                letterSpacing="-0.5"
-              >Otaku</text>
-              <text
-                x="116" y="34"
-                fontFamily="'Outfit', sans-serif"
-                fontWeight="800"
-                fontSize="38"
-                fill="#FFD700"
-                letterSpacing="-0.5"
-              >Shelf</text>
-            </svg>
+            <img src="/animeregistryname.png" alt="AnimeRegistry" className="logo-img logo-img-name" />
           </Link>
         </div>
 

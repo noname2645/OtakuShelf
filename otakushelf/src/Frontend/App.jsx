@@ -6,6 +6,8 @@ import Home from "../Frontend/components/home.jsx";
 import { AuthProvider } from "../Frontend/components/AuthContext.jsx";
 import { ListStatusProvider } from "../Frontend/components/ListStatusContext.jsx";
 import BadgeNotification from "../Frontend/components/BadgeNotification.jsx";
+import { PageLoaderProvider, usePageLoader } from "../Frontend/components/PageLoaderContext.jsx";
+import PageLoader from "../Frontend/components/PageLoader.jsx";
 
 const List = lazy(() => import("../Frontend/components/list.jsx"));
 const Login = lazy(() => import("../Frontend/components/login.jsx"));
@@ -46,6 +48,13 @@ const RouteFallback = () => (
   </div>
 );
 
+/* ─── Global loader: restarts on route change, unloads when the page is ready ── */
+const GlobalLoader = () => {
+  const { visible, isLoading, loadKey, hideLoader } = usePageLoader();
+  if (!visible) return null;
+  return <PageLoader key={loadKey} isLoading={isLoading} onFinish={hideLoader} />;
+};
+
 /* ─── Inner app with router hooks ────────────────────────────────────────── */
 const AppContent = () => {
   return (
@@ -76,10 +85,13 @@ function App() {
     <AuthProvider>
       <ListStatusProvider>
         <BrowserRouter>
-          <BadgeNotification />
-          <Suspense fallback={<RouteFallback />}>
-            <AppContent />
-          </Suspense>
+          <PageLoaderProvider>
+            <BadgeNotification />
+            <GlobalLoader />
+            <Suspense fallback={<RouteFallback />}>
+              <AppContent />
+            </Suspense>
+          </PageLoaderProvider>
         </BrowserRouter>
       </ListStatusProvider>
     </AuthProvider>

@@ -1,4 +1,4 @@
-# OtakuShelf Badges (100 total)
+# AnimeRegistry Badges (100 total)
 
 All badges grouped by rarity.
 
@@ -75,7 +75,7 @@ All badges grouped by rarity.
 | No Mercy | Drop 10 anime |
 | Quality Control | Drop 25 anime |
 | Genre Explorer | Watch anime in 10 different genres |
-| The Importer | Import your MyAnimeList list into OtakuShelf |
+| The Importer | Import your MyAnimeList list into AnimeRegistry |
 | Rooted | Account is 180+ days old |
 | Security Conscious | Enabled Two-Factor Authentication (2FA) |
 | Medium Collection | Have 75+ anime across all your lists |

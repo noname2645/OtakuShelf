@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import "../Stylesheets/profile.css";
 import "../Stylesheets/settings.css";
 import "../Stylesheets/home.css";
@@ -12,13 +12,25 @@ import AnimeCardUI from "./AnimeCardUI.jsx";
 import Modal from "./modal.jsx";
 import { getBadgeImage } from "../badgeImages.js";
 import lockedBadgeImg from "../images/lockedbadge_result.webp";
+import { usePageLoader } from "./PageLoaderContext.jsx";
 
 const ProfilePage = () => {
-  const { user, updateProfile, checkAuthStatus, updateUserState } = useAuth();
+  const { user, loading: authLoading, updateProfile, checkAuthStatus, updateUserState } = useAuth();
 
   // Profile data
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { finishLoading } = usePageLoader();
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    if (!loading) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (mountedRef.current) finishLoading();
+        });
+      });
+    }
+  }, [loading, finishLoading]);
   const [stats, setStats] = useState(null);
   const [recentlyWatched, setRecentlyWatched] = useState([]);
   const [favoriteAnime, setFavoriteAnime] = useState([]);
@@ -47,6 +59,12 @@ const ProfilePage = () => {
   const [badgeSort, setBadgeSort]         = useState('rarity-desc');
   const [badgeView, setBadgeView]         = useState('labels');
   const [checkingBadges, setCheckingBadges] = useState(false);
+  const loadProfileDataRef = useRef(false);
+  const loadProfileDataUserIdRef = useRef(null);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
 
   // Anime detail modal state
   const [selectedAnime, setSelectedAnime] = useState(null);
@@ -73,6 +91,10 @@ const ProfilePage = () => {
   };
 
   const API = import.meta.env.VITE_API_BASE_URL;
+
+  const PROFILE_CACHE_KEY = 'profileData_cache';
+  const PROFILE_CACHE_TIME_KEY = `${PROFILE_CACHE_KEY}_time`;
+  const PROFILE_CACHE_STALE_TIME = 1000 * 60 * 60;
 
   // Official 19 AniList genres
   const ALL_ANIME_GENRES = [
@@ -192,20 +214,52 @@ const ProfilePage = () => {
     return null;
   };
 
+  const userId = user?._id;
   useEffect(() => {
-    if (user?._id) {
-      loadProfileData();
-      loadAllBadgeDefs();
-    } else {
+    if (!userId) {
       setLoading(false);
+      finishLoading();
+      return;
     }
-  }, [user]);
+
+    let initializedFromCache = false;
+    try {
+      const cachedRaw = localStorage.getItem(PROFILE_CACHE_KEY);
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        const cacheAge = Date.now() - (parseInt(localStorage.getItem(PROFILE_CACHE_TIME_KEY)) || 0);
+        if (cacheAge < PROFILE_CACHE_STALE_TIME && cached.profileData) {
+          setProfileData(cached.profileData);
+          setStats(cached.stats || {});
+          setRecentlyWatched(cached.recentlyWatched || []);
+          setFavoriteAnime(cached.favoriteAnime || []);
+          setBadges(cached.badges || []);
+          setGenres(cached.genres || []);
+          setEditForm({
+            name: cached.profileData.name || "",
+            bio: cached.profileData.bio || "",
+            username: cached.profileData.username || "",
+          });
+          initializedFromCache = true;
+        }
+      }
+    } catch (e) {
+      localStorage.removeItem(PROFILE_CACHE_KEY);
+      localStorage.removeItem(PROFILE_CACHE_TIME_KEY);
+    }
+
+    loadProfileData();
+    loadAllBadgeDefs();
+  }, [userId, finishLoading]);
 
   const loadProfileData = async () => {
+    if (loadProfileDataRef.current && loadProfileDataUserIdRef.current === user._id) return;
+    loadProfileDataRef.current = true;
+    loadProfileDataUserIdRef.current = user._id;
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
       const response = await api.get(`${API}/api/profile/${user._id}`);
+      if (!mountedRef.current) return;
       const data = response.data.data;
 
       if (data) {
@@ -219,12 +273,11 @@ const ProfilePage = () => {
           return url;
         };
 
-        // API shape: { user, profile, stats, recentlyWatched, favorites, topGenres, badgeInfo }
-        const userData    = data.user    || data;          // user info is under data.user
-        const profileData = data.profile || {};            // profile sub-object
-        const statsData   = data.stats   || {};            // stats is top-level
+        const userData    = data.user    || data;
+        const profileData = data.profile || {};
+        const statsData   = data.stats   || {};
 
-        setProfileData({
+        const nextProfileData = {
           name: userData.name || "Anime Lover",
           username: profileData.username || `@user_${user._id.toString().slice(-6)}`,
           bio: profileData.bio || "Anime enthusiast exploring new worlds through animation",
@@ -233,9 +286,9 @@ const ProfilePage = () => {
           coverImage: fixImageUrl(profileData.coverImage),
           email: userData.email,
           lastOnline: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        });
+        };
 
-        setStats({
+        const nextStats = {
           animeWatched:      statsData.animeWatched      ?? 0,
           hoursWatched:      statsData.hoursWatched      ?? 0,
           currentlyWatching: statsData.currentlyWatching ?? 0,
@@ -244,10 +297,12 @@ const ProfilePage = () => {
           animeDropped:      statsData.animeDropped       ?? 0,
           totalEpisodes:     statsData.totalEpisodes      ?? 0,
           meanScore:         statsData.meanScore          ?? 0,
-        });
+        };
 
+        setProfileData(nextProfileData);
+        setStats(nextStats);
         setRecentlyWatched(data.recentlyWatched || []);
-        setFavoriteAnime(data.favorites || []);            // API key is "favorites" not "favoriteAnime"
+        setFavoriteAnime(data.favorites || []);
         setBadges(profileData.badges || []);
         setGenres(profileData.favoriteGenres || []);
 
@@ -259,8 +314,21 @@ const ProfilePage = () => {
           bio: profileData.bio || "",
           username: profileData.username || `@user_${user._id.toString().slice(-6)}`,
         });
+
+        try {
+          localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+            profileData: nextProfileData,
+            stats: nextStats,
+            recentlyWatched: data.recentlyWatched || [],
+            favoriteAnime: data.favorites || [],
+            badges: profileData.badges || [],
+            genres: profileData.favoriteGenres || [],
+          }));
+          localStorage.setItem(PROFILE_CACHE_TIME_KEY, Date.now().toString());
+        } catch (e) { /* ignore cache errors */ }
       }
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error("Error loading profile:", error);
       setProfileData({
         name: "Anime Lover",
@@ -272,9 +340,11 @@ const ProfilePage = () => {
       });
       setStats({ animeWatched: 0, hoursWatched: 0, currentlyWatching: 0, favorites: 0, animePlanned: 0, animeDropped: 0, totalEpisodes: 0, meanScore: 0 });
       setRecentlyWatched([]); setFavoriteAnime([]); setBadges([]); setGenres([]);
-      // Note: API returns { user, profile, stats, recentlyWatched, favorites } structure
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+      loadProfileDataRef.current = false;
     }
   };
 
@@ -454,7 +524,7 @@ const ProfilePage = () => {
   const handleShareProfile = () => {
     const profileUrl = `${window.location.origin}/profile/${user?._id}`;
     if (navigator.share) {
-      navigator.share({ title: `${profileData?.name}'s Anime Profile`, text: `Check out ${profileData?.name}'s anime profile on OtakuShelf!`, url: profileUrl });
+      navigator.share({ title: `${profileData?.name}'s Anime Profile`, text: `Check out ${profileData?.name}'s anime profile on AnimeRegistry!`, url: profileUrl });
     } else {
       navigator.clipboard.writeText(profileUrl);
       showToast("Profile link copied to clipboard!");
