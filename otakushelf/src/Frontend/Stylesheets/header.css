@@ -62,12 +62,12 @@
 
 
 
-/* Default transparent background */
+/* Default transparent background — only appears once scrolled */
 .header:not(.scrolled) {
-    background: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
     border-radius: 30px;
 }
 
