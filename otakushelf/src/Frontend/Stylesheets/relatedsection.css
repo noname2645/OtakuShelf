@@ -42,6 +42,122 @@
   max-width: 100%;
 }
 
+/* ── Tablet & Mobile: keep Prequel / Sequel side by side ── */
+@media (max-width: 991px) {
+  .related-container {
+    gap: 12px;
+  }
+
+  .relation-group {
+    flex: 1 1 0;
+    max-width: calc(50% - 6px);
+    min-width: 0;
+  }
+}
+
+/* ── Related section: smaller cards with scaled content below desktop ── */
+@media (max-width: 991px) {
+  .relation-group .anime-item {
+    width: 170px;
+    height: 260px;
+  }
+
+  .relation-group .anime-card-premium {
+    width: 170px !important;
+    height: 260px !important;
+    min-width: 170px !important;
+    min-height: 260px !important;
+    max-width: 170px !important;
+  }
+
+  .relation-group .premium-main-title {
+    font-size: 12px !important;
+    height: 28px !important;
+  }
+
+  .relation-group .premium-meta-row {
+    margin-top: 4px;
+  }
+
+  .relation-group .meta-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .relation-group .meta-label {
+    font-size: 7px;
+  }
+
+  .relation-group .meta-val {
+    font-size: 9px;
+    max-width: 44px;
+  }
+
+  .relation-group .premium-format-tag {
+    font-size: 6.5px;
+    padding: 1px 6px;
+  }
+
+  .relation-group .premium-card-body {
+    padding: 10px 8px 4px;
+  }
+
+  .relation-group .premium-card-footer {
+    margin: 0 8px 8px;
+    padding: 3px 4px;
+    border-radius: 9px;
+  }
+
+  .relation-group .footer-action-item svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .relation-group .premium-bookmark-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .relation-group .premium-rating-badge {
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .relation-group .anime-item {
+    width: 150px;
+    height: 230px;
+  }
+
+  .relation-group .anime-card-premium {
+    width: 150px !important;
+    height: 230px !important;
+    min-width: 150px !important;
+    min-height: 230px !important;
+    max-width: 150px !important;
+  }
+
+  .relation-group .premium-main-title {
+    font-size: 10px !important;
+    height: 24px !important;
+  }
+
+  .relation-group .meta-val {
+    font-size: 8px;
+    max-width: 38px;
+  }
+
+  .relation-group .meta-icon {
+    width: 10px;
+    height: 10px;
+  }
+
+  .relation-group .footer-action-item svg {
+    width: 10px;
+    height: 10px;
+  }
+}
+
 .relation-group h4 {
   font-family: 'Outfit', sans-serif;
   font-size: 1.15rem;

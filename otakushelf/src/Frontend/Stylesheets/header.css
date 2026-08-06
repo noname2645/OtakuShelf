@@ -64,9 +64,10 @@
 
 /* Default transparent background */
 .header:not(.scrolled) {
-    background: transparent;
-    backdrop-filter: none;
-    box-shadow: none;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
     border-radius: 30px;
 }
 
@@ -399,7 +400,7 @@
 }
 
 .logo-img-name {
-    height: 38px;
+    height: 46px;
     width: auto;
     object-fit: contain;
 }
@@ -437,7 +438,7 @@
     .auth-buttons { justify-content: flex-end !important; }
 
     .logo-img-name {
-        height: 22px !important;
+        height: 28px !important;
     }
 
     .InputContainer {
@@ -543,7 +544,7 @@
     .profile-container { justify-content: flex-end !important; }
 
     .logo-img-name {
-        height: 18px !important;
+        height: 24px !important;
     }
 
     /* Disabled on mobile */
@@ -551,7 +552,7 @@
     /* Adjust logo height on very small screens */
     @media (max-width: 400px) {
         .logo-img-name {
-            height: 16px !important;
+            height: 20px !important;
         }
     }
 
@@ -605,7 +606,7 @@
     }
 
     .logo-img-name {
-        height: 16px !important;
+        height: 22px !important;
     }
 }
 

@@ -387,9 +387,8 @@ I'm ready to dive deep into discussions or find your next binge-worthy masterpie
                                                             key={a.id || idx}
                                                             anime={a}
                                                             index={idx}
+                                                            isGrid
                                                             onClick={handleCardClick}
-                                                            customWidth={isMobile ? '135px' : '175px'}
-                                                            customHeight={isMobile ? '195px' : '250px'}
                                                         />
                                                     ))}
                                                 </div>

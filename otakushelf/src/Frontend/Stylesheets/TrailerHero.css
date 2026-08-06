@@ -85,7 +85,7 @@
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    z-index: -1;
+    z-index: 0;
     opacity: 0;
     transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: opacity;
@@ -1176,4 +1176,39 @@
             max-width: 300px;
         }
     }
+}
+
+/* ========== MOBILE/TABLET SCROLL HINT (inline, below More Details) ========== */
+@media (max-width: 1024px) {
+    .hero-scroll-hint-inline {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 10px;
+        animation: hero-scroll-bounce 2s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    .hero-scroll-text {
+        font-family: 'Outfit', 'Segoe UI', sans-serif;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.65);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    .hero-scroll-arrow {
+        width: 16px;
+        height: 16px;
+        color: rgba(255, 255, 255, 0.7);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+}
+
+@keyframes hero-scroll-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(6px); }
 }

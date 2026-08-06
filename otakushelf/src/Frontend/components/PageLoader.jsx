@@ -1,25 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import '../Stylesheets/PageLoader.css';
 
-// Typewriter hook
-const useTypewriter = (text, speed = 25, startDelay = 200) => {
-    const [displayed, setDisplayed] = useState('');
-    useEffect(() => {
-        let i = 0;
-        const t0 = setTimeout(() => {
-            const iv = setInterval(() => {
-                setDisplayed(text.slice(0, ++i));
-                if (i >= text.length) clearInterval(iv);
-            }, speed);
-            return () => clearInterval(iv);
-        }, startDelay);
-        return () => clearTimeout(t0);
-    }, [text, speed, startDelay]);
-    return displayed;
-};
-
-const TAGLINE = 'Your anime universe, curated.';
-
 const PageLoader = ({
     isLoading = true,
     onFinish,
@@ -31,7 +12,6 @@ const PageLoader = ({
         console.log('PL_MOUNT');
         return () => console.log('PL_UNMOUNT');
     }, []);
-    const tagline = useTypewriter(TAGLINE, 25, 200);
 
     // Keep onFinish callback reference updated without restarting the timeline
     const onFinishRef = useRef(onFinish);
@@ -52,7 +32,7 @@ const PageLoader = ({
     // 0ms:    enter (panels slide in, takes 500ms)
     // 500ms:  reveal (panels split apart, takes 500ms)
     // When content is ready (isLoading = false) AND the minimum display
-    // time has elapsed: exit (fade out, takes 250ms) then onFinish.
+    // time has elapsed: exit (fade out, takes 500ms) then onFinish.
     // A maxDisplay safety net guarantees the page is never blocked.
     useEffect(() => {
         const revealT = setTimeout(() => setPhase('reveal'), 500);
@@ -60,7 +40,7 @@ const PageLoader = ({
         const doExit = () => {
             if (finishedRef.current) return;
             setPhase('exit');
-            setTimeout(finish, 250);
+            setTimeout(finish, 500);
         };
 
         let readyT = null;
@@ -96,7 +76,6 @@ const PageLoader = ({
             <div className="loader-center">
                 <img src="/animeregistrylogo.png" alt="" className="loader-logo-icon" />
                 <img src="/animeregistryname.png" alt="AnimeRegistry" className="loader-logo-name" />
-                <div className="loader-tagline">{tagline}</div>
             </div>
         </div>
     );

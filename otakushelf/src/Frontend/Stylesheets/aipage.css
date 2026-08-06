@@ -461,17 +461,10 @@
 }
 
 .ai-recs-grid {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scroll-behavior: smooth;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.ai-recs-grid::-webkit-scrollbar {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+  margin-top: 10px;
 }
 
 /* ── Footer / Input Area ───────────────────────────────── */
@@ -648,7 +641,7 @@
   }
 
   .ai-chat-shell {
-    height: calc(100vh - 100px);
+    height: calc(100vh - 170px);
     border-radius: 22px;
   }
 
@@ -709,6 +702,11 @@
     font-size: 0.72rem;
     padding: 5px 12px;
   }
+
+  .ai-recs-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
 }
 
 /* Mobile small */
@@ -728,5 +726,10 @@
 
   .ai-msg {
     max-width: 92%;
+  }
+
+  .ai-recs-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 }

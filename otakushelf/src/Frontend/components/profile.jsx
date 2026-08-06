@@ -18,7 +18,16 @@ const ProfilePage = () => {
   const { user, loading: authLoading, updateProfile, checkAuthStatus, updateUserState } = useAuth();
 
   // Profile data
-  const [profileData, setProfileData] = useState(null);
+  const [profileData, setProfileData] = useState({
+    name: "Anime Lover",
+    username: "",
+    bio: "Anime enthusiast exploring new worlds through animation",
+    joinDate: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    avatar: null,
+    coverImage: null,
+    email: "",
+    lastOnline: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+  });
   const [loading, setLoading] = useState(true);
   const { finishLoading } = usePageLoader();
   useEffect(() => {
@@ -61,6 +70,7 @@ const ProfilePage = () => {
   const [checkingBadges, setCheckingBadges] = useState(false);
   const loadProfileDataRef = useRef(false);
   const loadProfileDataUserIdRef = useRef(null);
+  const hasLoadedProfileRef = useRef(false);
   const mountedRef = useRef(true);
   useEffect(() => {
     return () => { mountedRef.current = false; };
@@ -214,7 +224,7 @@ const ProfilePage = () => {
     return null;
   };
 
-  const userId = user?._id;
+  const userId = user?._id || user?.id;
   useEffect(() => {
     if (!userId) {
       setLoading(false);
@@ -240,6 +250,7 @@ const ProfilePage = () => {
             bio: cached.profileData.bio || "",
             username: cached.profileData.username || "",
           });
+          hasLoadedProfileRef.current = true;
           initializedFromCache = true;
         }
       }
@@ -253,12 +264,21 @@ const ProfilePage = () => {
   }, [userId, finishLoading]);
 
   const loadProfileData = async () => {
-    if (loadProfileDataRef.current && loadProfileDataUserIdRef.current === user._id) return;
+    const currentUserId = userId;
+    if (loadProfileDataRef.current && loadProfileDataUserIdRef.current === currentUserId) return;
     loadProfileDataRef.current = true;
-    loadProfileDataUserIdRef.current = user._id;
+    loadProfileDataUserIdRef.current = currentUserId;
     try {
       setLoading(true);
-      const response = await api.get(`${API}/api/profile/${user._id}`);
+      let response;
+      try {
+        response = await api.get(`${API}/api/profile/${currentUserId}`);
+      } catch (err) {
+        if (!mountedRef.current) return;
+        if (err.response) throw err;
+        await new Promise(r => setTimeout(r, 1500));
+        response = await api.get(`${API}/api/profile/${currentUserId}`);
+      }
       if (!mountedRef.current) return;
       const data = response.data.data;
 
@@ -279,7 +299,7 @@ const ProfilePage = () => {
 
         const nextProfileData = {
           name: userData.name || "Anime Lover",
-          username: profileData.username || `@user_${user._id.toString().slice(-6)}`,
+          username: profileData.username || `@user_${currentUserId.toString().slice(-6)}`,
           bio: profileData.bio || "Anime enthusiast exploring new worlds through animation",
           joinDate: new Date(profileData.joinDate || userData.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }),
           avatar: fixImageUrl(userData.photo),
@@ -312,7 +332,7 @@ const ProfilePage = () => {
         setEditForm({
           name: userData.name || "",
           bio: profileData.bio || "",
-          username: profileData.username || `@user_${user._id.toString().slice(-6)}`,
+          username: profileData.username || `@user_${currentUserId.toString().slice(-6)}`,
         });
 
         try {
@@ -326,13 +346,18 @@ const ProfilePage = () => {
           }));
           localStorage.setItem(PROFILE_CACHE_TIME_KEY, Date.now().toString());
         } catch (e) { /* ignore cache errors */ }
+        hasLoadedProfileRef.current = true;
       }
     } catch (error) {
       if (!mountedRef.current) return;
       console.error("Error loading profile:", error);
+      if (hasLoadedProfileRef.current) {
+        showToast("Could not refresh your profile. Showing saved data.", "error");
+        return;
+      }
       setProfileData({
         name: "Anime Lover",
-        username: `@user_${user?._id.toString().slice(-6) || "000000"}`,
+        username: `@user_${currentUserId?.toString().slice(-6) || "000000"}`,
         bio: "Anime enthusiast exploring new worlds through animation",
         joinDate: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
         avatar: null, coverImage: null, email: "",
@@ -1193,25 +1218,25 @@ const ProfilePage = () => {
               <div className="genre-chart-col">
                 {chartData.filter((d) => d.value > 0).length > 0 ? (
                   <div className="pie-chart-wrapper">
-                    <ResponsiveContainer width="100%" height={380}>
-                      <PieChart>
-                        <Pie
-                          data={chartData.filter((d) => d.value > 0)}
-                          cx="50%" cy="50%"
-                          labelLine={false}
-                          outerRadius={175} innerRadius={70}
-                          dataKey="value" nameKey="name"
-                          label={renderCustomizedLabel}
-                        >
-                          {chartData.filter((d) => d.value > 0).map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} stroke="rgba(0,0,0,0.3)" strokeWidth={1} />
-                          ))}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                        <text x="50%" y="47%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '30px', fontWeight: 'bold', fill: '#fff' }}>{watchedGenres}</text>
-                        <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '13px', fill: '#64748b' }}>Genres</text>
-                      </PieChart>
-                    </ResponsiveContainer>
+                     <ResponsiveContainer width="100%" height={300}>
+                       <PieChart>
+                         <Pie
+                           data={chartData.filter((d) => d.value > 0)}
+                           cx="50%" cy="50%"
+                           labelLine={false}
+                           outerRadius={140} innerRadius={55}
+                           dataKey="value" nameKey="name"
+                           label={renderCustomizedLabel}
+                         >
+                           {chartData.filter((d) => d.value > 0).map((entry, index) => (
+                             <Cell key={`cell-${index}`} fill={entry.color} stroke="rgba(0,0,0,0.3)" strokeWidth={1} />
+                           ))}
+                         </Pie>
+                         <Tooltip content={<CustomTooltip />} />
+                         <text x="50%" y="47%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '24px', fontWeight: 'bold', fill: '#fff' }}>{watchedGenres}</text>
+                         <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '11px', fill: '#64748b' }}>Genres</text>
+                       </PieChart>
+                     </ResponsiveContainer>
                   </div>
                 ) : (
                   <div className="genre-empty">

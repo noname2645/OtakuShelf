@@ -31,8 +31,17 @@ const TrailerHero = ({ onOpenModal }) => {
         return [];
     });
     const [isMobile, setIsMobile] = useState(false);
+    const [isTablet, setIsTablet] = useState(false);
+    const [isTouchDevice, setIsTouchDevice] = useState(false);
     const [safeAreaTop, setSafeAreaTop] = useState('0px');
     const [safeAreaBottom, setSafeAreaBottom] = useState('0px');
+
+    // Detect touch-only devices (mobile/tablet) - used for trailer fallback logic
+    useEffect(() => {
+        const touchSupported = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+        const hasFinePointer = window.matchMedia('(pointer: fine)').matches;
+        setIsTouchDevice(touchSupported && !hasFinePointer);
+    }, []);
     // Only show loading spinner when we truly have nothing yet
     const [isFetchingData, setIsFetchingData] = useState(() => {
         try {
@@ -58,13 +67,21 @@ const TrailerHero = ({ onOpenModal }) => {
     // Detect mobile and safe areas
     useEffect(() => {
         const isMobileBreakpoint = () => window.innerWidth <= 768;
+        const isTabletBreakpoint = () => window.innerWidth > 768 && window.innerWidth <= 1024;
+        
         let prevMobile = isMobileBreakpoint();
+        let prevTablet = isTabletBreakpoint();
         
         const checkMobile = () => {
             const mobile = isMobileBreakpoint();
+            const tablet = isTabletBreakpoint();
             if (mobile !== prevMobile) {
                 prevMobile = mobile;
                 setIsMobile(mobile);
+            }
+            if (tablet !== prevTablet) {
+                prevTablet = tablet;
+                setIsTablet(tablet);
             }
 
             // Get safe area insets for modern phones (notch, home indicator)
@@ -75,6 +92,7 @@ const TrailerHero = ({ onOpenModal }) => {
         };
 
         setIsMobile(prevMobile);
+        setIsTablet(prevTablet);
         window.addEventListener('resize', checkMobile, { passive: true });
         window.addEventListener('orientationchange', checkMobile, { passive: true });
 
@@ -433,16 +451,21 @@ const TrailerHero = ({ onOpenModal }) => {
         }
 
         if (currentAnimeHasTrailer && videoId) {
-            setTimeout(() => {
-                initializePlayer(videoId);
-            }, 100);
+            if (shouldUseVideoFallback()) {
+                cleanupPlayer();
+                setPlayerError(true);
+            } else {
+                setTimeout(() => {
+                    initializePlayer(videoId);
+                }, 100);
+            }
         } else {
             setPlayerError(true);
             cleanupPlayer();
         }
 
         // Pre-load the fallback image and only swap the URL after it has finished loading to prevent blinking
-        const imgUrl = currentAnimeData.bannerImage || currentAnimeData.coverImage?.extraLarge || '';
+        const imgUrl = getHeroImage(currentAnimeData);
         if (imgUrl) {
             const img = new Image();
             img.onload = () => {
@@ -485,7 +508,7 @@ const TrailerHero = ({ onOpenModal }) => {
 
     // Retry autoplay when user interacts
     useEffect(() => {
-        if (hasUserInteracted && playerRef.current && isPlayerReady) {
+        if (hasUserInteracted && playerRef.current && isPlayerReady && !shouldUseVideoFallback()) {
             try {
                 playerRef.current.mute();
                 playerRef.current.playVideo();
@@ -493,7 +516,7 @@ const TrailerHero = ({ onOpenModal }) => {
                 console.error('Error starting video after interaction:', error);
             }
         }
-    }, [hasUserInteracted, isPlayerReady]);
+    }, [hasUserInteracted, isPlayerReady, isMobile, isTablet, isTouchDevice]);
 
     // Mobile-optimized helper functions
     const formatGenres = (genres) => {
@@ -529,6 +552,16 @@ const TrailerHero = ({ onOpenModal }) => {
         }
     };
 
+    const shouldUseVideoFallback = () => isMobile || isTablet || isTouchDevice;
+
+    const getHeroImage = (anime) => {
+        if (!anime) return '';
+        if (shouldUseVideoFallback()) {
+            return anime.coverImage?.extraLarge || anime.coverImage?.large || anime.coverImage?.medium || anime.bannerImage || '';
+        }
+        return anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large || '';
+    };
+
     // Show skeleton loader while fetching
     const currentAnimeData = announcements[currentAnime];
     if (isFetchingData && !currentAnimeData) {
@@ -550,7 +583,8 @@ const TrailerHero = ({ onOpenModal }) => {
     if (!currentAnimeData) return null;
 
     const currentAnimeHasTrailer = hasTrailer(currentAnimeData);
-    const showNavigationArrows = announcements.length > 1 && !(isMobile && window.innerWidth < 400);
+    const useImageFallback = shouldUseVideoFallback();
+    const showNavigationArrows = announcements.length > 1;
 
     return (
         <>
@@ -566,12 +600,12 @@ const TrailerHero = ({ onOpenModal }) => {
                 {/* YouTube Player Container */}
                 <div
                     ref={youtubeContainerRef}
-                    className={`youtube-container ${currentAnimeHasTrailer && !playerError ? 'active' : 'hidden'}`}
+                    className={`youtube-container ${currentAnimeHasTrailer && !playerError && !useImageFallback ? 'active' : 'hidden'}`}
                 />
 
                 {/* Fallback Image — always in DOM, fade controlled by CSS class */}
                 <div
-                    className={`fallback-image${fallbackImageLoaded && (playerError || !currentAnimeHasTrailer) ? ' visible' : ''}`}
+                    className={`fallback-image${fallbackImageLoaded && (playerError || !currentAnimeHasTrailer || useImageFallback) ? ' visible' : ''}`}
                     style={{
                         backgroundImage: fallbackImageUrl ? `url(${fallbackImageUrl})` : 'none',
                         backgroundSize: 'cover',
@@ -580,7 +614,7 @@ const TrailerHero = ({ onOpenModal }) => {
                 />
 
                 {/* User Interaction Prompt */}
-                {currentAnimeHasTrailer && !hasUserInteracted && !playerError && (
+                {currentAnimeHasTrailer && !hasUserInteracted && !playerError && !useImageFallback && (
                     <div
                         className="user-interaction-prompt"
                         onClick={() => setHasUserInteracted(true)}
@@ -591,7 +625,7 @@ const TrailerHero = ({ onOpenModal }) => {
                 )}
 
                 {/* No Trailer Indicator */}
-                {!currentAnimeHasTrailer && (
+                {!currentAnimeHasTrailer && !useImageFallback && (
                     <div
                         className="no-trailer-indicator"
                         style={{
@@ -659,8 +693,17 @@ const TrailerHero = ({ onOpenModal }) => {
                         More Details
                     </button>
 
+                    {(isMobile || isTablet || isTouchDevice) && (
+                        <div className="hero-scroll-hint-inline">
+                            <span className="hero-scroll-text">Scroll</span>
+                            <svg className="hero-scroll-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 5v14M19 12l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    )}
+
                     {/* Mute/Unmute Button */}
-                    {currentAnimeHasTrailer && isPlayerReady && !playerError && (
+                    {currentAnimeHasTrailer && isPlayerReady && !playerError && !useImageFallback && (
                         <button
                             onClick={toggleMute}
                             className="mute-button"
@@ -700,7 +743,7 @@ const TrailerHero = ({ onOpenModal }) => {
                 )}
 
                 {/* Progress Bar & Next Previews */}
-                {!isMobile && announcements.length > 1 && (
+                {!isMobile && !isTablet && !isTouchDevice && announcements.length > 1 && (
                     <div className="hero-bottom-controls">
                         <div className="hero-next-previews">
                             <div className="up-next-header">
@@ -725,7 +768,7 @@ const TrailerHero = ({ onOpenModal }) => {
                                     const videoId = getVideoId(nextAnime);
                                     const thumbUrl = videoId
                                         ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-                                        : (nextAnime.bannerImage || nextAnime.coverImage?.extraLarge || nextAnime.coverImage?.large);
+                                        : getHeroImage(nextAnime);
 
                                     return (
                                         <div 

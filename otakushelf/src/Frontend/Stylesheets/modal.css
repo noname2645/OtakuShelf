@@ -235,6 +235,7 @@ body.modal-open {
   gap: 10px;
   flex-wrap: wrap;
   flex-shrink: 0;
+  justify-content: center;
 }
 
 .stat-item {
@@ -245,7 +246,9 @@ body.modal-open {
   align-items: center;
   gap: 8px;
   background: rgba(0, 0, 0, 0.15);
-  flex: 0 0 auto;
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
 }
 
 .stat-label2 {
@@ -286,13 +289,9 @@ body.modal-open {
 .info-buttons {
   display: flex;
   gap: 8px;
-  justify-content: flex-start;
+  justify-content: center;
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 999px;
   padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -312,7 +311,7 @@ body.modal-open {
   font-weight: 500;
   font-size: 0.85rem;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex: 1 1 0;
   transition: background 0.2s;
 }
 
@@ -439,6 +438,12 @@ body.modal-open {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.genre-tags::-webkit-scrollbar {
+  display: none;
 }
 
 .genre-pill {
@@ -450,6 +455,8 @@ body.modal-open {
   font-weight: 600;
   color: black;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .no-genre {
@@ -462,6 +469,10 @@ body.modal-open {
   flex-direction: row;
   gap: 6px;
   flex-shrink: 0;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
 }
 
 .modal-content .list-option-btn {
@@ -642,7 +653,7 @@ body.modal-open {
 
   .modal-image-wrapper {
     width: 200px;
-    height: 280px;
+    height: 290px;
     margin: 0 auto;
     flex-shrink: 0;
   }
@@ -657,8 +668,21 @@ body.modal-open {
   }
 
   .stat-item {
-    flex: 0 0 auto;
-    width: 130px;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .info-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 5px 10px;
+    width: 100%;
+  }
+
+  .info-btn {
+    text-align: center;
+    justify-content: center;
   }
 
   .info-label {
@@ -735,18 +759,17 @@ body.modal-open {
   }
 
   .modal-image-wrapper {
-    width: 160px;
-    height: 230px;
+    width: 200px;
+    height: 290px;
     margin: 6px auto 0;
     flex-shrink: 0;
   }
 
   .stats-grid2 {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    gap: 6px;
-    padding: 2px 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    padding: 0;
   }
 
   .stats-grid2::-webkit-scrollbar {
@@ -754,26 +777,29 @@ body.modal-open {
   }
 
   .stat-item {
-    flex: 0 0 auto;
+    flex: unset;
     min-width: unset;
-    padding: 6px 10px;
-    border-radius: 20px;
-    white-space: nowrap;
+    padding: 5px 4px;
+    border-radius: 8px;
+    white-space: normal;
+    word-break: break-word;
+    overflow: hidden;
+    text-align: center;
+    justify-content: center;
   }
 
   .stat-label2 {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
   }
 
   .stat-value {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
   }
 
   .info-buttons {
     gap: 6px;
     padding: 5px 10px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
+    width: 100%;
   }
 
   .info-btn {
@@ -792,7 +818,7 @@ body.modal-open {
   }
 
   .info-row {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .info-label {
@@ -861,17 +887,42 @@ body.modal-open {
   }
 
   .modal-image-wrapper {
-    width: 130px;
-    height: 190px;
+    width: 200px;
+    height: 290px;
+    margin: 6px auto 0;
+    flex-shrink: 0;
   }
 
   .stat-item {
     padding: 4px 8px;
   }
 
+  .stats-grid2 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+
+  .stats-grid2::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stat-item {
+    flex: unset;
+    min-width: unset;
+    padding: 5px 4px;
+    border-radius: 8px;
+    white-space: normal;
+    word-break: break-word;
+    overflow: hidden;
+    text-align: center;
+    justify-content: center;
+  }
+
   .info-btn {
     padding: 6px 10px;
     font-size: 0.72rem;
+    flex: 1 1 0;
   }
 
   .synopsis-text {
@@ -881,6 +932,15 @@ body.modal-open {
   .modal-content .list-option-btn {
     padding: 5px 12px;
     font-size: 0.7rem;
+  }
+
+  .action-row {
+    flex-wrap: wrap;
+  }
+
+  .already-in-list {
+    width: 100%;
+    margin-top: 8px;
   }
 }
 

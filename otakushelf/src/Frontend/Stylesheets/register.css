@@ -280,6 +280,8 @@
   transition: all 0.25s ease;
   position: relative;
   overflow: hidden;
+  min-height: 52px;
+  white-space: nowrap;
 }
 
 .btn:disabled {
@@ -491,6 +493,7 @@
   .google-btn {
     padding: 13px;
     font-size: 13px;
+    min-height: 44px;
   }
 
   .bg-circle-1,

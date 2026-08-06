@@ -362,8 +362,9 @@ export const AuthProvider = ({ children }) => {
       const response = await api.put(`/api/profile/${userId}`, profileData);
  
       const resData = response.data.data;
-      if (resData && resData.user) {
-        const updatedUser = { ...currentUser, ...resData.user };
+      const updatedUserData = resData?.user || resData;
+      if (updatedUserData) {
+        const updatedUser = { ...currentUser, ...updatedUserData };
         updatedUser.photo = fixPhotoUrl(updatedUser.photo);
         setUser(updatedUser);
         storeMinimalUser(updatedUser);
@@ -388,6 +389,8 @@ export const AuthProvider = ({ children }) => {
 
   const combinedUser = user ? {
     ...user,
+    _id: user._id || user.id,
+    id: user.id || user._id,
     isMfaEnabled: profile?.isMfaEnabled ?? user.isMfaEnabled ?? false,
     profile: profile?.profile || {},
     recentlyWatched: profile?.recentlyWatched || [],

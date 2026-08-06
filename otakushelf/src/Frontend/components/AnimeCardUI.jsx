@@ -137,8 +137,8 @@ const AnimeCardUI = React.memo(({ anime, onClick, index = 0, isDragging = false,
     }, [anime]);
 
     // Dimensions matching the smaller card layout requirements
-    const defaultHeight = isMobile ? '230px' : '340px';
-    const defaultWidth = isMobile ? '150px' : '220px';
+    const defaultHeight = isMobile ? '260px' : '340px';
+    const defaultWidth = isMobile ? '170px' : '220px';
     
     const height = customHeight || defaultHeight;
     const width = customWidth || defaultWidth;
