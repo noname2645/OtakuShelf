@@ -1,17 +1,34 @@
 {
-  "name": "AnimeRegistry",
+  "name": "AnimeRegistry — Anime List & Tracker",
   "short_name": "AnimeRegistry",
-  "description": "Your ultimate anime tracking and discovery platform",
+  "description": "Create your free anime list and track every series you watch. Rate anime, write reviews, earn badges, and import your MyAnimeList library.",
+  "id": "animeregistry",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#030712",
   "theme_color": "#030712",
+  "lang": "en",
+  "categories": ["entertainment", "lifestyle"],
   "icons": [
     {
-      "src": "/animeregistrylogo.png",
-      "sizes": "any",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/animeregistrylogo.png",
+      "sizes": "490x565",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

@@ -6,6 +6,7 @@ import TrailerHero from './TrailerHero.jsx';
 import { Header } from '../components/header.jsx';
 import BottomNavBar from './bottom.jsx';
 import Footer from './footer.jsx';
+import HomeSEOContent from './HomeSEOContent.jsx';
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
 import { usePageLoader } from './PageLoaderContext.jsx';
@@ -206,8 +207,11 @@ const AnimeHomepage = () => {
         upcoming: []
     });
 
-    // Search State
-    const [searchQuery, setSearchQuery] = useState("");
+    // Search State — initialized from ?q= so the SearchAction schema is crawlable
+    const [searchQuery, setSearchQuery] = useState(() => {
+        if (typeof window === 'undefined') return "";
+        return new URLSearchParams(window.location.search).get('q') || "";
+    });
     const [searchResults, setSearchResults] = useState([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
@@ -442,6 +446,16 @@ const AnimeHomepage = () => {
         };
     }, [searchQuery, normalizeGridAnime]);
 
+    // Keep the ?q= param in sync with the search box (no reload, SEO SearchAction target)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const url = new URL(window.location.href);
+        const trimmed = searchQuery.trim();
+        if (trimmed) url.searchParams.set('q', trimmed);
+        else url.searchParams.delete('q');
+        window.history.replaceState(null, '', url.toString());
+    }, [searchQuery]);
+
     // Auto-scroll to search results so user doesn't have to scroll past the hero
     useEffect(() => {
         if (isSearching && searchResultsRef.current) {
@@ -546,6 +560,9 @@ const AnimeHomepage = () => {
                             </>
                         )}
                     </main>
+
+                    {/* On-page SEO content: anime list info, FAQ and CTA */}
+                    <HomeSEOContent />
 
                     {/* Company Footer */}
                     <Footer />

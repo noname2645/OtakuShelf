@@ -4,44 +4,209 @@
 <head>
   <meta charset="UTF-8" />
 
-  <!-- ── Favicon (all browsers) ── -->
-  <link rel="icon" href="/animeregistrylogo.png" type="image/png" />
+  <!-- ── Primary Meta Tags ── -->
+  <title>Anime List & Anime Tracker | Watchlist, Ratings, Stats</title>
+  <meta name="description" content="Create your free anime list and track every series you watch. Rate anime, write reviews, earn badges, and import your MyAnimeList library today." />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="author" content="AnimeRegistry" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="canonical" href="https://animeregistry.pages.dev/" />
 
-  <!-- ── Apple / iOS ── -->
-  <link rel="apple-touch-icon" sizes="180x180" href="/animeregistrylogo.png" />
+  <!-- ── Theme / Icons ── -->
+  <meta name="theme-color" content="#030712" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="AnimeRegistry" />
-
-  <!-- ── Android / PWA ── -->
   <link rel="manifest" href="/site.webmanifest" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#030712" />
+  <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
+  <link rel="icon" href="/animeregistrylogo.png" type="image/png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
   <!-- ── Viewport ── -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-  <!-- ── SEO ── -->
-  <meta name="description" content="AnimeRegistry — Your personal anime tracker and discovery platform. Track, discover, and obsess over anime." />
-  <meta name="keywords" content="anime, tracker, otaku, manga, watchlist, discovery" />
-  <meta name="author" content="AnimeRegistry" />
-
-  <!-- ── Open Graph / Social ── -->
+  <!-- ── Open Graph ── -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="AnimeRegistry" />
-  <meta property="og:description" content="Your ultimate anime tracking and discovery platform." />
-  <meta property="og:image" content="/animeregistrylogo.png" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="AnimeRegistry" />
-  <meta name="twitter:description" content="Your ultimate anime tracking and discovery platform." />
-  <meta name="twitter:image" content="/animeregistrylogo.png" />
+  <meta property="og:site_name" content="AnimeRegistry" />
+  <meta property="og:title" content="Anime List & Anime Tracker | AnimeRegistry" />
+  <meta property="og:description" content="Create your free anime list and track every series you watch. Rate anime, write reviews, earn badges, and import your MyAnimeList library today." />
+  <meta property="og:url" content="https://animeregistry.pages.dev/" />
+  <meta property="og:image" content="https://animeregistry.pages.dev/og-image.png" />
+  <meta property="og:image:secure_url" content="https://animeregistry.pages.dev/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="AnimeRegistry — your anime list, tracker and watchlist" />
+  <meta property="og:locale" content="en_US" />
 
-  <title>AnimeRegistry</title>
+  <!-- ── Twitter / X Card ── -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@AnimeRegistry" />
+  <meta name="twitter:creator" content="@AnimeRegistry" />
+  <meta name="twitter:title" content="Anime List & Anime Tracker | AnimeRegistry" />
+  <meta name="twitter:description" content="Create your free anime list and track every series you watch. Rate anime, write reviews, earn badges, and import your MyAnimeList library today." />
+  <meta name="twitter:image" content="https://animeregistry.pages.dev/og-image.png" />
+  <meta name="twitter:image:alt" content="AnimeRegistry — your anime list, tracker and watchlist" />
+
+  <!-- ── Structured Data: WebSite + SearchAction ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "AnimeRegistry",
+    "url": "https://animeregistry.pages.dev/",
+    "description": "Free anime list and anime tracker platform. Build your watchlist, track episodes, rate anime, write reviews, earn badges and import your MyAnimeList library.",
+    "inLanguage": "en-US",
+    "publisher": {
+      "@type": "Organization",
+      "name": "AnimeRegistry",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://animeregistry.pages.dev/animeregistrylogo.png"
+      }
+    },
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://animeregistry.pages.dev/?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <!-- ── Structured Data: Organization ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "AnimeRegistry",
+    "url": "https://animeregistry.pages.dev/",
+    "logo": "https://animeregistry.pages.dev/animeregistrylogo.png",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "email": "animeregistryofficial@gmail.com",
+      "contactType": "customer support"
+    }
+  }
+  </script>
+
+  <!-- ── Structured Data: WebApplication ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "AnimeRegistry",
+    "url": "https://animeregistry.pages.dev/",
+    "applicationCategory": "EntertainmentApplication",
+    "operatingSystem": "Web",
+    "browserRequirements": "Requires JavaScript",
+    "inLanguage": "en-US",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": [
+      "anime list",
+      "anime tracker",
+      "anime watchlist",
+      "anime database",
+      "anime catalog",
+      "anime ratings",
+      "anime reviews",
+      "anime recommendations",
+      "episode progress tracking",
+      "anime statistics",
+      "achievements and badges",
+      "MyAnimeList import"
+    ]
+  }
+  </script>
+
+  <!-- ── Structured Data: FAQ ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is AnimeRegistry?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "AnimeRegistry is a modern, free anime list and anime tracker. You can build a watchlist, log episode progress, rate and review shows, earn achievements and badges, and browse a large catalog of anime."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I create an anime list?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Create a free account, open any anime in the catalog and choose a list status such as Watching, Completed, Planned, Paused or Dropped. Your list is saved to your profile and synced across your devices."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is AnimeRegistry free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. AnimeRegistry is completely free to use — creating an anime list, tracking progress, rating anime, writing reviews and earning badges cost nothing."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I import MyAnimeList?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. AnimeRegistry supports MyAnimeList import. You can upload your MAL export file and migrate your anime collection, ratings and history without starting from scratch."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do anime badges work?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "AnimeRegistry rewards you with achievements and badges for watching anime, completing series, hitting watch-time milestones and more. Badges are collected on your profile as you unlock them."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I track episode progress?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. You can log the exact episode you are on for every series, including currently airing shows, so your anime progress tracker is always up to date."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does AnimeRegistry work on mobile?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. AnimeRegistry is a mobile-friendly web app with a dedicated bottom navigation bar, so you can manage your anime list on your phone or tablet just as easily as on desktop."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is my anime list synchronized?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Your anime list, ratings and progress are stored in the cloud and synced across devices, so signing in anywhere gives you the same up-to-date anime collection."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- ── Performance: preconnect / prefetch ── -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://animeregistry-api.rohitkarmokar732.workers.dev" crossorigin>
-  <link rel="preconnect" href="https://s4.anilist.co">
+  <link rel="dns-prefetch" href="https://s4.anilist.co">
+  <link rel="dns-prefetch" href="https://graphql.anilist.co">
+  <link rel="dns-prefetch" href="https://img.youtube.com">
   <link
     href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Outfit:wght@100..900&family=Poppins:wght@400;500;600;700&family=Prompt:wght@600;700;800&family=Space+Grotesk:wght@300..700&display=swap"
     rel="stylesheet"

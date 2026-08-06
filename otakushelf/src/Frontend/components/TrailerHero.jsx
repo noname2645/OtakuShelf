@@ -656,9 +656,9 @@ const TrailerHero = ({ onOpenModal }) => {
                 >
 
 
-                    <h1 className="anime-title">
+                    <h2 className="anime-title">
                         {getAnimeTitle(currentAnimeData)}
-                    </h1>
+                    </h2>
 
                     <div className="anime-meta">
                         <span className="status-badge" style={{ backgroundColor: getStatusColor(currentAnimeData.status) }}>

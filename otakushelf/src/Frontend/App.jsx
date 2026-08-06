@@ -22,6 +22,10 @@ const NotFound = lazy(() => import("../Frontend/components/NotFound.jsx"));
 const ServerError = lazy(() => import("../Frontend/components/ServerError.jsx"));
 const Offline = lazy(() => import("../Frontend/components/Offline.jsx"));
 const OAuthCallback = lazy(() => import("../Frontend/components/OAuthCallback.jsx"));
+const PrivacyPolicy = lazy(() => import("../Frontend/components/PrivacyPolicy.jsx"));
+const About = lazy(() => import("../Frontend/components/About.jsx"));
+const Terms = lazy(() => import("../Frontend/components/Terms.jsx"));
+const Contact = lazy(() => import("../Frontend/components/Contact.jsx"));
 
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -72,6 +76,10 @@ const AppContent = () => {
       <Route path="/reset-password" element={<ForgotPassword />} />
       <Route path="/auth/callback" element={<OAuthCallback />} />
       <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/500" element={<ServerError />} />
       <Route path="/offline" element={<Offline />} />
       <Route path="*" element={<NotFound />} />

@@ -41,11 +41,19 @@ const Footer = () => (
         </div>
 
         <div className="footer-col">
+          <h2 className="footer-col-title">Company</h2>
+          <ul>
+            <li><Link to="/about">About Us</Link></li>
+            <li><Link to="/contact">Contact Us</Link></li>
+          </ul>
+        </div>
+
+        <div className="footer-col">
           <h2 className="footer-col-title">Legal</h2>
           <ul>
-            <li><span className="footer-link-muted">Privacy Policy</span></li>
-            <li><span className="footer-link-muted">Terms of Service</span></li>
-            <li><span className="footer-link-muted">Cookie Policy</span></li>
+            <li><Link to="/privacy">Privacy Policy</Link></li>
+            <li><Link to="/terms">Terms &amp; Conditions</Link></li>
+            <li><Link to="/privacy">Cookie Policy</Link></li>
           </ul>
         </div>
       </nav>
