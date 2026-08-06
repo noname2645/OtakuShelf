@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: workers
+        working-directory: otakushelf/workers
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: workers/package-lock.json
+          cache-dependency-path: otakushelf/workers/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src/Frontend
+        working-directory: otakushelf/src/Frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: src/Frontend/package-lock.json
+          cache-dependency-path: otakushelf/src/Frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
