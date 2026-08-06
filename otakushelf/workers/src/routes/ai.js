@@ -17,7 +17,7 @@ async function fetchAniList(query, variables = {}) {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'User-Agent': 'AnimeRegistry/2.0 (https://animeregistry.pages.dev)',
+      'User-Agent': 'AnimeRegistry/2.0 (https://animeregistry.com)',
     },
     body: JSON.stringify({ query, variables }),
     signal: AbortSignal.timeout(8000),

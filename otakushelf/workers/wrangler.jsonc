@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "EMAIL_FROM": "animeregistryofficial@gmail.com",
-    "FRONTEND_URL": "https://animeregistry.pages.dev"
+    "FRONTEND_URL": "https://animeregistry.com"
   },
   "kv_namespaces": [
     {
