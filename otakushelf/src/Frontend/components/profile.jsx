@@ -102,9 +102,11 @@ const ProfilePage = () => {
 
   const API = import.meta.env.VITE_API_BASE_URL;
 
-  const PROFILE_CACHE_KEY = 'profileData_cache';
-  const PROFILE_CACHE_TIME_KEY = `${PROFILE_CACHE_KEY}_time`;
   const PROFILE_CACHE_STALE_TIME = 1000 * 60 * 60;
+  const profileCacheKeys = (uid) => {
+    const key = `profileData_cache_${uid || 'anon'}`;
+    return { key, timeKey: `${key}_time` };
+  };
 
   // Official 19 AniList genres
   const ALL_ANIME_GENRES = [
@@ -234,10 +236,11 @@ const ProfilePage = () => {
 
     let initializedFromCache = false;
     try {
-      const cachedRaw = localStorage.getItem(PROFILE_CACHE_KEY);
+      const { key, timeKey } = profileCacheKeys(userId);
+      const cachedRaw = localStorage.getItem(key);
       if (cachedRaw) {
         const cached = JSON.parse(cachedRaw);
-        const cacheAge = Date.now() - (parseInt(localStorage.getItem(PROFILE_CACHE_TIME_KEY)) || 0);
+        const cacheAge = Date.now() - (parseInt(localStorage.getItem(timeKey)) || 0);
         if (cacheAge < PROFILE_CACHE_STALE_TIME && cached.profileData) {
           setProfileData(cached.profileData);
           setStats(cached.stats || {});
@@ -255,8 +258,9 @@ const ProfilePage = () => {
         }
       }
     } catch (e) {
-      localStorage.removeItem(PROFILE_CACHE_KEY);
-      localStorage.removeItem(PROFILE_CACHE_TIME_KEY);
+      const { key, timeKey } = profileCacheKeys(userId);
+      localStorage.removeItem(key);
+      localStorage.removeItem(timeKey);
     }
 
     loadProfileData();
@@ -336,7 +340,8 @@ const ProfilePage = () => {
         });
 
         try {
-          localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+          const { key, timeKey } = profileCacheKeys(currentUserId);
+          localStorage.setItem(key, JSON.stringify({
             profileData: nextProfileData,
             stats: nextStats,
             recentlyWatched: data.recentlyWatched || [],
@@ -344,7 +349,7 @@ const ProfilePage = () => {
             badges: profileData.badges || [],
             genres: profileData.favoriteGenres || [],
           }));
-          localStorage.setItem(PROFILE_CACHE_TIME_KEY, Date.now().toString());
+          localStorage.setItem(timeKey, Date.now().toString());
         } catch (e) { /* ignore cache errors */ }
         hasLoadedProfileRef.current = true;
       }

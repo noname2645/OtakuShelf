@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useAuth } from "./AuthContext";
 import "../Stylesheets/register.css";
+import "../Stylesheets/login.css";
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
@@ -207,14 +208,14 @@ const Register = ({ onRegisterSuccess }) => {
             <motion.div variants={fieldVariants}>
               <motion.button
                 type="submit"
-                className="btn btn-primary btn-glow"
+                className="login-btn login-btn-primary login-btn-glow"
                 disabled={isLoading}
                 whileTap={!isLoading ? { scale: 0.8 } : {}}
               >
                 {isLoading ? (
-                  <><div className="loading-spinner"></div>Creating Your Journey...</>
+                  <><div className="login-loading-spinner"></div>Signing Up...</>
                 ) : (
-                  <><span className="btn-text">Register</span><span className="btn-arrow">→</span></>
+                  <><span className="login-btn-text">Register</span><span className="login-btn-arrow">→</span></>
                 )}
               </motion.button>
             </motion.div>

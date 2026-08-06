@@ -7,6 +7,15 @@ import { sanitizeUser } from '../services/auth.js'
 import { success, error } from '../utils/response.js'
 import BADGES from '../utils/badgeDefinitions.js'
 
+function publicUser(user) {
+  const safe = sanitizeUser(user)
+  delete safe.email
+  delete safe.providers
+  delete safe.emailVerified
+  delete safe.isMfaEnabled
+  return safe
+}
+
 const ALL_GENRES = [
   'Action', 'Adventure', 'Avant Garde', 'Award Winning',
   'Boys Love', 'Comedy', 'Drama', 'Fantasy', 'Girls Love',
@@ -73,9 +82,10 @@ router.post('/:userId/upload-cover', authenticateToken, authorizeUser, async (c)
 })
 
 // ── GET /api/profile/:userId ─────────────────────────────────────────────────
-router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
+router.get('/:userId', authenticateToken, async (c) => {
   const { users, lists, db } = setup(c)
-  const userId = c.get('userId')
+  const authUserId = c.get('userId')
+  const userId = c.req.param('userId') || authUserId
 
   const user = await users.findById(userId)
   if (!user) return error(c, 'User not found', 404)
@@ -87,17 +97,19 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
   const dropped = list?.dropped || []
   const allAnime = [...watching, ...completed, ...planned, ...dropped]
 
-  // Touch lastActiveAt (non-blocking — defer the write so it never delays the response)
-  const now = new Date().toISOString()
-  const touchLastActiveAt = () => users.update(userId, { 'profile.lastActiveAt': now })
-    .catch(e => console.warn('[Profile] Failed to update lastActiveAt:', e?.message))
-  if (c.executionCtx) {
-    c.executionCtx.waitUntil(touchLastActiveAt())
-  } else {
-    touchLastActiveAt()
+  // Touch lastActiveAt only for the profile owner (deferred so it never delays the response)
+  if (authUserId === userId) {
+    const now = new Date().toISOString()
+    const touchLastActiveAt = () => users.update(userId, { 'profile.lastActiveAt': now })
+      .catch(e => console.warn('[Profile] Failed to update lastActiveAt:', e?.message))
+    if (c.executionCtx) {
+      c.executionCtx.waitUntil(touchLastActiveAt())
+    } else {
+      touchLastActiveAt()
+    }
+    if (!user.profile) user.profile = {}
+    user.profile.lastActiveAt = now
   }
-  if (!user.profile) user.profile = {}
-  user.profile.lastActiveAt = now
 
   const stats = {
     animeWatched: completed.length,
@@ -153,7 +165,7 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
   c.header('Cache-Control', 'no-store')
 
   return success(c, 'Profile fetched', {
-    user: sanitizeUser(user),
+    user: authUserId === userId ? sanitizeUser(user) : publicUser(user),
     profile: {
       username: user.username || user.profile?.username || null,
       bio: user.profile?.bio || null,
@@ -175,9 +187,9 @@ router.get('/:userId', authenticateToken, authorizeUser, async (c) => {
 })
 
 // ── GET /api/profile/:userId/watchLog ─────────────────────────────────────────
-router.get('/:userId/watchLog', authenticateToken, authorizeUser, async (c) => {
+router.get('/:userId/watchLog', authenticateToken, async (c) => {
   const { lists } = setup(c)
-  const userId = c.get('userId')
+  const userId = c.req.param('userId') || c.get('userId')
 
   const list = await lists.findByUserId(userId)
   const entries = [...(list?.watching || []), ...(list?.completed || [])]
