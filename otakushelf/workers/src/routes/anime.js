@@ -11,9 +11,10 @@ async function fetchAniList(query, variables = {}) {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'User-Agent': 'AnimeRegistry/3.0 (anime tracker; https://animeregistry.com)',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     },
     body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(8000),
   })
   if (!res.ok) {
     const text = await res.text()
@@ -74,16 +75,23 @@ router.get('/anime-sections', async (c) => {
       }}`,
   }
 
-  const sections = {}
+  const results = await Promise.allSettled(
+    Object.entries(queries).map(async ([key, query]) => {
+      try {
+        const data = await fetchAniList(query)
+        return { key, media: filterAdult(data.Page.media) }
+      } catch (e) {
+        console.error(`AniList ${key}: ${e.message}`)
+        return { key, media: [] }
+      }
+    })
+  )
 
-  for (const [key, query] of Object.entries(queries)) {
-    try {
-      const data = await fetchAniList(query)
-      sections[key] = filterAdult(data.Page.media)
-    } catch (e) {
-      console.error(`AniList ${key}: ${e.message}`)
+  const sections = {}
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      sections[result.value.key] = result.value.media
     }
-    await new Promise(r => setTimeout(r, 200))
   }
 
   const hasData = Object.values(sections).some(arr => arr?.length > 0)

@@ -11,11 +11,10 @@ async function fetchAniList(query, variables = {}) {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Origin': 'https://anilist.co',
-      'Referer': 'https://anilist.co',
-      'User-Agent': 'AnimeRegistry/3.0',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     },
     body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(8000),
   })
   if (!res.ok) throw new Error(`AniList error: ${res.status}`)
   return (await res.json()).data
