@@ -571,11 +571,15 @@ const TrailerHero = ({ onOpenModal }) => {
         return anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large || '';
     };
 
-    // Show skeleton loader while fetching
+    // Show skeleton loader while fetching OR after fetch failure (no data yet)
     const currentAnimeData = announcements[currentAnime];
-    if (isFetchingData && !currentAnimeData) {
+    if (!currentAnimeData) {
         return (
-            <section className="trailer-hero-section trailer-hero-skeleton">
+            <section className="trailer-hero-section trailer-hero-skeleton"
+                style={{
+                    paddingTop: safeAreaTop,
+                    paddingBottom: safeAreaBottom
+                }}>
                 <div className="trailer-skeleton-bg" />
                 <div className="gradient-overlay" />
                 <div className="trailer-skeleton-content">
@@ -584,71 +588,6 @@ const TrailerHero = ({ onOpenModal }) => {
                     <div className="skeleton-desc" />
                     <div className="skeleton-btn" />
                 </div>
-            </section>
-        );
-    }
-
-    // Fallback hero section when API fails / no data available
-    if (!currentAnimeData && !isFetchingData) {
-        return (
-            <section
-                ref={heroRef}
-                className="trailer-hero-section"
-                style={{
-                    paddingTop: safeAreaTop,
-                    paddingBottom: safeAreaBottom
-                }}
-            >
-                <div
-                    className="fallback-image visible"
-                    style={{
-                        backgroundImage: 'url(/og-image.png)',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center center'
-                    }}
-                />
-                <div className="gradient-overlay" />
-                <motion.div
-                    initial={{ y: isMobile ? 50 : 100, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="content-overlay"
-                    style={{
-                        bottom: isMobile ? '22%' : '20%',
-                        left: isMobile ? '3%' : '7%',
-                        right: isMobile ? '3%' : '7%',
-                        maxWidth: isMobile ? '100%' : '600px'
-                    }}
-                >
-                    <h2 className="anime-title">AnimeRegistry</h2>
-                    <div className="anime-meta">
-                        <span className="status-badge" style={{ backgroundColor: '#8b5cf6' }}>Discover</span>
-                        <span>Explore the anime catalog</span>
-                    </div>
-                    <p className="anime-description">
-                        {truncateDescription('Create your free anime list and track every series you watch. Rate anime, write reviews, earn badges, and import your MyAnimeList library today.')}
-                    </p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="details-button"
-                        style={{
-                            width: isMobile ? '100%' : 'auto',
-                            maxWidth: isMobile ? '250px' : 'none'
-                        }}
-                    >
-                        <svg width={isMobile ? "18" : "20"} height={isMobile ? "18" : "20"} viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
-                        </svg>
-                        Reload
-                    </button>
-
-                    <div className="hero-scroll-hint-inline">
-                        <span className="hero-scroll-text">Scroll</span>
-                        <svg className="hero-scroll-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 5v14M19 12l-7 7-7-7" />
-                        </svg>
-                    </div>
-                </motion.div>
             </section>
         );
     }
