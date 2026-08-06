@@ -4,7 +4,7 @@ import { createDb } from '../db/client.js'
 import { createUserDb } from '../db/user.js'
 import {
   hashPassword, comparePassword, generateOtp, generateVerificationToken,
-  hasLocalProvider, hasGoogleProvider, addProvider, sanitizeUser,
+  hasLocalProvider, hasGoogleProvider, addProvider, sanitizeUser, defaultUserFields,
   issueTokens, generateAccessToken, generateRefreshToken, hashRefreshToken, verifyAccessToken,
 } from '../services/auth.js'
 import { sendMail, buildEmailHtml } from '../services/email.js'
@@ -38,18 +38,13 @@ router.post('/register', async (c) => {
   const refreshToken = generateRefreshToken()
   const refreshTokenHash = await hashRefreshToken(refreshToken)
 
-  const { insertedId } = await db.insertOne('users', {
+  const { insertedId } = await db.insertOne('users', defaultUserFields({
     email: normalizedEmail,
     providers: [{ type: 'local', hashedPassword: hashedPw }],
     emailVerified: false,
     emailVerificationToken: verificationToken,
     refreshTokenHash,
-    profile: { badges: [] },
-    settings: {
-      notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false },
-    },
-    createdAt: new Date(),
-  })
+  }))
 
   const workerUrl = new URL(c.req.url).origin
   const verificationLink = `${workerUrl}/auth/verify-email?token=${verificationToken}&email=${normalizedEmail}`
@@ -197,17 +192,14 @@ async function upsertGoogleUser(db, users, env, { email, sub, picture, name }) {
     return { user: existing, accessToken, refreshToken }
   }
 
-  const { insertedId } = await db.insertOne('users', {
+  const { insertedId } = await db.insertOne('users', defaultUserFields({
     email,
     providers: [{ type: 'google', id: sub }],
     photo: picture,
     name,
     emailVerified: true,
     refreshTokenHash,
-    profile: { badges: [] },
-    settings: { notifications: { securityEmails: true, episodeAlerts: true, marketingEmails: false } },
-    createdAt: new Date(),
-  })
+  }))
   const user = { _id: insertedId, email, providers: [{ type: 'google', id: sub }], photo: picture, name, emailVerified: true }
   const accessToken = await generateAccessToken(insertedId, env)
   return { user, accessToken, refreshToken }

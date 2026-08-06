@@ -1,4 +1,5 @@
-const ITERATIONS = 100000
+const ITERATIONS = 600000
+const LEGACY_ITERATIONS = 100000
 const KEY_LENGTH = 256
 const SALT_BYTES = 16
 
@@ -14,8 +15,7 @@ function hexToBytes(hex) {
   return bytes
 }
 
-export async function hashPassword(password) {
-  const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES))
+async function deriveBits(password, salt, iterations) {
   const encoder = new TextEncoder()
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -24,40 +24,49 @@ export async function hashPassword(password) {
     false,
     ['deriveBits']
   )
-  const hash = await crypto.subtle.deriveBits(
+  return crypto.subtle.deriveBits(
     {
       name: 'PBKDF2',
       salt,
-      iterations: ITERATIONS,
+      iterations,
       hash: 'SHA-256',
     },
     keyMaterial,
     KEY_LENGTH
   )
-  return `${bytesToHex(salt)}:${bytesToHex(hash)}`
+}
+
+export async function hashPassword(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES))
+  const hash = await deriveBits(password, salt, ITERATIONS)
+  return `${ITERATIONS}:${bytesToHex(salt)}:${bytesToHex(hash)}`
 }
 
 export async function comparePassword(password, stored) {
   if (!stored || !stored.includes(':')) return false
-  const [saltHex, hashHex] = stored.split(':')
+
+  const parts = stored.split(':')
+  let iterations
+  let saltHex
+  let hashHex
+
+  if (parts.length === 3) {
+    // New format: iterations:salt:hash
+    iterations = parseInt(parts[0], 10)
+    saltHex = parts[1]
+    hashHex = parts[2]
+  } else if (parts.length === 2) {
+    // Legacy format: salt:hash (100,000 iterations)
+    iterations = LEGACY_ITERATIONS
+    saltHex = parts[0]
+    hashHex = parts[1]
+  } else {
+    return false
+  }
+
+  if (!iterations || iterations < 1) return false
+
   const salt = hexToBytes(saltHex)
-  const encoder = new TextEncoder()
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(password),
-    { name: 'PBKDF2' },
-    false,
-    ['deriveBits']
-  )
-  const hash = await crypto.subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      salt,
-      iterations: ITERATIONS,
-      hash: 'SHA-256',
-    },
-    keyMaterial,
-    KEY_LENGTH
-  )
+  const hash = await deriveBits(password, salt, iterations)
   return bytesToHex(hash) === hashHex
 }

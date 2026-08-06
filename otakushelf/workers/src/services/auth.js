@@ -75,6 +75,54 @@ export function addProvider(user, type, data = {}) {
   return user
 }
 
+export function defaultUserFields(overrides = {}) {
+  const now = new Date()
+  return {
+    username: null,
+    name: null,
+    photo: null,
+    emailVerified: false,
+    emailVerificationToken: null,
+    refreshTokenHash: null,
+    isMfaEnabled: false,
+    mfaSecret: null,
+    tempMfaSecret: null,
+    passwordResetToken: null,
+    passwordResetExpires: null,
+    securityOtp: null,
+    securityOtpExpires: null,
+    securityAction: null,
+    profile: {
+      username: null,
+      bio: null,
+      coverImage: null,
+      joinDate: now.toISOString(),
+      lastActiveAt: null,
+      badges: [],
+      favoriteGenres: [],
+    },
+    settings: {
+      preferences: {
+        titleLanguage: 'romaji',
+        defaultLayout: 'grid',
+        nsfwContent: false,
+        autoplayTrailers: true,
+        accentColor: '#ff6b6b',
+      },
+      notifications: {
+        securityEmails: true,
+        episodeAlerts: true,
+        marketingEmails: false,
+      },
+      privacy: {
+        profileVisibility: 'public',
+      },
+    },
+    createdAt: now,
+    ...overrides,
+  }
+}
+
 export function sanitizeUser(user) {
   const providers = user.providers?.map(p => ({ type: p.type })) || []
   const authType = providers.some(p => p.type === 'google') ? 'google' : 'local'
