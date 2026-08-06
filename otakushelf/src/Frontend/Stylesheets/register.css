@@ -448,6 +448,55 @@
 }
 
 /* ============================================================
+   OTP VERIFICATION STEP
+   ============================================================ */
+.otp-input {
+  text-align: center;
+  letter-spacing: 10px;
+  font-size: 22px;
+  font-family: monospace;
+  font-weight: 700;
+}
+
+.login-form-input.otp-input {
+  padding: 15px 16px;
+}
+
+.otp-input::placeholder {
+  letter-spacing: 2px;
+  font-size: 14px;
+}
+
+.otp-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.otp-resend,
+.otp-back {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 6px 0;
+  font-family: 'Outfit', sans-serif;
+  transition: color 0.2s ease;
+}
+
+.otp-resend:not(:disabled):hover,
+.otp-back:not(:disabled):hover {
+  color: #eb9b08;
+}
+
+.otp-resend:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 

@@ -3,7 +3,7 @@ import { authenticateToken, authorizeUser } from '../middleware/auth.js'
 import { createDb } from '../db/client.js'
 import { createUserDb } from '../db/user.js'
 import {
-  hashPassword, comparePassword, generateOtp, generateVerificationToken,
+  hashPassword, comparePassword, generateOtp,
   hasLocalProvider, hasGoogleProvider, addProvider, sanitizeUser, defaultUserFields,
   issueTokens, generateAccessToken, generateRefreshToken, hashRefreshToken, verifyAccessToken,
 } from '../services/auth.js'
@@ -21,7 +21,16 @@ async function issueTokenPair(userId, users, env) {
   return issueTokens(userId, users, env)
 }
 
+function registerOtpEmail(otp) {
+  return buildEmailHtml('Welcome to AnimeRegistry', `
+    <p>Thank you for joining AnimeRegistry!</p>
+    <p>To finish creating your account, enter the code below. It expires in 10 minutes.</p>
+  `, { isOtp: true, otpCode: otp, icon: '🎉' })
+}
+
 // ── POST /auth/register ──────────────────────────────────────────────────────
+// Step 1 of registration: validate, create a pending account, and email a 6-digit OTP.
+// The account is not usable (cannot log in) until the OTP is confirmed via /auth/verify-register.
 router.post('/register', async (c) => {
   const { db, users, env } = setup(c)
   const { email, password } = await c.req.json()
@@ -29,36 +38,91 @@ router.post('/register', async (c) => {
 
   const normalizedEmail = email.toLowerCase().trim()
   const existing = await users.findByEmail(normalizedEmail)
-  if (existing) return error(c, 'An account with this email already exists', 409)
+  if (existing) {
+    // If a registration was started but never OTP-verified, just re-issue the code
+    if (existing.securityAction === 'register' && !existing.emailVerified) {
+      const otp = generateOtp()
+      const sent = await sendMail({ to: normalizedEmail, subject: '🎉 AnimeRegistry -- Confirm Your Email', html: registerOtpEmail(otp) }, env)
+      if (!sent) return error(c, 'Failed to send the verification code. Please try again.', 500)
+      await db.updateOne('users', { _id: db.oid(existing._id) }, {
+        $set: { securityOtp: otp, securityOtpExpires: new Date(Date.now() + 10 * 60 * 1000).toISOString(), securityAction: 'register' },
+      })
+      return success(c, 'Verification code sent to your email', { email: normalizedEmail, otpSent: true }, 201)
+    }
+    return error(c, 'An account with this email already exists', 409)
+  }
 
   if (password.length < 6) return error(c, 'Password must be at least 6 characters', 400)
 
   const hashedPw = await hashPassword(password)
-  const verificationToken = generateVerificationToken()
-  const refreshToken = generateRefreshToken()
-  const refreshTokenHash = await hashRefreshToken(refreshToken)
+  const otp = generateOtp()
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000).toISOString()
 
-  const { insertedId } = await db.insertOne('users', defaultUserFields({
+  // Send the email before creating the account so a failed send never leaves a stranded account behind
+  const sent = await sendMail({ to: normalizedEmail, subject: '🎉 AnimeRegistry -- Confirm Your Email', html: registerOtpEmail(otp) }, env)
+  if (!sent) return error(c, 'Failed to send the verification code. Please try again.', 500)
+
+  await db.insertOne('users', defaultUserFields({
     email: normalizedEmail,
     providers: [{ type: 'local', hashedPassword: hashedPw }],
     emailVerified: false,
-    emailVerificationToken: verificationToken,
-    refreshTokenHash,
+    securityOtp: otp,
+    securityOtpExpires: otpExpires,
+    securityAction: 'register',
   }))
 
-  const workerUrl = new URL(c.req.url).origin
-  const verificationLink = `${workerUrl}/auth/verify-email?token=${verificationToken}&email=${normalizedEmail}`
-  const html = buildEmailHtml('Welcome to AnimeRegistry', `
-    <p>Thank you for joining AnimeRegistry!</p>
-    <p style="margin:20px 0">Please verify your email address to unlock all features:</p>
-    <a href="${verificationLink}" style="display:inline-block;background:#FFD700;color:#000;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Verify Email</a>
-    <p style="color:#888;font-size:13px;margin-top:20px">Or copy this link:<br><span style="color:#aaa;word-break:break-all">${verificationLink}</span></p>
-  `, { icon: '🎉' })
-  // Fire-and-forget: don't block registration on email delivery
-  sendMail({ to: normalizedEmail, subject: '🎉 AnimeRegistry -- Verify Your Email', html }, env).catch(() => { })
+  return success(c, 'Verification code sent to your email', { email: normalizedEmail, otpSent: true }, 201)
+})
 
-  const accessToken = await generateAccessToken(insertedId, env)
-  return success(c, 'Registration successful', { user: sanitizeUser({ _id: insertedId, email: normalizedEmail }), accessToken, refreshToken }, 201)
+// ── POST /auth/verify-register ───────────────────────────────────────────────
+// Step 2 of registration: confirm the OTP, mark the email verified, and log the user in.
+router.post('/verify-register', async (c) => {
+  const { db, users, env } = setup(c)
+  const { email, otp } = await c.req.json()
+  if (!email || !otp) return error(c, 'Email and verification code are required', 400)
+
+  const normalizedEmail = email.toLowerCase().trim()
+  const user = await users.findByEmail(normalizedEmail)
+  if (!user) return error(c, 'Invalid email or verification code', 400)
+  if (user.emailVerified) return error(c, 'This email is already verified', 400)
+  if (user.securityAction !== 'register') return error(c, 'Invalid email or verification code', 400)
+
+  if (!user.securityOtpExpires || new Date(user.securityOtpExpires) < new Date()) {
+    return error(c, 'Verification code expired. Please request a new one.', 400)
+  }
+  if (user.securityOtp !== otp) return error(c, 'Invalid verification code', 400)
+
+  await db.updateOne('users', { _id: db.oid(user._id) }, {
+    $set: { emailVerified: true, securityOtp: null, securityOtpExpires: null, securityAction: null },
+  })
+
+  const updated = await users.findById(user._id)
+  const tokens = await issueTokens(user._id, users, env)
+  return success(c, 'Email verified successfully', { user: sanitizeUser(updated), ...tokens })
+})
+
+// ── POST /auth/resend-register-otp ───────────────────────────────────────────
+// Re-issue a new OTP for a pending registration whose code expired or was lost.
+router.post('/resend-register-otp', async (c) => {
+  const { db, users, env } = setup(c)
+  const { email } = await c.req.json()
+  if (!email) return error(c, 'Email is required', 400)
+
+  const normalizedEmail = email.toLowerCase().trim()
+  const user = await users.findByEmail(normalizedEmail)
+  if (!user || user.emailVerified || user.securityAction !== 'register') {
+    return error(c, 'No pending registration found for this email', 400)
+  }
+
+  const otp = generateOtp()
+  const sent = await sendMail({ to: normalizedEmail, subject: '🎉 AnimeRegistry -- Confirm Your Email', html: registerOtpEmail(otp) }, env)
+  if (!sent) return error(c, 'Failed to send the verification code. Please try again.', 500)
+
+  await db.updateOne('users', { _id: db.oid(user._id) }, {
+    $set: { securityOtp: otp, securityOtpExpires: new Date(Date.now() + 10 * 60 * 1000).toISOString(), securityAction: 'register' },
+  })
+
+  return success(c, 'A new verification code has been sent to your email')
 })
 
 // ── POST /auth/login ─────────────────────────────────────────────────────────
