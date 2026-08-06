@@ -1,67 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://animeregistry.pages.dev/</loc>
+    <loc>https://animeregistry.com/</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://animeregistry.pages.dev/list</loc>
+    <loc>https://animeregistry.com/list</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://animeregistry.pages.dev/advance</loc>
+    <loc>https://animeregistry.com/advance</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://animeregistry.pages.dev/register</loc>
+    <loc>https://animeregistry.com/register</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://animeregistry.pages.dev/login</loc>
+    <loc>https://animeregistry.com/login</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://animeregistry.pages.dev/ai</loc>
+    <loc>https://animeregistry.com/ai</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://animeregistry.pages.dev/profile</loc>
+    <loc>https://animeregistry.com/profile</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://animeregistry.pages.dev/about</loc>
+    <loc>https://animeregistry.com/about</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://animeregistry.pages.dev/privacy</loc>
+    <loc>https://animeregistry.com/privacy</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://animeregistry.pages.dev/terms</loc>
+    <loc>https://animeregistry.com/terms</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://animeregistry.pages.dev/contact</loc>
+    <loc>https://animeregistry.com/contact</loc>
+    <lastmod>2026-08-06</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://animeregistry.com/cookie-policy</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

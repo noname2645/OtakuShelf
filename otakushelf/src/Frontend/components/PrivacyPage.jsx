@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import LegalLayout from './LegalLayout.jsx';
 
 const PrivacyPolicy = () => (
@@ -12,7 +13,7 @@ const PrivacyPolicy = () => (
     <p>
       AnimeRegistry ("we", "us", "our") respects your privacy. This Privacy Policy explains what
       information we collect when you use our anime list and anime tracker platform at
-      animeregistry.pages.dev (the "Service"), how we use it, and the choices you have. By using
+      animeregistry.com (the "Service"), how we use it, and the choices you have. By using
       the Service, you agree to the practices described here.
     </p>
 
@@ -50,7 +51,8 @@ const PrivacyPolicy = () => (
     <p>
       We use browser local storage and cookies to keep you signed in, remember your preferences,
       and cache anime data to make the app faster. You can clear this data at any time through your
-      browser settings; some features may require local storage to function.
+      browser settings; some features may require local storage to function. For more details, see
+      our <Link to="/cookie-policy" className="legal-link">Cookie Policy</Link>.
     </p>
 
     <h2>4. Third-Party Services</h2>

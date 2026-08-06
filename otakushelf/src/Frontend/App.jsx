@@ -1,5 +1,5 @@
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import './App.css';
 
 import Home from "../Frontend/components/home.jsx";
@@ -22,10 +22,12 @@ const NotFound = lazy(() => import("../Frontend/components/NotFound.jsx"));
 const ServerError = lazy(() => import("../Frontend/components/ServerError.jsx"));
 const Offline = lazy(() => import("../Frontend/components/Offline.jsx"));
 const OAuthCallback = lazy(() => import("../Frontend/components/OAuthCallback.jsx"));
-const PrivacyPolicy = lazy(() => import("../Frontend/components/PrivacyPolicy.jsx"));
-const About = lazy(() => import("../Frontend/components/About.jsx"));
-const Terms = lazy(() => import("../Frontend/components/Terms.jsx"));
-const Contact = lazy(() => import("../Frontend/components/Contact.jsx"));
+
+import PrivacyPolicy from "../Frontend/components/PrivacyPage.jsx";
+import About from "../Frontend/components/About.jsx";
+import Terms from "../Frontend/components/Terms.jsx";
+import Contact from "../Frontend/components/Contact.jsx";
+import CookiePolicy from "../Frontend/components/CookiePage.jsx";
 
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -61,6 +63,19 @@ const GlobalLoader = () => {
 
 /* ─── Inner app with router hooks ────────────────────────────────────────── */
 const AppContent = () => {
+  const location = useLocation();
+
+  // GA4 page view tracking on SPA route changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hostname === 'animeregistry.com') {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: 'page_view',
+        page_path: location.pathname + location.search,
+      });
+    }
+  }, [location]);
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />
@@ -80,6 +95,7 @@ const AppContent = () => {
       <Route path="/about" element={<About />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/contact" element={<Contact />} />
+      <Route path="/cookie-policy" element={<CookiePolicy />} />
       <Route path="/500" element={<ServerError />} />
       <Route path="/offline" element={<Offline />} />
       <Route path="*" element={<NotFound />} />

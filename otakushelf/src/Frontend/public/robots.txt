@@ -3,4 +3,4 @@ Allow: /
 Disallow: /profile/*
 Disallow: /settings
 
-Sitemap: https://animeregistry.pages.dev/sitemap.xml
+Sitemap: https://animeregistry.com/sitemap.xml

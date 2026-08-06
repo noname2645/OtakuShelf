@@ -11,7 +11,7 @@ const Terms = () => (
     </p>
     <p>
       These Terms &amp; Conditions ("Terms") govern your access to and use of AnimeRegistry, a free
-      anime list and anime tracker service available at animeregistry.pages.dev (the "Service"). By
+      anime list and anime tracker service available at animeregistry.com (the "Service"). By
       creating an account or using the Service, you agree to be bound by these Terms.
     </p>
 

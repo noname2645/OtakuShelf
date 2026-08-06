@@ -693,15 +693,6 @@ const TrailerHero = ({ onOpenModal }) => {
                         More Details
                     </button>
 
-                    {(isMobile || isTablet || isTouchDevice) && (
-                        <div className="hero-scroll-hint-inline">
-                            <span className="hero-scroll-text">Scroll</span>
-                            <svg className="hero-scroll-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M12 5v14M19 12l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    )}
-
                     {/* Mute/Unmute Button */}
                     {currentAnimeHasTrailer && isPlayerReady && !playerError && !useImageFallback && (
                         <button
@@ -716,6 +707,13 @@ const TrailerHero = ({ onOpenModal }) => {
                             />
                         </button>
                     )}
+
+                    <div className="hero-scroll-hint-inline">
+                        <span className="hero-scroll-text">Scroll</span>
+                        <svg className="hero-scroll-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 5v14M19 12l-7 7-7-7" />
+                        </svg>
+                    </div>
                 </motion.div>
 
                 {/* Navigation Arrows */}
