@@ -235,7 +235,9 @@ body.modal-open {
   gap: 10px;
   flex-wrap: wrap;
   flex-shrink: 0;
-  justify-content: center;
+  justify-content: flex-start;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .stat-item {
@@ -246,7 +248,7 @@ body.modal-open {
   align-items: center;
   gap: 8px;
   background: rgba(0, 0, 0, 0.15);
-  flex: 1 1 0;
+  flex: 0 0 auto;
   min-width: 0;
   justify-content: center;
 }
