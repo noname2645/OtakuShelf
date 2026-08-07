@@ -1018,12 +1018,6 @@ const SettingsPage = ({ isModal = false }) => {
           "Autoplay Trailers",
           "Automatically play hero trailers on the homepage",
         )}
-        {renderToggle(
-          "preferences",
-          "nsfwContent",
-          "NSFW Content",
-          "Show adult/R-18+ content (unblur covers & titles)",
-        )}
       </div>
 
       {/* Accent Color */}
