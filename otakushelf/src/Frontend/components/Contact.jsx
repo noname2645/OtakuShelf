@@ -26,26 +26,6 @@ const Contact = () => (
           help you faster.
         </p>
       </div>
-
-      <div className="legal-card">
-        <h2>Feature Requests</h2>
-        <p>
-          Have an idea for a new anime tracker feature, badge or statistic? Let us know — your
-          feedback shapes the roadmap.
-        </p>
-        <p>
-          You can also open an issue on our open-source repository at{" "}
-          <a
-            className="legal-link"
-            href="https://github.com/noname2645/OtakuShelf"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            github.com/noname2645/OtakuShelf
-          </a>
-          .
-        </p>
-      </div>
     </div>
 
     <h2>What to Include in Your Message</h2>
