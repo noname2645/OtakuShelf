@@ -10,37 +10,14 @@ import HomeSEOContent from './HomeSEOContent.jsx';
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
 import { usePageLoader } from './PageLoaderContext.jsx';
+import { fetchSectionsFromAniList, readCache, writeCache } from '../lib/anilistClient.js';
 
 // API base URL
 const API = import.meta.env.VITE_API_BASE_URL;
-const ANILIST_URL = 'https://graphql.anilist.co';
 
 // Stale-while-revalidate key
 const CACHE_KEY = 'animeSections_normalized_v2';
-const CACHE_TIME_KEY = `${CACHE_KEY}_time`;
 const STALE_TIME = 1000 * 60 * 60;
-
-const ANILIST_SECTION_QUERIES = {
-  topAiring: `query { Page(perPage: 10) { media(status: RELEASING, sort: SCORE_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes nextAiringEpisode { episode airingAt } format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
-  trending: `query { Page(perPage: 10) { media(sort: TRENDING_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
-  topRated: `query { Page(perPage: 10) { media(sort: SCORE_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
-  upcoming: `query { Page(perPage: 10) { media(status: NOT_YET_RELEASED, sort: POPULARITY_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
-  topMovies: `query { Page(perPage: 10) { media(format: MOVIE, sort: POPULARITY_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
-  mostWatched: `query { Page(perPage: 10) { media(sort: POPULARITY_DESC, type: ANIME, isAdult: false) { id title { romaji english } coverImage { extraLarge large medium } bannerImage episodes format status genres averageScore description seasonYear startDate { year month day } endDate { year month day } studios { edges { node { name } } } trailer { id site } } } }`,
-};
-
-const GENRE_FILTERS = ['Hentai'];
-
-async function fetchAniListSection(key) {
-  const res = await fetch(ANILIST_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ query: ANILIST_SECTION_QUERIES[key] }),
-  });
-  if (!res.ok) throw new Error(`AniList ${key}: ${res.status}`);
-  const json = await res.json();
-  return (json.data?.Page?.media || []).filter(m => !m.genres?.some(g => GENRE_FILTERS.includes(g)));
-}
 
 import AnimeCard from './AnimeCardUI.jsx';
 // Section Component to manage its own "View More" state
@@ -253,7 +230,26 @@ const AnimeHomepage = () => {
         };
     }, []);
 
-    // Data Fetching with Fallback
+    // Data Fetching — cache-first, then API worker (fast path), then a direct
+    // AniList call from the browser. The worker's egress IP is blocked by
+    // AniList in production, so the direct browser call is what makes the
+    // sections appear on animeregistry.com / animeregistry.pages.dev. Every
+    // step has a timeout so the skeleton can never hang indefinitely.
+    const hasSectionsContent = useCallback((obj) => {
+        return !!obj && Object.values(obj).some(arr => arr?.length > 0);
+    }, []);
+
+    const normalizeSections = useCallback((data) => {
+        return {
+            topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
+            mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
+            topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean),
+            trending: (data.trending || []).map(normalizeGridAnime).filter(Boolean),
+            topRated: (data.topRated || []).map(normalizeGridAnime).filter(Boolean),
+            upcoming: (data.upcoming || []).map(normalizeGridAnime).filter(Boolean),
+        };
+    }, [normalizeGridAnime]);
+
     const loadRef = useRef(false);
     useEffect(() => {
       if (loadRef.current) return;
@@ -263,56 +259,31 @@ const AnimeHomepage = () => {
       const controller = new AbortController();
 
       const loadWrapper = async () => {
-          const cachedRaw = localStorage.getItem(CACHE_KEY);
-          let cachedSections = null;
-          let cacheAge = Infinity;
-
-          if (cachedRaw) {
-              try {
-                  const parsed = JSON.parse(cachedRaw);
-                  cacheAge = Date.now() - (parseInt(localStorage.getItem(CACHE_TIME_KEY)) || 0);
-                  const hasContent = parsed.topAiring?.length > 0 || parsed.trending?.length > 0 ||
-                      parsed.upcoming?.length > 0 || parsed.topMovies?.length > 0 ||
-                      parsed.mostWatched?.length > 0 || parsed.topRated?.length > 0;
-
-                  if (hasContent) {
-                      cachedSections = parsed;
-                      if (cacheAge < STALE_TIME) {
-                          setSections(parsed);
-                          setLoading(false);
-                          return;
-                      }
-                  }
-              } catch (e) {
-                  localStorage.removeItem(CACHE_KEY);
-                  localStorage.removeItem(CACHE_TIME_KEY);
-              }
+          // 1. Fresh localStorage cache → render instantly, skip the network.
+          const freshCache = readCache(CACHE_KEY, { maxAgeMs: STALE_TIME });
+          if (freshCache && hasSectionsContent(freshCache)) {
+              setSections(freshCache);
+              setLoading(false);
+              return;
           }
 
-          if (cachedSections) {
-              setSections(cachedSections);
+          // 2. Stale cache (any age) → render now, refresh in the background.
+          const staleCache = readCache(CACHE_KEY);
+          if (staleCache && hasSectionsContent(staleCache)) {
+              setSections(staleCache);
               setLoading(false);
               staleCacheRestored = true;
           }
 
+          // 3. API worker fast path (localhost / warmed KV cache).
           let backendOk = false;
           try {
-              const response = await axios.get(`${API}/api/anime/anime-sections`, { timeout: 15000, signal: controller.signal });
+              const response = await axios.get(`${API}/api/anime/anime-sections`, { timeout: 6000, signal: controller.signal });
               const data = response.data.data;
-              const hasData = data && Object.values(data).some(arr => arr?.length > 0);
-
-              if (hasData) {
-                  const newSections = {
-                      topAiring: (data.topAiring || []).map(normalizeGridAnime).filter(Boolean),
-                      mostWatched: (data.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                      topMovies: (data.topMovies || []).map(normalizeGridAnime).filter(Boolean),
-                      trending: (data.trending || []).map(normalizeGridAnime).filter(Boolean),
-                      topRated: (data.topRated || []).map(normalizeGridAnime).filter(Boolean),
-                      upcoming: (data.upcoming || []).map(normalizeGridAnime).filter(Boolean)
-                  };
+              if (hasSectionsContent(data)) {
+                  const newSections = normalizeSections(data);
                   setSections(newSections);
-                  localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
-                  localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+                  writeCache(CACHE_KEY, newSections);
                   backendOk = true;
               }
           } catch (err) {
@@ -324,31 +295,17 @@ const AnimeHomepage = () => {
               return;
           }
 
+          // 4. Direct AniList from the browser (parallel + timeouts).
+          //    This always resolves — it can never leave the skeleton hanging.
           try {
-              const sectionKeys = ['trending', 'topAiring', 'upcoming', 'topMovies', 'mostWatched', 'topRated'];
-              const results = {};
-              for (const key of sectionKeys) {
-                  try {
-                      results[key] = await fetchAniListSection(key);
-                  } catch (e) {
-                      results[key] = [];
-                  }
+              const sections = await fetchSectionsFromAniList({ signal: controller.signal });
+              if (hasSectionsContent(sections)) {
+                  const newSections = normalizeSections(sections);
+                  setSections(newSections);
+                  writeCache(CACHE_KEY, newSections);
               }
-
-              const newSections = {
-                  trending: (results.trending || []).map(normalizeGridAnime).filter(Boolean),
-                  topAiring: (results.topAiring || []).map(normalizeGridAnime).filter(Boolean),
-                  upcoming: (results.upcoming || []).map(normalizeGridAnime).filter(Boolean),
-                  topMovies: (results.topMovies || []).map(normalizeGridAnime).filter(Boolean),
-                  mostWatched: (results.mostWatched || []).map(normalizeGridAnime).filter(Boolean),
-                  topRated: (results.topRated || []).map(normalizeGridAnime).filter(Boolean),
-              };
-
-              setSections(newSections);
-              localStorage.setItem(CACHE_KEY, JSON.stringify(newSections));
-              localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-          } catch (e) {
-              console.error("AniList fallback failed:", e);
+          } catch (err) {
+              if (err.name !== 'CanceledError') console.error("AniList direct fetch failed:", err);
           }
 
           if (!staleCacheRestored) setLoading(false);
@@ -360,7 +317,7 @@ const AnimeHomepage = () => {
           controller.abort();
           loadRef.current = false;
       };
-    }, [normalizeGridAnime]);
+    }, [normalizeGridAnime, hasSectionsContent, normalizeSections]);
 
     // Tell the global loader the page is ready
     useEffect(() => {

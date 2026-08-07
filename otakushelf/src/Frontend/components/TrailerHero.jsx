@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef, memo } from 'react';
 import axios from 'axios';
 import { motion } from "framer-motion";
 import { useAnimePreferences } from './useAnimePreferences';
+import {
+    buildHeroAnnouncements,
+    fetchHeroEraData,
+    readCache,
+    writeCache,
+    HERO_ERA_CACHE_KEY,
+    HERO_ERA_CACHE_TTL,
+} from '../lib/anilistClient.js';
 import '../Stylesheets/TrailerHero.css';
 
 // API base URL
@@ -120,25 +128,6 @@ const TrailerHero = ({ onOpenModal }) => {
     const getAnimeTitle = (anime) => {
         if (!anime) return "Unknown Title";
         return getPreferredTitle(anime.title) || anime.title_english || anime.title_romaji || "Unknown Title";
-    };
-
-    // Fetch with retry logic — handles Render cold-start (first attempt fast, then longer)
-    const fetchWithRetry = async (url, retries = 4) => {
-        for (let i = 0; i < retries; i++) {
-            try {
-                // Progressive timeout: 10s, 25s, 30s, 35s
-                const timeout = i === 0 ? 10000 : 25000 + (i * 5000);
-                const response = await axios.get(url, { timeout });
-                return response.data;
-            } catch (error) {
-                const isLast = i === retries - 1;
-                if (isLast) throw error;
-                // Exponential backoff: 2s, 4s, 8s
-                const delay = 2000 * Math.pow(2, i);
-                console.log(`Hero fetch retry ${i + 1}/${retries - 1} in ${delay / 1000}s (server may be waking up)...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
     };
 
     const getAnimeDescription = (anime) => {
@@ -366,52 +355,85 @@ const TrailerHero = ({ onOpenModal }) => {
         };
     };
 
-    // Fetch announcements — cache-first, then background refresh
+    // Fetch announcements — cache-first, then the API worker (fast path), then
+    // a direct AniList call from the browser. The worker's egress IP is blocked
+    // by AniList in production, so the direct browser call is what actually
+    // loads the hero on animeregistry.com / animeregistry.pages.dev. Retries
+    // are bounded so the skeleton can never shimmer forever.
     useEffect(() => {
         const CACHE_KEY = 'hero_announcements';
-        const CACHE_TTL = 10 * 60 * 1000; // 10 min — backend randomizes picks, so refresh often
-        let retryInterval;
+        const CACHE_TTL = 10 * 60 * 1000; // 10 min — picks are randomized, refresh often
+        const controller = new AbortController();
+        let cancelled = false;
+        let retryTimer = null;
 
-        const fetchAnnouncements = async () => {
-            // Check if cache is fresh enough to skip the network call
+        const persist = (list) => {
+            if (cancelled || !Array.isArray(list) || list.length === 0) return false;
+            setAnnouncements(list);
+            localStorage.setItem(CACHE_KEY, JSON.stringify(list));
+            localStorage.setItem(`${CACHE_KEY}_time`, String(Date.now()));
+            return true;
+        };
+
+        const buildFromEraData = (eraData) => {
+            const interleaved = buildHeroAnnouncements(eraData);
+            if (interleaved.length === 0) return false;
+            return persist(interleaved.map(normalizeHeroAnime));
+        };
+
+        const fetchAnnouncements = async (attempt) => {
+            // Fresh cache → skip the network entirely.
             const cacheTime = parseInt(localStorage.getItem(`${CACHE_KEY}_time`) || '0', 10);
-            const cacheIsStale = Date.now() - cacheTime > CACHE_TTL;
-
-            // If state is already populated from the lazy initializer and cache is fresh, we're done
-            if (announcements.length > 0 && !cacheIsStale) {
+            if (announcements.length > 0 && Date.now() - cacheTime <= CACHE_TTL) {
                 setIsFetchingData(false);
                 return;
             }
 
-            // Background refresh — fetch fresh data even if cache exists
+            // Fast path: API worker (localhost / warmed KV cache). Short timeout.
             try {
-                const response = await fetchWithRetry(`${API}/api/anilist/hero-trailers`);
-                const data = response.data; // Standardized response contains "data" property
-                
-                if (data && Array.isArray(data) && data.length > 0) {
-                    // Backend already filters & orders by era — trust it
-                    const normalizedAnnouncements = data.map(normalizeHeroAnime);
-
-                    setAnnouncements(normalizedAnnouncements);
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(normalizedAnnouncements));
-                    localStorage.setItem(`${CACHE_KEY}_time`, String(Date.now()));
+                const response = await axios.get(`${API}/api/anilist/hero-trailers`, { timeout: 6000, signal: controller.signal });
+                const data = response.data?.data;
+                if (Array.isArray(data) && data.length > 0) {
+                    if (persist(data.map(normalizeHeroAnime))) {
+                        setIsFetchingData(false);
+                        return;
+                    }
                 }
             } catch (err) {
-                console.error("Hero trailer fetch failed (using cache):", err.message);
-                // If we have no data at all, schedule a retry
-                if (announcements.length === 0) {
-                    retryInterval = setInterval(fetchAnnouncements, 15000);
+                if (err.name !== 'CanceledError') console.error("Hero worker fetch:", err.message);
+            }
+
+            // Direct AniList from the browser. Era data is cached in
+            // localStorage for 6h so repeat visits never re-query AniList.
+            let gotData = false;
+            try {
+                const cachedEra = readCache(HERO_ERA_CACHE_KEY, { maxAgeMs: HERO_ERA_CACHE_TTL });
+                let eraData = cachedEra;
+                if (!eraData) {
+                    eraData = await fetchHeroEraData({ timeout: 12000, signal: controller.signal });
+                    if (Object.keys(eraData).length > 0) writeCache(HERO_ERA_CACHE_KEY, eraData);
                 }
-            } finally {
+                gotData = buildFromEraData(eraData);
+            } catch (err) {
+                if (err.name !== 'CanceledError') console.error("Hero AniList fetch failed:", err.message);
+            }
+
+            // Bounded retry: one more attempt shortly after, then stop.
+            if (!gotData && !cancelled && attempt < 1) {
+                retryTimer = setTimeout(() => fetchAnnouncements(attempt + 1), 4000);
+            } else {
                 setIsFetchingData(false);
             }
         };
 
-        fetchAnnouncements();
+        fetchAnnouncements(0);
 
         return () => {
-            if (retryInterval) clearInterval(retryInterval);
+            cancelled = true;
+            controller.abort();
+            if (retryTimer) clearTimeout(retryTimer);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Handle scroll effect for fade — use rAF + direct DOM mutation to avoid React re-render on every scroll tick
@@ -571,22 +593,41 @@ const TrailerHero = ({ onOpenModal }) => {
         return anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large || '';
     };
 
-    // Show skeleton loader while fetching OR after fetch failure (no data yet)
+    // Skeleton while actually fetching; a graceful static hero once all fetch
+    // attempts are exhausted (so it can never shimmer forever).
     const currentAnimeData = announcements[currentAnime];
     if (!currentAnimeData) {
+        if (isFetchingData) {
+            return (
+                <section className="trailer-hero-section trailer-hero-skeleton"
+                    style={{
+                        paddingTop: safeAreaTop,
+                        paddingBottom: safeAreaBottom
+                    }}>
+                    <div className="trailer-skeleton-bg" />
+                    <div className="gradient-overlay" />
+                    <div className="trailer-skeleton-content">
+                        <div className="skeleton-title" />
+                        <div className="skeleton-meta" />
+                        <div className="skeleton-desc" />
+                        <div className="skeleton-btn" />
+                    </div>
+                </section>
+            );
+        }
+
         return (
-            <section className="trailer-hero-section trailer-hero-skeleton"
+            <section className="trailer-hero-section trailer-hero-fallback"
                 style={{
                     paddingTop: safeAreaTop,
                     paddingBottom: safeAreaBottom
                 }}>
-                <div className="trailer-skeleton-bg" />
+                <div className="trailer-fallback-bg" />
                 <div className="gradient-overlay" />
-                <div className="trailer-skeleton-content">
-                    <div className="skeleton-title" />
-                    <div className="skeleton-meta" />
-                    <div className="skeleton-desc" />
-                    <div className="skeleton-btn" />
+                <div className="trailer-fallback-content">
+                    <img src="/animeregistryname.png" alt="AnimeRegistry" className="trailer-fallback-logo" />
+                    <p>Discover, track and obsess over your favorite anime.</p>
+                    <span className="trailer-fallback-hint">Trending trailers below ↓</span>
                 </div>
             </section>
         );
