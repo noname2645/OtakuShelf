@@ -442,9 +442,6 @@
 .anime-carousel-section {
   margin-bottom: 2rem;
   position: relative;
-  /* Skip layout/paint for off-screen sections to free the main thread (helps INP) */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 520px;
 }
 
 .anime-carousel-section:last-child {
