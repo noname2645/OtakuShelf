@@ -32,8 +32,7 @@ const Contact = () => (
     <ul>
       <li>A clear subject line (e.g. "Account issue" or "Feature request")</li>
       <li>The email address linked to your account, if relevant</li>
-      <li>Your browser and device type (helps us reproduce bugs)</li>
-      <li>Steps to reproduce the problem, if you are reporting a bug</li>
+      <li>Your browser and device type (helps us identify bugs faster)</li>
     </ul>
 
     <h2>Security &amp; Privacy Questions</h2>
