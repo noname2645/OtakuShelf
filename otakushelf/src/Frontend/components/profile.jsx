@@ -817,7 +817,7 @@ const ProfilePage = () => {
   const gridAnime = recentlyWatched.slice(1, 5).map(toAnimeShape);
 
   // ── Main Render ────────────────────────────────────────────────
-  if (loading && !profileData) {
+  if (loading && !hasLoadedProfileRef.current) {
     return <ProfilePageLoader />;
   }
 
