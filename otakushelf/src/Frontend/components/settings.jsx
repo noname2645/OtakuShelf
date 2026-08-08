@@ -12,6 +12,197 @@ const ArrowIcon = () => (
   </svg>
 );
 
+const Icon = ({ size = 20, children, style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, ...style }}>
+    {children}
+  </svg>
+);
+
+const KeyIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <circle cx="8" cy="15" r="4" fill="currentColor" opacity="0.15" />
+    <circle cx="8" cy="15" r="4" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M11 12L19 4M15.5 6.5L17.5 8.5M12.5 9.5L14.5 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Icon>
+);
+
+const ShieldIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <path d="M12 2L3 7V12C3 17.25 6.75 22.5 12 24C17.25 22.5 21 17.25 21 12V7L12 2Z" fill="currentColor" opacity="0.15" />
+    <path d="M12 2L3 7V12C3 17.25 6.75 22.5 12 24C17.25 22.5 21 17.25 21 12V7L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Icon>
+);
+
+const InfoIcon = ({ size = 18, style }) => (
+  <Icon size={size} style={style}>
+    <circle cx="12" cy="12" r="9" fill="currentColor" opacity="0.15" />
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M12 11V16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="12" cy="8" r="1" fill="currentColor" />
+  </Icon>
+);
+
+const DeviceIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <rect x="2" y="4" width="20" height="14" rx="2" fill="currentColor" opacity="0.15" />
+    <rect x="2" y="4" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M9 21H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M12 18V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </Icon>
+);
+
+const LinkIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <path d="M10 14C10.8 15.4 12.4 16.3 14 16.3C16.5 16.3 18.5 14.3 18.5 11.8C18.5 10.2 17.7 8.8 16.5 7.9L18.5 5.9C20.1 7.2 21.2 9.1 21.2 11.4C21.2 15.7 17.7 19.2 13.4 19.2C10.8 19.2 8.5 17.8 7.3 15.6L10 14Z" fill="currentColor" opacity="0.15" />
+    <path d="M14 10C13.2 8.6 11.6 7.7 10 7.7C7.5 7.7 5.5 9.7 5.5 12.2C5.5 13.8 6.3 15.2 7.5 16.1L5.5 18.1C3.9 16.8 2.8 14.9 2.8 12.6C2.8 8.3 6.3 4.8 10.6 4.8C13.2 4.8 15.5 6.2 16.7 8.4L14 10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Icon>
+);
+
+const WarningIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <path d="M12 3L2 20H22L12 3Z" fill="currentColor" opacity="0.15" />
+    <path d="M12 3L2 20H22L12 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 10V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="12" cy="17" r="1" fill="currentColor" />
+  </Icon>
+);
+
+const TrashIcon = ({ size = 16, style }) => (
+  <Icon size={size} style={style}>
+    <path d="M4 7H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M9 7V5C9 4.4 9.4 4 10 4H14C14.6 4 15 4.4 15 5V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M6 7L7 20C7 20.6 7.4 21 8 21H16C16.6 21 17 20.6 17 20L18 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Icon>
+);
+
+const LockOpenIcon = ({ size = 48, style }) => (
+  <Icon size={size} style={style}>
+    <rect x="4" y="11" width="16" height="10" rx="2" fill="currentColor" opacity="0.15" />
+    <rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M8 11V7C8 4.8 9.8 3 12 3C13.2 3 14.3 3.5 15 4.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="12" cy="16" r="1.5" stroke="currentColor" strokeWidth="1.5" />
+  </Icon>
+);
+
+const SkullIcon = ({ size = 48, style }) => (
+  <Icon size={size} style={style}>
+    <path d="M12 2C7 2 3 5.5 3 10C3 13 5 15.5 7.5 16.5V20C7.5 20.6 7.9 21 8.5 21H15.5C16.1 21 16.5 20.6 16.5 20V16.5C19 15.5 21 13 21 10C21 5.5 17 2 12 2Z" fill="currentColor" opacity="0.15" />
+    <path d="M12 2C7 2 3 5.5 3 10C3 13 5 15.5 7.5 16.5V20C7.5 20.6 7.9 21 8.5 21H15.5C16.1 21 16.5 20.6 16.5 20V16.5C19 15.5 21 13 21 10C21 5.5 17 2 12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="9" cy="10" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="15" cy="10" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M10 14H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </Icon>
+);
+
+const LanguageIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <circle cx="12" cy="12" r="9" fill="currentColor" opacity="0.15" />
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M3.5 9H20.5M3.5 15H20.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M12 3C10 5.5 9 8.5 9 12C9 15.5 10 18.5 12 21C14 18.5 15 15.5 15 12C15 8.5 14 5.5 12 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </Icon>
+);
+
+const LayoutIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <rect x="4" y="4" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.15" />
+    <rect x="4" y="4" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="14" y="4" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.15" />
+    <rect x="14" y="4" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="4" y="14" width="16" height="6" rx="1.5" fill="currentColor" opacity="0.15" />
+    <rect x="4" y="14" width="16" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+  </Icon>
+);
+
+const SlidersIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <path d="M4 7H13M18 7H20M4 17H9M16 17H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="15.5" cy="7" r="2.5" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="11.5" cy="17" r="2.5" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="1.5" />
+  </Icon>
+);
+
+const UserIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <circle cx="12" cy="8" r="4" fill="currentColor" opacity="0.15" />
+    <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M4 21V19C4 16.8 5.8 15 8 15H16C18.2 15 20 16.8 20 19V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </Icon>
+);
+
+const BadgeIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <circle cx="12" cy="10" r="7" fill="currentColor" opacity="0.15" />
+    <circle cx="12" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M8 14L6 21L12 18L18 21L16 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Icon>
+);
+
+const PencilIcon = ({ size = 16, style }) => (
+  <Icon size={size} style={style}>
+    <path d="M17 3L21 7L7.5 20.5L2 22L3.5 16.5L17 3Z" fill="currentColor" opacity="0.15" />
+    <path d="M17 3L21 7L7.5 20.5L2 22L3.5 16.5L17 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M14.5 5.5L18.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </Icon>
+);
+
+const EyeIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <path d="M2 12C2 12 5.5 5.5 12 5.5C18.5 5.5 22 12 22 12C22 12 18.5 18.5 12 18.5C5.5 18.5 2 12 2 12Z" fill="currentColor" opacity="0.15" />
+    <path d="M2 12C2 12 5.5 5.5 12 5.5C18.5 5.5 22 12 22 12C22 12 18.5 18.5 12 18.5C5.5 18.5 2 12 2 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+  </Icon>
+);
+
+const GlobeIcon = ({ size = 22, style }) => (
+  <Icon size={size} style={style}>
+    <circle cx="12" cy="12" r="9" fill="currentColor" opacity="0.15" />
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M3 12H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M12 3C14.5 5.5 16 8.5 16 12C16 15.5 14.5 18.5 12 21C9.5 18.5 8 15.5 8 12C8 8.5 9.5 5.5 12 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </Icon>
+);
+
+const LockIcon = ({ size = 22, style }) => (
+  <Icon size={size} style={style}>
+    <rect x="4" y="11" width="16" height="10" rx="2" fill="currentColor" opacity="0.15" />
+    <rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M8 11V7C8 4.8 9.8 3 12 3C14.2 3 16 4.8 16 7V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="12" cy="16" r="1.5" stroke="currentColor" strokeWidth="1.5" />
+  </Icon>
+);
+
+const DownloadIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <path d="M12 3L20 7V17L12 21L4 17V7L12 3Z" fill="currentColor" opacity="0.15" />
+    <path d="M12 3L20 7V17L12 21L4 17V7L12 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 11V16M12 16L9.5 13.5M12 16L14.5 13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Icon>
+);
+
+const BellIcon = ({ size = 20, style }) => (
+  <Icon size={size} style={style}>
+    <path d="M18 8C18 6.4 17.4 4.9 16.2 3.8C15 2.6 13.5 2 12 2C10.5 2 9 2.6 7.8 3.8C6.6 4.9 6 6.4 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" fill="currentColor" opacity="0.15" />
+    <path d="M18 8C18 6.4 17.4 4.9 16.2 3.8C15 2.6 13.5 2 12 2C10.5 2 9 2.6 7.8 3.8C6.6 4.9 6 6.4 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M13.7 20C13.5 20.3 13.3 20.5 13 20.7C12.7 20.9 12.4 21 12 21C11.6 21 11.3 20.9 11 20.7C10.7 20.5 10.5 20.3 10.3 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </Icon>
+);
+
+const CheckIcon = ({ size = 18, style }) => (
+  <Icon size={size} style={style}>
+    <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
+    <path d="M8 12L11 15L16 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Icon>
+);
+
+const XIcon = ({ size = 18, style }) => (
+  <Icon size={size} style={style}>
+    <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
+    <path d="M9 9L15 15M15 9L9 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </Icon>
+);
+
 const TABS = [
   {
     id: "security", label: "Security & Login",
@@ -59,17 +250,6 @@ const TABS = [
   },
 ];
 
-const ACCENT_COLORS = [
-  { name: "Coral Red", value: "#ff6b6b" },
-  { name: "Neon Pink", value: "#ec4899" },
-  { name: "Void Purple", value: "#8b5cf6" },
-  { name: "Ocean Blue", value: "#3b82f6" },
-  { name: "Mint Teal", value: "#4ecdc4" },
-  { name: "Cyber Yellow", value: "#fbbf24" },
-  { name: "Sunset Orange", value: "#f97316" },
-  { name: "Emerald", value: "#10b981" },
-];
-
 const SettingsPage = ({ isModal = false }) => {
   const { user, logout, refreshProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -101,7 +281,6 @@ const SettingsPage = ({ isModal = false }) => {
       defaultLayout: "grid",
       nsfwContent: false,
       autoplayTrailers: true,
-      accentColor: "#ff6b6b",
     },
     notifications: {
       episodeAlerts: true,
@@ -199,10 +378,6 @@ const SettingsPage = ({ isModal = false }) => {
     const newSettings = { ...settings };
     newSettings[category][key] = value;
     setSettings(newSettings);
-    // Instantly apply accent color to the whole page without waiting for auth refresh
-    if (category === "preferences" && key === "accentColor") {
-      document.documentElement.style.setProperty("--accent-color", value);
-    }
     saveSettings(category, { [key]: value });
   };
 
@@ -384,7 +559,7 @@ const SettingsPage = ({ isModal = false }) => {
         <BottomNavBar />
         <div className="settings-page">
           <div className="settings-not-logged-in">
-            <div className="settings-nli-icon">🔐</div>
+            <div className="settings-nli-icon" style={{ color: "#ff8c1a" }}><LockIcon size={64} /></div>
             <h2>Please log in to access settings</h2>
             <Link to="/login" className="settings-login-btn">
               Go to Login
@@ -421,12 +596,12 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Change Password */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><KeyIcon /></span>
           <h3>Change Password</h3>
         </div>
         {user?.authType === "google" ? (
           <div className="settings-info-banner">
-            <span className="info-icon">ℹ️</span>
+            <span className="info-icon"><InfoIcon /></span>
             Your account uses Google Sign-In. Password changes are managed
             through your Google account.
           </div>
@@ -496,12 +671,12 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Two-Factor Authentication (MFA) */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><ShieldIcon /></span>
           <h3>Two-Factor Authentication</h3>
         </div>
         {user?.authType === "google" ? (
           <div className="settings-info-banner">
-            <span className="info-icon">ℹ️</span>
+            <span className="info-icon"><InfoIcon /></span>
             Your account uses Google Sign-In. Two-factor authentication and
             security settings are managed through your Google account.
           </div>
@@ -580,7 +755,7 @@ const SettingsPage = ({ isModal = false }) => {
                           width: "150px",
                           height: "150px",
                           borderRadius: "8px",
-                          border: "2px solid var(--accent-color)",
+                          border: "2px solid rgba(255, 255, 255, 0.15)",
                         }}
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -658,7 +833,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Active Sessions */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><DeviceIcon /></span>
           <h3>Active Sessions</h3>
         </div>
         <p className="settings-card-desc">
@@ -666,7 +841,7 @@ const SettingsPage = ({ isModal = false }) => {
         </p>
         <div className="settings-sessions-list">
           <div className="settings-session-item">
-            <div className="session-device-icon">🔑</div>
+            <div className="session-device-icon"><KeyIcon size={22} /></div>
             <div className="session-info">
               <span className="session-name">Refresh Token</span>
               <span className="session-expires">
@@ -688,14 +863,14 @@ const SettingsPage = ({ isModal = false }) => {
           }}
           style={{ marginTop: "12px" }}
         >
-          🔑 Revoke All Tokens
+          <KeyIcon size={16} /> Revoke All Tokens
         </button>
       </div>
 
       {/* Connected Accounts */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><LinkIcon /></span>
           <h3>Connected Accounts</h3>
         </div>
         <div className="settings-connected-item">
@@ -736,7 +911,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Danger Zone */}
       <div className="settings-card settings-danger-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon">⚠️</span>
+          <span className="settings-card-icon"><WarningIcon /></span>
           <h3>Danger Zone</h3>
         </div>
         <p className="settings-card-desc">
@@ -747,7 +922,7 @@ const SettingsPage = ({ isModal = false }) => {
           className="settings-btn-danger"
           onClick={() => setShowDeleteModal(true)}
         >
-          🗑️ Delete My Account
+          <TrashIcon size={16} /> Delete My Account
         </button>
       </div>
 
@@ -762,7 +937,7 @@ const SettingsPage = ({ isModal = false }) => {
           }}
         >
           <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="settings-modal-icon">🔓</div>
+            <div className="settings-modal-icon" style={{ color: "#ff8c1a" }}><LockOpenIcon /></div>
             <h3>Disable Two-Factor Auth?</h3>
             <p>
               Disabling 2FA will make your account less secure. This requires a
@@ -853,7 +1028,7 @@ const SettingsPage = ({ isModal = false }) => {
           }}
         >
           <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="settings-modal-icon">💀</div>
+            <div className="settings-modal-icon" style={{ color: "#fca5a5" }}><SkullIcon /></div>
             <h3>Delete Account Forever?</h3>
             <p>
               This will permanently erase all your data. This requires a 2-step
@@ -942,7 +1117,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Title Language */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><LanguageIcon /></span>
           <h3>Title Language</h3>
         </div>
         <p className="settings-card-desc">
@@ -971,7 +1146,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Default Layout */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><LayoutIcon /></span>
           <h3>Default Layout</h3>
         </div>
         <p className="settings-card-desc">
@@ -1009,7 +1184,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Toggles */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><SlidersIcon /></span>
           <h3>Display Preferences</h3>
         </div>
         {renderToggle(
@@ -1019,41 +1194,6 @@ const SettingsPage = ({ isModal = false }) => {
           "Automatically play hero trailers on the homepage",
         )}
       </div>
-
-      {/* Accent Color */}
-      <div className="settings-card">
-        <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
-          <h3>Accent Color</h3>
-        </div>
-        <p className="settings-card-desc">
-          Personalize the site's accent color to match your vibe.
-        </p>
-        <div className="settings-color-grid">
-          {ACCENT_COLORS.map((color) => (
-            <button
-              key={color.value}
-              className={`settings-color-swatch ${settings.preferences.accentColor === color.value ? "active" : ""}`}
-              style={{ "--swatch-color": color.value }}
-              onClick={() =>
-                handleSelect("preferences", "accentColor", color.value)
-              }
-              title={color.name}
-            >
-              {settings.preferences.accentColor === color.value && (
-                <span className="swatch-check">✓</span>
-              )}
-            </button>
-          ))}
-        </div>
-        <div
-          className="settings-color-preview"
-          style={{ "--preview-color": settings.preferences.accentColor }}
-        >
-          <span>Preview:</span>
-          <button className="color-preview-btn">Sample Button</button>
-        </div>
-      </div>
     </div>
   );
 
@@ -1061,7 +1201,7 @@ const SettingsPage = ({ isModal = false }) => {
     <div className="settings-section">
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><UserIcon /></span>
           <h3>Profile Information</h3>
         </div>
         <p className="settings-card-desc">
@@ -1089,14 +1229,14 @@ const SettingsPage = ({ isModal = false }) => {
           </div>
         </div>
         <Link to="/profile" className="settings-btn-secondary">
-          ✏️ Go to Profile Page
+          <PencilIcon size={16} /> Go to Profile Page
         </Link>
       </div>
 
       {/* Auth Type Info */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><BadgeIcon /></span>
           <h3>Account Type</h3>
         </div>
         <div className="settings-account-type">
@@ -1120,7 +1260,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Profile Visibility */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><EyeIcon /></span>
           <h3>Profile Visibility</h3>
         </div>
         <p className="settings-card-desc">
@@ -1133,7 +1273,7 @@ const SettingsPage = ({ isModal = false }) => {
               handleSelect("privacy", "profileVisibility", "public")
             }
           >
-            <span className="pill-icon">🌍</span>
+            <span className="pill-icon"><GlobeIcon /></span>
             <span className="pill-label">Public</span>
             <span className="pill-example">Anyone can view your profile</span>
           </button>
@@ -1143,7 +1283,7 @@ const SettingsPage = ({ isModal = false }) => {
               handleSelect("privacy", "profileVisibility", "private")
             }
           >
-            <span className="pill-icon">🔒</span>
+            <span className="pill-icon"><LockIcon /></span>
             <span className="pill-label">Private</span>
             <span className="pill-example">Only you can see your data</span>
           </button>
@@ -1153,7 +1293,7 @@ const SettingsPage = ({ isModal = false }) => {
       {/* Export Data */}
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><DownloadIcon /></span>
           <h3>Export Your Data</h3>
         </div>
         <p className="settings-card-desc">
@@ -1161,7 +1301,7 @@ const SettingsPage = ({ isModal = false }) => {
           and stats as a JSON file.
         </p>
         <button className="settings-btn-primary" onClick={handleExportData}>
-          📦 Download My Data
+          <DownloadIcon size={16} /> Download My Data
           <ArrowIcon />
         </button>
       </div>
@@ -1172,7 +1312,7 @@ const SettingsPage = ({ isModal = false }) => {
     <div className="settings-section">
       <div className="settings-card">
         <div className="settings-card-header">
-          <span className="settings-card-icon"></span>
+          <span className="settings-card-icon"><BellIcon /></span>
           <h3>Email Notifications</h3>
         </div>
         <p className="settings-card-desc">
@@ -1238,7 +1378,9 @@ const SettingsPage = ({ isModal = false }) => {
         {/* Toast */}
         {toast.show && (
           <div className={`settings-toast ${toast.type}`}>
-            <span>{toast.type === "success" ? "✅" : "❌"}</span>
+            <span style={{ color: toast.type === "success" ? "#6ee7b7" : "#fca5a5" }}>
+              {toast.type === "success" ? <CheckIcon /> : <XIcon />}
+            </span>
             {toast.message}
           </div>
         )}

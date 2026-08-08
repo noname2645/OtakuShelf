@@ -247,6 +247,7 @@ const ProfileScreen = () => {
   const { finishLoading } = usePageLoader();
   const mountedRef = useRef(true);
   useEffect(() => {
+    mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
   useEffect(() => {

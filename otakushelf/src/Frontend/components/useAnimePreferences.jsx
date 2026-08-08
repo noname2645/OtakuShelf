@@ -8,7 +8,6 @@ export const useAnimePreferences = () => {
     defaultLayout: 'grid',
     nsfwContent: false,
     autoplayTrailers: true,
-    accentColor: '#ff6b6b'
   };
 
   /**

@@ -73,6 +73,7 @@ const ProfilePage = () => {
   const hasLoadedProfileRef = useRef(false);
   const mountedRef = useRef(true);
   useEffect(() => {
+    mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
 

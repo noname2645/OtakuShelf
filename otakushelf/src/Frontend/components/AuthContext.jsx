@@ -396,21 +396,11 @@ export const AuthProvider = ({ children }) => {
     recentlyWatched: profile?.recentlyWatched || [],
     favoriteAnime: profile?.favoriteAnime || [],
     settings: profile?.settings || user.settings || {
-      preferences: { titleLanguage: 'romaji', defaultLayout: 'grid', nsfwContent: false, autoplayTrailers: true, accentColor: '#ff6b6b' },
+      preferences: { titleLanguage: 'romaji', defaultLayout: 'grid', nsfwContent: false, autoplayTrailers: true },
       notifications: { episodeAlerts: true, securityEmails: true, marketingEmails: false },
       privacy: { profileVisibility: 'public' }
     }
   } : null;
-
-  // Apply the user's accent color globally directly to the document root
-  useEffect(() => {
-    if (combinedUser?.settings?.preferences?.accentColor) {
-      document.documentElement.style.setProperty('--accent-color', combinedUser.settings.preferences.accentColor);
-    } else {
-      // Default fallback
-      document.documentElement.style.setProperty('--accent-color', '#ff6b6b');
-    }
-  }, [combinedUser?.settings?.preferences?.accentColor]);
 
   const value = {
     user: combinedUser,

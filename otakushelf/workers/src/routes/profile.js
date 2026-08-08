@@ -36,8 +36,13 @@ const PHOTO_MAX_SIZE = 15 * 1024 * 1024
 const COVER_MAX_SIZE = 15 * 1024 * 1024
 
 function bufferToDataUrl(buffer, mimeType) {
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)))
-  return `data:${mimeType};base64,${base64}`
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  const CHUNK_SIZE = 0x8000
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK_SIZE))
+  }
+  return `data:${mimeType};base64,${btoa(binary)}`
 }
 
 // ── POST /api/profile/:userId/upload-photo ────────────────────────────────────

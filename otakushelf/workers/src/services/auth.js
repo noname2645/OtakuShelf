@@ -107,7 +107,6 @@ export function defaultUserFields(overrides = {}) {
         defaultLayout: 'grid',
         nsfwContent: false,
         autoplayTrailers: true,
-        accentColor: '#ff6b6b',
       },
       notifications: {
         securityEmails: true,
