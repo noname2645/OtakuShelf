@@ -4,7 +4,6 @@
     border-radius: 12px;
     overflow: hidden;
     background: #000;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     /* True 16:9 aspect ratio — never stretches the iframe */
     aspect-ratio: 16 / 9;
     display: flex;
@@ -20,6 +19,20 @@
     height: 100%;
     border: none;
     border-radius: 12px;
+}
+
+/* In the detail modal, fit the player inside the tab area (no scrolling):
+   fill the available space — the YouTube player letterboxes internally. */
+.trailer-tab-wrapper .trailer-container {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+.trailer-tab-wrapper .trailer-container iframe {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: auto !important;
 }
 
 /* Facade: thumbnail + play button shown before iframe loads */

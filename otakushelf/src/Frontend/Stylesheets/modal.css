@@ -161,7 +161,6 @@ body.modal-open {
   height: clamp(260px, 40dvh, 520px);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .image-container {
@@ -340,6 +339,14 @@ body.modal-open {
 .related-tab-wrapper,
 .trailer-tab-wrapper {
   min-height: 0;
+}
+
+.trailer-tab-wrapper {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 /* ── SYNOPSIS ── */
