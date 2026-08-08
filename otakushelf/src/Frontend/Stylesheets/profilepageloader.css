@@ -1,21 +1,125 @@
-/* ─── Simple Profile Page Loader ─────────────────────────────── */
+/* ─── Custom Profile Page Loader (skeleton) ─────────────────── */
 .ppl-screen {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
   background: linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%);
 }
 
+.ppl-skel {
+  --skel-base: #1c2438;
+  --skel-hi: rgba(255, 255, 255, 0.07);
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 96px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.skel-cover {
+  height: 300px;
+  border-radius: 20px;
+  background: var(--skel-base);
+  overflow: hidden;
+  position: relative;
+}
+
+.skel-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 22px;
+  padding: 0 16px;
+  margin-top: -64px;
+}
+
+.skel-avatar {
+  width: 132px;
+  height: 132px;
+  min-width: 132px;
+  border-radius: 50%;
+  border: 5px solid #0f1424;
+  background: var(--skel-base);
+  overflow: hidden;
+  position: relative;
+}
+
+.skel-id {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 14px;
+}
+
+.skel-bar {
+  height: 16px;
+  border-radius: 8px;
+  background: var(--skel-base);
+  overflow: hidden;
+  position: relative;
+}
+
+.skel-bar--name { width: 45%; height: 26px; }
+.skel-bar--user { width: 28%; height: 14px; }
+.skel-bar--bio1 { width: 72%; }
+.skel-bar--bio2 { width: 52%; }
+
+.skel-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.skel-stat {
+  height: 88px;
+  border-radius: 16px;
+  background: var(--skel-base);
+  overflow: hidden;
+  position: relative;
+}
+
+.skel-bio {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.skel-cover::after,
+.skel-avatar::after,
+.skel-bar::after,
+.skel-stat::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--skel-hi), transparent);
+  animation: pplShimmer 1.5s infinite;
+}
+
+@keyframes pplShimmer {
+  to { transform: translateX(100%); }
+}
+
+.ppl-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 26px;
+}
+
 .ppl-spinner {
-  width: 44px;
-  height: 44px;
+  width: 22px;
+  height: 22px;
   border: 3px solid rgba(245, 158, 11, 0.18);
   border-top-color: #f59e0b;
   border-radius: 50%;
   animation: pplSpin 0.9s linear infinite;
+  flex-shrink: 0;
 }
 
 @keyframes pplSpin {
@@ -27,4 +131,20 @@
   color: #94a3b8;
   letter-spacing: 0.3px;
   margin: 0;
+}
+
+@media (max-width: 768px) {
+  .ppl-skel { padding: 78px 16px 16px; gap: 18px; }
+  .skel-cover { height: 190px; border-radius: 16px; }
+  .skel-head { gap: 16px; margin-top: -44px; }
+  .skel-avatar { width: 96px; height: 96px; min-width: 96px; border-width: 4px; }
+  .skel-bar--name { width: 60%; }
+  .skel-bar--user { width: 40%; }
+  .skel-stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .skel-stat { height: 70px; }
+}
+
+@media (max-width: 480px) {
+  .skel-cover { height: 160px; }
+  .skel-avatar { width: 84px; height: 84px; min-width: 84px; }
 }

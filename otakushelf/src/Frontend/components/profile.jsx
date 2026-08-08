@@ -73,10 +73,19 @@ const ProfilePage = () => {
   const loadProfileDataUserIdRef = useRef(null);
   const hasLoadedProfileRef = useRef(false);
   const mountedRef = useRef(true);
+  // Counts async post-fetch work (score enrichment, badge defs) so the loader
+  // stays until the whole page is hydrated, not just the main GET.
+  const pendingWorkRef = useRef(0);
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
+
+  const finishProfileLoading = () => {
+    if (mountedRef.current && pendingWorkRef.current <= 0) {
+      setLoading(false);
+    }
+  };
 
   // Anime detail modal state
   const [selectedAnime, setSelectedAnime] = useState(null);
@@ -153,11 +162,15 @@ const ProfilePage = () => {
 
   // Load all badge definitions
   const loadAllBadgeDefs = async () => {
+    pendingWorkRef.current += 1;
     try {
       const res = await api.get(`${API}/api/badges/all`);
       setAllBadgeDefs(res.data?.data || []);
     } catch (e) {
       console.error('Failed to load badge definitions:', e);
+    } finally {
+      pendingWorkRef.current -= 1;
+      finishProfileLoading();
     }
   };
 
@@ -387,10 +400,8 @@ const ProfilePage = () => {
       setStats({ animeWatched: 0, hoursWatched: 0, currentlyWatching: 0, favorites: 0, animePlanned: 0, animeDropped: 0, totalEpisodes: 0, meanScore: 0 });
       setRecentlyWatched([]); setFavoriteAnime([]); setBadges([]); setGenres([]);
     } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
       loadProfileDataRef.current = false;
+      finishProfileLoading();
     }
   };
 
@@ -691,31 +702,37 @@ const ProfilePage = () => {
   // Fetch AniList details for a batch of entries (cached endpoint used by the Modal)
   const enrichWithScores = async (entries, setter) => {
     if (!Array.isArray(entries) || entries.length === 0) return;
-    const results = await Promise.all(
-      entries.map(async (entry) => {
-        const rawId = entry.animeId || entry.id;
-        const idNum = parseInt(String(rawId), 10);
-        if (!idNum) return { ...entry };
-        const isMalImport = entry.malId && entry.animeId && String(entry.malId) === String(entry.animeId);
-        try {
-          const res = await api.get(`${API}/api/anime/anime/${idNum}${isMalImport ? '?mal=1' : ''}`);
-          const media = res.data?.data;
-          if (media) {
-            return {
-              ...entry,
-              averageScore: media.averageScore,
-              year: media.seasonYear || media.startDate?.year,
-              seasonYear: media.seasonYear,
-              episodes: media.episodes,
-              status: media.status,
-              format: media.format,
-            };
-          }
-        } catch (e) {}
-        return { ...entry };
-      })
-    );
-    setter(results);
+    pendingWorkRef.current += 1;
+    try {
+      const results = await Promise.all(
+        entries.map(async (entry) => {
+          const rawId = entry.animeId || entry.id;
+          const idNum = parseInt(String(rawId), 10);
+          if (!idNum) return { ...entry };
+          const isMalImport = entry.malId && entry.animeId && String(entry.malId) === String(entry.animeId);
+          try {
+            const res = await api.get(`${API}/api/anime/anime/${idNum}${isMalImport ? '?mal=1' : ''}`);
+            const media = res.data?.data;
+            if (media) {
+              return {
+                ...entry,
+                averageScore: media.averageScore,
+                year: media.seasonYear || media.startDate?.year,
+                seasonYear: media.seasonYear,
+                episodes: media.episodes,
+                status: media.status,
+                format: media.format,
+              };
+            }
+          } catch (e) {}
+          return { ...entry };
+        })
+      );
+      setter(results);
+    } finally {
+      pendingWorkRef.current -= 1;
+      finishProfileLoading();
+    }
   };
 
   if (!profileData) {

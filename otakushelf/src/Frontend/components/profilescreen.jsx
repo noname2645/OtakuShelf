@@ -370,8 +370,10 @@ const ProfileScreen = () => {
       setAllBadgeDefs(badgeDefs);
       setWatchLog(wlRes.data?.data || []);
 
-      enrichWithScores(d.recentlyWatched || [], setRecentlyWatched);
-      enrichWithScores((d.favorites || []).slice(0, 10), setFavorites);
+      await Promise.all([
+        enrichWithScores(d.recentlyWatched || [], setRecentlyWatched),
+        enrichWithScores((d.favorites || []).slice(0, 10), setFavorites),
+      ]);
     } catch (err) {
       if (!mountedRef.current) return;
       console.error("Error loading profile screen:", err);
