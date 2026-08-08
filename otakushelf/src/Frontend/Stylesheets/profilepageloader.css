@@ -1,0 +1,30 @@
+/* ─── Simple Profile Page Loader ─────────────────────────────── */
+.ppl-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: linear-gradient(180deg, #0a0f1e 0%, #161b2e 100%);
+}
+
+.ppl-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(245, 158, 11, 0.18);
+  border-top-color: #f59e0b;
+  border-radius: 50%;
+  animation: pplSpin 0.9s linear infinite;
+}
+
+@keyframes pplSpin {
+  to { transform: rotate(360deg); }
+}
+
+.ppl-text {
+  font-size: 14px;
+  color: #94a3b8;
+  letter-spacing: 0.3px;
+  margin: 0;
+}

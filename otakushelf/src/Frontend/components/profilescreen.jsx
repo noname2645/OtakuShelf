@@ -7,6 +7,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import BottomNavBar from "./bottom.jsx";
 import AnimeCardUI from "./AnimeCardUI.jsx";
 import Modal from "./modal.jsx";
+import ProfilePageLoader from "./ProfilePageLoader.jsx";
 import { getBadgeImage } from "../badgeImages.js";
 import lockedBadgeImg from "../images/lockedbadge_result.webp";
 import { usePageLoader } from "./PageLoaderContext.jsx";
@@ -101,7 +102,7 @@ const toAnimeShape = (entry) => {
   };
 };
 
-// Fetch AniList community score for a batch of entries (cached endpoint used by the Modal)
+// Fetch AniList details for a batch of entries (cached endpoint used by the Modal)
 const enrichWithScores = async (entries, setter) => {
   if (!Array.isArray(entries) || entries.length === 0) return;
   const results = await Promise.all(
@@ -113,8 +114,16 @@ const enrichWithScores = async (entries, setter) => {
       try {
         const res = await api.get(`${API}/api/anime/anime/${idNum}${isMalImport ? '?mal=1' : ''}`);
         const media = res.data?.data;
-        if (media?.averageScore) {
-          return { ...entry, averageScore: media.averageScore };
+        if (media) {
+          return {
+            ...entry,
+            averageScore: media.averageScore,
+            year: media.seasonYear || media.startDate?.year,
+            seasonYear: media.seasonYear,
+            episodes: media.episodes,
+            status: media.status,
+            format: media.format,
+          };
         }
       } catch (e) {}
       return { ...entry };
@@ -390,13 +399,10 @@ const ProfileScreen = () => {
 
   if (loading || !profileData) {
     return (
-      <div className="ps-loading">
+      <>
         <BottomNavBar />
-        <div className="ps-loading-inner">
-          <div className="ps-loading-spinner" />
-          <p>Loading profile...</p>
-        </div>
-      </div>
+        <ProfilePageLoader />
+      </>
     );
   }
 

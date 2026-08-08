@@ -6,7 +6,6 @@ import { Star } from 'lucide-react';
 import { Navigate } from "react-router-dom";
 import { Header } from '../components/header.jsx';
 import BottomNavBar from "../components/bottom.jsx";
-import Import from "../images/import.png";
 import { useAnimePreferences } from './useAnimePreferences';
 import ErrorPage from './ErrorPage.jsx';
 import { usePageLoader } from './PageLoaderContext.jsx';
@@ -1071,7 +1070,21 @@ const EnhancedAnimeList = () => {
                   </>
                 ) : (
                   <span className="import-icon">
-                    <img src={Import} alt="Import" />
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 3v12" />
+                      <path d="m7 10 5 5 5-5" />
+                      <path d="M3 17v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2" />
+                    </svg>
                     Import MAL List
                   </span>
                 )}

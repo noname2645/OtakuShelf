@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import AnimeCardUI from "./AnimeCardUI.jsx";
 import Modal from "./modal.jsx";
+import ProfilePageLoader from "./ProfilePageLoader.jsx";
 import { getBadgeImage } from "../badgeImages.js";
 import lockedBadgeImg from "../images/lockedbadge_result.webp";
 import { usePageLoader } from "./PageLoaderContext.jsx";
@@ -625,7 +626,7 @@ const ProfilePage = () => {
     return heatmapData.flat().filter(d => d.count > 0).length;
   }, [heatmapData]);
 
-  // Fetch AniList community score for a batch of entries (cached endpoint used by the Modal)
+  // Fetch AniList details for a batch of entries (cached endpoint used by the Modal)
   const enrichWithScores = async (entries, setter) => {
     if (!Array.isArray(entries) || entries.length === 0) return;
     const results = await Promise.all(
@@ -637,8 +638,16 @@ const ProfilePage = () => {
         try {
           const res = await api.get(`${API}/api/anime/anime/${idNum}${isMalImport ? '?mal=1' : ''}`);
           const media = res.data?.data;
-          if (media?.averageScore) {
-            return { ...entry, averageScore: media.averageScore };
+          if (media) {
+            return {
+              ...entry,
+              averageScore: media.averageScore,
+              year: media.seasonYear || media.startDate?.year,
+              seasonYear: media.seasonYear,
+              episodes: media.episodes,
+              status: media.status,
+              format: media.format,
+            };
           }
         } catch (e) {}
         return { ...entry };
@@ -747,15 +756,7 @@ const ProfilePage = () => {
 
   // ── Main Render ────────────────────────────────────────────────
   if (loading && !profileData) {
-    return (
-      <div className="profile-loading">
-        <div className="loading-content">
-          <div className="loading-spinner" />
-          <p className="loading-text">Loading your shelf...</p>
-          <p className="loading-subtext">Fetching your anime profile</p>
-        </div>
-      </div>
-    );
+    return <ProfilePageLoader />;
   }
 
   return (
