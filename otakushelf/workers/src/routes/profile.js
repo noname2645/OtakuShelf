@@ -34,6 +34,9 @@ const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif
 const ALLOWED_COVER_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm']
 const PHOTO_MAX_SIZE = 15 * 1024 * 1024
 const COVER_MAX_SIZE = 15 * 1024 * 1024
+// Prisma Accelerate caps requests/responses at ~4MB, so a base64 data URL larger
+// than this would fail to persist and also break the profile GET on reload.
+const MAX_DATA_URL_LEN = 3.5 * 1024 * 1024
 
 function bufferToDataUrl(buffer, mimeType) {
   const bytes = new Uint8Array(buffer)
@@ -59,6 +62,7 @@ router.post('/:userId/upload-photo', authenticateToken, authorizeUser, async (c)
 
   const buf = await photo.arrayBuffer()
   const dataUrl = bufferToDataUrl(buf, photo.type)
+  if (dataUrl.length > MAX_DATA_URL_LEN) return error(c, 'Photo too large after encoding. Use a smaller image or a compressed JPEG/WebP (under ~3MB).', 400)
 
   await users.update(userId, { photo: dataUrl })
   const updated = await users.findById(userId)
@@ -79,6 +83,7 @@ router.post('/:userId/upload-cover', authenticateToken, authorizeUser, async (c)
 
   const buf = await cover.arrayBuffer()
   const dataUrl = bufferToDataUrl(buf, cover.type)
+  if (dataUrl.length > MAX_DATA_URL_LEN) return error(c, 'Cover too large after encoding. Use a smaller image or a compressed JPEG/WebP (under ~3MB).', 400)
 
   await users.update(userId, { 'profile.coverImage': dataUrl })
 

@@ -110,6 +110,20 @@ const ProfilePage = () => {
     return { key, timeKey: `${key}_time` };
   };
 
+  // Keep the localStorage cache in sync after a photo/cover upload so a reload
+  // never falls back to a stale cache (avatar: null) if the fresh fetch fails.
+  const syncProfileCache = (uid, profilePatch) => {
+    try {
+      const { key, timeKey } = profileCacheKeys(uid);
+      const cachedRaw = localStorage.getItem(key);
+      if (!cachedRaw) return;
+      const cached = JSON.parse(cachedRaw);
+      cached.profileData = { ...(cached.profileData || {}), ...profilePatch };
+      localStorage.setItem(key, JSON.stringify(cached));
+      localStorage.setItem(timeKey, Date.now().toString());
+    } catch (e) { /* ignore cache errors */ }
+  };
+
   // Official 19 AniList genres
   const ALL_ANIME_GENRES = [
     "Action", "Adventure", "Avant Garde", "Award Winning", "Boys Love",
@@ -382,6 +396,50 @@ const ProfilePage = () => {
 
   const isVideoUrl = (url) => !!(url && typeof url === 'string' && url.startsWith('data:video'));
 
+  // Downscale + re-encode images client-side so the stored data URL stays small.
+  // Large base64 photos in the DB exceed the Prisma Accelerate payload ceiling,
+  // which makes the profile GET fail and the pfp "disappear" on reload.
+  const compressImageFile = async (file, maxDim = 512, quality = 0.85) => {
+    if (!file || !file.type.startsWith("image/") || file.type === "image/gif") return file;
+    try {
+      let source;
+      try {
+        source = await createImageBitmap(file, { imageOrientation: "from-image" });
+      } catch {
+        source = await new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+          img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("img load failed")); };
+          img.src = url;
+        });
+      }
+      const scale = Math.min(1, maxDim / Math.max(source.width, source.height));
+      const w = Math.max(1, Math.round(source.width * scale));
+      const h = Math.max(1, Math.round(source.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(source, 0, 0, w, h);
+      if (typeof source.close === "function") source.close();
+
+      const mime = (() => {
+        try {
+          return canvas.toDataURL("image/webp").startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+        } catch {
+          return "image/jpeg";
+        }
+      })();
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, mime, quality));
+      if (blob && blob.type.startsWith("image/") && blob.size < file.size) return blob;
+      return file;
+    } catch {
+      return file;
+    }
+  };
+
   const validateMediaFile = async (file) => {
     if (!file) return { ok: false, msg: "No file selected" };
     if (file.size > 15 * 1024 * 1024) return { ok: false, msg: "File too large. Max 15MB." };
@@ -410,14 +468,16 @@ const ProfilePage = () => {
       const check = await validateMediaFile(file);
       if (!check.ok) { showToast(check.msg, "error"); e.target.value = ""; return; }
       setUploadingCover(true);
+      const uploadFile = await compressImageFile(file, 1600, 0.8);
       const formData = new FormData();
-      formData.append("cover", file);
+      formData.append("cover", uploadFile);
       const response = await api.post(`${API}/api/profile/${user._id}/upload-cover`, formData, { headers: { "Content-Type": "multipart/form-data" } });
       const data = response.data.data;
       if (data.coverImage) {
         let coverUrl = data.coverImage;
         if (coverUrl && coverUrl.startsWith("/uploads/")) coverUrl = `${API.replace("/api", "")}${coverUrl}`;
         setProfileData((prev) => ({ ...prev, coverImage: coverUrl }));
+        syncProfileCache(user._id, { coverImage: coverUrl });
         showToast("Cover updated!");
       }
     } catch (error) {
@@ -534,8 +594,9 @@ const ProfilePage = () => {
     try {
       const check = await validateMediaFile(file);
       if (!check.ok) { showToast(check.msg, "error"); e.target.value = ""; return; }
+      const uploadFile = await compressImageFile(file, 512, 0.85);
       const formData = new FormData();
-      formData.append("photo", file);
+      formData.append("photo", uploadFile);
       setUploadingPhoto(true);
       const response = await api.post(`${API}/api/profile/${userId}/upload-photo`, formData, { headers: { "Content-Type": "multipart/form-data" } });
       const result = response.data.data;
@@ -543,6 +604,7 @@ const ProfilePage = () => {
       if (photoUrl && photoUrl.startsWith("/uploads/")) photoUrl = `${API.replace("/api", "")}${photoUrl}`;
       setProfileData((prev) => ({ ...prev, avatar: photoUrl }));
       if (updateUserState) updateUserState({ photo: photoUrl });
+      syncProfileCache(userId, { avatar: photoUrl });
       showToast("Profile picture updated!");
     } catch (error) {
       showToast("Failed to upload image.", "error");
