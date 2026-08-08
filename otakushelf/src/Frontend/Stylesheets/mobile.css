@@ -200,22 +200,19 @@ input, select, textarea {
    3. HOME PAGE — TRAILER HERO
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-    /* Hero content overlay */
+    /* Hero content overlay — vertically centered by TrailerHero.css (.content-overlay--center) */
     .content-overlay {
-        left: 5% !important;
-        right: 5% !important;
-        bottom: 22% !important;
-        max-width: 90% !important;
+        max-width: 100% !important;
     }
 
     .anime-title {
-        font-size: clamp(1.3rem, 5.5vw, 2rem) !important;
+        font-size: clamp(2.9rem, 8vw, 3.6rem) !important;
         line-height: 1.2 !important;
         margin-bottom: 8px !important;
     }
 
     .anime-description {
-        font-size: 0.88rem !important;
+        font-size: clamp(1.6rem, 4.5vw, 1.75rem) !important;
         display: -webkit-box !important;
         -webkit-line-clamp: 3 !important;
         line-clamp: 3 !important;
@@ -225,14 +222,14 @@ input, select, textarea {
     }
 
     .genres {
-        font-size: 0.82rem !important;
+        font-size: clamp(1.4rem, 4vw, 1.55rem) !important;
         gap: 6px !important;
         flex-wrap: wrap !important;
     }
 
     .details-button {
         padding: 0.65rem 1.4rem !important;
-        font-size: 0.88rem !important;
+        font-size: clamp(1.35rem, 4vw, 1.45rem) !important;
     }
 
     /* Hero nav dots */
@@ -248,18 +245,18 @@ input, select, textarea {
 }
 
 @media (max-width: 430px) {
-    .content-overlay {
-        bottom: 20% !important;
-    }
-
     .anime-title {
-        font-size: clamp(1.1rem, 5vw, 1.5rem) !important;
+        font-size: clamp(2.1rem, 7vw, 2.6rem) !important;
     }
 
     .anime-description {
-        font-size: 0.82rem !important;
+        font-size: clamp(1.4rem, 4vw, 1.5rem) !important;
         -webkit-line-clamp: 2 !important;
         line-clamp: 2 !important;
+    }
+
+    .genres {
+        font-size: clamp(1.25rem, 3.5vw, 1.35rem) !important;
     }
     
         /* Ensure brief summaries across the site on small screens */

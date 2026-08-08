@@ -697,12 +697,12 @@ const TrailerHero = ({ onOpenModal }) => {
                     initial={{ y: isMobile ? 50 : 100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="content-overlay"
+                    className={`content-overlay${isMobile || isTablet ? ' content-overlay--center' : ''}`}
                     style={{
-                        bottom: isMobile ? '22%' : '20%',
-                        left: isMobile ? '3%' : '7%',
-                        right: isMobile ? '3%' : '7%',
-                        maxWidth: isMobile ? '100%' : '600px'
+                        bottom: isMobile || isTablet ? undefined : (isMobile ? '22%' : '20%'),
+                        left: isMobile || isTablet ? '12%' : '7%',
+                        right: isMobile || isTablet ? '12%' : '7%',
+                        maxWidth: isMobile || isTablet ? '100%' : '600px'
                     }}
                 >
 

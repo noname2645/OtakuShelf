@@ -208,6 +208,16 @@
     padding: 1rem;
 }
 
+/* Vertically centered layout for mobile & tablet — flex centering so the
+   framer-motion y animation never conflicts with a CSS transform. */
+.trailer-hero-section .content-overlay--center {
+    top: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
 /* ── Era Curation Badge ── */
 .era-badge {
     display: inline-flex;
@@ -303,7 +313,7 @@
     align-items: center;
     gap: 1rem;
     margin-bottom: 1.2rem;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 500;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
@@ -311,7 +321,7 @@
 .status-badge {
     padding: 0.3rem 0.8rem;
     border-radius: 20px;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
     white-space: nowrap;
@@ -569,30 +579,31 @@
     }
 
     .anime-title {
-        font-size: clamp(1.8rem, 5vw, 2.5rem);
+        font-size: clamp(2.9rem, 8vw, 3.6rem);
     }
 
     .anime-meta {
         gap: 0.6rem;
-        font-size: clamp(0.9rem, 2.5vw, 1rem);
+        font-size: clamp(0.95rem, 2.6vw, 1.05rem);
     }
 
     .status-badge {
-        padding: 0.25rem 0.6rem;
+        padding: 0.3rem 0.7rem;
         font-size: clamp(0.8rem, 2vw, 0.9rem);
     }
 
     .anime-description {
-        font-size: clamp(1rem, 3vw, 1.1rem);
+        font-size: clamp(1.6rem, 4.5vw, 1.75rem);
+        line-height: 1.45;
     }
 
     .genres {
-        font-size: clamp(0.9rem, 2.5vw, 0.95rem);
+        font-size: clamp(1.4rem, 4vw, 1.55rem);
     }
 
     .details-button {
-        padding: clamp(0.8rem, 3vw, 1rem) clamp(1.5rem, 4vw, 2rem);
-        font-size: clamp(1rem, 3vw, 1.1rem);
+        padding: clamp(0.85rem, 3vw, 1rem) clamp(1.6rem, 4vw, 2rem);
+        font-size: clamp(1.35rem, 4vw, 1.45rem);
         width: 100%;
         max-width: 250px;
     }
@@ -661,36 +672,36 @@
     }
 
     .anime-title {
-        font-size: 1.5rem;
+        font-size: 2.6rem;
         line-height: 1.3;
         margin-bottom: 0.6rem;
     }
 
     .anime-meta {
-        font-size: 0.85rem;
+        font-size: 0.95rem;
         gap: 0.5rem;
     }
 
     .status-badge {
-        padding: 0.2rem 0.5rem;
-        font-size: 0.75rem;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.8rem;
     }
 
     .anime-description {
-        font-size: 0.95rem;
-        line-height: 1.4;
+        font-size: 1.5rem;
+        line-height: 1.45;
     }
 
     .genres {
-        font-size: 0.85rem;
+        font-size: 1.35rem;
         margin-bottom: 1rem;
     }
 
     .details-button {
-        padding: 0.7rem 1.5rem;
-        font-size: 0.95rem;
-        min-height: 40px;
-        min-width: 140px;
+        padding: 0.75rem 1.6rem;
+        font-size: 1.3rem;
+        min-height: 44px;
+        min-width: 150px;
     }
 
     .slider-btns {
@@ -742,21 +753,26 @@
         bottom: 40%;
     }
     .anime-title {
-        font-size: 1.3rem;
+        font-size: 2.2rem;
     }
 
     .anime-meta {
-        font-size: 0.8rem;
+        font-size: 0.9rem;
     }
 
     .anime-description {
-        font-size: 0.9rem;
+        font-size: 1.45rem;
+        line-height: 1.45;
+    }
+
+    .genres {
+        font-size: 1.25rem;
     }
 
     .details-button {
-        padding: 0.6rem 1.2rem;
-        font-size: 0.9rem;
-        min-width: 130px;
+        padding: 0.65rem 1.3rem;
+        font-size: 1.25rem;
+        min-width: 140px;
     }
 
     .slider-btns button {
@@ -1165,25 +1181,29 @@
     }
 
     .anime-title {
-        font-size: clamp(2rem, 3.2vw, 3rem);
+        font-size: clamp(2.6rem, 4vw, 3.4rem);
         -webkit-line-clamp: 2;
     }
 
     .anime-meta {
         gap: 0.75rem;
-        font-size: clamp(1rem, 1.6vw, 1.15rem);
+        font-size: clamp(0.95rem, 1.5vw, 1.05rem);
     }
 
     .anime-description {
-        font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+        font-size: clamp(1.4rem, 2.4vw, 1.6rem);
         max-width: 85%;
+    }
+
+    .genres {
+        font-size: clamp(1.2rem, 2vw, 1.4rem);
     }
 
     .details-button {
         min-width: 140px;
         max-width: 320px;
         padding: 0.9rem 1.8rem;
-        font-size: 1.05rem;
+        font-size: 1.2rem;
     }
 
     .slider-btns {
@@ -1224,6 +1244,39 @@
             width: 100%;
             max-width: 300px;
         }
+    }
+}
+
+/* Tablet (769px - 1024px) — centered layout with large hero text */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .anime-title {
+        font-size: clamp(2.9rem, 8vw, 3.6rem);
+        -webkit-line-clamp: 2;
+    }
+
+    .anime-meta {
+        gap: 0.75rem;
+        font-size: clamp(0.95rem, 2.6vw, 1.05rem);
+    }
+
+    .status-badge {
+        font-size: clamp(0.8rem, 2vw, 0.9rem);
+    }
+
+    .anime-description {
+        font-size: clamp(1.5rem, 4vw, 1.7rem);
+        max-width: 90%;
+    }
+
+    .genres {
+        font-size: clamp(1.35rem, 3.5vw, 1.5rem);
+    }
+
+    .details-button {
+        min-width: 160px;
+        max-width: 320px;
+        padding: 0.95rem 1.9rem;
+        font-size: 1.35rem;
     }
 }
 
